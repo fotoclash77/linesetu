@@ -234,12 +234,35 @@ export function DoctorDetail() {
             </div>
           </div>
           {/* Day & Date */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', alignSelf: 'flex-start', width: 'fit-content' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', alignSelf: 'flex-start', width: 'fit-content' }}>
             <CalendarCheck style={{ width: 12, height: 12, color: '#67E8F9' }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#67E8F9' }}>Thursday</span>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>·</span>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>10 Apr 2026</span>
           </div>
+
+          {/* Currently At */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '10px 12px', borderRadius: 13, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Building2 style={{ width: 15, height: 15, color: '#4ADE80' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Doctor is currently at</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#FFF' }}>HeartCare Clinic</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <MapPin style={{ width: 10, height: 10, color: '#4ADE80' }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Andheri West, Mumbai · Morning Shift</span>
+                </div>
+              </div>
+            </div>
+            <a href="https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai" target="_blank" rel="noreferrer"
+              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 10, background: 'rgba(66,133,244,0.2)', border: '1px solid rgba(66,133,244,0.4)', textDecoration: 'none' }}>
+              <Navigation style={{ width: 12, height: 12, color: '#4285F4' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#4285F4' }}>Maps</span>
+            </a>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             {[
               { label: 'Current Token', val: '42', color: '#67E8F9', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)' },
