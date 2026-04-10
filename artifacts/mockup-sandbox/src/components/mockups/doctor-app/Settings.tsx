@@ -4,7 +4,7 @@ import {
   Bell, Shield, LogOut, ChevronRight, Edit3, Sun, Moon,
   AlertCircle, BadgeCheck, MessageSquare, CalendarDays,
   Stethoscope, Phone, MapPin, ToggleLeft, Zap, Eye,
-  CheckCircle2, Save, Camera, HeartPulse, Star, Award,
+  CheckCircle2, Save, Camera, HeartPulse, Award,
 } from 'lucide-react';
 
 const BG      = '#070B14';
@@ -84,6 +84,30 @@ function RowItem({ icon: Icon, label, sub, right, color = 'rgba(255,255,255,0.3)
         {sub && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 500, marginTop: 1 }}>{sub}</div>}
       </div>
       {right}
+    </div>
+  );
+}
+
+/* ─── Profile form field ─── */
+function ProfileField({ icon: Icon, label, color, defaultValue, type = 'text', suffix, hint }: {
+  icon: React.ElementType; label: string; color: string; defaultValue: string;
+  type?: string; suffix?: string; hint?: string;
+}) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <Icon style={{ width: 9, height: 9, color }} /> {label}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <input type={type} defaultValue={defaultValue}
+          style={{ ...INPUT, paddingRight: suffix ? 52 : 12 }} />
+        {suffix && (
+          <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>
+            {suffix}
+          </span>
+        )}
+      </div>
+      {hint && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 3, fontWeight: 600 }}>{hint}</div>}
     </div>
   );
 }
@@ -173,66 +197,71 @@ export function Settings() {
 
         {/* ── DOCTOR PROFILE ── */}
         <SectionHead icon={User} label="Doctor Profile" color="#818CF8" />
-        <div style={{ borderRadius: 18, overflow: 'hidden', ...GLASS }}>
-          {/* Photo + name */}
-          <div style={{ padding: '14px 12px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ borderRadius: 18, padding: '14px 12px', ...GLASS, display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+          {/* Photo row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Dr. Sharma"
-                style={{ width: 56, height: 56, borderRadius: 16, objectFit: 'cover', border: '2px solid rgba(45,212,191,0.4)' }} />
-              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                style={{ width: 60, height: 60, borderRadius: 18, objectFit: 'cover', border: '2px solid rgba(45,212,191,0.4)' }} />
+              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: TEAL, border: '2px solid #070B14', cursor: 'pointer' }}>
                 <Camera style={{ width: 10, height: 10, color: '#FFF' }} />
               </div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#FFF' }}>Dr. Ananya Sharma</div>
-              <div style={{ fontSize: 11, color: TEAL_LT, fontWeight: 600 }}>Cardiologist · 10+ yrs</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>+91 98765 00001</div>
-            </div>
-            <div style={{ width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.07)', cursor: 'pointer' }}>
-              <Edit3 style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.5)' }} />
+            <div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>Profile Photo</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>Tap camera icon to update</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>JPG or PNG · Max 2 MB</div>
             </div>
           </div>
-          <RowItem icon={Stethoscope} label="Specialisation" sub="Cardiologist" color={TEAL_LT}
-            right={<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Edit <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} /></span>} />
-          <RowItem icon={CalendarDays} label="Experience" sub="10 years" color="#A5B4FC"
-            right={<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Edit <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} /></span>} />
-          <RowItem icon={Phone} label="Registered Mobile" sub="+91 98765 00001" color="#4ADE80"
-            right={<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Change <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} /></span>} />
 
-          {/* ── Patients Consulted stats ── */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Career Stats</div>
+          {/* Full Name */}
+          <ProfileField icon={User} label="Full Name" color="#818CF8" defaultValue="Dr. Ananya Sharma" />
+
+          {/* Qualifications */}
+          <ProfileField icon={Award} label="Qualifications" color="#A5B4FC" defaultValue="MBBS, MD, DM – Cardiology" />
+
+          {/* Specialisation */}
+          <ProfileField icon={Stethoscope} label="Specialisation" color={TEAL_LT} defaultValue="Cardiologist" />
+
+          {/* Experience */}
+          <ProfileField icon={CalendarDays} label="Years of Experience" color="#FCD34D" defaultValue="10" type="number" suffix="yrs" />
+
+          {/* Patients Consulted */}
+          <ProfileField icon={HeartPulse} label="Patients Consulted (Total)" color="#F87171" defaultValue="12450" type="number" suffix="patients" hint="Displayed on your public profile" />
+
+          {/* Mobile */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Phone style={{ width: 9, height: 9, color: '#4ADE80' }} /> Registered Mobile
+            </div>
             <div style={{ display: 'flex', gap: 6 }}>
-              {[
-                { icon: HeartPulse, value: '12,450+', label: 'Patients Consulted', color: '#F87171' },
-                { icon: Star,       value: '4.9',     label: 'Patient Rating',     color: '#FCD34D' },
-                { icon: Award,      value: '10 yrs',  label: 'Experience',         color: '#A5B4FC' },
-              ].map(s => (
-                <div key={s.label} style={{ flex: 1, borderRadius: 12, padding: '9px 6px', textAlign: 'center',
-                  background: `${s.color}0F`, border: `1px solid ${s.color}25` }}>
-                  <s.icon style={{ width: 13, height: 13, color: s.color, marginBottom: 4, display: 'block', margin: '0 auto 4px' }} />
-                  <div style={{ fontSize: 13, fontWeight: 900, color: '#FFF', lineHeight: 1 }}>{s.value}</div>
-                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 3, lineHeight: 1.2 }}>{s.label}</div>
-                </div>
-              ))}
+              <div style={{ width: 46, height: 40, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>
+                +91
+              </div>
+              <input style={{ ...INPUT }} defaultValue="98765 00001" type="tel" />
             </div>
           </div>
 
-          {/* ── About / Bio ── */}
-          <div style={{ padding: '10px 12px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6,
+          {/* About / Bio */}
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>About / Bio</span>
-              <span style={{ fontSize: 8, color: TEAL_LT, fontWeight: 700 }}>Shown to patients</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <MessageSquare style={{ width: 9, height: 9, color: '#67E8F9' }} /> About / Bio
+              </div>
+              <span style={{ fontSize: 8, color: TEAL_LT, fontWeight: 700, textTransform: 'none' }}>Shown to patients</span>
             </div>
             <textarea defaultValue="Cardiologist with 10+ years of clinical expertise in interventional cardiology and heart disease management. Committed to patient-centric care with over 12,000 successful consultations at Sharma Heart Clinic, Andheri West."
               style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.06)', color: '#FFF', fontSize: 11, fontWeight: 500,
-                padding: '10px 12px', outline: 'none', resize: 'none', height: 80,
+                background: 'rgba(255,255,255,0.07)', color: '#FFF', fontSize: 11, fontWeight: 500,
+                padding: '10px 12px', outline: 'none', resize: 'none', height: 82,
                 fontFamily: "'Inter', sans-serif", boxSizing: 'border-box', lineHeight: 1.6 }} />
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 3, fontWeight: 600 }}>This description appears on your clinic page in the patient app</div>
           </div>
+
         </div>
 
         {/* ── CLINIC INFO ── */}
