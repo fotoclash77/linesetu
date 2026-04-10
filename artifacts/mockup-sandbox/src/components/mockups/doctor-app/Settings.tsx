@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
-  User, Building2, Clock, IndianRupee, Users, Smartphone,
+  User, UserPlus, Building2, Clock, IndianRupee, Users, Smartphone,
   Bell, Shield, LogOut, ChevronRight, Edit3, Sun, Moon,
   AlertCircle, BadgeCheck, MessageSquare, CalendarDays,
   Stethoscope, Phone, MapPin, ToggleLeft, Zap, Eye,
   CheckCircle2, Save, Camera, HeartPulse, Award, Plus, Trash2, Hospital, Link2, Map,
+  House, CalendarClock, TrendingUp, SlidersHorizontal,
 } from 'lucide-react';
 
 const BG      = '#070B14';
@@ -149,6 +150,42 @@ function ShiftBlock({ icon: Icon, label, color, defaultOn }: { icon: React.Eleme
   );
 }
 
+function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'walkin' }) {
+  const C = (a: string) => active === a ? TEAL_LT : 'rgba(255,255,255,0.3)';
+  return (
+    <div style={{ height: 72, flexShrink: 0, position: 'relative', background: 'rgba(7,11,20,0.96)',
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ position: 'absolute', top: -26, left: '50%', transform: 'translateX(-50%)',
+        width: 54, height: 54, borderRadius: '50%',
+        background: active === 'walkin' ? 'linear-gradient(135deg,#2DD4BF,#06B6D4)' : 'linear-gradient(135deg,#0D9488,#0891B2)',
+        boxShadow: `0 4px 24px ${active==='walkin' ? 'rgba(45,212,191,0.7)' : 'rgba(13,148,136,0.55)'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', border: '3px solid #070B14', zIndex: 10 }}>
+        <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
+      </div>
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <House style={{ width: 20, height: 20, color: C('home') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('home'), letterSpacing: '0.03em' }}>Home</span>
+        </button>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <CalendarClock style={{ width: 20, height: 20, color: C('queue') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('queue'), letterSpacing: '0.03em' }}>Manage</span>
+        </button>
+        <div style={{ flex: 1 }} />
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <TrendingUp style={{ width: 20, height: 20, color: C('earnings') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('earnings'), letterSpacing: '0.03em' }}>Earnings</span>
+        </button>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <SlidersHorizontal style={{ width: 20, height: 20, color: C('settings') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('settings'), letterSpacing: '0.03em' }}>Settings</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Settings() {
   const [clinics, setClinics] = useState([
     { name: 'Sharma Heart Clinic', address: 'Andheri West, Mumbai', phone: '+91 22 1234 5678', mapLink: 'https://maps.google.com/?q=Sharma+Heart+Clinic+Andheri', active: true },
@@ -211,7 +248,7 @@ export function Settings() {
       </div>
 
       {/* Scrollable */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 32px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 90px' }}>
 
         {/* ── DOCTOR PROFILE ── */}
         <SectionHead icon={User} label="Doctor Profile" color="#818CF8" />
@@ -493,6 +530,9 @@ export function Settings() {
           <LogOut style={{ width: 15, height: 15 }} /> Logout
         </button>
       </div>
+
+      {/* ── NAV BAR ── */}
+      <DocNavBar active="settings" />
     </div>
   );
 }

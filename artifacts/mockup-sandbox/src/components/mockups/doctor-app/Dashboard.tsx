@@ -5,6 +5,7 @@ import {
   Bell, Stethoscope, Zap,
   Smartphone, Footprints, BarChart2, ArrowUpRight,
   CheckCircle2, XCircle, Clock, UserX, AlertCircle,
+  House, CalendarClock, SlidersHorizontal,
 } from 'lucide-react';
 
 const BG = '#070B14';
@@ -189,6 +190,42 @@ function PatientStats() {
   );
 }
 
+function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'walkin' }) {
+  const C = (a: string) => active === a ? TEAL_LT : 'rgba(255,255,255,0.3)';
+  return (
+    <div style={{ height: 72, flexShrink: 0, position: 'relative', background: 'rgba(7,11,20,0.96)',
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ position: 'absolute', top: -26, left: '50%', transform: 'translateX(-50%)',
+        width: 54, height: 54, borderRadius: '50%',
+        background: active === 'walkin' ? 'linear-gradient(135deg,#2DD4BF,#06B6D4)' : 'linear-gradient(135deg,#0D9488,#0891B2)',
+        boxShadow: `0 4px 24px ${active==='walkin' ? 'rgba(45,212,191,0.7)' : 'rgba(13,148,136,0.55)'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', border: '3px solid #070B14', zIndex: 10 }}>
+        <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
+      </div>
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <House style={{ width: 20, height: 20, color: C('home') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('home'), letterSpacing: '0.03em' }}>Home</span>
+        </button>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <CalendarClock style={{ width: 20, height: 20, color: C('queue') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('queue'), letterSpacing: '0.03em' }}>Manage</span>
+        </button>
+        <div style={{ flex: 1 }} />
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <TrendingUp style={{ width: 20, height: 20, color: C('earnings') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('earnings'), letterSpacing: '0.03em' }}>Earnings</span>
+        </button>
+        <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
+          <SlidersHorizontal style={{ width: 20, height: 20, color: C('settings') }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: C('settings'), letterSpacing: '0.03em' }}>Settings</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Dashboard() {
   const [period,       setPeriod]       = useState<EarningPeriod>('Daily');
   const [shift,        setShift]        = useState<Shift>('Morning');
@@ -241,7 +278,7 @@ export function Dashboard() {
       </div>
 
       {/* ── SCROLLABLE BODY ── */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 16px 24px', position: 'relative', zIndex: 10 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 16px 80px', position: 'relative', zIndex: 10 }}>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             SECTION 1 — EARNINGS
@@ -384,6 +421,9 @@ export function Dashboard() {
         <PatientStats />
 
       </div>
+
+      {/* ── NAV BAR ── */}
+      <DocNavBar active="home" />
     </div>
   );
 }
