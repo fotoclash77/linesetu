@@ -3,10 +3,38 @@ import {
   ChevronLeft, ChevronRight, BadgeCheck, MapPin,
   Building2, Clock, Users, Sunrise, Sunset, Ticket,
   AlertCircle, CalendarCheck, Navigation,
+  Radio, Footprints, Wifi, Siren,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
 const GLASS = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' };
+
+/* ── Live Queue mock data ── */
+type TokenType = 'emergency' | 'online' | 'walkin';
+interface QueueEntry { id: string; name: string; type: TokenType; status: 'waiting' | 'in-progress' | 'done'; }
+
+const EMERGENCY: QueueEntry[] = [
+  { id: 'E1', name: 'Ramesh Joshi',    type: 'emergency', status: 'in-progress' },
+  { id: 'E2', name: 'Sunita Mehta',   type: 'emergency', status: 'waiting'     },
+];
+const NORMAL: QueueEntry[] = [
+  { id: '1',  name: 'Priya Kulkarni', type: 'online',    status: 'done'        },
+  { id: '2',  name: 'Amit Desai',     type: 'walkin',    status: 'done'        },
+  { id: '3',  name: 'Rekha Nair',     type: 'online',    status: 'done'        },
+  { id: '4',  name: 'Kiran Patil',    type: 'walkin',    status: 'in-progress' },
+  { id: '5',  name: 'Deepa Shah',     type: 'online',    status: 'waiting'     },
+  { id: '6',  name: 'Sanjay Gupte',   type: 'walkin',    status: 'waiting'     },
+  { id: '7',  name: 'Meena Rao',      type: 'online',    status: 'waiting'     },
+  { id: '8',  name: 'Vijay Tiwari',   type: 'walkin',    status: 'waiting'     },
+  { id: '9',  name: 'Anita Sawant',   type: 'online',    status: 'waiting'     },
+  { id: '10', name: 'Nikhil More',    type: 'walkin',    status: 'waiting'     },
+];
+
+const TYPE_META: Record<TokenType, { label: string; color: string; bg: string; border: string }> = {
+  emergency: { label: 'Emergency', color: '#F87171', bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.4)'  },
+  online:    { label: 'Online',    color: '#67E8F9', bg: 'rgba(6,182,212,0.12)',  border: 'rgba(6,182,212,0.3)'  },
+  walkin:    { label: 'Walk-in',   color: '#4ADE80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.3)'  },
+};
 
 /* ── Calendar data – April 2026 ── */
 const MONTH = 'April 2026';
@@ -52,6 +80,46 @@ function getShifts(date: number) {
 }
 
 const DOW_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+function QueueRow({ entry, isYours }: { entry: QueueEntry; isYours: boolean }) {
+  const meta = TYPE_META[entry.type];
+  const statusColor = entry.status === 'in-progress' ? '#22C55E' : entry.status === 'done' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.45)';
+  const isEmergency = entry.type === 'emergency';
+  const TypeIcon = entry.type === 'walkin' ? Footprints : entry.type === 'emergency' ? Siren : Wifi;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 6px', marginBottom: 4, borderRadius: 12,
+      background: isYours ? 'rgba(99,102,241,0.18)' : 'transparent',
+      border: isYours ? '1px solid rgba(99,102,241,0.45)' : '1px solid transparent',
+    }}>
+      {/* Token number */}
+      <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: isEmergency ? 'rgba(239,68,68,0.18)' : isYours ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.07)',
+        border: `1.5px solid ${isEmergency ? 'rgba(239,68,68,0.5)' : isYours ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'}` }}>
+        <span style={{ fontSize: 11, fontWeight: 900, color: isEmergency ? '#F87171' : isYours ? '#A5B4FC' : 'rgba(255,255,255,0.7)' }}>#{entry.id}</span>
+      </div>
+      {/* Name */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 12, fontWeight: isYours ? 800 : 600, color: isYours ? '#FFF' : entry.status === 'done' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+          {isYours && <span style={{ fontSize: 9, fontWeight: 800, color: '#A5B4FC', background: 'rgba(99,102,241,0.3)', padding: '1px 5px', borderRadius: 4 }}>YOU</span>}
+        </div>
+        {/* Type badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
+          <TypeIcon style={{ width: 9, height: 9, color: meta.color }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: meta.color }}>{meta.label}</span>
+        </div>
+      </div>
+      {/* Status */}
+      <div style={{ flexShrink: 0, padding: '3px 8px', borderRadius: 8, background: entry.status === 'in-progress' ? 'rgba(34,197,94,0.15)' : 'transparent' }}>
+        <span style={{ fontSize: 9, fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {entry.status === 'in-progress' ? '● In' : entry.status === 'done' ? '✓ Done' : 'Waiting'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function Booking() {
   const [selectedDate, setSelectedDate] = useState(10); // Thu 10 Apr (today)
@@ -279,6 +347,42 @@ export function Booking() {
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
                 Arrive at the clinic when your token is <strong style={{ color: '#FCD34D' }}>5 numbers away</strong>. Consultation fee of ₹500 is paid directly at the clinic.
               </p>
+            </div>
+
+            {/* ── LIVE MASTER QUEUE ── */}
+            <div style={{ margin: '0 18px 14px' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Live Master Queue</span>
+                <div style={{ flex: 1 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Radio style={{ width: 10, height: 10, color: '#818CF8' }} />
+                  <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>Cardiology OPD</span>
+                </div>
+              </div>
+
+              {/* ── Emergency section ── */}
+              <div style={{ marginBottom: 8, padding: '8px 10px 4px', borderRadius: 14, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                  <Siren style={{ width: 12, height: 12, color: '#F87171' }} />
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#F87171', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Emergency Priority</span>
+                </div>
+                {EMERGENCY.map((entry) => (
+                  <QueueRow key={entry.id} entry={entry} isYours={false} />
+                ))}
+              </div>
+
+              {/* ── Normal tokens ── */}
+              <div style={{ padding: '8px 10px 4px', borderRadius: 14, ...GLASS }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                  <Ticket style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.4)' }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Normal Queue</span>
+                </div>
+                {NORMAL.map((entry) => (
+                  <QueueRow key={entry.id} entry={entry} isYours={entry.id === String(yourToken)} />
+                ))}
+              </div>
             </div>
           </>
         ) : (
