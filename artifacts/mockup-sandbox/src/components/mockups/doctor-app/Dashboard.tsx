@@ -70,9 +70,9 @@ type EarningPeriod = 'Daily' | 'Weekly' | 'Monthly';
 type Shift = 'Morning' | 'Evening';
 
 const EARNINGS = {
-  Daily:   { n1:  540,  n2:  300,  n3:   160, n4:  1360, n5:  480,  total:  2840,  spark: [2200,2600,1900,3100,2500,2840]               },
-  Weekly:  { n1: 3400,  n2: 1900,  n3:   980, n4:  8500, n5: 3780,  total: 18560,  spark: [14200,17800,15600,19200,16800,18560]           },
-  Monthly: { n1:13400,  n2: 7500,  n3:  3900, n4: 34200, n5:15200,  total: 74200,  spark: [62000,68000,71000,66000,70000,74200]           },
+  Daily:   { n1:  540,  n2:  300,  total:   840,  spark: [620,740,580,920,760,840]               },
+  Weekly:  { n1: 3400,  n2: 1900,  total:  5300,  spark: [4100,5000,4500,5700,4900,5300]           },
+  Monthly: { n1:13400,  n2: 7500,  total: 20900,  spark: [17200,19000,18400,21600,20100,20900]     },
 };
 
 /* ─── PATIENT DATA ─── */
@@ -108,8 +108,7 @@ function PatientStats() {
     { label: 'Not Shown',              value: d.noShow,      sub: 'Absent / skipped',       icon: UserX,        color: '#F87171', bg: 'rgba(239,68,68,0.13)',  spark: d.noShowSpark },
     { label: 'Waitlisted',             value: d.waitlisted,  sub: 'Still in queue',         icon: Clock,        color: '#FCD34D', bg: 'rgba(245,158,11,0.13)', spark: d.waitSpark },
     { label: 'Emergency Patients',     value: d.emergency,   sub: 'Priority tokens',        icon: AlertCircle,  color: '#FB923C', bg: 'rgba(249,115,22,0.13)', spark: [1,3,2,4,2,d.emergency] },
-    { label: 'Walk-in Patients',       value: d.walkIn,      sub: 'Direct registration',    icon: Footprints,   color: '#67E8F9', bg: 'rgba(6,182,212,0.13)',  spark: [5,8,6,10,7,d.walkIn], divider: true },
-    { label: 'Online Token Booked',    value: d.onlineBooked,sub: 'Via app (Normal + Emerg)',icon: Smartphone,   color: '#818CF8', bg: 'rgba(99,102,241,0.15)', spark: d.onlineSpark },
+    { label: 'Online Token Booked',    value: d.onlineBooked,sub: 'Via app (Normal + Emerg)',icon: Smartphone,   color: '#818CF8', bg: 'rgba(99,102,241,0.15)', spark: d.onlineSpark, divider: true },
     { label: 'Follow-up Patients',     value: d.followUp,    sub: 'Returning patients',     icon: Activity,     color: '#34D399', bg: 'rgba(16,185,129,0.13)', spark: d.followUpSpark },
     { label: 'New Patients',           value: d.newPatient,  sub: 'First-time visit',       icon: UserPlus,     color: '#F9A8D4', bg: 'rgba(236,72,153,0.13)', spark: d.newSpark },
   ];
@@ -379,11 +378,8 @@ export function Dashboard() {
 
           {/* Breakdown rows */}
           {[
-            { label: 'Online Normal Token',         value: earn.n1, icon: Smartphone, color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)'  },
-            { label: 'Online Emergency Token',      value: earn.n2, icon: Zap,        color: '#FCD34D', bg: 'rgba(245,158,11,0.15)'  },
-            { label: 'Walk-in Token',               value: earn.n3, icon: Footprints, color: '#67E8F9', bg: 'rgba(6,182,212,0.15)'   },
-            { label: 'In-Clinic Normal Consult',    value: earn.n4, icon: Stethoscope,color: '#4ADE80', bg: 'rgba(34,197,94,0.12)'   },
-            { label: 'In-Clinic Emergency Consult', value: earn.n5, icon: Zap,        color: '#F87171', bg: 'rgba(239,68,68,0.12)'   },
+            { label: 'Online Normal Token',    value: earn.n1, icon: Smartphone, color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)'  },
+            { label: 'Online Emergency Token', value: earn.n2, icon: Zap,        color: '#FCD34D', bg: 'rgba(245,158,11,0.15)'  },
           ].map(row => {
             const Icon = row.icon;
             const pct = Math.round((row.value / earn.total) * 100);

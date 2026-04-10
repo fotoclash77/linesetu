@@ -198,7 +198,6 @@ export function Settings() {
 
   const [onlineBooking, setOnlineBooking]   = useState(true);
   const [emergencyOn,   setEmergencyOn]     = useState(true);
-  const [walkInOn,      setWalkInOn]        = useState(true);
   const [showWait,      setShowWait]        = useState(true);
   const [showPosition,  setShowPosition]    = useState(true);
   const [showDoctorName,setShowDoctorName]  = useState(true);
@@ -448,11 +447,9 @@ export function Settings() {
         <div style={{ borderRadius: 18, overflow: 'hidden', ...GLASS }}>
           <FeeRow icon={Smartphone}  label="Online Normal Token"    sub="E-Appointment fee (patient pays)"   value="10"  color="#4ADE80" />
           <FeeRow icon={AlertCircle} label="Online Emergency Token" sub="Priority booking fee (patient pays)" value="20"  color="#F87171" />
-          <FeeRow icon={BadgeCheck}  label="In-Clinic Normal Consult"    sub="Consultation fee at clinic"    value="500" color="#67E8F9" />
-          <FeeRow icon={Zap}         label="In-Clinic Emergency Consult" sub="Priority consult at clinic"    value="700" color="#FB923C" />
           <div style={{ padding: '8px 12px 10px', background: 'rgba(45,212,191,0.06)' }}>
             <div style={{ fontSize: 9, color: 'rgba(45,212,191,0.6)', fontWeight: 700 }}>
-              Platform fee ₹10 auto-added on all online tokens. Walk-in tokens are always free.
+              Platform fee ₹10 auto-added on all online tokens.
             </div>
           </div>
         </div>
@@ -464,8 +461,6 @@ export function Settings() {
             right={<Toggle on={onlineBooking}  onChange={() => setOnlineBooking(p => !p)}  />} />
           <RowItem icon={AlertCircle} label="Emergency Token Booking" sub="Patients can book emergency tokens"    color="#F87171"
             right={<Toggle on={emergencyOn}    onChange={() => setEmergencyOn(p => !p)}    color="#EF4444" />} />
-          <RowItem icon={Users}       label="Walk-in Token at Clinic" sub="Free direct registration at counter"  color="#67E8F9"
-            right={<Toggle on={walkInOn}       onChange={() => setWalkInOn(p => !p)}       />} />
         </div>
 
         {/* ── PATIENT APP VISIBILITY ── */}
