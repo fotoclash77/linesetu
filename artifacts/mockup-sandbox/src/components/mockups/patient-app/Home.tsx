@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Bell, Search, MapPin,
   Home as HomeIcon, CalendarDays, User,
-  CalendarPlus, ClipboardList, Navigation, QrCode,
+  CalendarPlus, ClipboardList, UserPlus, QrCode,
   Star, Clock, ChevronRight,
   Heart, Smile, Baby, Bone, Ear, Brain, Eye, Stethoscope,
   Zap,
@@ -15,7 +15,7 @@ const GLASS_STRONG = { background: 'rgba(255,255,255,0.08)', backdropFilter: 'bl
 const quickLinks = [
   { icon: CalendarPlus, label: 'Book Token',  color: '#4F46E5', glow: 'rgba(79,70,229,0.3)' },
   { icon: ClipboardList, label: 'My Appointments', color: '#06B6D4', glow: 'rgba(6,182,212,0.3)' },
-  { icon: Navigation,   label: 'Nearby',     color: '#22C55E', glow: 'rgba(34,197,94,0.3)' },
+  { icon: UserPlus,     label: 'Add Family',  color: '#22C55E', glow: 'rgba(34,197,94,0.3)' },
   { icon: QrCode,       label: 'Scan QR',    color: '#F59E0B', glow: 'rgba(245,158,11,0.3)' },
 ];
 
