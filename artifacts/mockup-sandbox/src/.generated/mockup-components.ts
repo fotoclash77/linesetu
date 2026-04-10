@@ -11,6 +11,7 @@ export const modules: ModuleMap = {
   "./components/mockups/doctor-app/Dashboard.tsx": () => import("../components/mockups/doctor-app/Dashboard.tsx"),
   "./components/mockups/doctor-app/Login.tsx": () => import("../components/mockups/doctor-app/Login.tsx"),
   "./components/mockups/doctor-app/MasterQueue.tsx": () => import("../components/mockups/doctor-app/MasterQueue.tsx"),
+  "./components/mockups/doctor-app/Schedule.tsx": () => import("../components/mockups/doctor-app/Schedule.tsx"),
   "./components/mockups/doctor-app/Settings.tsx": () => import("../components/mockups/doctor-app/Settings.tsx"),
   "./components/mockups/linesetu-design-system/Showcase.tsx": () => import("../components/mockups/linesetu-design-system/Showcase.tsx"),
   "./components/mockups/patient-app/Booking.tsx": () => import("../components/mockups/patient-app/Booking.tsx"),
