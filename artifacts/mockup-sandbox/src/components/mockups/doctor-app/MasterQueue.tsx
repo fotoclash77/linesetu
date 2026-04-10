@@ -183,8 +183,13 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
               </button>
             </>
           ) : (
-            /* WAITING / NEXT: Not Shown only */
+            /* WAITING / NEXT: Send Alert + Not Shown */
             <>
+              <button onClick={onCall}
+                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
+                  background: 'rgba(99,102,241,0.2)', border: '1.5px solid rgba(99,102,241,0.4)', color: '#A5B4FC' }}>
+                <BadgeCheck style={{ width: 12, height: 12 }} /> Send Alert
+              </button>
               <button onClick={onSkip}
                 style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 800,
                   background: 'rgba(245,158,11,0.18)', border: '1.5px solid rgba(245,158,11,0.4)', color: '#FCD34D' }}>
@@ -564,25 +569,18 @@ export function MasterQueue() {
         background: 'rgba(7,11,20,0.92)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          {/* Call Next */}
-          <button onClick={callNext}
-            style={{ flex: 3, height: 48, borderRadius: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 13, fontWeight: 900, color: '#FFF',
-              background: 'linear-gradient(135deg, #0D9488, #0891B2)',
-              boxShadow: '0 4px 18px rgba(13,148,136,0.45)' }}>
-            <PhoneCall style={{ width: 15, height: 15 }} /> Call Next
-          </button>
           {/* Pause/Resume */}
           <button onClick={() => setPaused(p => !p)}
-            style={{ flex: 2, height: 48, borderRadius: 16, border: `1.5px solid ${paused ? 'rgba(34,197,94,0.4)' : 'rgba(245,158,11,0.4)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 800,
+            style={{ flex: 1, height: 48, borderRadius: 16, border: `1.5px solid ${paused ? 'rgba(34,197,94,0.4)' : 'rgba(245,158,11,0.4)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 800,
               background: paused ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.12)',
               color: paused ? '#4ADE80' : '#FCD34D' }}>
             {paused
-              ? <><PlayCircle  style={{ width: 14, height: 14 }} /> Resume</>
-              : <><PauseCircle style={{ width: 14, height: 14 }} /> Pause</>}
+              ? <><PlayCircle  style={{ width: 15, height: 15 }} /> Resume</>
+              : <><PauseCircle style={{ width: 15, height: 15 }} /> Pause Queue</>}
           </button>
           {/* Add Walk-in */}
-          <button style={{ flex: 2, height: 48, borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)' }}>
-            <UserPlus style={{ width: 14, height: 14 }} /> Walk-in
+          <button style={{ flex: 1, height: 48, borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)' }}>
+            <UserPlus style={{ width: 15, height: 15 }} /> Add Walk-in
           </button>
         </div>
       </div>
