@@ -4,7 +4,7 @@ import {
   Bell, Shield, LogOut, ChevronRight, Edit3, Sun, Moon,
   AlertCircle, BadgeCheck, MessageSquare, CalendarDays,
   Stethoscope, Phone, MapPin, ToggleLeft, Zap, Eye,
-  CheckCircle2, Save, Camera,
+  CheckCircle2, Save, Camera, HeartPulse, Star, Award,
 } from 'lucide-react';
 
 const BG      = '#070B14';
@@ -199,6 +199,40 @@ export function Settings() {
             right={<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Edit <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} /></span>} />
           <RowItem icon={Phone} label="Registered Mobile" sub="+91 98765 00001" color="#4ADE80"
             right={<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Change <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} /></span>} />
+
+          {/* ── Patients Consulted stats ── */}
+          <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Career Stats</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[
+                { icon: HeartPulse, value: '12,450+', label: 'Patients Consulted', color: '#F87171' },
+                { icon: Star,       value: '4.9',     label: 'Patient Rating',     color: '#FCD34D' },
+                { icon: Award,      value: '10 yrs',  label: 'Experience',         color: '#A5B4FC' },
+              ].map(s => (
+                <div key={s.label} style={{ flex: 1, borderRadius: 12, padding: '9px 6px', textAlign: 'center',
+                  background: `${s.color}0F`, border: `1px solid ${s.color}25` }}>
+                  <s.icon style={{ width: 13, height: 13, color: s.color, marginBottom: 4, display: 'block', margin: '0 auto 4px' }} />
+                  <div style={{ fontSize: 13, fontWeight: 900, color: '#FFF', lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 3, lineHeight: 1.2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── About / Bio ── */}
+          <div style={{ padding: '10px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>About / Bio</span>
+              <span style={{ fontSize: 8, color: TEAL_LT, fontWeight: 700 }}>Shown to patients</span>
+            </div>
+            <textarea defaultValue="Cardiologist with 10+ years of clinical expertise in interventional cardiology and heart disease management. Committed to patient-centric care with over 12,000 successful consultations at Sharma Heart Clinic, Andheri West."
+              style={{ width: '100%', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.06)', color: '#FFF', fontSize: 11, fontWeight: 500,
+                padding: '10px 12px', outline: 'none', resize: 'none', height: 80,
+                fontFamily: "'Inter', sans-serif", boxSizing: 'border-box', lineHeight: 1.6 }} />
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 3, fontWeight: 600 }}>This description appears on your clinic page in the patient app</div>
+          </div>
         </div>
 
         {/* ── CLINIC INFO ── */}
