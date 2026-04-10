@@ -145,24 +145,42 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
       {/* Action buttons — only for active patients */}
       {!isPast && (
         <div style={{ display: 'flex', gap: 6, padding: '0 13px 11px' }}>
-          <button onClick={onCall}
-            style={{ flex: 2, height: 36, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800, color: '#FFF',
-              background: 'linear-gradient(135deg, #0D9488, #0891B2)',
-              boxShadow: '0 3px 12px rgba(13,148,136,0.4)' }}>
-            <PhoneCall style={{ width: 12, height: 12 }} /> Call
-          </button>
-          <button onClick={onDone}
-            style={{ flex: 2, height: 36, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800, color: '#FFF',
-              background: 'linear-gradient(135deg, #16A34A, #22C55E)',
-              boxShadow: '0 3px 12px rgba(34,197,94,0.35)' }}>
-            <CheckCircle2 style={{ width: 12, height: 12 }} /> Done
-          </button>
-          <button onClick={onSkip}
-            style={{ flex: 2, height: 36, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800, color: '#FFF',
-              background: 'rgba(245,158,11,0.25)', border: '1px solid rgba(245,158,11,0.4)' }}>
-            <XCircle style={{ width: 12, height: 12, color: '#FCD34D' }} />
-            <span style={{ color: '#FCD34D' }}>Not Shown</span>
-          </button>
+          {isCurrent ? (
+            /* IN CABIN: Not Shown + Done */
+            <>
+              <button onClick={onSkip}
+                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800,
+                  background: 'rgba(245,158,11,0.18)', border: '1.5px solid rgba(245,158,11,0.4)', color: '#FCD34D' }}>
+                <XCircle style={{ width: 13, height: 13 }} /> Not Shown
+              </button>
+              <button onClick={onDone}
+                style={{ flex: 1, height: 38, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800, color: '#FFF',
+                  background: 'linear-gradient(135deg, #16A34A, #22C55E)',
+                  boxShadow: '0 3px 12px rgba(34,197,94,0.35)' }}>
+                <CheckCircle2 style={{ width: 13, height: 13 }} /> Done
+              </button>
+            </>
+          ) : (
+            /* WAITING / NEXT: Send Alert + Call + Not Shown */
+            <>
+              <button onClick={onCall}
+                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
+                  background: 'rgba(99,102,241,0.2)', border: '1.5px solid rgba(99,102,241,0.4)', color: '#A5B4FC' }}>
+                <BadgeCheck style={{ width: 12, height: 12 }} /> Send Alert
+              </button>
+              <button onClick={onCall}
+                style={{ flex: 1, height: 38, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: '#FFF',
+                  background: 'linear-gradient(135deg, #0D9488, #0891B2)',
+                  boxShadow: '0 3px 10px rgba(13,148,136,0.4)' }}>
+                <PhoneCall style={{ width: 12, height: 12 }} /> Call
+              </button>
+              <button onClick={onSkip}
+                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
+                  background: 'rgba(245,158,11,0.18)', border: '1.5px solid rgba(245,158,11,0.4)', color: '#FCD34D' }}>
+                <XCircle style={{ width: 12, height: 12 }} /> Not Shown
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
