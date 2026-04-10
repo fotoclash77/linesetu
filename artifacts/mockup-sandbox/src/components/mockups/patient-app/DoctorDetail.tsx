@@ -286,7 +286,7 @@ export function DoctorDetail() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
         <button style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: '#FFF', boxShadow: '0 8px 28px rgba(79,70,229,0.45)' }}>
           <CalendarCheck style={{ width: 18, height: 18 }} />
-          Book Appointment · ₹10 Platform Fee
+          Book Your Token
         </button>
       </div>
     </div>
