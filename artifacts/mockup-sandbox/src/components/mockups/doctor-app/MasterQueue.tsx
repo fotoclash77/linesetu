@@ -153,6 +153,17 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
         )}
       </div>
 
+      {/* Send Alert for skipped patients */}
+      {patient.status === 'skipped' && (
+        <div style={{ padding: '0 13px 11px' }}>
+          <button onClick={onCall}
+            style={{ width: '100%', height: 36, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 800,
+              background: 'rgba(99,102,241,0.2)', border: '1.5px solid rgba(99,102,241,0.4)', color: '#A5B4FC' }}>
+            <BadgeCheck style={{ width: 12, height: 12 }} /> Send Alert
+          </button>
+        </div>
+      )}
+
       {/* Action buttons — only for active patients */}
       {!isPast && (
         <div style={{ display: 'flex', gap: 6, padding: '0 13px 11px' }}>
