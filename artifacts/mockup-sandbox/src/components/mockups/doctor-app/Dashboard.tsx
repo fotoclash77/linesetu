@@ -4,6 +4,7 @@ import {
   TrendingUp, Activity,
   Bell, Stethoscope, Zap,
   Smartphone, Footprints, BarChart2, ArrowUpRight,
+  CheckCircle2, XCircle, Clock, UserX, AlertCircle,
 } from 'lucide-react';
 
 const BG = '#070B14';
@@ -72,6 +73,101 @@ const EARNINGS = {
   Weekly:  { n1: 3400,  n2: 1900,  n3:   980, n4:  8500, n5: 3780,  total: 18560,  spark: [14200,17800,15600,19200,16800,18560]           },
   Monthly: { n1:13400,  n2: 7500,  n3:  3900, n4: 34200, n5:15200,  total: 74200,  spark: [62000,68000,71000,66000,70000,74200]           },
 };
+
+/* ─── PATIENT DATA ─── */
+type PatientPeriod = 'Daily' | 'Weekly' | 'Monthly';
+
+const PATIENT_DATA: Record<PatientPeriod, {
+  total: number; consulted: number; noShow: number; waitlisted: number; emergency: number; walkIn: number;
+  consultedSpark: number[]; noShowSpark: number[]; waitSpark: number[];
+}> = {
+  Daily:   { total: 29,  consulted: 18,  noShow: 4,  waitlisted: 7,   emergency: 3,  walkIn: 8,
+    consultedSpark: [12,16,14,19,15,18], noShowSpark: [2,4,3,5,3,4], waitSpark: [8,6,9,5,7,7] },
+  Weekly:  { total: 184, consulted: 121, noShow: 24, waitlisted: 39,  emergency: 18, walkIn: 46,
+    consultedSpark: [95,112,108,125,115,121], noShowSpark: [18,22,20,26,21,24], waitSpark: [42,36,44,30,38,39] },
+  Monthly: { total: 736, consulted: 484, noShow: 96, waitlisted: 156, emergency: 72, walkIn: 184,
+    consultedSpark: [420,455,470,440,468,484], noShowSpark: [78,90,85,98,88,96], waitSpark: [168,145,175,130,152,156] },
+};
+
+function PatientStats() {
+  const [period, setPeriod] = useState<PatientPeriod>('Daily');
+  const d = PATIENT_DATA[period];
+
+  const rows: { label: string; value: number; sub: string; icon: React.ElementType; color: string; bg: string; spark: number[] }[] = [
+    { label: 'Total Patients',    value: d.total,     sub: 'All registered today', icon: Users,        color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', spark: [20,24,22,28,25,d.total] },
+    { label: 'Consulted',         value: d.consulted, sub: 'Seen by doctor',        icon: CheckCircle2, color: '#4ADE80', bg: 'rgba(34,197,94,0.13)',  spark: d.consultedSpark },
+    { label: 'Not Shown',         value: d.noShow,    sub: 'Absent / skipped',      icon: UserX,        color: '#F87171', bg: 'rgba(239,68,68,0.13)',  spark: d.noShowSpark },
+    { label: 'Waitlisted',        value: d.waitlisted,sub: 'Still in queue',        icon: Clock,        color: '#FCD34D', bg: 'rgba(245,158,11,0.13)', spark: d.waitSpark },
+    { label: 'Emergency Patients',value: d.emergency, sub: 'Priority tokens',       icon: AlertCircle,  color: '#FB923C', bg: 'rgba(249,115,22,0.13)', spark: [1,3,2,4,2,d.emergency] },
+    { label: 'Walk-in Patients',  value: d.walkIn,    sub: 'Direct registration',   icon: Footprints,   color: '#67E8F9', bg: 'rgba(6,182,212,0.13)',  spark: [5,8,6,10,7,d.walkIn] },
+  ];
+
+  const consultPct = Math.round((d.consulted / d.total) * 100);
+
+  return (
+    <div style={{ borderRadius: 22, padding: '14px 14px 16px', ...GLASS }}>
+      {/* Header + period toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <BarChart2 style={{ width: 14, height: 14, color: TEAL_LT }} />
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Patient Data</span>
+        </div>
+        <div style={{ display: 'flex', gap: 4, padding: 3, borderRadius: 12, background: 'rgba(0,0,0,0.3)' }}>
+          {(['Daily','Weekly','Monthly'] as PatientPeriod[]).map(p => (
+            <button key={p} onClick={() => setPeriod(p)}
+              style={{ padding: '4px 9px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 800,
+                background: period === p ? TEAL : 'transparent',
+                color: period === p ? '#FFF' : 'rgba(255,255,255,0.4)',
+                boxShadow: period === p ? `0 2px 8px rgba(13,148,136,0.4)` : 'none' }}>{p}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Consultation rate pill */}
+      <div style={{ padding: '10px 12px', borderRadius: 14, marginBottom: 12,
+        background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(13,148,136,0.1))',
+        border: '1px solid rgba(34,197,94,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>Consultation Rate</span>
+          <span style={{ fontSize: 14, fontWeight: 900, color: '#4ADE80' }}>{consultPct}%</span>
+        </div>
+        <div style={{ height: 5, borderRadius: 5, background: 'rgba(255,255,255,0.08)' }}>
+          <div style={{ height: '100%', borderRadius: 5, width: `${consultPct}%`,
+            background: 'linear-gradient(90deg, #0D9488, #4ADE80)', transition: 'width 0.4s ease' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{d.consulted} seen</span>
+          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{d.total} total</span>
+        </div>
+      </div>
+
+      {/* Stats rows */}
+      {rows.map((row, i) => {
+        const Icon = row.icon;
+        const pct = Math.min(100, Math.round((row.value / d.total) * 100));
+        return (
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 10,
+            padding: '9px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: row.bg, flexShrink: 0 }}>
+              <Icon style={{ width: 14, height: 14, color: row.color, strokeWidth: 1.8 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '65%' }}>{row.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 900, color: '#FFF', flexShrink: 0, marginLeft: 4 }}>{row.value}</span>
+              </div>
+              <div style={{ height: 3, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
+                <div style={{ height: '100%', borderRadius: 3, width: `${pct}%`, background: row.color, transition: 'width 0.4s ease', opacity: 0.85 }} />
+              </div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 500, marginTop: 3 }}>{row.sub}</div>
+            </div>
+            <Sparkline data={row.spark} color={row.color} fill={row.color} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Dashboard() {
   const [period,       setPeriod]       = useState<EarningPeriod>('Daily');
@@ -263,30 +359,9 @@ export function Dashboard() {
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            SECTION 4 — PATIENT STATS
+            SECTION 4 — PATIENT DATA
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <div style={{ borderRadius: 22, padding: '14px 14px 14px', ...GLASS }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <BarChart2 style={{ width: 14, height: 14, color: TEAL_LT }} />
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Patient Statistics</span>
-          </div>
-
-          {/* Top row: New patients */}
-          <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>New Patients</div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <StatCard label="Today"  value={8}   sub="vs 6 yesterday"   color="#4ADE80" bg="rgba(34,197,94,0.08)"   sparkData={[4,7,5,9,6,8]} />
-            <StatCard label="Week"   value={43}  sub="vs 38 last week"  color="#67E8F9" bg="rgba(6,182,212,0.08)"  sparkData={[32,38,41,35,40,43]} />
-            <StatCard label="Month"  value={168} sub="vs 152 last month" color="#A5B4FC" bg="rgba(99,102,241,0.08)" sparkData={[140,155,162,148,158,168]} />
-          </div>
-
-          {/* Bottom row: Follow-ups */}
-          <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Follow-up Patients</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <StatCard label="Today"  value={16}  sub="+3 from yesterday" color="#FCD34D" bg="rgba(245,158,11,0.08)"  sparkData={[10,14,12,15,13,16]} />
-            <StatCard label="Week"   value={91}  sub="vs 84 last week"   color="#F9A8D4" bg="rgba(236,72,153,0.08)"  sparkData={[75,88,82,90,86,91]} />
-            <StatCard label="Month"  value={364} sub="vs 340 last month" color="#6EE7B7" bg="rgba(16,185,129,0.08)"  sparkData={[310,330,345,325,350,364]} />
-          </div>
-        </div>
+        <PatientStats />
 
       </div>
     </div>
