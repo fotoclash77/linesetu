@@ -290,41 +290,6 @@ export function Home() {
           </div>
         </div>
 
-        {/* ── TOP RATED ── */}
-        <div style={{ padding: '0 20px', marginBottom: 22 }}>
-          <SectionHeader title="Top Rated Doctors" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {topRated.map((doc, i) => (
-              <div key={doc.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, ...GLASS_STRONG, cursor: 'pointer' }}>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <Avatar initials={doc.initials} accent={doc.accent} photo={doc.photo} size={46} />
-                  <div style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#0A0E1A', border: `1.5px solid ${['#FFD700','#C0C0C0','#CD7F32'][i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 8, fontWeight: 800, color: ['#FFD700','#C0C0C0','#CD7F32'][i] }}>{i + 1}</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#FFF', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</p>
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 4px' }}>{doc.spec}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Star style={{ width: 10, height: 10, fill: '#F59E0B', color: '#F59E0B' }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
-                    </div>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>({doc.reviews} reviews)</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: '#818CF8', margin: '0 0 4px' }}>{doc.fee}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <Clock style={{ width: 9, height: 9, color: 'rgba(255,255,255,0.3)' }} />
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>Available</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* ── BROWSE BY CATEGORY ── */}
         <div style={{ padding: '0 20px', marginBottom: 10 }}>
           <SectionHeader title="Browse by Specialty" />
