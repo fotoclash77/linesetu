@@ -1,113 +1,244 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Bell, Search, MapPin, Home as HomeIcon, CalendarDays, User } from 'lucide-react';
+import {
+  Bell, Search, MapPin,
+  Home as HomeIcon, CalendarDays, User,
+  CalendarPlus, ClipboardList, Navigation, QrCode,
+  Star, Clock, ChevronRight,
+  Heart, Smile, Baby, Bone, Ear, Brain, Eye, Stethoscope,
+  Zap,
+} from 'lucide-react';
 
-const glassStyle = {
-  background: 'rgba(255, 255, 255, 0.7)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255, 255, 255, 0.8)',
-  boxShadow: '0 8px 32px rgba(31, 38, 135, 0.08)'
-};
+const BG = '#0A0E1A';
+const GLASS = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' };
+const GLASS_STRONG = { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.11)' };
 
-const topBarStyle = {
-  background: 'rgba(248, 250, 252, 0.8)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-};
+const quickLinks = [
+  { icon: CalendarPlus, label: 'Book Slot',   color: '#4F46E5', glow: 'rgba(79,70,229,0.3)' },
+  { icon: ClipboardList, label: 'My Tokens', color: '#06B6D4', glow: 'rgba(6,182,212,0.3)' },
+  { icon: Navigation,   label: 'Nearby',     color: '#22C55E', glow: 'rgba(34,197,94,0.3)' },
+  { icon: QrCode,       label: 'Scan QR',    color: '#F59E0B', glow: 'rgba(245,158,11,0.3)' },
+];
+
+const recommended = [
+  { name: 'Dr. Ananya Sharma', spec: 'Cardiologist',   token: 47, wait: '25 min', fee: '₹500', rating: 4.9, initials: 'AS', accent: '#EF4444' },
+  { name: 'Dr. Vikram Patel',  spec: 'Dermatologist',  token: 12, wait: '10 min', fee: '₹400', rating: 4.8, initials: 'VP', accent: '#3B82F6' },
+  { name: 'Dr. Priya Nair',    spec: 'Neurologist',    token: 31, wait: '18 min', fee: '₹600', rating: 4.7, initials: 'PN', accent: '#8B5CF6' },
+];
+
+const topRated = [
+  { name: 'Dr. Rohan Desai',  spec: 'Pediatrician', rating: 5.0, reviews: 312, fee: '₹350', initials: 'RD', accent: '#10B981' },
+  { name: 'Dr. Sneha Joshi',  spec: 'Gynecologist', rating: 4.9, reviews: 278, fee: '₹550', initials: 'SJ', accent: '#EC4899' },
+  { name: 'Dr. Arun Kumar',   spec: 'Orthopedic',   rating: 4.9, reviews: 195, fee: '₹450', initials: 'AK', accent: '#F97316' },
+];
+
+const categories = [
+  { icon: Heart,      label: 'Cardiology', color: '#EF4444' },
+  { icon: Smile,      label: 'Dentist',    color: '#3B82F6' },
+  { icon: Eye,        label: 'Eye Care',   color: '#06B6D4' },
+  { icon: Baby,       label: 'Pediatric',  color: '#22C55E' },
+  { icon: Brain,      label: 'Neurology',  color: '#8B5CF6' },
+  { icon: Bone,       label: 'Orthopedic', color: '#F97316' },
+  { icon: Ear,        label: 'ENT',        color: '#EC4899' },
+  { icon: Stethoscope,label: 'General',    color: '#F59E0B' },
+];
+
+function Avatar({ initials, accent, size = 44 }: { initials: string; accent: string; size?: number }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: size / 2.5, background: accent + '22', border: `1.5px solid ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span style={{ fontSize: size * 0.32, fontWeight: 700, color: accent }}>{initials}</span>
+    </div>
+  );
+}
+
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <span style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>{title}</span>
+      <button style={{ fontSize: 12, fontWeight: 600, color: '#818CF8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}>
+        See All <ChevronRight style={{ width: 13, height: 13 }} />
+      </button>
+    </div>
+  );
+}
 
 export function Home() {
-  const doctors = [
-    { id: 1, name: "Dr. Ananya Sharma", spec: "Cardiologist", clinic: "HeartCare Clinic", loc: "Andheri West", token: 47, wait: "25 min", initials: "AS", color: "bg-rose-100 text-rose-700" },
-    { id: 2, name: "Dr. Vikram Patel", spec: "Dermatologist", clinic: "Skin Glow Center", loc: "Bandra East", token: 12, wait: "10 min", initials: "VP", color: "bg-blue-100 text-blue-700" },
-    { id: 3, name: "Dr. Rohan Desai", spec: "Pediatrician", clinic: "Little Smiles Hospital", loc: "Powai", token: 89, wait: "45 min", initials: "RD", color: "bg-emerald-100 text-emerald-700" }
-  ];
-
   return (
-    <div className="flex flex-col min-h-[100dvh] w-full max-w-[390px] mx-auto relative bg-slate-50 overflow-hidden pb-20">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-20 px-4 pt-6 pb-4 border-b border-slate-200/50" style={topBarStyle}>
-        <div className="flex justify-between items-center mb-4">
+    <div style={{ width: 390, height: 844, background: BG, fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', top: -60, left: -40, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.28) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 200, right: -60, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none' }} />
+
+      {/* ── STATUS BAR ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 4px', position: 'relative', zIndex: 10, flexShrink: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>9:41</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {[0.4, 0.65, 0.9, 1].map((op, i) => <div key={i} style={{ width: 3, height: 6 + i * 2, borderRadius: 2, background: `rgba(255,255,255,${op})` }} />)}
+          <div style={{ width: 6 }} />
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 2C10.4 2 12.6 3 14.1 4.7L15.5 3.2C13.6 1.2 10.9 0 8 0C5.1 0 2.4 1.2 0.5 3.2L1.9 4.7C3.4 3 5.6 2 8 2Z" fill="white" opacity="0.4"/><path d="M8 5C9.7 5 11.2 5.7 12.3 6.8L13.7 5.3C12.2 3.9 10.2 3 8 3C5.8 3 3.8 3.9 2.3 5.3L3.7 6.8C4.8 5.7 6.3 5 8 5Z" fill="white" opacity="0.7"/><circle cx="8" cy="9.5" r="1.5" fill="white"/></svg>
+          <div style={{ width: 4 }} />
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="white" strokeOpacity="0.3"/><rect x="2" y="2" width="14" height="8" rx="2" fill="white" fillOpacity="0.85"/><path d="M22 4.5V7.5C22.8 7.2 23.5 6.4 23.5 6C23.5 5.6 22.8 4.8 22 4.5Z" fill="white" opacity="0.35"/></svg>
+        </div>
+      </div>
+
+      {/* ── HEADER ── */}
+      <div style={{ padding: '8px 20px 14px', flexShrink: 0, position: 'relative', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
-            <h2 className="text-slate-500 text-sm font-medium">Good Morning,</h2>
-            <h1 className="text-xl font-bold text-slate-900">Hello, Rahul 👋</h1>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, margin: 0 }}>Good Morning,</p>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Hello, Rahul 👋</h1>
           </div>
-          <button className="relative p-2 rounded-full bg-white shadow-sm border border-slate-100 text-slate-600">
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
-          </button>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <Input 
-            placeholder="Search doctors, clinics..." 
-            className="pl-11 h-12 rounded-2xl bg-white/80 border-white shadow-sm focus-visible:ring-indigo-500 text-base"
-            style={glassStyle}
-          />
-        </div>
-      </div>
-
-      <div className="px-4 py-6 flex-1 overflow-y-auto">
-        <div className="flex justify-between items-end mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Nearby Doctors</h2>
-          <button className="text-sm font-medium text-indigo-600">See All</button>
-        </div>
-
-        <div className="space-y-4">
-          {doctors.map(doc => (
-            <div key={doc.id} className="rounded-3xl p-4 flex flex-col gap-3" style={glassStyle}>
-              <div className="flex items-start gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${doc.color}`}>
-                  {doc.initials}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-slate-900 leading-tight">{doc.name}</h3>
-                  </div>
-                  <Badge variant="secondary" className="mt-1 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 font-medium px-2 py-0">
-                    {doc.spec}
-                  </Badge>
-                  <div className="flex items-center text-xs text-slate-500 mt-2">
-                    <MapPin size={12} className="mr-1 shrink-0" />
-                    <span className="truncate">{doc.clinic}, {doc.loc}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/50">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-xs font-semibold text-green-700">Token #{doc.token} Live</span>
-                  </div>
-                  <span className="text-xs font-medium text-slate-500 mt-0.5">~{doc.wait} wait</span>
-                </div>
-                <Button size="sm" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 h-9 px-4">
-                  Get Token
-                </Button>
-              </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button style={{ position: 'relative', width: 40, height: 40, borderRadius: 12, ...GLASS, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Bell style={{ width: 18, height: 18, color: 'rgba(255,255,255,0.7)' }} />
+              <span style={{ position: 'absolute', top: 8, right: 9, width: 7, height: 7, borderRadius: '50%', background: '#EF4444', border: '1.5px solid #0A0E1A' }} />
+            </button>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#4F46E5,#06B6D4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#FFF' }}>R</span>
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Search */}
+        <div style={{ position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(255,255,255,0.3)' }} />
+          <div style={{ ...GLASS, borderRadius: 14, height: 46, paddingLeft: 40, display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Search doctors, clinics…</span>
+          </div>
+          <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <MapPin style={{ width: 12, height: 12, color: '#06B6D4' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#06B6D4' }}>Mumbai</span>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Nav */}
-      <div className="fixed bottom-0 w-full max-w-[390px] px-6 py-4 border-t border-slate-200/50 flex justify-between items-center z-20 pb-safe" style={topBarStyle}>
-        <button className="flex flex-col items-center gap-1 text-indigo-600">
-          <div className="p-1.5 bg-indigo-50 rounded-xl"><HomeIcon size={22} strokeWidth={2.5} /></div>
-          <span className="text-[10px] font-semibold">Home</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition-colors">
-          <div className="p-1.5"><CalendarDays size={22} /></div>
-          <span className="text-[10px] font-medium">Bookings</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition-colors">
-          <div className="p-1.5"><User size={22} /></div>
-          <span className="text-[10px] font-medium">Profile</span>
-        </button>
+      {/* ── SCROLLABLE BODY ── */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 72 }}>
+
+        {/* ── QUICK LINKS ── */}
+        <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {quickLinks.map(({ icon: Icon, label, color, glow }) => (
+              <button key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '14px 6px', borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: color + '1A', border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 14px ${glow}` }}>
+                  <Icon style={{ width: 18, height: 18, color }} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PROMO BANNER ── */}
+        <div style={{ margin: '0 20px 22px' }}>
+          <div style={{ borderRadius: 20, padding: '16px 18px', background: 'linear-gradient(135deg, rgba(79,70,229,0.55) 0%, rgba(6,182,212,0.4) 100%)', border: '1px solid rgba(99,102,241,0.3)', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', right: -20, top: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ position: 'absolute', right: 20, bottom: -30, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Zap style={{ width: 14, height: 14, color: '#FCD34D' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Platform Fee Offer</span>
+            </div>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', margin: '0 0 2px' }}>Book today for just ₹10</h3>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '0 0 10px' }}>Skip the queue · Pay consultation at clinic</p>
+            <button style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 10, padding: '5px 14px', fontSize: 12, fontWeight: 700, color: '#FFF', cursor: 'pointer' }}>
+              Book Now
+            </button>
+          </div>
+        </div>
+
+        {/* ── RECOMMENDED DOCTORS ── */}
+        <div style={{ padding: '0 20px', marginBottom: 22 }}>
+          <SectionHeader title="Recommended for You" />
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+            {recommended.map((doc) => (
+              <div key={doc.name} style={{ minWidth: 160, borderRadius: 18, padding: '14px 13px', ...GLASS, flexShrink: 0, cursor: 'pointer' }}>
+                <Avatar initials={doc.initials} accent={doc.accent} size={44} />
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#FFF', margin: '8px 0 1px', lineHeight: 1.2 }}>{doc.name}</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 8px' }}>{doc.spec}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
+                  <Star style={{ width: 10, height: 10, fill: '#F59E0B', color: '#F59E0B' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                    <span style={{ fontSize: 10, color: '#4ADE80', fontWeight: 600 }}>#{doc.token}</span>
+                  </div>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{doc.wait}</span>
+                </div>
+                <div style={{ marginTop: 10, borderRadius: 10, background: '#4F46E5', padding: '6px 0', textAlign: 'center' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#FFF' }}>Get Token</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── TOP RATED ── */}
+        <div style={{ padding: '0 20px', marginBottom: 22 }}>
+          <SectionHeader title="Top Rated Doctors" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {topRated.map((doc, i) => (
+              <div key={doc.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, ...GLASS_STRONG, cursor: 'pointer' }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <Avatar initials={doc.initials} accent={doc.accent} size={46} />
+                  <div style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#0A0E1A', border: `1.5px solid ${['#FFD700','#C0C0C0','#CD7F32'][i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 8, fontWeight: 800, color: ['#FFD700','#C0C0C0','#CD7F32'][i] }}>{i + 1}</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#FFF', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 4px' }}>{doc.spec}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Star style={{ width: 10, height: 10, fill: '#F59E0B', color: '#F59E0B' }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
+                    </div>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>({doc.reviews} reviews)</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: '#818CF8', margin: '0 0 4px' }}>{doc.fee}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Clock style={{ width: 9, height: 9, color: 'rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>Available</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── BROWSE BY CATEGORY ── */}
+        <div style={{ padding: '0 20px', marginBottom: 10 }}>
+          <SectionHeader title="Browse by Specialty" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {categories.map(({ icon: Icon, label, color }) => (
+              <button key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '13px 6px', borderRadius: 16, ...GLASS, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 11, background: color + '1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon style={{ width: 17, height: 17, color }} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── BOTTOM NAV ── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-around', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20, paddingBottom: 4 }}>
+        {[
+          { icon: HomeIcon,    label: 'Home',     active: true  },
+          { icon: CalendarDays,label: 'Bookings', active: false },
+          { icon: User,        label: 'Profile',  active: false },
+        ].map(({ icon: Icon, label, active }) => (
+          <button key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', flex: 1 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: active ? 'rgba(79,70,229,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon style={{ width: 20, height: 20, color: active ? '#818CF8' : 'rgba(255,255,255,0.3)', strokeWidth: active ? 2.5 : 1.8 }} />
+            </div>
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, color: active ? '#818CF8' : 'rgba(255,255,255,0.3)' }}>{label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
