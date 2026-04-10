@@ -4,6 +4,8 @@ import {
   Building2, Clock, Users, Sunrise, Sunset, Ticket,
   AlertCircle, CalendarCheck, Navigation,
   Radio, Footprints, Wifi, Siren, ShieldAlert,
+  Phone, UserCircle2, ChevronDown, ChevronUp,
+  FileText, AlertOctagon,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -81,6 +83,19 @@ function getShifts(date: number) {
 
 const DOW_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+/* ── Family members (simulated from Family Members screen) ── */
+interface FamilyMember {
+  id: string; name: string; relation: string;
+  age: number; phone: string; blood: string; gender: string;
+  avatar: string;
+}
+const FAMILY: FamilyMember[] = [
+  { id: 'self',   name: 'Rahul Sharma',  relation: 'Self',   age: 32, phone: '+91 98765 43210', blood: 'B+',  gender: 'Male',   avatar: 'https://randomuser.me/api/portraits/men/32.jpg'    },
+  { id: 'wife',   name: 'Priya Sharma',  relation: 'Wife',   age: 29, phone: '+91 98765 12345', blood: 'O+',  gender: 'Female', avatar: 'https://randomuser.me/api/portraits/women/26.jpg'  },
+  { id: 'mother', name: 'Sunita Sharma', relation: 'Mother', age: 58, phone: '+91 99887 65432', blood: 'A+',  gender: 'Female', avatar: 'https://randomuser.me/api/portraits/women/55.jpg'  },
+  { id: 'father', name: 'Ramesh Sharma', relation: 'Father', age: 62, phone: '+91 99887 12345', blood: 'AB+', gender: 'Male',   avatar: 'https://randomuser.me/api/portraits/men/58.jpg'    },
+];
+
 function QueueRow({ entry, isYours }: { entry: QueueEntry; isYours: boolean }) {
   const meta = TYPE_META[entry.type];
   const statusColor = entry.status === 'in-progress' ? '#22C55E' : entry.status === 'done' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.45)';
@@ -125,6 +140,10 @@ export function Booking() {
   const [selectedDate, setSelectedDate] = useState(10);
   const [selectedShift, setSelectedShift] = useState(0);
   const [tokenType, setTokenType] = useState<'normal' | 'emergency'>('normal');
+  const [selectedMember, setSelectedMember] = useState<string>('self');
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const [problem, setProblem] = useState('');
+  const [problemError, setProblemError] = useState(false);
 
   const shifts = getShifts(selectedDate);
   const shift = shifts[selectedShift] ?? null;
@@ -194,6 +213,100 @@ export function Booking() {
           </div>
           <div style={{ padding: '4px 10px', borderRadius: 8, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80' }}>Available</span>
+          </div>
+        </div>
+
+        {/* ── BOOKING FOR ── */}
+        <div style={{ margin: '0 18px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Booking For
+            </div>
+            <span style={{ fontSize: 10, color: 'rgba(99,102,241,0.7)', fontWeight: 600 }}>From Family Members</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {FAMILY.map((m) => {
+              const isSelected = selectedMember === m.id;
+              const isExpanded = expandedMember === m.id;
+              return (
+                <div key={m.id}
+                  style={{ borderRadius: 16, overflow: 'hidden',
+                    border: `1.5px solid ${isSelected ? 'rgba(99,102,241,0.55)' : 'rgba(255,255,255,0.07)'}`,
+                    background: isSelected ? 'rgba(99,102,241,0.14)' : 'rgba(255,255,255,0.04)',
+                    transition: 'all 0.2s ease' }}>
+
+                  {/* Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}
+                    onClick={() => {
+                      setSelectedMember(m.id);
+                      setExpandedMember(isExpanded ? null : m.id);
+                    }}>
+                    {/* Avatar */}
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <img src={m.avatar} alt={m.name}
+                        style={{ width: 38, height: 38, borderRadius: 12, objectFit: 'cover',
+                          border: `2px solid ${isSelected ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'}` }} />
+                      {isSelected && (
+                        <div style={{ position: 'absolute', bottom: -3, right: -3, width: 14, height: 14, borderRadius: '50%',
+                          background: '#4F46E5', border: '2px solid #0A0E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+                            <path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Name + age + phone */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: isSelected ? '#FFF' : 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
+                          background: isSelected ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.07)',
+                          color: isSelected ? '#A5B4FC' : 'rgba(255,255,255,0.35)', flexShrink: 0 }}>{m.relation}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{m.age} yrs</span>
+                        <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 10 }}>·</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Phone style={{ width: 9, height: 9, color: 'rgba(255,255,255,0.3)' }} />
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{m.phone}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expand chevron */}
+                    <div style={{ flexShrink: 0 }}>
+                      {isExpanded
+                        ? <ChevronUp  style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.35)' }} />
+                        : <ChevronDown style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.25)' }} />}
+                    </div>
+                  </div>
+
+                  {/* Expanded detail panel */}
+                  {isExpanded && (
+                    <div style={{ padding: '0 12px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 0 }}>
+                      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 0 10px' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        {[
+                          { label: 'Full Name',    val: m.name     },
+                          { label: 'Relation',     val: m.relation },
+                          { label: 'Age',          val: `${m.age} years` },
+                          { label: 'Gender',       val: m.gender   },
+                          { label: 'Phone',        val: m.phone    },
+                          { label: 'Blood Group',  val: m.blood    },
+                        ].map(({ label, val }) => (
+                          <div key={label} style={{ padding: '8px 10px', borderRadius: 11, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{label}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{val}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -400,6 +513,45 @@ export function Booking() {
               </p>
             </div>
 
+            {/* ── PROBLEM DESCRIPTION ── */}
+            <div style={{ margin: '0 18px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+                <FileText style={{ width: 13, height: 13, color: problemError ? '#F87171' : 'rgba(255,255,255,0.45)' }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: problemError ? '#F87171' : 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Describe Your Problem
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#F87171', marginLeft: 1 }}>*</span>
+                <span style={{ marginLeft: 'auto', fontSize: 10, color: problem.length > 0 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.2)', fontWeight: 500 }}>{problem.length}/300</span>
+              </div>
+
+              <div style={{ borderRadius: 16, overflow: 'hidden',
+                border: `1.5px solid ${problemError ? 'rgba(239,68,68,0.6)' : problem.length > 0 ? 'rgba(99,102,241,0.45)' : 'rgba(255,255,255,0.1)'}`,
+                background: problemError ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.04)',
+                transition: 'border-color 0.2s ease, background 0.2s ease' }}>
+                <textarea
+                  value={problem}
+                  onChange={e => { setProblem(e.target.value.slice(0, 300)); if (e.target.value.trim()) setProblemError(false); }}
+                  placeholder="Briefly describe your symptoms or reason for visit… e.g. chest pain since 2 days, breathlessness on walking"
+                  style={{ width: '100%', minHeight: 90, padding: '12px 14px', background: 'transparent', border: 'none', outline: 'none',
+                    fontSize: 12, color: '#FFF', fontFamily: "'Inter', sans-serif", lineHeight: 1.6, resize: 'none',
+                    boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {problemError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                  <AlertOctagon style={{ width: 11, height: 11, color: '#F87171' }} />
+                  <span style={{ fontSize: 10, color: '#F87171', fontWeight: 600 }}>This field is mandatory. Please describe your problem before proceeding.</span>
+                </div>
+              )}
+              {problem.length > 0 && !problemError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="5" fill="rgba(34,197,94,0.2)" stroke="rgba(34,197,94,0.5)"/><path d="M3 5.5L4.8 7.5L8 3.5" stroke="#4ADE80" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span style={{ fontSize: 10, color: 'rgba(74,222,128,0.7)', fontWeight: 600 }}>Noted — doctor will review before your appointment</span>
+                </div>
+              )}
+            </div>
+
             {/* ── LIVE MASTER QUEUE ── */}
             <div style={{ margin: '0 18px 14px' }}>
               {/* Header */}
@@ -450,6 +602,7 @@ export function Booking() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
         <button
           disabled={shifts.length === 0}
+          onClick={() => { if (shifts.length > 0 && !problem.trim()) setProblemError(true); }}
           style={{ width: '100%', height: 52, borderRadius: 16, background: shifts.length === 0 ? 'rgba(255,255,255,0.07)' : isEmergency ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 60%, #F97316 100%)' : 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: shifts.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: shifts.length > 0 ? '#FFF' : 'rgba(255,255,255,0.25)', boxShadow: shifts.length > 0 ? isEmergency ? '0 8px 28px rgba(239,68,68,0.5)' : '0 8px 28px rgba(79,70,229,0.45)' : 'none' }}>
           <CalendarCheck style={{ width: 18, height: 18 }} />
           {shifts.length > 0 ? `Confirm ${isEmergency ? 'Emergency' : ''} Token #${isEmergency ? 'E' : ''}${yourToken} · Pay ₹${payableNow}` : 'Select an Available Date'}
