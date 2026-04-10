@@ -65,25 +65,25 @@ function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'w
 type Period = 'Week' | 'Month' | 'LastMonth' | 'AllTime';
 
 const PERIOD_DATA: Record<Period, {
-  label: string; total: number; online: number; emergency: number; walkin: number; normalConsult: number; emergConsult: number;
-  normalCount: number; emergCount: number; walkinCount: number; ncCount: number; ecCount: number;
+  label: string; total: number; online: number; emergency: number;
+  normalCount: number; emergCount: number;
   trend: number;
 }> = {
   Week: {
-    label: 'This Week',    total: 19600,  online: 3780,  emergency: 2100, walkin: 1120,  normalConsult: 9800,  emergConsult: 2800,
-    normalCount: 54, emergCount: 15, walkinCount: 32, ncCount: 14, ecCount: 4, trend: 8.4,
+    label: 'This Week',    total: 5880,   online: 3780,  emergency: 2100,
+    normalCount: 54, emergCount: 15, trend: 8.4,
   },
   Month: {
-    label: 'This Month',   total: 84200,  online: 16200, emergency: 9000, walkin: 4800,  normalConsult: 42000, emergConsult: 14400,
-    normalCount: 231, emergCount: 64, walkinCount: 138, ncCount: 60, ecCount: 21, trend: 12.1,
+    label: 'This Month',   total: 25200,  online: 16200, emergency: 9000,
+    normalCount: 231, emergCount: 64, trend: 12.1,
   },
   LastMonth: {
-    label: 'Last Month',   total: 74800,  online: 14400, emergency: 7200, walkin: 3900,  normalConsult: 37800, emergConsult: 11500,
-    normalCount: 206, emergCount: 51, walkinCount: 112, ncCount: 54, ecCount: 17, trend: -3.2,
+    label: 'Last Month',   total: 21600,  online: 14400, emergency: 7200,
+    normalCount: 206, emergCount: 51, trend: -3.2,
   },
   AllTime: {
-    label: 'All Time',     total: 748500, online: 134500,emergency: 72000,walkin: 38000, normalConsult: 387000,emergConsult: 117000,
-    normalCount: 1920, emergCount: 514, walkinCount: 1085, ncCount: 552, ecCount: 167, trend: 0,
+    label: 'All Time',     total: 206500, online: 134500,emergency: 72000,
+    normalCount: 1920, emergCount: 514, trend: 0,
   },
 };
 
@@ -137,11 +137,8 @@ export function Earnings() {
 
   const d = PERIOD_DATA[period];
   const rows = [
-    { label: 'Online Normal Token',         value: d.online,        count: d.normalCount,  icon: Smartphone, color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)',  rate: '₹10/token'  },
-    { label: 'Online Emergency Token',      value: d.emergency,     count: d.emergCount,   icon: Zap,        color: '#FCD34D', bg: 'rgba(245,158,11,0.15)',  rate: '₹20/token'  },
-    { label: 'Walk-in Token',               value: d.walkin,        count: d.walkinCount,  icon: Footprints, color: '#67E8F9', bg: 'rgba(6,182,212,0.15)',   rate: '₹5/token'   },
-    { label: 'In-Clinic Normal Consult',    value: d.normalConsult, count: d.ncCount,      icon: Stethoscope,color: '#4ADE80', bg: 'rgba(34,197,94,0.12)',   rate: '₹500/visit' },
-    { label: 'In-Clinic Emergency Consult', value: d.emergConsult,  count: d.ecCount,      icon: Zap,        color: '#F87171', bg: 'rgba(239,68,68,0.12)',   rate: '₹700/visit' },
+    { label: 'Online Normal Token',    value: d.online,    count: d.normalCount, icon: Smartphone, color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: '₹10/token' },
+    { label: 'Online Emergency Token', value: d.emergency, count: d.emergCount,  icon: Zap,        color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: '₹20/token' },
   ];
 
   const weekSpark = [14200, 16800, 13400, 19600, 17200, 22100, 19600];
@@ -288,9 +285,6 @@ export function Earnings() {
                 {[
                   { label: `${d.normalCount} Normal`,   color: '#A5B4FC' },
                   { label: `${d.emergCount} Emergency`, color: '#FCD34D' },
-                  { label: `${d.walkinCount} Walk-in`,  color: '#67E8F9' },
-                  { label: `${d.ncCount} N-Consult`,    color: '#4ADE80' },
-                  { label: `${d.ecCount} E-Consult`,    color: '#F87171' },
                 ].map(c => (
                   <div key={c.label} style={{ padding: '4px 9px', borderRadius: 20, fontSize: 9, fontWeight: 700, color: c.color,
                     background: `${c.color}18`, border: `1px solid ${c.color}33` }}>
@@ -342,11 +336,8 @@ export function Earnings() {
                 <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.3)' }}>Platform-set</span>
               </div>
               {[
-                { type: 'Online Normal Token',  earn: '₹10',  platform: '₹10', patient: '₹20' },
-                { type: 'Online Emergency Token',earn: '₹20', platform: '₹10', patient: '₹30' },
-                { type: 'Walk-in Token',         earn: '₹5',  platform: '₹0',  patient: 'Free' },
-                { type: 'Normal Consult',        earn: '₹500',platform: '—',   patient: '₹500' },
-                { type: 'Emergency Consult',     earn: '₹700',platform: '—',   patient: '₹700' },
+                { type: 'Online Normal Token',   earn: '₹10', platform: '₹10', patient: '₹20' },
+                { type: 'Online Emergency Token', earn: '₹20', platform: '₹10', patient: '₹30' },
               ].map(r => (
                 <div key={r.type} style={{ display: 'flex', alignItems: 'center', padding: '7px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <span style={{ flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{r.type}</span>
