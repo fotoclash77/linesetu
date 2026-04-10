@@ -229,19 +229,19 @@ export function Home() {
           <SectionHeader title="Recommended for You" />
           <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none' }}>
             {recommended.map((doc) => (
-              <div key={doc.name} style={{ minWidth: 210, borderRadius: 22, padding: '16px 14px 14px', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${doc.accent}28`, flexShrink: 0, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+              <div key={doc.name} style={{ minWidth: 200, borderRadius: 22, padding: '16px 14px 14px', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${doc.accent}28`, flexShrink: 0, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
 
                 {/* Subtle accent glow top-right */}
                 <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: doc.accent + '18', filter: 'blur(16px)', pointerEvents: 'none' }} />
 
                 {/* Photo + Verified badge */}
-                <div style={{ position: 'relative', width: 88, height: 88, marginBottom: 10 }}>
-                  <div style={{ width: 88, height: 88, borderRadius: 14, overflow: 'hidden', border: `2.5px solid ${doc.accent}55`, background: doc.accent + '22' }}>
+                <div style={{ position: 'relative', width: 160, height: 160, marginBottom: 12 }}>
+                  <div style={{ width: 160, height: 160, borderRadius: 16, overflow: 'hidden', border: `2.5px solid ${doc.accent}55`, background: doc.accent + '22' }}>
                     <img src={doc.photo} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  {/* Verified badge */}
-                  <div style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: '#0A0E1A', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0A0E1A' }}>
-                    <BadgeCheck style={{ width: 18, height: 18, color: '#4F46E5', fill: '#4F46E5', stroke: '#FFF', strokeWidth: 1 }} />
+                  {/* Verified badge — top right */}
+                  <div style={{ position: 'absolute', top: -6, right: -6, width: 26, height: 26, borderRadius: '50%', background: '#0A0E1A', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0A0E1A' }}>
+                    <BadgeCheck style={{ width: 22, height: 22, color: '#4F46E5', fill: '#4F46E5', stroke: '#FFF', strokeWidth: 1 }} />
                   </div>
                 </div>
 
