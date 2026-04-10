@@ -1,16 +1,55 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ChevronLeft, Share2, BadgeCheck,
-  MapPin, Star, Clock, Users, IndianRupee,
+  MapPin, Clock, Users, IndianRupee,
   Building2, Timer, Radio, Stethoscope, BookOpen,
-  CalendarCheck,
+  CalendarCheck, Sunrise, Sunset, Monitor,
+  CheckCircle2,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
 const GLASS = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' };
 const ACCENT = '#EF4444';
 
+const schedule = [
+  {
+    days: 'Mon – Wed',
+    active: true,
+    shifts: [
+      { label: 'Morning', icon: Sunrise,  time: '9:00 AM – 1:00 PM', clinic: 'HeartCare Clinic',     loc: 'Andheri West',  color: '#F59E0B' },
+      { label: 'Evening', icon: Sunset,   time: '5:00 PM – 9:00 PM', clinic: 'City Heart Center',    loc: 'Bandra East',   color: '#818CF8' },
+    ],
+  },
+  {
+    days: 'Thu – Fri',
+    active: true,
+    shifts: [
+      { label: 'Morning', icon: Sunrise,  time: '10:00 AM – 2:00 PM', clinic: 'HeartCare Clinic',    loc: 'Andheri West',  color: '#F59E0B' },
+    ],
+  },
+  {
+    days: 'Sat',
+    active: true,
+    shifts: [
+      { label: 'Morning', icon: Sunrise,  time: '9:00 AM – 12:00 PM', clinic: 'MedPlus Hospital',    loc: 'Powai',         color: '#22C55E', note: 'Alternate Sat only' },
+    ],
+  },
+  {
+    days: 'Sun',
+    active: false,
+    shifts: [],
+  },
+];
+
+const fees = [
+  { icon: CheckCircle2, label: 'Platform Fee',          sub: 'Paid online to confirm slot', amount: '₹10',  color: '#818CF8', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.3)'  },
+  { icon: Monitor,      label: 'Online Appointment',    sub: 'Video / teleconsultation',    amount: '₹20',  color: '#06B6D4', bg: 'rgba(6,182,212,0.1)',    border: 'rgba(6,182,212,0.25)'  },
+  { icon: Building2,    label: 'Consultation at Clinic',sub: 'Pay directly at the clinic',  amount: '₹500', color: '#22C55E', bg: 'rgba(34,197,94,0.1)',    border: 'rgba(34,197,94,0.25)'  },
+];
+
 export function DoctorDetail() {
+  const [activeDay, setActiveDay] = useState(0);
+
   return (
     <div style={{ width: 390, height: 844, background: BG, fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
 
@@ -18,7 +57,7 @@ export function DoctorDetail() {
       <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.22) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 160, right: -60, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
 
-      {/* ── STATUS BAR ── */}
+      {/* STATUS BAR */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 4px', position: 'relative', zIndex: 10, flexShrink: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>9:41</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -30,7 +69,7 @@ export function DoctorDetail() {
         </div>
       </div>
 
-      {/* ── TOP NAV ── */}
+      {/* TOP NAV */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 18px 10px', position: 'relative', zIndex: 10, flexShrink: 0 }}>
         <button style={{ width: 38, height: 38, borderRadius: 12, ...GLASS, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronLeft style={{ width: 20, height: 20, color: 'rgba(255,255,255,0.8)' }} />
@@ -41,123 +80,157 @@ export function DoctorDetail() {
         </button>
       </div>
 
-      {/* ── SCROLLABLE BODY ── */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 80 }}>
+      {/* SCROLLABLE BODY */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 84 }}>
 
-        {/* ── HERO PHOTO ── */}
-        <div style={{ margin: '0 18px', position: 'relative', borderRadius: 22, overflow: 'hidden', marginBottom: 0 }}>
-          <img
-            src="https://randomuser.me/api/portraits/women/44.jpg"
-            alt="Dr. Ananya Sharma"
-            style={{ width: '100%', height: 230, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-          />
-          {/* Gradient overlay bottom */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, background: 'linear-gradient(to top, #0A0E1A 0%, transparent 100%)' }} />
-          {/* Verified badge top-right */}
+        {/* HERO PHOTO */}
+        <div style={{ margin: '0 18px', position: 'relative', borderRadius: 22, overflow: 'hidden' }}>
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Dr. Ananya Sharma"
+            style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90, background: 'linear-gradient(to top, #0A0E1A 0%, transparent 100%)' }} />
           <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(10,14,26,0.75)', backdropFilter: 'blur(8px)', borderRadius: 20, padding: '4px 10px 4px 6px', border: '1px solid rgba(79,70,229,0.4)' }}>
             <BadgeCheck style={{ width: 16, height: 16, color: '#4F46E5', fill: '#4F46E5', stroke: '#FFF', strokeWidth: 1 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#A5B4FC' }}>Verified</span>
           </div>
-          {/* Live status top-left */}
           <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(10,14,26,0.75)', backdropFilter: 'blur(8px)', borderRadius: 20, padding: '4px 10px 4px 8px', border: '1px solid rgba(34,197,94,0.3)' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#4ADE80' }}>Available</span>
           </div>
         </div>
 
-        {/* ── IDENTITY CARD ── */}
-        <div style={{ margin: '0 18px', marginTop: -2, padding: '16px 16px 14px', borderRadius: '0 0 20px 20px', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)', borderTop: 'none', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#FFF', margin: '0 0 4px', letterSpacing: '-0.3px' }}>Dr. Ananya Sharma</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: ACCENT, background: ACCENT + '1A', padding: '3px 9px', borderRadius: 8 }}>Cardiologist</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.07)', padding: '3px 9px', borderRadius: 8 }}>12 yrs exp</span>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end', marginBottom: 2 }}>
-                <Star style={{ width: 13, height: 13, fill: '#F59E0B', color: '#F59E0B' }} />
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#F59E0B' }}>4.9</span>
-              </div>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>312 reviews</span>
-            </div>
+        {/* IDENTITY */}
+        <div style={{ margin: '0 18px', marginTop: -2, padding: '14px 16px 12px', borderRadius: '0 0 18px 18px', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)', borderTop: 'none', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#FFF', margin: '0 0 5px', letterSpacing: '-0.3px' }}>Dr. Ananya Sharma</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: ACCENT, background: ACCENT + '1A', padding: '3px 9px', borderRadius: 8 }}>Cardiologist</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.07)', padding: '3px 9px', borderRadius: 8 }}>12 yrs exp</span>
           </div>
-
-          {/* Clinic row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10 }}>
-            <Building2 style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>HeartCare Clinic</span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Building2 style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>HeartCare Clinic</span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
             <MapPin style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Andheri West, Mumbai</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Andheri West, Mumbai</span>
           </div>
         </div>
 
-        {/* ── STATS GRID ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '0 18px', marginBottom: 14 }}>
+        {/* STATS — no rating */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '0 18px', marginBottom: 14 }}>
           {[
-            { icon: Users,        val: '4.2K+', lbl: 'Patients',   color: '#818CF8' },
-            { icon: Stethoscope,  val: '12 yrs', lbl: 'Experience', color: '#06B6D4' },
-            { icon: Timer,        val: '25 min', lbl: 'Avg Wait',   color: '#22C55E' },
-            { icon: IndianRupee,  val: '₹500',  lbl: 'At Clinic',  color: '#F59E0B' },
+            { icon: Users,       val: '4.2K+', lbl: 'Patients',   color: '#818CF8' },
+            { icon: Stethoscope, val: '12 yrs', lbl: 'Experience', color: '#06B6D4' },
+            { icon: Timer,       val: '~25 min', lbl: 'Avg Wait',  color: '#22C55E' },
           ].map(({ icon: Icon, val, lbl, color }) => (
-            <div key={lbl} style={{ borderRadius: 16, padding: '11px 6px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
-                <Icon style={{ width: 15, height: 15, color }} />
+            <div key={lbl} style={{ borderRadius: 16, padding: '12px 6px', textAlign: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 11, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 7px' }}>
+                <Icon style={{ width: 16, height: 16, color }} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#FFF', lineHeight: 1 }}>{val}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#FFF', lineHeight: 1 }}>{val}</div>
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontWeight: 500 }}>{lbl}</div>
             </div>
           ))}
         </div>
 
-        {/* ── ABOUT ── */}
+        {/* FEE BREAKDOWN */}
         <div style={{ margin: '0 18px', marginBottom: 14, padding: '14px 16px', borderRadius: 18, ...GLASS }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-            <BookOpen style={{ width: 14, height: 14, color: '#818CF8' }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>About</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+            <IndianRupee style={{ width: 14, height: 14, color: '#F59E0B' }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Fee Structure</span>
           </div>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: 0 }}>
-            Dr. Ananya Sharma is a senior Cardiologist at HeartCare Clinic with over 12 years of clinical experience. She specialises in preventive cardiology, echocardiography, and cardiac rehabilitation, and has treated 4,200+ patients across Mumbai.
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {fees.map(({ icon: Icon, label, sub, amount, color, bg, border }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: bg, border: `1px solid ${border}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon style={{ width: 16, height: 16, color }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#FFF', marginBottom: 1 }}>{label}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)' }}>{sub}</div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 900, color, flexShrink: 0 }}>{amount}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ── AVAILABILITY ── */}
+        {/* WEEKLY SCHEDULE */}
         <div style={{ margin: '0 18px', marginBottom: 14, padding: '14px 16px', borderRadius: 18, ...GLASS }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
             <CalendarCheck style={{ width: 14, height: 14, color: '#06B6D4' }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Availability</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Weekly Schedule</span>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((d) => (
-              <div key={d} style={{ padding: '5px 12px', borderRadius: 10, background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#A5B4FC' }}>{d}</span>
-              </div>
+
+          {/* Day selector */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {schedule.map((s, i) => (
+              <button key={s.days} onClick={() => setActiveDay(i)}
+                style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 10, cursor: 'pointer', border: 'none',
+                  background: activeDay === i ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)',
+                  outline: activeDay === i ? '1px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: activeDay === i ? '#A5B4FC' : s.active ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.22)' }}>
+                  {s.days}
+                </span>
+              </button>
             ))}
-            {['Sat', 'Sun'].map((d) => (
-              <div key={d} style={{ padding: '5px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.25)' }}>{d}</span>
-              </div>
-            ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10 }}>
-            <Clock style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.3)' }} />
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>10:00 AM – 8:00 PM</span>
-          </div>
+
+          {/* Shifts for selected day */}
+          {schedule[activeDay].active ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {schedule[activeDay].shifts.map((shift) => {
+                const Icon = shift.icon;
+                return (
+                  <div key={shift.label} style={{ padding: '12px 14px', borderRadius: 14, background: shift.color + '0F', border: `1px solid ${shift.color}28` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 9, background: shift.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon style={{ width: 14, height: 14, color: shift.color }} />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: shift.color }}>{shift.label} Shift</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Clock style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.35)' }} />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.65)' }}>{shift.time}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Building2 style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{shift.clinic}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>·</span>
+                      <MapPin style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{shift.loc}</span>
+                    </div>
+                    {'note' in shift && shift.note && (
+                      <div style={{ marginTop: 5, fontSize: 10, color: '#F59E0B', fontWeight: 600 }}>⚠ {shift.note}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '18px 0' }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>Not available on Sunday</span>
+            </div>
+          )}
         </div>
 
-        {/* ── LIVE QUEUE ── */}
-        <div style={{ margin: '0 18px', marginBottom: 14, borderRadius: 18, overflow: 'hidden', padding: '14px 16px', background: 'linear-gradient(135deg, rgba(79,70,229,0.2) 0%, rgba(6,182,212,0.13) 100%)', border: '1px solid rgba(99,102,241,0.3)', backdropFilter: 'blur(16px)' }}>
+        {/* LIVE QUEUE */}
+        <div style={{ margin: '0 18px', marginBottom: 14, borderRadius: 18, padding: '14px 16px', background: 'linear-gradient(135deg, rgba(79,70,229,0.2) 0%, rgba(6,182,212,0.13) 100%)', border: '1px solid rgba(99,102,241,0.3)', backdropFilter: 'blur(16px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Live Queue Status</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Live Queue</span>
+            <div style={{ flex: 1 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Radio style={{ width: 10, height: 10, color: '#818CF8' }} />
+              <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>Cardiology OPD</span>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             {[
               { label: 'Current Token', val: '42', color: '#67E8F9', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)' },
-              { label: 'Your Token', val: '56', color: '#A5B4FC', bg: 'rgba(79,70,229,0.2)', border: 'rgba(99,102,241,0.45)' },
-              { label: 'Est. Wait', val: '~35m', color: '#4ADE80', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)' },
+              { label: 'Your Token',    val: '56', color: '#A5B4FC', bg: 'rgba(79,70,229,0.2)',  border: 'rgba(99,102,241,0.45)' },
+              { label: 'Est. Wait',     val: '~35m',color: '#4ADE80', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)' },
             ].map(({ label, val, color, bg, border }) => (
               <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 14, padding: '10px 6px', textAlign: 'center' }}>
                 <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.38)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
@@ -165,18 +238,14 @@ export function DoctorDetail() {
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>14 people ahead of you</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Radio style={{ width: 10, height: 10, color: '#818CF8' }} />
-              <span style={{ fontSize: 11, color: '#818CF8', fontWeight: 600 }}>Cardiology OPD</span>
-            </div>
+          <div style={{ marginTop: 10 }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>14 people ahead · HeartCare Clinic, Andheri (Morning)</span>
           </div>
         </div>
 
       </div>
 
-      {/* ── BOTTOM CTA ── */}
+      {/* BOTTOM CTA */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
         <button style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: '#FFF', boxShadow: '0 8px 28px rgba(79,70,229,0.45)' }}>
           <CalendarCheck style={{ width: 18, height: 18 }} />
