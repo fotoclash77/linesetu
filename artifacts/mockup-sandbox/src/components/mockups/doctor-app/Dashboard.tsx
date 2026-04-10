@@ -281,7 +281,73 @@ export function Dashboard() {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 16px 80px', position: 'relative', zIndex: 10 }}>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            SECTION 1 — EARNINGS
+            SECTION 1 — QUICK CONTROLS
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div style={{ borderRadius: 22, padding: '14px 14px 12px', marginBottom: 12, ...GLASS }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <Activity style={{ width: 14, height: 14, color: TEAL_LT }} />
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Quick Controls</span>
+          </div>
+
+          {/* Shift toggle */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Clinic Shift</div>
+            <div
+              onClick={() => setShift(s => s === 'Morning' ? 'Evening' : 'Morning')}
+              style={{ position: 'relative', display: 'flex', height: 52, borderRadius: 16, cursor: 'pointer', padding: 4,
+                background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)',
+                boxShadow: shift === 'Morning' ? '0 2px 16px rgba(245,158,11,0.2)' : '0 2px 16px rgba(99,102,241,0.2)',
+                transition: 'box-shadow 0.3s ease' }}>
+              {/* Sliding pill */}
+              <div style={{ position: 'absolute', top: 4, bottom: 4,
+                left: shift === 'Morning' ? 4 : 'calc(50% + 2px)',
+                width: 'calc(50% - 6px)', borderRadius: 12, transition: 'left 0.28s cubic-bezier(0.4,0,0.2,1)',
+                background: shift === 'Morning'
+                  ? 'linear-gradient(135deg, rgba(245,158,11,0.35), rgba(253,186,116,0.2))'
+                  : 'linear-gradient(135deg, rgba(99,102,241,0.35), rgba(165,180,252,0.2))',
+                border: shift === 'Morning' ? '1.5px solid rgba(245,158,11,0.5)' : '1.5px solid rgba(165,180,252,0.5)',
+                boxShadow: shift === 'Morning' ? '0 2px 12px rgba(245,158,11,0.3)' : '0 2px 12px rgba(99,102,241,0.3)' }} />
+              {/* Morning side */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
+                <Sun style={{ width: 15, height: 15, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
+                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Morning</span>
+              </div>
+              {/* Evening side */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
+                <Moon style={{ width: 14, height: 14, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
+                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Evening</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Booking toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 14,
+            background: bookingOn ? 'rgba(45,212,191,0.08)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${bookingOn ? 'rgba(45,212,191,0.25)' : 'rgba(255,255,255,0.07)'}`, marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Online Token Booking</div>
+              <div style={{ fontSize: 10, color: bookingOn ? '#2DD4BF' : 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 2 }}>
+                {bookingOn ? 'Accepting new patients' : 'Bookings paused'}
+              </div>
+            </div>
+            <Toggle value={bookingOn} onToggle={() => setBookingOn(p => !p)} onColor={TEAL} />
+          </div>
+
+          {/* Quick action buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ flex: 1, height: 46, borderRadius: 14, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: '#FFF',
+              background: 'linear-gradient(135deg, #0D9488, #0891B2)', boxShadow: `0 4px 16px rgba(13,148,136,0.4)` }}>
+              <UserPlus style={{ width: 15, height: 15 }} /> Add Walk-in
+            </button>
+            <button style={{ flex: 1, height: 46, borderRadius: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.75)',
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <Users style={{ width: 15, height: 15 }} /> View Queue
+            </button>
+          </div>
+        </div>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            SECTION 2 — EARNINGS
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <div style={{ borderRadius: 22, padding: '16px 16px 14px', marginBottom: 12,
           background: 'linear-gradient(145deg, rgba(13,148,136,0.2) 0%, rgba(6,182,212,0.12) 100%)',
@@ -347,72 +413,6 @@ export function Dashboard() {
               </div>
             );
           })}
-        </div>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            SECTION 2 — QUICK CONTROLS
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <div style={{ borderRadius: 22, padding: '14px 14px 12px', marginBottom: 12, ...GLASS }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <Activity style={{ width: 14, height: 14, color: TEAL_LT }} />
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Quick Controls</span>
-          </div>
-
-          {/* Shift toggle */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Clinic Shift</div>
-            <div
-              onClick={() => setShift(s => s === 'Morning' ? 'Evening' : 'Morning')}
-              style={{ position: 'relative', display: 'flex', height: 52, borderRadius: 16, cursor: 'pointer', padding: 4,
-                background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)',
-                boxShadow: shift === 'Morning' ? '0 2px 16px rgba(245,158,11,0.2)' : '0 2px 16px rgba(99,102,241,0.2)',
-                transition: 'box-shadow 0.3s ease' }}>
-              {/* Sliding pill */}
-              <div style={{ position: 'absolute', top: 4, bottom: 4,
-                left: shift === 'Morning' ? 4 : 'calc(50% + 2px)',
-                width: 'calc(50% - 6px)', borderRadius: 12, transition: 'left 0.28s cubic-bezier(0.4,0,0.2,1)',
-                background: shift === 'Morning'
-                  ? 'linear-gradient(135deg, rgba(245,158,11,0.35), rgba(253,186,116,0.2))'
-                  : 'linear-gradient(135deg, rgba(99,102,241,0.35), rgba(165,180,252,0.2))',
-                border: shift === 'Morning' ? '1.5px solid rgba(245,158,11,0.5)' : '1.5px solid rgba(165,180,252,0.5)',
-                boxShadow: shift === 'Morning' ? '0 2px 12px rgba(245,158,11,0.3)' : '0 2px 12px rgba(99,102,241,0.3)' }} />
-              {/* Morning side */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
-                <Sun style={{ width: 15, height: 15, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
-                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Morning</span>
-              </div>
-              {/* Evening side */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
-                <Moon style={{ width: 14, height: 14, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
-                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Evening</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Booking toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 14,
-            background: bookingOn ? 'rgba(45,212,191,0.08)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${bookingOn ? 'rgba(45,212,191,0.25)' : 'rgba(255,255,255,0.07)'}`, marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Online Token Booking</div>
-              <div style={{ fontSize: 10, color: bookingOn ? '#2DD4BF' : 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 2 }}>
-                {bookingOn ? 'Accepting new patients' : 'Bookings paused'}
-              </div>
-            </div>
-            <Toggle value={bookingOn} onToggle={() => setBookingOn(p => !p)} onColor={TEAL} />
-          </div>
-
-          {/* Quick action buttons */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ flex: 1, height: 46, borderRadius: 14, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: '#FFF',
-              background: 'linear-gradient(135deg, #0D9488, #0891B2)', boxShadow: `0 4px 16px rgba(13,148,136,0.4)` }}>
-              <UserPlus style={{ width: 15, height: 15 }} /> Add Walk-in
-            </button>
-            <button style={{ flex: 1, height: 46, borderRadius: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.75)',
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-              <Users style={{ width: 15, height: 15 }} /> View Queue
-            </button>
-          </div>
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
