@@ -508,6 +508,22 @@ export function MasterQueue() {
         </div>
       </div>
 
+      {/* ── PAUSE / RESUME QUICK BUTTON ── */}
+      <div style={{ padding: '0 16px 8px', flexShrink: 0 }}>
+        <button onClick={() => setPaused(p => !p)}
+          style={{ width: '100%', height: 40, borderRadius: 13,
+            border: `1.5px solid ${paused ? 'rgba(34,197,94,0.45)' : 'rgba(245,158,11,0.45)'}`,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            fontSize: 12, fontWeight: 800,
+            background: paused ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.1)',
+            color: paused ? '#4ADE80' : '#FCD34D',
+            boxShadow: paused ? '0 2px 12px rgba(34,197,94,0.2)' : '0 2px 12px rgba(245,158,11,0.18)' }}>
+          {paused
+            ? <><PlayCircle  style={{ width: 14, height: 14 }} /> Resume Queue</>
+            : <><PauseCircle style={{ width: 14, height: 14 }} /> Pause Queue</>}
+        </button>
+      </div>
+
       {/* ── TAB TOGGLE (4 tabs) ── */}
       <div style={{ padding: '0 16px 8px', flexShrink: 0, zIndex: 10, position: 'relative' }}>
         <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
