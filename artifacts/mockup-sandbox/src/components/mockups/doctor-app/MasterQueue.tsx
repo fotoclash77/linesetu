@@ -172,18 +172,12 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
               </button>
             </>
           ) : (
-            /* WAITING / NEXT: Send Alert + Call + Not Shown */
+            /* WAITING / NEXT: Send Alert + Not Shown */
             <>
               <button onClick={onCall}
                 style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
                   background: 'rgba(99,102,241,0.2)', border: '1.5px solid rgba(99,102,241,0.4)', color: '#A5B4FC' }}>
                 <BadgeCheck style={{ width: 12, height: 12 }} /> Send Alert
-              </button>
-              <button onClick={onCall}
-                style={{ flex: 1, height: 38, borderRadius: 11, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: '#FFF',
-                  background: 'linear-gradient(135deg, #0D9488, #0891B2)',
-                  boxShadow: '0 3px 10px rgba(13,148,136,0.4)' }}>
-                <PhoneCall style={{ width: 12, height: 12 }} /> Call
               </button>
               <button onClick={onSkip}
                 style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
