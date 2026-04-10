@@ -241,7 +241,7 @@ export function Dashboard() {
             background: bookingOn ? 'rgba(45,212,191,0.08)' : 'rgba(255,255,255,0.04)',
             border: `1px solid ${bookingOn ? 'rgba(45,212,191,0.25)' : 'rgba(255,255,255,0.07)'}`, marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Online Bookings</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Online Token Booking</div>
               <div style={{ fontSize: 10, color: bookingOn ? '#2DD4BF' : 'rgba(255,255,255,0.3)', fontWeight: 600, marginTop: 2 }}>
                 {bookingOn ? 'Accepting new patients' : 'Bookings paused'}
               </div>
