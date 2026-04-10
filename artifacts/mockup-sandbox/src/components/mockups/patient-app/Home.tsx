@@ -5,7 +5,7 @@ import {
   CalendarPlus, ClipboardList, UserPlus, QrCode,
   Star, Clock, ChevronRight,
   Heart, Smile, Baby, Bone, Ear, Brain, Eye, Stethoscope,
-  Zap, Radio, Timer, Hash,
+  Zap, Radio, Timer, Hash, BadgeCheck, Building2, Users,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -20,9 +20,9 @@ const quickLinks = [
 ];
 
 const recommended = [
-  { name: 'Dr. Ananya Sharma', spec: 'Cardiologist',   token: 47, wait: '25 min', fee: '₹500', rating: 4.9, initials: 'AS', accent: '#EF4444', photo: 'https://randomuser.me/api/portraits/women/44.jpg' },
-  { name: 'Dr. Vikram Patel',  spec: 'Dermatologist',  token: 12, wait: '10 min', fee: '₹400', rating: 4.8, initials: 'VP', accent: '#3B82F6', photo: 'https://randomuser.me/api/portraits/men/32.jpg'   },
-  { name: 'Dr. Priya Nair',    spec: 'Neurologist',    token: 31, wait: '18 min', fee: '₹600', rating: 4.7, initials: 'PN', accent: '#8B5CF6', photo: 'https://randomuser.me/api/portraits/women/68.jpg' },
+  { name: 'Dr. Ananya Sharma', spec: 'Cardiologist',  token: 47, wait: '25 min', fee: '₹500', rating: 4.9, initials: 'AS', accent: '#EF4444', photo: 'https://randomuser.me/api/portraits/women/44.jpg', clinic: 'HeartCare Clinic, Andheri', patients: '4.2K+', exp: '12 yrs' },
+  { name: 'Dr. Vikram Patel',  spec: 'Dermatologist', token: 12, wait: '10 min', fee: '₹400', rating: 4.8, initials: 'VP', accent: '#3B82F6', photo: 'https://randomuser.me/api/portraits/men/32.jpg',   clinic: 'Skin Glow Center, Bandra', patients: '3.1K+', exp: '9 yrs'  },
+  { name: 'Dr. Priya Nair',    spec: 'Neurologist',   token: 31, wait: '18 min', fee: '₹600', rating: 4.7, initials: 'PN', accent: '#8B5CF6', photo: 'https://randomuser.me/api/portraits/women/68.jpg', clinic: 'NeuroPlus Hospital, Powai', patients: '2.8K+', exp: '15 yrs' },
 ];
 
 const topRated = [
@@ -227,26 +227,68 @@ export function Home() {
         {/* ── RECOMMENDED DOCTORS ── */}
         <div style={{ padding: '0 20px', marginBottom: 22 }}>
           <SectionHeader title="Recommended for You" />
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+          <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none' }}>
             {recommended.map((doc) => (
-              <div key={doc.name} style={{ minWidth: 160, borderRadius: 18, padding: '14px 13px', ...GLASS, flexShrink: 0, cursor: 'pointer' }}>
-                <Avatar initials={doc.initials} accent={doc.accent} photo={doc.photo} size={44} />
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#FFF', margin: '8px 0 1px', lineHeight: 1.2 }}>{doc.name}</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 8px' }}>{doc.spec}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
-                  <Star style={{ width: 10, height: 10, fill: '#F59E0B', color: '#F59E0B' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-                    <span style={{ fontSize: 10, color: '#4ADE80', fontWeight: 600 }}>#{doc.token}</span>
+              <div key={doc.name} style={{ minWidth: 210, borderRadius: 22, padding: '16px 14px 14px', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${doc.accent}28`, flexShrink: 0, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+
+                {/* Subtle accent glow top-right */}
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: doc.accent + '18', filter: 'blur(16px)', pointerEvents: 'none' }} />
+
+                {/* Photo + Verified badge */}
+                <div style={{ position: 'relative', width: 72, height: 72, marginBottom: 10 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: 20, overflow: 'hidden', border: `2.5px solid ${doc.accent}55`, background: doc.accent + '22' }}>
+                    <img src={doc.photo} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{doc.wait}</span>
+                  {/* Verified badge */}
+                  <div style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: '#0A0E1A', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0A0E1A' }}>
+                    <BadgeCheck style={{ width: 18, height: 18, color: '#4F46E5', fill: '#4F46E5', stroke: '#FFF', strokeWidth: 1 }} />
+                  </div>
                 </div>
-                <div style={{ marginTop: 10, borderRadius: 10, background: '#4F46E5', padding: '6px 0', textAlign: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#FFF' }}>Get Token</span>
+
+                {/* Name + Specialty */}
+                <p style={{ fontSize: 13, fontWeight: 800, color: '#FFF', margin: '0 0 1px', lineHeight: 1.2 }}>{doc.name}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: doc.accent, background: doc.accent + '18', padding: '2px 7px', borderRadius: 6 }}>{doc.spec}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Star style={{ width: 9, height: 9, fill: '#F59E0B', color: '#F59E0B' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
+                  </div>
                 </div>
+
+                {/* Clinic */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
+                  <Building2 style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.clinic}</span>
+                </div>
+
+                {/* Stats row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
+                  {[
+                    { icon: Users, val: doc.patients, lbl: 'Patients' },
+                    { icon: Clock,  val: doc.exp,      lbl: 'Exp'      },
+                    { icon: Timer,  val: doc.wait,     lbl: 'Wait'     },
+                  ].map(({ icon: Icon, val, lbl }) => (
+                    <div key={lbl} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '6px 4px', textAlign: 'center' }}>
+                      <Icon style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }} />
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#FFF', lineHeight: 1 }}>{val}</div>
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{lbl}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Live token row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '6px 10px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block', boxShadow: '0 0 5px #22C55E' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80' }}>Token #{doc.token} Live</span>
+                  </div>
+                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>~{doc.wait}</span>
+                </div>
+
+                {/* CTA */}
+                <button style={{ width: '100%', borderRadius: 12, background: `linear-gradient(135deg, ${doc.accent} 0%, ${doc.accent}BB 100%)`, border: 'none', padding: '9px 0', cursor: 'pointer', boxShadow: `0 6px 18px ${doc.accent}44` }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#FFF' }}>Get Token</span>
+                </button>
               </div>
             ))}
           </div>
