@@ -349,6 +349,20 @@ export function Dashboard() {
           })}
         </div>
 
+        {/* ── ADD WALK-IN FAB (above Quick Controls) ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #2DD4BF, #06B6D4)',
+              boxShadow: '0 4px 24px rgba(45,212,191,0.55)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '3px solid #070B14' }}>
+              <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: TEAL_LT, letterSpacing: '0.04em' }}>Add Walk-in</span>
+          </div>
+        </div>
+
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             SECTION 2 — QUICK CONTROLS
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
