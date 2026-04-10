@@ -136,7 +136,7 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
         {/* Status badge / Send Next — hidden for currently consulting */}
         {!isCurrent && (
           <div style={{ flexShrink: 0 }}>
-            {patient.status === 'waiting' ? (
+            {(patient.type === 'Emergency' || patient.status === 'skipped') ? (
               <button onClick={onCall}
                 style={{ height: 30, padding: '0 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: '#FFF',
