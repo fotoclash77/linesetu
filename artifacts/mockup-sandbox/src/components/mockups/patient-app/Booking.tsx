@@ -5,7 +5,7 @@ import {
   AlertCircle, CalendarCheck, Navigation,
   Radio, Footprints, Wifi, Siren, ShieldAlert,
   Phone, UserCircle2, ChevronDown, ChevronUp,
-  FileText, AlertOctagon,
+  Stethoscope, RefreshCw,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -142,8 +142,7 @@ export function Booking() {
   const [tokenType, setTokenType] = useState<'normal' | 'emergency'>('normal');
   const [selectedMember, setSelectedMember] = useState<string>('self');
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
-  const [problem, setProblem] = useState('');
-  const [problemError, setProblemError] = useState(false);
+  const [visitType, setVisitType] = useState<'first' | 'followup'>('first');
 
   const shifts = getShifts(selectedDate);
   const shift = shifts[selectedShift] ?? null;
@@ -199,6 +198,32 @@ export function Booking() {
 
       {/* SCROLLABLE */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 84 }}>
+
+        {/* ── VISIT TYPE TOGGLE ── */}
+        <div style={{ margin: '0 18px 14px', padding: '5px', borderRadius: 18, display: 'flex', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          {(['first', 'followup'] as const).map((type) => {
+            const active = visitType === type;
+            const isFirst = type === 'first';
+            return (
+              <button key={type} onClick={() => setVisitType(type)}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 8px', borderRadius: 13, border: 'none', cursor: 'pointer', transition: 'all 0.2s ease',
+                  background: active ? (isFirst ? 'linear-gradient(135deg, rgba(99,102,241,0.55), rgba(6,182,212,0.4))' : 'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(6,182,212,0.35))') : 'transparent',
+                  boxShadow: active ? '0 2px 12px rgba(99,102,241,0.3)' : 'none' }}>
+                {isFirst
+                  ? <Stethoscope style={{ width: 14, height: 14, color: active ? '#FFF' : 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
+                  : <RefreshCw   style={{ width: 14, height: 14, color: active ? '#FFF' : 'rgba(255,255,255,0.35)', flexShrink: 0 }} />}
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: active ? '#FFF' : 'rgba(255,255,255,0.4)', lineHeight: 1.2 }}>
+                    {isFirst ? 'First Visit' : 'Follow-up'}
+                  </div>
+                  <div style={{ fontSize: 9, color: active ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.22)', marginTop: 1 }}>
+                    {isFirst ? 'New consultation' : 'Continuing treatment'}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
         {/* DOCTOR MINI CARD */}
         <div style={{ margin: '0 18px 14px', padding: '12px 14px', borderRadius: 18, display: 'flex', alignItems: 'center', gap: 12, ...GLASS }}>
@@ -513,45 +538,6 @@ export function Booking() {
               </p>
             </div>
 
-            {/* ── PROBLEM DESCRIPTION ── */}
-            <div style={{ margin: '0 18px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
-                <FileText style={{ width: 13, height: 13, color: problemError ? '#F87171' : 'rgba(255,255,255,0.45)' }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: problemError ? '#F87171' : 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Describe Your Problem
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#F87171', marginLeft: 1 }}>*</span>
-                <span style={{ marginLeft: 'auto', fontSize: 10, color: problem.length > 0 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.2)', fontWeight: 500 }}>{problem.length}/300</span>
-              </div>
-
-              <div style={{ borderRadius: 16, overflow: 'hidden',
-                border: `1.5px solid ${problemError ? 'rgba(239,68,68,0.6)' : problem.length > 0 ? 'rgba(99,102,241,0.45)' : 'rgba(255,255,255,0.1)'}`,
-                background: problemError ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.04)',
-                transition: 'border-color 0.2s ease, background 0.2s ease' }}>
-                <textarea
-                  value={problem}
-                  onChange={e => { setProblem(e.target.value.slice(0, 300)); if (e.target.value.trim()) setProblemError(false); }}
-                  placeholder="Briefly describe your symptoms or reason for visit… e.g. chest pain since 2 days, breathlessness on walking"
-                  style={{ width: '100%', minHeight: 90, padding: '12px 14px', background: 'transparent', border: 'none', outline: 'none',
-                    fontSize: 12, color: '#FFF', fontFamily: "'Inter', sans-serif", lineHeight: 1.6, resize: 'none',
-                    boxSizing: 'border-box' }}
-                />
-              </div>
-
-              {problemError && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                  <AlertOctagon style={{ width: 11, height: 11, color: '#F87171' }} />
-                  <span style={{ fontSize: 10, color: '#F87171', fontWeight: 600 }}>This field is mandatory. Please describe your problem before proceeding.</span>
-                </div>
-              )}
-              {problem.length > 0 && !problemError && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="5" fill="rgba(34,197,94,0.2)" stroke="rgba(34,197,94,0.5)"/><path d="M3 5.5L4.8 7.5L8 3.5" stroke="#4ADE80" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span style={{ fontSize: 10, color: 'rgba(74,222,128,0.7)', fontWeight: 600 }}>Noted — doctor will review before your appointment</span>
-                </div>
-              )}
-            </div>
-
             {/* ── LIVE MASTER QUEUE ── */}
             <div style={{ margin: '0 18px 14px' }}>
               {/* Header */}
@@ -602,7 +588,6 @@ export function Booking() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
         <button
           disabled={shifts.length === 0}
-          onClick={() => { if (shifts.length > 0 && !problem.trim()) setProblemError(true); }}
           style={{ width: '100%', height: 52, borderRadius: 16, background: shifts.length === 0 ? 'rgba(255,255,255,0.07)' : isEmergency ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 60%, #F97316 100%)' : 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: shifts.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: shifts.length > 0 ? '#FFF' : 'rgba(255,255,255,0.25)', boxShadow: shifts.length > 0 ? isEmergency ? '0 8px 28px rgba(239,68,68,0.5)' : '0 8px 28px rgba(79,70,229,0.45)' : 'none' }}>
           <CalendarCheck style={{ width: 18, height: 18 }} />
           {shifts.length > 0 ? `Confirm ${isEmergency ? 'Emergency' : ''} Token #${isEmergency ? 'E' : ''}${yourToken} · Pay ₹${payableNow}` : 'Select an Available Date'}
