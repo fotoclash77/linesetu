@@ -36,14 +36,6 @@ function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'w
   return (
     <div style={{ height: 72, flexShrink: 0, position: 'relative', background: 'rgba(7,11,20,0.96)',
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-      <div style={{ position: 'absolute', top: -26, left: '50%', transform: 'translateX(-50%)',
-        width: 54, height: 54, borderRadius: '50%',
-        background: active === 'walkin' ? 'linear-gradient(135deg,#2DD4BF,#06B6D4)' : 'linear-gradient(135deg,#0D9488,#0891B2)',
-        boxShadow: `0 4px 24px ${active==='walkin' ? 'rgba(45,212,191,0.7)' : 'rgba(13,148,136,0.55)'}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', border: '3px solid #070B14', zIndex: 10 }}>
-        <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
-      </div>
       <div style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
         <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
           <House style={{ width: 20, height: 20, color: C('home') }} />
@@ -53,7 +45,6 @@ function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'w
           <CalendarClock style={{ width: 20, height: 20, color: C('queue') }} />
           <span style={{ fontSize: 9, fontWeight: 700, color: C('queue'), letterSpacing: '0.03em' }}>Manage</span>
         </button>
-        <div style={{ flex: 1 }} />
         <button style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', paddingBottom: 6 }}>
           <TrendingUp style={{ width: 20, height: 20, color: C('earnings') }} />
           <span style={{ fontSize: 9, fontWeight: 700, color: C('earnings'), letterSpacing: '0.03em' }}>Earnings</span>
