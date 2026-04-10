@@ -317,7 +317,7 @@ export function MasterQueue() {
 
           {/* Patient detail grid */}
           {current && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
               {/* Phone */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -338,17 +338,6 @@ export function MasterQueue() {
                 <div>
                   <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Address</div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{current.addr}</div>
-                </div>
-              </div>
-              {/* Waiting count */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Users style={{ width: 12, height: 12, color: '#FCD34D' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Waiting</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#FCD34D' }}>{waiting.length} patients · ~{waiting.length * 8}m</div>
                 </div>
               </div>
               {/* Consult fee */}
