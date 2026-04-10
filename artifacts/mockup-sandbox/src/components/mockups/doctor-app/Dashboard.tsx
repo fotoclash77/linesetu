@@ -422,18 +422,6 @@ export function Dashboard() {
 
       </div>
 
-      {/* ── FLOATING ADD WALK-IN FAB ── */}
-      <div style={{ position: 'absolute', bottom: 88, right: 20, zIndex: 50,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
-        <div style={{ width: 54, height: 54, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #2DD4BF, #06B6D4)',
-          boxShadow: '0 4px 28px rgba(45,212,191,0.65), 0 0 0 6px rgba(45,212,191,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '3px solid #070B14' }}>
-          <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
-        </div>
-      </div>
-
       {/* ── NAV BAR ── */}
       <DocNavBar active="home" />
     </div>
