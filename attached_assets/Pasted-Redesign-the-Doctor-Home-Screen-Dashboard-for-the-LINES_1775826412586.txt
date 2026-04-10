@@ -1,0 +1,151 @@
+Redesign the **Doctor Home Screen (Dashboard)** for the LINESETU doctor mobile app.
+
+The screen must be **highly attractive, fast, and extremely responsive**, designed for real clinic usage where the doctor needs quick insights and actions.
+
+---
+
+## 🎯 Core Goal:
+
+👉 Give doctor a **complete overview + quick control** in one screen
+👉 Everything important visible in **<3 seconds**
+
+---
+
+## 🧩 SECTION 1: EARNINGS OVERVIEW (TOP PRIORITY)
+
+Top glass card showing:
+
+* Daily Earnings
+* Weekly Earnings
+* Monthly Earnings
+
+Breakdown:
+
+* Online (App Platform)
+* In-Clinic Consultation Fee
+* Emergency Fee (Online + In-Clinic)
+
+Include:
+
+* Attractive mini graphs / charts (line or bar)
+* Smooth animated transitions
+* Toggle: Daily | Weekly | Monthly
+
+---
+
+## ⚡ SECTION 2: QUICK CONTROLS (VERY IMPORTANT)
+
+Glass panel with:
+
+* Toggle Clinic Shift:
+
+  * Morning / Evening / OFF
+
+* Booking Status:
+
+  * ON / OFF toggle
+
+* Quick Buttons:
+
+  * Add Walk-in Patient
+  * View Full Queue
+
+---
+
+## 🔴 SECTION 3: LIVE QUEUE PREVIEW
+
+Show current active queue:
+
+Each row:
+
+* Token Number (bold & large)
+* Patient Name
+* Age
+* Type Badge:
+
+  * Walk-in / Online
+
+Top highlight:
+
+* “Currently Consulting Token #X”
+
+Make it:
+
+* Scrollable
+* Easy to scan quickly
+
+---
+
+## 📊 SECTION 4: PATIENT STATISTICS
+
+Glass cards showing:
+
+* New Patients:
+
+  * Daily / Weekly / Monthly
+* Follow-up Patients:
+
+  * Daily / Weekly / Monthly
+
+Include:
+
+* Small charts or progress bars
+* Clear numeric highlights
+
+---
+
+## 🎨 UI DESIGN REQUIREMENTS
+
+* Dark Glassmorphic UI
+* Smooth blur + soft glow
+* Clean spacing (8pt grid)
+* Rounded cards
+* High contrast typography
+
+---
+
+## ⚡ UX REQUIREMENTS
+
+* One-hand usability
+* Fast interaction (no clutter)
+* Large tap targets
+* Clear hierarchy:
+
+  1. Earnings
+  2. Controls
+  3. Queue
+  4. Stats
+
+---
+
+## 💎 COMPONENTS
+
+* GlassCard
+* EarningsChart
+* ToggleSwitch
+* QueueRow
+* StatCard
+* ActionButton
+
+---
+
+## 🚫 AVOID
+
+* Overloaded UI
+* Small text
+* Confusing layout
+* Too many colors
+
+---
+
+## 🎯 FINAL GOAL
+
+Design should feel like:
+
+👉 A premium doctor control dashboard
+👉 Real-time clinic command center
+👉 Clean, fast, and highly usable
+
+---
+
+Build complete UI with reusable components accordingly.
