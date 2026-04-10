@@ -1,103 +1,213 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ChevronLeft, Lock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  ChevronLeft, BadgeCheck, Building2, MapPin,
+  Sunrise, CalendarCheck, Ticket, Monitor,
+  CheckCircle2, Lock, ShieldCheck, Smartphone,
+  CreditCard, Wallet, IndianRupee, Clock,
+} from 'lucide-react';
 
-const glassStyle = {
-  background: 'rgba(255, 255, 255, 0.7)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255, 255, 255, 0.8)',
-  boxShadow: '0 8px 32px rgba(31, 38, 135, 0.08)'
-};
+const BG = '#0A0E1A';
+const GLASS = { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' };
+
+const PAYMENT_METHODS = [
+  { id: 'upi',    label: 'UPI / QR Pay',        sub: 'GPay, PhonePe, Paytm, BHIM', icon: Smartphone,  color: '#818CF8' },
+  { id: 'card',   label: 'Credit / Debit Card',  sub: 'Visa, Mastercard, RuPay',    icon: CreditCard,  color: '#06B6D4' },
+  { id: 'wallet', label: 'Wallets',               sub: 'Paytm, Amazon Pay, Mobikwik',icon: Wallet,      color: '#22C55E' },
+];
 
 export function Payment() {
+  const [method, setMethod] = useState('upi');
+  const [upiId, setUpiId] = useState('');
+
   return (
-    <div className="flex flex-col min-h-[100dvh] w-full max-w-[390px] mx-auto relative bg-slate-50 overflow-hidden pb-24">
-      {/* Header */}
-      <div className="px-4 pt-6 pb-2 flex items-center gap-3">
-        <button className="p-2 rounded-full bg-white shadow-sm border border-slate-100 text-slate-600">
-          <ChevronLeft size={20} />
-        </button>
-        <h1 className="text-lg font-bold text-slate-900 flex-1 text-center pr-10">Payment</h1>
+    <div style={{ width: 390, height: 844, background: BG, fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', top: -50, left: -50, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: 160, right: -60, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(6,182,212,0.16) 0%, transparent 70%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+
+      {/* STATUS BAR */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 4px', position: 'relative', zIndex: 10, flexShrink: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>9:41</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {[0.4, 0.65, 0.9, 1].map((op, i) => <div key={i} style={{ width: 3, height: 6 + i * 2, borderRadius: 2, background: `rgba(255,255,255,${op})` }} />)}
+          <div style={{ width: 6 }} />
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 2C10.4 2 12.6 3 14.1 4.7L15.5 3.2C13.6 1.2 10.9 0 8 0C5.1 0 2.4 1.2 0.5 3.2L1.9 4.7C3.4 3 5.6 2 8 2Z" fill="white" opacity="0.4"/><path d="M8 5C9.7 5 11.2 5.7 12.3 6.8L13.7 5.3C12.2 3.9 10.2 3 8 3C5.8 3 3.8 3.9 2.3 5.3L3.7 6.8C4.8 5.7 6.3 5 8 5Z" fill="white" opacity="0.7"/><circle cx="8" cy="9.5" r="1.5" fill="white"/></svg>
+          <div style={{ width: 4 }} />
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3.5" stroke="white" strokeOpacity="0.3"/><rect x="2" y="2" width="14" height="8" rx="2" fill="white" fillOpacity="0.85"/><path d="M22 4.5V7.5C22.8 7.2 23.5 6.4 23.5 6C23.5 5.6 22.8 4.8 22 4.5Z" fill="white" opacity="0.35"/></svg>
+        </div>
       </div>
 
-      <div className="px-4 py-4 flex-1 overflow-y-auto space-y-6">
-        
-        {/* Amount Card */}
-        <div className="rounded-3xl p-6 flex flex-col items-center justify-center bg-indigo-600 text-white shadow-lg shadow-indigo-200">
-          <p className="text-indigo-100 text-sm font-medium mb-1">Platform Booking Fee</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold">₹</span>
-            <span className="text-5xl font-extrabold tracking-tight">10</span>
-          </div>
-          <div className="mt-4 inline-flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
-            <ShieldCheck size={14} /> Secure Checkout
-          </div>
-        </div>
+      {/* TOP NAV */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 18px 10px', position: 'relative', zIndex: 10, flexShrink: 0 }}>
+        <button style={{ width: 38, height: 38, borderRadius: 12, ...GLASS, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <ChevronLeft style={{ width: 20, height: 20, color: 'rgba(255,255,255,0.8)' }} />
+        </button>
+        <span style={{ fontSize: 15, fontWeight: 700, color: '#FFF' }}>Confirm & Pay</span>
+        <div style={{ width: 38 }} />
+      </div>
 
-        {/* Note */}
-        <div className="text-center text-sm font-medium text-slate-600">
-          Note: Consultation fee (₹500) will be paid at the clinic.
-        </div>
+      {/* SCROLLABLE */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 100 }}>
 
-        {/* Payment Methods */}
-        <div className="space-y-3">
-          <h3 className="font-bold text-slate-900 ml-1">Select Payment Method</h3>
-          
-          <div className="rounded-2xl p-4 border-2 border-indigo-500 bg-indigo-50/50 flex flex-col gap-4 relative">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                  <span className="font-bold text-indigo-700">UPI</span>
-                </div>
-                <span className="font-semibold text-slate-900">UPI / QR</span>
+        {/* ── APPOINTMENT SUMMARY ── */}
+        <div style={{ margin: '0 18px 14px', borderRadius: 20, overflow: 'hidden', ...GLASS }}>
+
+          {/* Doctor row */}
+          <div style={{ padding: '14px 14px 12px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Dr. Ananya Sharma"
+              style={{ width: 46, height: 46, borderRadius: 13, objectFit: 'cover', objectPosition: 'top', border: '2px solid rgba(239,68,68,0.35)', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#FFF' }}>Dr. Ananya Sharma</span>
+                <BadgeCheck style={{ width: 14, height: 14, color: '#4F46E5', fill: '#4F46E5', stroke: '#FFF', strokeWidth: 1 }} />
               </div>
-              <CheckCircle2 className="text-indigo-600" size={24} />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Cardiologist · HeartCare Clinic</span>
             </div>
-            
-            <div className="pt-2">
-              <Input 
-                placeholder="Enter UPI ID (e.g. rahul@okicici)" 
-                className="h-12 rounded-xl bg-white border-indigo-200 focus-visible:ring-indigo-500"
+            <div style={{ padding: '3px 9px', borderRadius: 8, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', flexShrink: 0 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80' }}>Confirmed</span>
+            </div>
+          </div>
+
+          {/* Appointment details grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
+            {[
+              { icon: CalendarCheck, label: 'Date',     val: 'Friday, 10 Apr 2026', color: '#67E8F9' },
+              { icon: Sunrise,       label: 'Shift',    val: 'Morning Shift',        color: '#F59E0B' },
+              { icon: Clock,         label: 'Timing',   val: '10:00 AM – 2:00 PM',  color: '#818CF8' },
+              { icon: Ticket,        label: 'Token No.',val: '#34 · Online',         color: '#A5B4FC' },
+            ].map(({ icon: Icon, label, val, color }, idx) => (
+              <div key={label} style={{ padding: '12px 14px', borderRight: idx % 2 === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', borderBottom: idx < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none', background: 'rgba(255,255,255,0.025)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                  <Icon style={{ width: 11, height: 11, color }} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#FFF' }}>{val}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Clinic location */}
+          <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 7, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <Building2 style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>HeartCare Clinic</span>
+            <span style={{ color: 'rgba(255,255,255,0.18)' }}>·</span>
+            <MapPin style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Andheri West, Mumbai</span>
+          </div>
+        </div>
+
+        {/* ── PAYMENT SUMMARY ── */}
+        <div style={{ margin: '0 18px 14px', borderRadius: 20, overflow: 'hidden', ...GLASS }}>
+          <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>Payment Summary</span>
+          </div>
+
+          {/* Line items */}
+          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Clinic E-Appointment */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(6,182,212,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Monitor style={{ width: 14, height: 14, color: '#67E8F9' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Clinic E-Appointment</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Online token booking fee</div>
+                </div>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#67E8F9' }}>₹20</span>
+            </div>
+
+            {/* Platform fee */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldCheck style={{ width: 14, height: 14, color: '#818CF8' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Platform Fee</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>LINESETU service charge</div>
+                </div>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#818CF8' }}>₹10</span>
+            </div>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '2px 0' }} />
+
+            {/* Total */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(6,182,212,0.12))', border: '1px solid rgba(99,102,241,0.3)' }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Total Payable Now</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>₹20 + ₹10 = ₹30</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#A5B4FC', lineHeight: 1, letterSpacing: '-0.5px' }}>₹30</div>
+              </div>
+            </div>
+
+            {/* Clinic fee note */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '8px 10px', borderRadius: 12, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <IndianRupee style={{ width: 11, height: 11, color: '#F59E0B', marginTop: 1, flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+                Consultation fee of <strong style={{ color: '#FCD34D' }}>₹500</strong> is paid separately at the clinic. Not included in this payment.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── PAYMENT METHOD ── */}
+        <div style={{ margin: '0 18px 14px' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#FFF', display: 'block', marginBottom: 10 }}>Pay Via</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {PAYMENT_METHODS.map(({ id, label, sub, icon: Icon, color }) => {
+              const active = method === id;
+              return (
+                <div key={id} onClick={() => setMethod(id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, cursor: 'pointer',
+                    background: active ? color + '14' : 'rgba(255,255,255,0.04)',
+                    border: `1.5px solid ${active ? color + '55' : 'rgba(255,255,255,0.07)'}` }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: active ? color + '22' : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon style={{ width: 18, height: 18, color: active ? color : 'rgba(255,255,255,0.35)' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#FFF' : 'rgba(255,255,255,0.6)', marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{sub}</div>
+                  </div>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${active ? color : 'rgba(255,255,255,0.15)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {active && <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* UPI ID input */}
+          {method === 'upi' && (
+            <div style={{ marginTop: 10, padding: '4px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(99,102,241,0.35)' }}>
+              <input
+                value={upiId}
+                onChange={e => setUpiId(e.target.value)}
+                placeholder="Enter UPI ID  e.g. name@okicici"
+                style={{ width: '100%', height: 44, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: '#FFF', fontFamily: "'Inter', sans-serif" }}
               />
             </div>
-          </div>
-
-          <div className="rounded-2xl p-4" style={glassStyle}>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3 text-slate-600">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <span className="font-bold text-slate-500 text-xs">CARD</span>
-                </div>
-                <span className="font-medium">Credit / Debit Card</span>
-              </div>
-              <div className="w-5 h-5 rounded-full border-2 border-slate-300"></div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-4" style={glassStyle}>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3 text-slate-600">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <span className="font-bold text-slate-500 text-xs">WLT</span>
-                </div>
-                <span className="font-medium">Wallets</span>
-              </div>
-              <div className="w-5 h-5 rounded-full border-2 border-slate-300"></div>
-            </div>
-          </div>
+          )}
         </div>
+
       </div>
 
-      {/* Bottom Action */}
-      <div className="fixed bottom-0 w-full max-w-[390px] px-4 py-4 bg-white/80 backdrop-blur-md border-t border-slate-200/50 z-20 pb-safe">
-        <Button className="w-full h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-semibold text-lg shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
-          <Lock size={18} /> Pay ₹10 Securely
-        </Button>
-        <p className="text-center text-[10px] text-slate-400 mt-3 flex items-center justify-center gap-1">
-          <Lock size={10} /> 256-bit SSL encrypted • Powered by LINESETU
-        </p>
+      {/* BOTTOM CTA */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
+        <button style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 16, fontWeight: 800, color: '#FFF', boxShadow: '0 8px 28px rgba(79,70,229,0.45)' }}>
+          <Lock style={{ width: 16, height: 16 }} />
+          Pay ₹30 Securely
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 8 }}>
+          <ShieldCheck style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.25)' }} />
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>256-bit SSL encrypted · Powered by LINESETU</span>
+        </div>
       </div>
     </div>
   );
