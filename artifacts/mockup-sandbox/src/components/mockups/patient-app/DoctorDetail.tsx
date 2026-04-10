@@ -4,7 +4,7 @@ import {
   MapPin, Clock, Users, IndianRupee,
   Building2, Timer, Radio, Stethoscope, BookOpen,
   CalendarCheck, Sunrise, Sunset, Monitor,
-  CheckCircle2,
+  CheckCircle2, Navigation,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -16,22 +16,22 @@ const schedule = [
     days: 'Mon – Wed',
     active: true,
     shifts: [
-      { label: 'Morning', icon: Sunrise,  time: '9:00 AM – 1:00 PM', clinic: 'HeartCare Clinic',     loc: 'Andheri West',  color: '#F59E0B' },
-      { label: 'Evening', icon: Sunset,   time: '5:00 PM – 9:00 PM', clinic: 'City Heart Center',    loc: 'Bandra East',   color: '#818CF8' },
+      { label: 'Morning', icon: Sunrise, time: '9:00 AM – 1:00 PM',  clinic: 'HeartCare Clinic',  loc: 'Andheri West, Mumbai', color: '#F59E0B', maps: 'https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai' },
+      { label: 'Evening', icon: Sunset,  time: '5:00 PM – 9:00 PM',  clinic: 'City Heart Center', loc: 'Bandra East, Mumbai',  color: '#818CF8', maps: 'https://maps.google.com/?q=City+Heart+Center+Bandra+East+Mumbai' },
     ],
   },
   {
     days: 'Thu – Fri',
     active: true,
     shifts: [
-      { label: 'Morning', icon: Sunrise,  time: '10:00 AM – 2:00 PM', clinic: 'HeartCare Clinic',    loc: 'Andheri West',  color: '#F59E0B' },
+      { label: 'Morning', icon: Sunrise, time: '10:00 AM – 2:00 PM', clinic: 'HeartCare Clinic',  loc: 'Andheri West, Mumbai', color: '#F59E0B', maps: 'https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai' },
     ],
   },
   {
     days: 'Sat',
     active: true,
     shifts: [
-      { label: 'Morning', icon: Sunrise,  time: '9:00 AM – 12:00 PM', clinic: 'MedPlus Hospital',    loc: 'Powai',         color: '#22C55E', note: 'Alternate Sat only' },
+      { label: 'Morning', icon: Sunrise, time: '9:00 AM – 12:00 PM', clinic: 'MedPlus Hospital',  loc: 'Powai, Mumbai',        color: '#22C55E', maps: 'https://maps.google.com/?q=MedPlus+Hospital+Powai+Mumbai', note: 'Alternate Sat only' },
     ],
   },
   {
@@ -194,12 +194,19 @@ export function DoctorDetail() {
                         <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.65)' }}>{shift.time}</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Building2 style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{shift.clinic}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>·</span>
-                      <MapPin style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{shift.loc}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 }}>
+                        <Building2 style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shift.clinic}</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>·</span>
+                        <MapPin style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shift.loc}</span>
+                      </div>
+                      <a href={shift.maps} target="_blank" rel="noreferrer"
+                        style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'rgba(66,133,244,0.18)', border: '1px solid rgba(66,133,244,0.35)', textDecoration: 'none', cursor: 'pointer' }}>
+                        <Navigation style={{ width: 10, height: 10, color: '#4285F4' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#4285F4' }}>Maps</span>
+                      </a>
                     </div>
                     {'note' in shift && shift.note && (
                       <div style={{ marginTop: 5, fontSize: 10, color: '#F59E0B', fontWeight: 600 }}>⚠ {shift.note}</div>
