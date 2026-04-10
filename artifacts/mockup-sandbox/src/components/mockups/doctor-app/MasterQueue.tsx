@@ -190,7 +190,7 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
 
 /* ─── MAIN ─── */
 export function MasterQueue() {
-  const [tab,     setTab]     = useState<'queue' | 'emergency'>('queue');
+  const [tab,     setTab]     = useState<'queue' | 'emergency' | 'notshown' | 'done'>('queue');
   const [queue,   setQueue]   = useState<Patient[]>(INIT_QUEUE);
   const [emerg,   setEmerg]   = useState<Patient[]>(INIT_EMERGENCY);
   const [paused,  setPaused]  = useState(false);
@@ -456,67 +456,95 @@ export function MasterQueue() {
         </div>
       </div>
 
-      {/* ── TAB TOGGLE ── */}
+      {/* ── TAB TOGGLE (4 tabs) ── */}
       <div style={{ padding: '0 16px 8px', flexShrink: 0, zIndex: 10, position: 'relative' }}>
-        <div style={{ display: 'flex', gap: 5, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={() => setTab('queue')}
-            style={{ flex: 1, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: tab === 'queue' ? 'rgba(13,148,136,0.3)' : 'transparent',
-              boxShadow: tab === 'queue' ? '0 2px 10px rgba(13,148,136,0.3)' : 'none' }}>
-            <Users style={{ width: 12, height: 12, color: tab === 'queue' ? TEAL_LT : 'rgba(255,255,255,0.35)' }} />
-            <span style={{ fontSize: 11, fontWeight: 800, color: tab === 'queue' ? '#FFF' : 'rgba(255,255,255,0.38)' }}>
-              Queue ({waiting.length})
-            </span>
-          </button>
-          <button onClick={() => setTab('emergency')}
-            style={{ flex: 1, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: tab === 'emergency' ? 'rgba(239,68,68,0.22)' : 'transparent',
-              boxShadow: tab === 'emergency' ? '0 2px 10px rgba(239,68,68,0.25)' : 'none' }}>
-            <AlertCircle style={{ width: 12, height: 12, color: tab === 'emergency' ? '#F87171' : 'rgba(255,255,255,0.35)' }} />
-            <span style={{ fontSize: 11, fontWeight: 800, color: tab === 'emergency' ? '#F87171' : 'rgba(255,255,255,0.38)' }}>
-              Emergency ({emergCount})
-            </span>
-            {emergCount > 0 && (
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px #EF4444' }} />
-            )}
-          </button>
+        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          {([
+            { key: 'queue',    label: 'Queue',     count: waiting.length, icon: Users,        activeColor: TEAL_LT,  activeBg: 'rgba(13,148,136,0.3)',   activeShadow: 'rgba(13,148,136,0.3)'  },
+            { key: 'emergency',label: 'Emerg',     count: emergCount,     icon: AlertCircle,  activeColor: '#F87171', activeBg: 'rgba(239,68,68,0.22)',   activeShadow: 'rgba(239,68,68,0.25)', dot: emergCount > 0 },
+            { key: 'notshown', label: 'Skipped',   count: skipped,        icon: XCircle,      activeColor: '#FCD34D', activeBg: 'rgba(245,158,11,0.22)',  activeShadow: 'rgba(245,158,11,0.25)' },
+            { key: 'done',     label: 'Done',      count: done,           icon: CheckCircle2, activeColor: '#4ADE80', activeBg: 'rgba(34,197,94,0.2)',    activeShadow: 'rgba(34,197,94,0.25)'  },
+          ] as const).map(t => {
+            const Icon = t.icon;
+            const active = tab === t.key;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                style={{ flex: 1, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                  background: active ? t.activeBg : 'transparent',
+                  boxShadow: active ? `0 2px 10px ${t.activeShadow}` : 'none',
+                  position: 'relative' }}>
+                <Icon style={{ width: 11, height: 11, color: active ? t.activeColor : 'rgba(255,255,255,0.35)' }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: active ? '#FFF' : 'rgba(255,255,255,0.38)', whiteSpace: 'nowrap' }}>
+                  {t.label} {t.count > 0 ? `(${t.count})` : ''}
+                </span>
+                {'dot' in t && t.dot && (
+                  <div style={{ position: 'absolute', top: 4, right: 6, width: 5, height: 5, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 5px #EF4444' }} />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ── SCROLLABLE QUEUE LIST ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 100px', position: 'relative', zIndex: 10 }}>
-        {tab === 'queue' ? (
+        {tab === 'queue' && (
           <>
-            {/* Active patients — exclude consulting & next (shown in cards above) */}
             {queue.filter(p => !['done','skipped','consulting','next'].includes(p.status)).map(p => (
               <QueueCard key={p.id} patient={p}
                 onCall={() => {}}
                 onDone={() => updateStatus(queue, setQueue, p.id, 'done')}
                 onSkip={() => updateStatus(queue, setQueue, p.id, 'skipped')} />
             ))}
-            {/* Past patients divider */}
-            {queue.some(p => ['done','skipped'].includes(p.status)) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0 8px' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-                <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Completed</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-              </div>
+            {queue.filter(p => p.status === 'waiting').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600 }}>No patients waiting</div>
             )}
-            {queue.filter(p => ['done','skipped'].includes(p.status)).map(p => (
-              <QueueCard key={p.id} patient={p} onCall={() => {}} onDone={() => {}} onSkip={() => {}} />
-            ))}
           </>
-        ) : (
+        )}
+
+        {tab === 'emergency' && (
           <>
             <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(239,68,68,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <AlertCircle style={{ width: 12, height: 12 }} /> Priority — Immediate Attention
             </div>
-            {emerg.map(p => (
+            {emerg.filter(p => !['done','skipped'].includes(p.status)).map(p => (
               <QueueCard key={p.id} patient={p} isEmergency
                 onCall={() => {}}
                 onDone={() => updateStatus(emerg, setEmerg, p.id, 'done')}
                 onSkip={() => updateStatus(emerg, setEmerg, p.id, 'skipped')} />
             ))}
+            {emerg.filter(p => !['done','skipped'].includes(p.status)).length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600 }}>No emergency patients</div>
+            )}
+          </>
+        )}
+
+        {tab === 'notshown' && (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(245,158,11,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <XCircle style={{ width: 12, height: 12 }} /> Not Shown / Skipped
+            </div>
+            {[...queue, ...emerg].filter(p => p.status === 'skipped').map(p => (
+              <QueueCard key={p.id} patient={p} onCall={() => {}} onDone={() => {}} onSkip={() => {}} />
+            ))}
+            {[...queue, ...emerg].filter(p => p.status === 'skipped').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600 }}>No skipped patients</div>
+            )}
+          </>
+        )}
+
+        {tab === 'done' && (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(74,222,128,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <CheckCircle2 style={{ width: 12, height: 12 }} /> Consulted Today
+            </div>
+            {[...queue, ...emerg].filter(p => p.status === 'done').map(p => (
+              <QueueCard key={p.id} patient={p} onCall={() => {}} onDone={() => {}} onSkip={() => {}} />
+            ))}
+            {[...queue, ...emerg].filter(p => p.status === 'done').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600 }}>No consultations yet</div>
+            )}
           </>
         )}
       </div>
