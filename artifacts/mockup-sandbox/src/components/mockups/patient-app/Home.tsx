@@ -5,7 +5,7 @@ import {
   CalendarPlus, ClipboardList, UserPlus, QrCode,
   Star, Clock, ChevronRight,
   Heart, Smile, Baby, Bone, Ear, Brain, Eye, Stethoscope,
-  Zap,
+  Zap, Radio, Timer, Hash,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -139,6 +139,71 @@ export function Home() {
                 <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* ── LIVE QUEUE CARD ── */}
+        <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ position: 'relative', borderRadius: 22, overflow: 'hidden', padding: '18px 18px 16px', background: 'linear-gradient(135deg, rgba(79,70,229,0.22) 0%, rgba(6,182,212,0.15) 100%)', border: '1px solid rgba(99,102,241,0.35)', backdropFilter: 'blur(20px)' }}>
+
+            {/* Animated pulse ring behind token */}
+            <div style={{ position: 'absolute', top: 14, right: 14, width: 70, height: 70, borderRadius: '50%', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }} />
+            <div style={{ position: 'absolute', top: 20, right: 20, width: 58, height: 58, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }} />
+
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#4ADE80', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Live Queue</span>
+              <div style={{ flex: 1 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '3px 8px' }}>
+                <Radio style={{ width: 10, height: 10, color: '#818CF8' }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#818CF8' }}>Dr. Ananya Sharma</span>
+              </div>
+            </div>
+
+            {/* Three stat boxes */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              {/* My Token */}
+              <div style={{ background: 'rgba(79,70,229,0.2)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 16, padding: '12px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginBottom: 4 }}>
+                  <Hash style={{ width: 10, height: 10, color: '#818CF8' }} />
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>My Token</span>
+                </div>
+                <span style={{ fontSize: 30, fontWeight: 900, color: '#A5B4FC', lineHeight: 1, display: 'block' }}>52</span>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, display: 'block' }}>Your number</span>
+              </div>
+
+              {/* Current Token */}
+              <div style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: 16, padding: '12px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginBottom: 4 }}>
+                  <Radio style={{ width: 10, height: 10, color: '#06B6D4' }} />
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current</span>
+                </div>
+                <span style={{ fontSize: 30, fontWeight: 900, color: '#67E8F9', lineHeight: 1, display: 'block' }}>47</span>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, display: 'block' }}>Being served</span>
+              </div>
+
+              {/* Est. Wait */}
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 16, padding: '12px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginBottom: 4 }}>
+                  <Timer style={{ width: 10, height: 10, color: '#22C55E' }} />
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Est. Wait</span>
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#4ADE80', lineHeight: 1, display: 'block', marginTop: 4 }}>~25</span>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, display: 'block' }}>minutes</span>
+              </div>
+            </div>
+
+            {/* Progress bar — 47 of 52, so ~90% */}
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>5 tokens ahead of you</span>
+                <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>Cardiology OPD</span>
+              </div>
+              <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '90%', borderRadius: 99, background: 'linear-gradient(90deg, #4F46E5, #06B6D4)' }} />
+              </div>
+            </div>
           </div>
         </div>
 
