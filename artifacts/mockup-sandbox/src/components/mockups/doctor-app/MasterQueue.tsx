@@ -511,8 +511,8 @@ export function MasterQueue() {
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 100px', position: 'relative', zIndex: 10 }}>
         {tab === 'queue' ? (
           <>
-            {/* Active patients — exclude currently consulting (shown in large card above) */}
-            {queue.filter(p => !['done','skipped'].includes(p.status) && p.status !== 'consulting').map(p => (
+            {/* Active patients — exclude consulting & next (shown in cards above) */}
+            {queue.filter(p => !['done','skipped','consulting','next'].includes(p.status)).map(p => (
               <QueueCard key={p.id} patient={p}
                 onCall={() => {}}
                 onDone={() => updateStatus(queue, setQueue, p.id, 'done')}
