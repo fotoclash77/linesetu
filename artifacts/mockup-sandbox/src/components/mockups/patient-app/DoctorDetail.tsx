@@ -217,7 +217,7 @@ export function DoctorDetail() {
 
         {/* LIVE QUEUE */}
         <div style={{ margin: '0 18px', marginBottom: 14, borderRadius: 18, padding: '14px 16px', background: 'linear-gradient(135deg, rgba(79,70,229,0.2) 0%, rgba(6,182,212,0.13) 100%)', border: '1px solid rgba(99,102,241,0.3)', backdropFilter: 'blur(16px)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Live Queue</span>
             <div style={{ flex: 1 }} />
@@ -225,6 +225,13 @@ export function DoctorDetail() {
               <Radio style={{ width: 10, height: 10, color: '#818CF8' }} />
               <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>Cardiology OPD</span>
             </div>
+          </div>
+          {/* Day & Date */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '6px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', alignSelf: 'flex-start', width: 'fit-content' }}>
+            <CalendarCheck style={{ width: 12, height: 12, color: '#67E8F9' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#67E8F9' }}>Thursday</span>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>·</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>10 Apr 2026</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             {[
