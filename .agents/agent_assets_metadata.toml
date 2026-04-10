@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "kXw7kC6T3WuggTVK1CBLT"
@@ -12,3 +11,9 @@ id = "y55xWDIGw7j-GcxUl5ti_"
 uri = "file://artifacts/doctor-onboarding/public/clinic-hero.png"
 type = "image"
 title = "doctor onboarding clinic hero"
+
+[[outputs]]
+id = "dMN3TMyAMBYdKaxqSx9zT"
+uri = "file://.local/outputs/Asset-Manager.pdf"
+type = "pdf"
+title = "Asset Manager.pdf"
