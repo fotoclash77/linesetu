@@ -79,27 +79,38 @@ type PatientPeriod = 'Daily' | 'Weekly' | 'Monthly';
 
 const PATIENT_DATA: Record<PatientPeriod, {
   total: number; consulted: number; noShow: number; waitlisted: number; emergency: number; walkIn: number;
+  onlineBooked: number; followUp: number; newPatient: number;
   consultedSpark: number[]; noShowSpark: number[]; waitSpark: number[];
+  onlineSpark: number[]; followUpSpark: number[]; newSpark: number[];
 }> = {
   Daily:   { total: 29,  consulted: 18,  noShow: 4,  waitlisted: 7,   emergency: 3,  walkIn: 8,
-    consultedSpark: [12,16,14,19,15,18], noShowSpark: [2,4,3,5,3,4], waitSpark: [8,6,9,5,7,7] },
+             onlineBooked: 21, followUp: 11, newPatient: 8,
+    consultedSpark: [12,16,14,19,15,18], noShowSpark: [2,4,3,5,3,4],   waitSpark:    [8,6,9,5,7,7],
+    onlineSpark:    [14,18,16,22,19,21], followUpSpark: [7,10,9,12,10,11], newSpark: [4,7,5,9,6,8] },
   Weekly:  { total: 184, consulted: 121, noShow: 24, waitlisted: 39,  emergency: 18, walkIn: 46,
-    consultedSpark: [95,112,108,125,115,121], noShowSpark: [18,22,20,26,21,24], waitSpark: [42,36,44,30,38,39] },
+             onlineBooked: 138, followUp: 73, newPatient: 48,
+    consultedSpark: [95,112,108,125,115,121], noShowSpark: [18,22,20,26,21,24], waitSpark: [42,36,44,30,38,39],
+    onlineSpark:    [108,125,118,142,130,138], followUpSpark: [55,68,62,78,68,73], newSpark: [35,44,40,52,44,48] },
   Monthly: { total: 736, consulted: 484, noShow: 96, waitlisted: 156, emergency: 72, walkIn: 184,
-    consultedSpark: [420,455,470,440,468,484], noShowSpark: [78,90,85,98,88,96], waitSpark: [168,145,175,130,152,156] },
+             onlineBooked: 552, followUp: 292, newPatient: 192,
+    consultedSpark: [420,455,470,440,468,484], noShowSpark: [78,90,85,98,88,96], waitSpark: [168,145,175,130,152,156],
+    onlineSpark:    [430,498,472,568,520,552], followUpSpark: [220,272,248,312,272,292], newSpark: [140,176,160,208,176,192] },
 };
 
 function PatientStats() {
   const [period, setPeriod] = useState<PatientPeriod>('Daily');
   const d = PATIENT_DATA[period];
 
-  const rows: { label: string; value: number; sub: string; icon: React.ElementType; color: string; bg: string; spark: number[] }[] = [
-    { label: 'Total Patients',    value: d.total,     sub: 'All registered today', icon: Users,        color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', spark: [20,24,22,28,25,d.total] },
-    { label: 'Consulted',         value: d.consulted, sub: 'Seen by doctor',        icon: CheckCircle2, color: '#4ADE80', bg: 'rgba(34,197,94,0.13)',  spark: d.consultedSpark },
-    { label: 'Not Shown',         value: d.noShow,    sub: 'Absent / skipped',      icon: UserX,        color: '#F87171', bg: 'rgba(239,68,68,0.13)',  spark: d.noShowSpark },
-    { label: 'Waitlisted',        value: d.waitlisted,sub: 'Still in queue',        icon: Clock,        color: '#FCD34D', bg: 'rgba(245,158,11,0.13)', spark: d.waitSpark },
-    { label: 'Emergency Patients',value: d.emergency, sub: 'Priority tokens',       icon: AlertCircle,  color: '#FB923C', bg: 'rgba(249,115,22,0.13)', spark: [1,3,2,4,2,d.emergency] },
-    { label: 'Walk-in Patients',  value: d.walkIn,    sub: 'Direct registration',   icon: Footprints,   color: '#67E8F9', bg: 'rgba(6,182,212,0.13)',  spark: [5,8,6,10,7,d.walkIn] },
+  const rows: { label: string; value: number; sub: string; icon: React.ElementType; color: string; bg: string; spark: number[]; divider?: boolean }[] = [
+    { label: 'Total Patients',         value: d.total,       sub: 'All registered',        icon: Users,        color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', spark: [20,24,22,28,25,d.total] },
+    { label: 'Consulted',              value: d.consulted,   sub: 'Seen by doctor',         icon: CheckCircle2, color: '#4ADE80', bg: 'rgba(34,197,94,0.13)',  spark: d.consultedSpark },
+    { label: 'Not Shown',              value: d.noShow,      sub: 'Absent / skipped',       icon: UserX,        color: '#F87171', bg: 'rgba(239,68,68,0.13)',  spark: d.noShowSpark },
+    { label: 'Waitlisted',             value: d.waitlisted,  sub: 'Still in queue',         icon: Clock,        color: '#FCD34D', bg: 'rgba(245,158,11,0.13)', spark: d.waitSpark },
+    { label: 'Emergency Patients',     value: d.emergency,   sub: 'Priority tokens',        icon: AlertCircle,  color: '#FB923C', bg: 'rgba(249,115,22,0.13)', spark: [1,3,2,4,2,d.emergency] },
+    { label: 'Walk-in Patients',       value: d.walkIn,      sub: 'Direct registration',    icon: Footprints,   color: '#67E8F9', bg: 'rgba(6,182,212,0.13)',  spark: [5,8,6,10,7,d.walkIn], divider: true },
+    { label: 'Online Token Booked',    value: d.onlineBooked,sub: 'Via app (Normal + Emerg)',icon: Smartphone,   color: '#818CF8', bg: 'rgba(99,102,241,0.15)', spark: d.onlineSpark },
+    { label: 'Follow-up Patients',     value: d.followUp,    sub: 'Returning patients',     icon: Activity,     color: '#34D399', bg: 'rgba(16,185,129,0.13)', spark: d.followUpSpark },
+    { label: 'New Patients',           value: d.newPatient,  sub: 'First-time visit',       icon: UserPlus,     color: '#F9A8D4', bg: 'rgba(236,72,153,0.13)', spark: d.newSpark },
   ];
 
   const consultPct = Math.round((d.consulted / d.total) * 100);
@@ -146,8 +157,16 @@ function PatientStats() {
         const Icon = row.icon;
         const pct = Math.min(100, Math.round((row.value / d.total) * 100));
         return (
-          <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 10,
-            padding: '9px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+          <React.Fragment key={row.label}>
+            {row.divider && (
+              <div style={{ margin: '8px 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Booking Type</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+            padding: '9px 0', borderTop: i > 0 && !row.divider ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
             <div style={{ width: 34, height: 34, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: row.bg, flexShrink: 0 }}>
               <Icon style={{ width: 14, height: 14, color: row.color, strokeWidth: 1.8 }} />
             </div>
@@ -163,6 +182,7 @@ function PatientStats() {
             </div>
             <Sparkline data={row.spark} color={row.color} fill={row.color} />
           </div>
+          </React.Fragment>
         );
       })}
     </div>
