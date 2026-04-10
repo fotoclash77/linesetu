@@ -432,9 +432,6 @@ export function Dashboard() {
           border: '3px solid #070B14' }}>
           <UserPlus style={{ width: 22, height: 22, color: '#FFF' }} />
         </div>
-        <span style={{ fontSize: 9, fontWeight: 700, color: TEAL_LT, letterSpacing: '0.04em',
-          background: 'rgba(7,11,20,0.8)', padding: '2px 7px', borderRadius: 8,
-          backdropFilter: 'blur(8px)', border: '1px solid rgba(45,212,191,0.2)' }}>Add Walk-in</span>
       </div>
 
       {/* ── NAV BAR ── */}
