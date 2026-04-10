@@ -133,12 +133,22 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
             </div>
           </div>
         </div>
-        {/* Status badge — hidden for currently consulting (shown in large card above) */}
+        {/* Status badge / Send Next — hidden for currently consulting */}
         {!isCurrent && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-            <div style={{ padding: '3px 8px', borderRadius: 8, background: sc.bg, border: `1px solid ${sc.border}` }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: sc.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sc.label}</span>
-            </div>
+          <div style={{ flexShrink: 0 }}>
+            {patient.status === 'waiting' ? (
+              <button onClick={onCall}
+                style={{ height: 30, padding: '0 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: '#FFF',
+                  background: 'linear-gradient(135deg, #0D9488, #0891B2)',
+                  boxShadow: '0 2px 10px rgba(13,148,136,0.4)' }}>
+                <ChevronRight style={{ width: 11, height: 11 }} /> Send Next
+              </button>
+            ) : (
+              <div style={{ padding: '3px 8px', borderRadius: 8, background: sc.bg, border: `1px solid ${sc.border}` }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: sc.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sc.label}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
