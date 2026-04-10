@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight, BadgeCheck, MapPin,
   Building2, Clock, Users, Sunrise, Sunset, Ticket,
@@ -133,6 +133,22 @@ export function Booking() {
   const isEmergency = tokenType === 'emergency';
   const payableNow = isEmergency ? 30 : 20;
   const consultFee = isEmergency ? 700 : 500;
+
+  useEffect(() => {
+    localStorage.setItem('linesetu_booking', JSON.stringify({
+      tokenType,
+      date: selectedDate,
+      shiftLabel:  shift?.label  ?? 'Morning',
+      shiftTime:   shift?.time   ?? '10:00 AM – 2:00 PM',
+      shiftClinic: shift?.clinic ?? 'HeartCare Clinic',
+      shiftLoc:    shift?.loc    ?? 'Andheri West, Mumbai',
+      yourToken:   yourToken ?? 43,
+      payableNow,
+      consultFee,
+      eAppFee:     isEmergency ? 20 : 10,
+      platformFee: 10,
+    }));
+  }, [tokenType, selectedDate, selectedShift, shift, yourToken, payableNow, consultFee, isEmergency]);
 
   return (
     <div style={{ width: 390, height: 844, background: BG, fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
