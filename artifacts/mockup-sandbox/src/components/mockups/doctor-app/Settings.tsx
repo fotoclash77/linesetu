@@ -4,7 +4,7 @@ import {
   Bell, Shield, LogOut, ChevronRight, Edit3, Sun, Moon,
   AlertCircle, BadgeCheck, MessageSquare, CalendarDays,
   Stethoscope, Phone, MapPin, ToggleLeft, Zap, Eye,
-  CheckCircle2, Save, Camera, HeartPulse, Award, Plus, Trash2, Hospital,
+  CheckCircle2, Save, Camera, HeartPulse, Award, Plus, Trash2, Hospital, Link2, Map,
 } from 'lucide-react';
 
 const BG      = '#070B14';
@@ -151,13 +151,13 @@ function ShiftBlock({ icon: Icon, label, color, defaultOn }: { icon: React.Eleme
 
 export function Settings() {
   const [clinics, setClinics] = useState([
-    { name: 'Sharma Heart Clinic',  address: 'Andheri West, Mumbai', phone: '+91 22 1234 5678', active: true  },
-    { name: 'City Cardiac Centre',  address: 'Bandra East, Mumbai',  phone: '+91 22 9876 5432', active: true  },
+    { name: 'Sharma Heart Clinic', address: 'Andheri West, Mumbai', phone: '+91 22 1234 5678', mapLink: 'https://maps.google.com/?q=Sharma+Heart+Clinic+Andheri', active: true },
+    { name: 'City Cardiac Centre', address: 'Bandra East, Mumbai',  phone: '+91 22 9876 5432', mapLink: '',                                                              active: true },
   ]);
   const [activeClinic, setActiveClinic] = useState(0);
 
   const addClinic = () => {
-    if (clinics.length < 3) setClinics(prev => [...prev, { name: '', address: '', phone: '', active: true }]);
+    if (clinics.length < 3) setClinics(prev => [...prev, { name: '', address: '', phone: '', mapLink: '', active: true }]);
   };
   const removeClinic = (idx: number) => {
     if (clinics.length <= 1) return;
@@ -357,12 +357,41 @@ export function Settings() {
             </div>
 
             {/* Phone */}
-            <div>
+            <div style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <Phone style={{ width: 9, height: 9, color: '#4ADE80' }} /> Clinic Phone
               </div>
               <input style={INPUT} value={clinics[activeClinic].phone} placeholder="+91 XX XXXX XXXX"
                 onChange={e => updateClinic(activeClinic, 'phone', e.target.value)} />
+            </div>
+
+            {/* Google Maps link */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Map style={{ width: 9, height: 9, color: '#F87171' }} /> Google Maps Link
+                </div>
+                {clinics[activeClinic].mapLink && (
+                  <a href={clinics[activeClinic].mapLink} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 8, color: TEAL_LT, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <Link2 style={{ width: 8, height: 8 }} /> Preview
+                  </a>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                  <Map style={{ width: 13, height: 13, color: clinics[activeClinic].mapLink ? '#F87171' : 'rgba(255,255,255,0.2)' }} />
+                </div>
+                <input
+                  style={{ ...INPUT, paddingLeft: 32 }}
+                  value={clinics[activeClinic].mapLink}
+                  placeholder="Paste Google Maps link here…"
+                  onChange={e => updateClinic(activeClinic, 'mapLink', e.target.value)}
+                />
+              </div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', marginTop: 4, fontWeight: 600 }}>
+                Shown to patients as "Get Directions" on the booking screen
+              </div>
             </div>
           </div>
         )}
