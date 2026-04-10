@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, ChevronRight, SkipForward, ArrowRight, Activity } from 'lucide-react';
+import { CheckCircle2, SkipForward, PhoneCall, Activity } from 'lucide-react';
 
 const glassStyle = {
   background: 'rgba(255,255,255,0.7)',
@@ -99,8 +99,8 @@ export function MasterQueue() {
           </Button>
 
           <Button className="flex-1 rounded-2xl h-14 bg-[#4F46E5] hover:bg-[#4F46E5]/90 text-white shadow-lg shadow-[#4F46E5]/30 font-bold border-none">
-            Next
-            <ArrowRight className="w-5 h-5 ml-1" />
+            <PhoneCall className="w-5 h-5 mr-1" />
+            Call Next
           </Button>
         </div>
       </div>
