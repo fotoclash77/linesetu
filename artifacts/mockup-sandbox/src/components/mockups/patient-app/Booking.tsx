@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, BadgeCheck, MapPin,
   Building2, Clock, Users, Sunrise, Sunset, Ticket,
   AlertCircle, CalendarCheck, Navigation,
-  Radio, Footprints, Wifi, Siren,
+  Radio, Footprints, Wifi, Siren, ShieldAlert,
 } from 'lucide-react';
 
 const BG = '#0A0E1A';
@@ -122,13 +122,17 @@ function QueueRow({ entry, isYours }: { entry: QueueEntry; isYours: boolean }) {
 }
 
 export function Booking() {
-  const [selectedDate, setSelectedDate] = useState(10); // Thu 10 Apr (today)
+  const [selectedDate, setSelectedDate] = useState(10);
   const [selectedShift, setSelectedShift] = useState(0);
+  const [tokenType, setTokenType] = useState<'normal' | 'emergency'>('normal');
 
   const shifts = getShifts(selectedDate);
   const shift = shifts[selectedShift] ?? null;
   const yourToken = shift ? shift.booked + 1 : null;
   const remaining = shift ? shift.max - shift.booked : 0;
+  const isEmergency = tokenType === 'emergency';
+  const payableNow = isEmergency ? 30 : 20;
+  const consultFee = isEmergency ? 700 : 500;
 
   return (
     <div style={{ width: 390, height: 844, background: BG, fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -286,6 +290,37 @@ export function Booking() {
               })}
             </div>
 
+            {/* ── TOKEN TYPE SELECTOR ── */}
+            <div style={{ padding: '0 18px', marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Token Type</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* Normal */}
+                <button onClick={() => setTokenType('normal')}
+                  style={{ padding: '12px 10px', borderRadius: 16, border: `1.5px solid ${!isEmergency ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.08)'}`, background: !isEmergency ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'center' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: !isEmergency ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
+                    <Ticket style={{ width: 15, height: 15, color: !isEmergency ? '#A5B4FC' : 'rgba(255,255,255,0.3)' }} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: !isEmergency ? '#A5B4FC' : 'rgba(255,255,255,0.4)' }}>Normal</div>
+                  <div style={{ fontSize: 9, color: !isEmergency ? 'rgba(165,180,252,0.65)' : 'rgba(255,255,255,0.25)', marginTop: 2 }}>Pay ₹20 · Consult ₹500</div>
+                </button>
+                {/* Emergency */}
+                <button onClick={() => setTokenType('emergency')}
+                  style={{ padding: '12px 10px', borderRadius: 16, border: `1.5px solid ${isEmergency ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.08)'}`, background: isEmergency ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'center' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: isEmergency ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
+                    <ShieldAlert style={{ width: 15, height: 15, color: isEmergency ? '#F87171' : 'rgba(255,255,255,0.3)' }} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: isEmergency ? '#F87171' : 'rgba(255,255,255,0.4)' }}>Emergency</div>
+                  <div style={{ fontSize: 9, color: isEmergency ? 'rgba(248,113,113,0.65)' : 'rgba(255,255,255,0.25)', marginTop: 2 }}>Pay ₹30 · Consult ₹700</div>
+                </button>
+              </div>
+              {isEmergency && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8, padding: '8px 10px', borderRadius: 11, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <Siren style={{ width: 11, height: 11, color: '#F87171', flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 10, color: 'rgba(248,113,113,0.8)', lineHeight: 1.5 }}>Emergency tokens are placed at the top of the queue and seen before all normal patients. Priority fee applies.</span>
+                </div>
+              )}
+            </div>
+
             {/* Clinic location row */}
             {shift && (
               <div style={{ margin: '0 18px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -345,7 +380,7 @@ export function Booking() {
             <div style={{ margin: '0 18px 14px', display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', borderRadius: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
               <AlertCircle style={{ width: 14, height: 14, color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>
-                Arrive at the clinic when your token is <strong style={{ color: '#FCD34D' }}>5 numbers away</strong>. Consultation fee of ₹500 is paid directly at the clinic.
+                Arrive at the clinic when your token is <strong style={{ color: '#FCD34D' }}>5 numbers away</strong>. Consultation fee of <strong style={{ color: isEmergency ? '#F87171' : '#FCD34D' }}>₹{consultFee}</strong> is paid directly at the clinic.
               </p>
             </div>
 
@@ -399,9 +434,9 @@ export function Booking() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 18px 20px', background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)', zIndex: 20 }}>
         <button
           disabled={shifts.length === 0}
-          style={{ width: '100%', height: 52, borderRadius: 16, background: shifts.length > 0 ? 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)' : 'rgba(255,255,255,0.07)', border: 'none', cursor: shifts.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: shifts.length > 0 ? '#FFF' : 'rgba(255,255,255,0.25)', boxShadow: shifts.length > 0 ? '0 8px 28px rgba(79,70,229,0.45)' : 'none' }}>
+          style={{ width: '100%', height: 52, borderRadius: 16, background: shifts.length === 0 ? 'rgba(255,255,255,0.07)' : isEmergency ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 60%, #F97316 100%)' : 'linear-gradient(135deg, #4F46E5 0%, #6366F1 60%, #0EA5E9 100%)', border: 'none', cursor: shifts.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: shifts.length > 0 ? '#FFF' : 'rgba(255,255,255,0.25)', boxShadow: shifts.length > 0 ? isEmergency ? '0 8px 28px rgba(239,68,68,0.5)' : '0 8px 28px rgba(79,70,229,0.45)' : 'none' }}>
           <CalendarCheck style={{ width: 18, height: 18 }} />
-          {shifts.length > 0 ? `Confirm Token #${yourToken} · Pay ₹20` : 'Select an Available Date'}
+          {shifts.length > 0 ? `Confirm ${isEmergency ? 'Emergency' : ''} Token #${isEmergency ? 'E' : ''}${yourToken} · Pay ₹${payableNow}` : 'Select an Available Date'}
         </button>
       </div>
     </div>
