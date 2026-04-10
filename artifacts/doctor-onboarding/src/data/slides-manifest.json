@@ -1,0 +1,58 @@
+[
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Welcome.tsx",
+    "title": "Welcome",
+    "description": "Welcome to LINESETU — hero cover for doctors",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678902",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2TheProblem.tsx",
+    "title": "The Problem",
+    "description": "The current reality of clinic queue chaos and revenue leakage",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678903",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3HowItWorks.tsx",
+    "title": "How It Works",
+    "description": "Three-step patient journey from booking to payout",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678904",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4Earnings.tsx",
+    "title": "Your Earnings",
+    "description": "Token fee breakdown and weekly payout structure",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678905",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5Dashboard.tsx",
+    "title": "Your Dashboard",
+    "description": "Four key screens of the Doctor App and their features",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678906",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6GettingStarted.tsx",
+    "title": "Getting Started",
+    "description": "Three-step setup: profile, shifts, bank account",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678907",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7ReadyToGo.tsx",
+    "title": "You Are All Set",
+    "description": "Closing summary slide with key details and contact info",
+    "speakerNotes": ""
+  }
+]

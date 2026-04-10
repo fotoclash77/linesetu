@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "kXw7kC6T3WuggTVK1CBLT"
+uri = "file://artifacts/investor-pitch/public/hero.png"
+type = "image"
+title = "investor hero background"
+
+[[generated]]
+id = "y55xWDIGw7j-GcxUl5ti_"
+uri = "file://artifacts/doctor-onboarding/public/clinic-hero.png"
+type = "image"
+title = "doctor onboarding clinic hero"
