@@ -383,6 +383,94 @@ export function MasterQueue() {
           </div>
         </div>
 
+        {/* ── NEXT PATIENT CARD ── */}
+        {(() => {
+          const nextPt = queue.find(p => p.status === 'next');
+          if (!nextPt) return null;
+          const isEmerg = nextPt.type === 'Emergency';
+          return (
+            <div style={{ borderRadius: 16, padding: '10px 14px', marginBottom: 10, position: 'relative', overflow: 'hidden',
+              background: isEmerg
+                ? 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(249,115,22,0.10))'
+                : 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(234,179,8,0.08))',
+              border: `1.5px solid ${isEmerg ? 'rgba(239,68,68,0.35)' : 'rgba(245,158,11,0.38)'}`,
+              boxShadow: isEmerg ? '0 4px 16px rgba(239,68,68,0.18)' : '0 4px 16px rgba(245,158,11,0.15)' }}>
+
+              {/* Glow */}
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 90, height: 90, borderRadius: '50%',
+                background: `radial-gradient(circle, ${isEmerg ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'} 0%, transparent 70%)`,
+                filter: 'blur(16px)', pointerEvents: 'none' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Token chip */}
+                <div style={{ width: 48, height: 48, borderRadius: 13, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  background: isEmerg ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.25)',
+                  border: `1.5px solid ${isEmerg ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)'}` }}>
+                  <span style={{ fontSize: 8, fontWeight: 700, color: isEmerg ? '#FCA5A5' : '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>Next</span>
+                  <span style={{ fontSize: 16, fontWeight: 900, color: '#FFF', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{nextPt.token}</span>
+                </div>
+
+                {/* Patient info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#FFF',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextPt.name}</span>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.38)' }}>{nextPt.age}{nextPt.gender}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {/* Normal / Emergency badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20,
+                      background: isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(99,102,241,0.2)',
+                      border: `1px solid ${isEmerg ? 'rgba(239,68,68,0.45)' : 'rgba(99,102,241,0.35)'}` }}>
+                      {isEmerg
+                        ? <AlertCircle style={{ width: 9, height: 9, color: '#F87171' }} />
+                        : <BadgeCheck  style={{ width: 9, height: 9, color: '#A5B4FC' }} />}
+                      <span style={{ fontSize: 9, fontWeight: 800,
+                        color: isEmerg ? '#F87171' : '#A5B4FC',
+                        textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {isEmerg ? 'Emergency' : 'Normal'}
+                      </span>
+                    </div>
+                    {/* Online / Walk-in badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20,
+                      background: TYPE_CFG[nextPt.type].bg }}>
+                      {React.createElement(TYPE_CFG[nextPt.type].icon, { style: { width: 9, height: 9, color: TYPE_CFG[nextPt.type].color } })}
+                      <span style={{ fontSize: 9, fontWeight: 800, color: TYPE_CFG[nextPt.type].color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {nextPt.type}
+                      </span>
+                    </div>
+                    {/* Visit type */}
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                      background: nextPt.visitType === 'First Visit' ? 'rgba(99,102,241,0.15)' : 'rgba(16,185,129,0.15)',
+                      color: nextPt.visitType === 'First Visit' ? '#A5B4FC' : '#6EE7B7' }}>
+                      {nextPt.visitType}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Label */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                  <ChevronRight style={{ width: 14, height: 14, color: isEmerg ? '#F87171' : '#FCD34D' }} />
+                </div>
+              </div>
+
+              {/* Phone + address row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8, paddingTop: 8,
+                borderTop: `1px solid ${isEmerg ? 'rgba(239,68,68,0.18)' : 'rgba(245,158,11,0.18)'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <PhoneIcon style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)' }} />
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>{nextPt.phone}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.3)' }} />
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>{nextPt.addr}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Stats row */}
         <div style={{ display: 'flex', gap: 6 }}>
           <MiniStat label="Total"   value={queue.length}   color="#A5B4FC" />
