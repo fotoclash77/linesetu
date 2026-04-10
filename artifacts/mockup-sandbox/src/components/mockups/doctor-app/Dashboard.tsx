@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Sun, Moon, PowerOff, UserPlus, Users,
-  TrendingUp, IndianRupee, Activity,
-  ChevronRight, Bell, Stethoscope, Zap,
-  Smartphone, Footprints, AlertCircle,
-  BarChart2, RefreshCw, CheckCircle2,
-  Clock, ArrowUpRight,
+  Sun, Moon, UserPlus, Users,
+  TrendingUp, Activity,
+  Bell, Stethoscope, Zap,
+  Smartphone, BarChart2, ArrowUpRight,
 } from 'lucide-react';
 
 const BG = '#070B14';
@@ -47,45 +45,6 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
   );
 }
 
-/* ─── QUEUE ROW ─── */
-function QueueRow({ token, name, age, gender, type, current, next }: {
-  token: number; name: string; age: number; gender: 'M' | 'F'; type: 'Online' | 'Walk-in' | 'Emergency'; current?: boolean; next?: boolean;
-}) {
-  const typeCfg = {
-    Online:    { color: '#4ADE80', bg: 'rgba(34,197,94,0.15)',   icon: Smartphone },
-    'Walk-in': { color: '#67E8F9', bg: 'rgba(6,182,212,0.15)',   icon: Footprints },
-    Emergency: { color: '#F87171', bg: 'rgba(239,68,68,0.15)',   icon: AlertCircle },
-  }[type];
-  const TypeIcon = typeCfg.icon;
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 16, marginBottom: 6,
-      background: current ? 'linear-gradient(135deg, rgba(13,148,136,0.22), rgba(6,182,212,0.15))' : next ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
-      border: current ? '1.5px solid rgba(45,212,191,0.4)' : next ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.05)',
-      boxShadow: current ? '0 4px 18px rgba(13,148,136,0.2)' : 'none' }}>
-      {/* Token */}
-      <div style={{ width: 42, height: 42, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        background: current ? 'linear-gradient(135deg, #0D9488, #0891B2)' : 'rgba(255,255,255,0.07)',
-        boxShadow: current ? '0 2px 12px rgba(13,148,136,0.5)' : 'none' }}>
-        <span style={{ fontSize: 15, fontWeight: 900, color: current ? '#FFF' : 'rgba(255,255,255,0.65)', letterSpacing: '-0.5px' }}>#{token}</span>
-      </div>
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: current ? '#FFF' : 'rgba(255,255,255,0.8)', marginBottom: 2 }}>{name}</div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>{age} yrs · {gender}</div>
-      </div>
-      {/* Type badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20, background: typeCfg.bg, flexShrink: 0 }}>
-        <TypeIcon style={{ width: 9, height: 9, color: typeCfg.color }} />
-        <span style={{ fontSize: 9, fontWeight: 800, color: typeCfg.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{type}</span>
-      </div>
-      {current && (
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: TEAL_LT, boxShadow: `0 0 8px ${TEAL_LT}`, flexShrink: 0 }} />
-      )}
-    </div>
-  );
-}
-
 /* ─── STAT CARD ─── */
 function StatCard({ label, value, sub, color, bg, sparkData }: {
   label: string; value: string | number; sub: string; color: string; bg: string; sparkData: number[];
@@ -106,21 +65,13 @@ function StatCard({ label, value, sub, color, bg, sparkData }: {
 
 /* ─── MAIN ─── */
 type EarningPeriod = 'Daily' | 'Weekly' | 'Monthly';
-type Shift = 'Morning' | 'Evening' | 'OFF';
+type Shift = 'Morning' | 'Evening';
 
 const EARNINGS = {
   Daily:   { online: 1200, clinic: 1140, emergency: 500,   total: 2840,  spark: [2200,2600,1900,3100,2500,2840] },
   Weekly:  { online: 7800, clinic: 7200, emergency: 3560,  total: 18560, spark: [14200,17800,15600,19200,16800,18560] },
   Monthly: { online: 31200,clinic: 28800,emergency: 14200, total: 74200, spark: [62000,68000,71000,66000,70000,74200] },
 };
-
-const QUEUE = [
-  { token: 47, name: 'Priya Mehta',   age: 34, gender: 'F' as const, type: 'Online' as const,    current: true  },
-  { token: 48, name: 'Rajan Gupta',   age: 28, gender: 'M' as const, type: 'Walk-in' as const,   next: true     },
-  { token: 49, name: 'Sunita Patel',  age: 52, gender: 'F' as const, type: 'Online' as const     },
-  { token: 50, name: 'Arjun Verma',   age: 19, gender: 'M' as const, type: 'Emergency' as const  },
-  { token: 51, name: 'Meena Kaur',    age: 45, gender: 'F' as const, type: 'Walk-in' as const    },
-];
 
 export function Dashboard() {
   const [period,       setPeriod]       = useState<EarningPeriod>('Daily');
@@ -257,9 +208,8 @@ export function Dashboard() {
             <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Clinic Shift</div>
             <div style={{ display: 'flex', gap: 6 }}>
               {([
-                { id: 'Morning', icon: Sun,      color: '#FCD34D', glow: 'rgba(245,158,11,0.35)' },
-                { id: 'Evening', icon: Moon,     color: '#A5B4FC', glow: 'rgba(99,102,241,0.35)' },
-                { id: 'OFF',     icon: PowerOff, color: '#F87171', glow: 'rgba(239,68,68,0.35)'  },
+                { id: 'Morning', icon: Sun,  color: '#FCD34D', glow: 'rgba(245,158,11,0.35)' },
+                { id: 'Evening', icon: Moon, color: '#A5B4FC', glow: 'rgba(99,102,241,0.35)' },
               ] as { id: Shift; icon: React.ElementType; color: string; glow: string }[]).map(s => {
                 const SIcon = s.icon;
                 const active = shift === s.id;
@@ -301,44 +251,6 @@ export function Dashboard() {
               <Users style={{ width: 15, height: 15 }} /> View Queue
             </button>
           </div>
-        </div>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            SECTION 3 — LIVE QUEUE
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <div style={{ borderRadius: 22, padding: '14px 14px 10px', marginBottom: 12, ...GLASS }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 8px #4ADE80', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Live Queue</span>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(34,197,94,0.15)', color: '#4ADE80' }}>
-                {QUEUE.length} waiting
-              </span>
-            </div>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: TEAL_LT }}>View All</span>
-              <ChevronRight style={{ width: 13, height: 13, color: TEAL_LT }} />
-            </button>
-          </div>
-
-          {/* Currently consulting banner */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 12, marginBottom: 10,
-            background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(45,212,191,0.25)' }}>
-            <Stethoscope style={{ width: 13, height: 13, color: TEAL_LT }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: TEAL_LT }}>Currently consulting</span>
-            <span style={{ fontSize: 12, fontWeight: 900, color: '#FFF', marginLeft: 2 }}>Token #47 — Priya Mehta</span>
-          </div>
-
-          {/* Queue rows */}
-          {QUEUE.map(p => (
-            <QueueRow key={p.token} {...p} />
-          ))}
-
-          {/* Call next */}
-          <button style={{ width: '100%', height: 42, borderRadius: 14, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: '#FFF', marginTop: 4,
-            background: 'linear-gradient(135deg, #0D9488, #0891B2)', boxShadow: `0 4px 14px rgba(13,148,136,0.35)` }}>
-            <RefreshCw style={{ width: 13, height: 13 }} /> Call Next Patient
-          </button>
         </div>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
