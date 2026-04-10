@@ -183,17 +183,12 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
               </button>
             </>
           ) : (
-            /* WAITING / NEXT: Send Alert + Not Shown */
+            /* WAITING / NEXT: Not Shown only */
             <>
-              <button onClick={onCall}
-                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
-                  background: 'rgba(99,102,241,0.2)', border: '1.5px solid rgba(99,102,241,0.4)', color: '#A5B4FC' }}>
-                <BadgeCheck style={{ width: 12, height: 12 }} /> Send Alert
-              </button>
               <button onClick={onSkip}
-                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 800,
+                style={{ flex: 1, height: 38, borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 800,
                   background: 'rgba(245,158,11,0.18)', border: '1.5px solid rgba(245,158,11,0.4)', color: '#FCD34D' }}>
-                <XCircle style={{ width: 12, height: 12 }} /> Not Shown
+                <XCircle style={{ width: 13, height: 13 }} /> Not Shown
               </button>
             </>
           )}
