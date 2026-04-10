@@ -62,13 +62,17 @@ function DocNavBar({ active }: { active: 'home'|'queue'|'earnings'|'settings'|'w
 }
 
 /* ── PERIOD DATA ── */
-type Period = 'Week' | 'Month' | 'LastMonth' | 'AllTime';
+type Period = 'Today' | 'Week' | 'Month' | 'LastMonth' | 'AllTime';
 
 const PERIOD_DATA: Record<Period, {
   label: string; total: number; online: number; emergency: number;
   normalCount: number; emergCount: number;
   trend: number;
 }> = {
+  Today: {
+    label: 'Today',        total: 840,    online: 540,   emergency: 300,
+    normalCount: 7,  emergCount: 2,  trend: 5.2,
+  },
   Week: {
     label: 'This Week',    total: 5880,   online: 3780,  emergency: 2100,
     normalCount: 54, emergCount: 15, trend: 8.4,
@@ -82,7 +86,7 @@ const PERIOD_DATA: Record<Period, {
     normalCount: 206, emergCount: 51, trend: -3.2,
   },
   AllTime: {
-    label: 'All Time',     total: 206500, online: 134500,emergency: 72000,
+    label: 'Lifetime',     total: 206500, online: 134500,emergency: 72000,
     normalCount: 1920, emergCount: 514, trend: 0,
   },
 };
@@ -249,7 +253,7 @@ export function Earnings() {
           <>
             {/* Period selector */}
             <div style={{ display: 'flex', gap: 5, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
-              {(['Week','Month','LastMonth','AllTime'] as Period[]).map(p => (
+              {(['Today','Week','Month','LastMonth','AllTime'] as Period[]).map(p => (
                 <button key={p} onClick={() => setPeriod(p)}
                   style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 800,
                     background: period === p ? TEAL : 'rgba(255,255,255,0.06)',
