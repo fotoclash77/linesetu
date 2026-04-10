@@ -4,7 +4,7 @@ import {
   Bell, Shield, LogOut, ChevronRight, Edit3, Sun, Moon,
   AlertCircle, BadgeCheck, MessageSquare, CalendarDays,
   Stethoscope, Phone, MapPin, ToggleLeft, Zap, Eye,
-  CheckCircle2, Save, Camera, HeartPulse, Award,
+  CheckCircle2, Save, Camera, HeartPulse, Award, Plus, Trash2, Hospital,
 } from 'lucide-react';
 
 const BG      = '#070B14';
@@ -150,6 +150,24 @@ function ShiftBlock({ icon: Icon, label, color, defaultOn }: { icon: React.Eleme
 }
 
 export function Settings() {
+  const [clinics, setClinics] = useState([
+    { name: 'Sharma Heart Clinic',  address: 'Andheri West, Mumbai', phone: '+91 22 1234 5678', active: true  },
+    { name: 'City Cardiac Centre',  address: 'Bandra East, Mumbai',  phone: '+91 22 9876 5432', active: true  },
+  ]);
+  const [activeClinic, setActiveClinic] = useState(0);
+
+  const addClinic = () => {
+    if (clinics.length < 3) setClinics(prev => [...prev, { name: '', address: '', phone: '', active: true }]);
+  };
+  const removeClinic = (idx: number) => {
+    if (clinics.length <= 1) return;
+    setClinics(prev => prev.filter((_, i) => i !== idx));
+    setActiveClinic(0);
+  };
+  const updateClinic = (idx: number, field: string, val: string | boolean) => {
+    setClinics(prev => prev.map((c, i) => i === idx ? { ...c, [field]: val } : c));
+  };
+
   const [onlineBooking, setOnlineBooking]   = useState(true);
   const [emergencyOn,   setEmergencyOn]     = useState(true);
   const [walkInOn,      setWalkInOn]        = useState(true);
@@ -266,20 +284,88 @@ export function Settings() {
 
         {/* ── CLINIC INFO ── */}
         <SectionHead icon={Building2} label="Clinic Info" color="#67E8F9" />
-        <div style={{ borderRadius: 18, overflow: 'hidden', ...GLASS }}>
-          {[
-            { icon: Building2, label: 'Clinic Name',    placeholder: 'Sharma Heart Clinic',     color: '#67E8F9' },
-            { icon: MapPin,    label: 'Address',        placeholder: 'Andheri West, Mumbai',     color: '#A5B4FC' },
-            { icon: Phone,     label: 'Clinic Phone',   placeholder: '+91 22 1234 5678',         color: '#4ADE80' },
-          ].map((f, i, arr) => (
-            <div key={f.label} style={{ padding: '9px 12px', borderBottom: i < arr.length-1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <f.icon style={{ width: 9, height: 9, color: f.color }} /> {f.label}
+
+        {/* Clinic tab selector + Add button */}
+        <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+          {clinics.map((c, i) => (
+            <button key={i} onClick={() => setActiveClinic(i)}
+              style={{ flex: 1, height: 38, borderRadius: 12, cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
+                background: activeClinic === i
+                  ? (c.active ? 'rgba(103,232,249,0.2)' : 'rgba(239,68,68,0.15)')
+                  : 'rgba(255,255,255,0.05)',
+                border: activeClinic === i
+                  ? `1.5px solid ${c.active ? 'rgba(103,232,249,0.45)' : 'rgba(239,68,68,0.4)'}`
+                  : '1.5px solid rgba(255,255,255,0.08)',
+                color: activeClinic === i ? '#FFF' : 'rgba(255,255,255,0.35)' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: activeClinic === i ? (c.active ? '#67E8F9' : '#F87171') : 'rgba(255,255,255,0.2)', marginBottom: 1 }}>
+                {c.active ? '● Active' : '○ Off'}
               </div>
-              <input style={INPUT} defaultValue={f.placeholder} />
-            </div>
+              Clinic {i + 1}
+            </button>
           ))}
+          {clinics.length < 3 && (
+            <button onClick={addClinic}
+              style={{ width: 38, height: 38, borderRadius: 12, border: '1.5px dashed rgba(103,232,249,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(103,232,249,0.06)', flexShrink: 0 }}>
+              <Plus style={{ width: 14, height: 14, color: 'rgba(103,232,249,0.6)' }} />
+            </button>
+          )}
         </div>
+
+        {/* Active clinic form */}
+        {clinics[activeClinic] && (
+          <div style={{ borderRadius: 18, padding: '12px', ...GLASS }}>
+            {/* Active toggle + remove */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Hospital style={{ width: 13, height: 13, color: '#67E8F9' }} />
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Clinic {activeClinic + 1}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
+                  background: clinics[activeClinic].active ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: clinics[activeClinic].active ? '#4ADE80' : '#F87171',
+                  border: clinics[activeClinic].active ? '1px solid rgba(74,222,128,0.3)' : '1px solid rgba(239,68,68,0.3)' }}>
+                  {clinics[activeClinic].active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {clinics.length > 1 && (
+                  <button onClick={() => removeClinic(activeClinic)}
+                    style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 style={{ width: 11, height: 11, color: '#F87171' }} />
+                  </button>
+                )}
+                <Toggle on={clinics[activeClinic].active} onChange={() => updateClinic(activeClinic, 'active', !clinics[activeClinic].active)} />
+              </div>
+            </div>
+
+            {/* Clinic Name */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Building2 style={{ width: 9, height: 9, color: '#67E8F9' }} /> Clinic Name
+              </div>
+              <input style={INPUT} value={clinics[activeClinic].name} placeholder="e.g. Sharma Heart Clinic"
+                onChange={e => updateClinic(activeClinic, 'name', e.target.value)} />
+            </div>
+
+            {/* Address */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <MapPin style={{ width: 9, height: 9, color: '#A5B4FC' }} /> Address
+              </div>
+              <input style={INPUT} value={clinics[activeClinic].address} placeholder="Area / locality, City"
+                onChange={e => updateClinic(activeClinic, 'address', e.target.value)} />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Phone style={{ width: 9, height: 9, color: '#4ADE80' }} /> Clinic Phone
+              </div>
+              <input style={INPUT} value={clinics[activeClinic].phone} placeholder="+91 XX XXXX XXXX"
+                onChange={e => updateClinic(activeClinic, 'phone', e.target.value)} />
+            </div>
+          </div>
+        )}
 
         {/* ── SHIFT TIMINGS ── */}
         <SectionHead icon={Clock} label="Shift Timings & Capacity" color="#FCD34D" />
