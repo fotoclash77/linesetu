@@ -42,7 +42,7 @@ const schedule = [
 ];
 
 const fees = [
-  { icon: CheckCircle2, label: 'Platform Fee',          sub: 'Paid online to confirm slot', amount: '₹10',  color: '#818CF8', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.3)'  },
+  { icon: CheckCircle2, label: 'Walk-in Token',          sub: 'Come early at clinic by 9 AM to take your token', amount: '₹0',  color: '#4ADE80', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.3)'  },
   { icon: Monitor,      label: 'Online Appointment',    sub: 'Video / teleconsultation',    amount: '₹20',  color: '#06B6D4', bg: 'rgba(6,182,212,0.1)',    border: 'rgba(6,182,212,0.25)'  },
   { icon: Building2,    label: 'Consultation at Clinic',sub: 'Pay directly at the clinic',  amount: '₹500', color: '#22C55E', bg: 'rgba(34,197,94,0.1)',    border: 'rgba(34,197,94,0.25)'  },
 ];
