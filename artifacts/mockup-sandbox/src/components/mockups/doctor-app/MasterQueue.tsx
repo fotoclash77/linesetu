@@ -133,13 +133,14 @@ function QueueCard({ patient, onCall, onDone, onSkip, isEmergency }:{
             </div>
           </div>
         </div>
-        {/* Status badge */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
-          <div style={{ padding: '3px 8px', borderRadius: 8, background: sc.bg, border: `1px solid ${sc.border}` }}>
-            {isCurrent && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: TEAL_LT, marginRight: 4, boxShadow: `0 0 6px ${TEAL_LT}` }} />}
-            <span style={{ fontSize: 9, fontWeight: 800, color: sc.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sc.label}</span>
+        {/* Status badge — hidden for currently consulting (shown in large card above) */}
+        {!isCurrent && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
+            <div style={{ padding: '3px 8px', borderRadius: 8, background: sc.bg, border: `1px solid ${sc.border}` }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: sc.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sc.label}</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Action buttons — only for active patients */}
