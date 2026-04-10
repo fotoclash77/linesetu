@@ -235,8 +235,8 @@ export function Home() {
                 <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: doc.accent + '18', filter: 'blur(16px)', pointerEvents: 'none' }} />
 
                 {/* Photo + Verified badge */}
-                <div style={{ position: 'relative', width: 72, height: 72, marginBottom: 10 }}>
-                  <div style={{ width: 72, height: 72, borderRadius: 20, overflow: 'hidden', border: `2.5px solid ${doc.accent}55`, background: doc.accent + '22' }}>
+                <div style={{ position: 'relative', width: 88, height: 88, marginBottom: 10 }}>
+                  <div style={{ width: 88, height: 88, borderRadius: 14, overflow: 'hidden', border: `2.5px solid ${doc.accent}55`, background: doc.accent + '22' }}>
                     <img src={doc.photo} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   {/* Verified badge */}
@@ -249,10 +249,6 @@ export function Home() {
                 <p style={{ fontSize: 13, fontWeight: 800, color: '#FFF', margin: '0 0 1px', lineHeight: 1.2 }}>{doc.name}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
                   <span style={{ fontSize: 10, fontWeight: 600, color: doc.accent, background: doc.accent + '18', padding: '2px 7px', borderRadius: 6 }}>{doc.spec}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Star style={{ width: 9, height: 9, fill: '#F59E0B', color: '#F59E0B' }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B' }}>{doc.rating}</span>
-                  </div>
                 </div>
 
                 {/* Clinic */}
