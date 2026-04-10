@@ -205,27 +205,34 @@ export function Dashboard() {
             <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Quick Controls</span>
           </div>
 
-          {/* Shift selector */}
+          {/* Shift toggle */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Clinic Shift</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {([
-                { id: 'Morning', icon: Sun,  color: '#FCD34D', glow: 'rgba(245,158,11,0.35)' },
-                { id: 'Evening', icon: Moon, color: '#A5B4FC', glow: 'rgba(99,102,241,0.35)' },
-              ] as { id: Shift; icon: React.ElementType; color: string; glow: string }[]).map(s => {
-                const SIcon = s.icon;
-                const active = shift === s.id;
-                return (
-                  <button key={s.id} onClick={() => setShift(s.id)}
-                    style={{ flex: 1, height: 52, borderRadius: 16, border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      background: active ? `${s.color}20` : 'rgba(255,255,255,0.05)',
-                      border: active ? `1.5px solid ${s.color}60` : '1.5px solid rgba(255,255,255,0.07)',
-                      boxShadow: active ? `0 2px 14px ${s.glow}` : 'none' }}>
-                    <SIcon style={{ width: 16, height: 16, color: active ? s.color : 'rgba(255,255,255,0.3)', strokeWidth: 1.8 }} />
-                    <span style={{ fontSize: 10, fontWeight: 800, color: active ? s.color : 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>{s.id}</span>
-                  </button>
-                );
-              })}
+            <div
+              onClick={() => setShift(s => s === 'Morning' ? 'Evening' : 'Morning')}
+              style={{ position: 'relative', display: 'flex', height: 52, borderRadius: 16, cursor: 'pointer', padding: 4,
+                background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)',
+                boxShadow: shift === 'Morning' ? '0 2px 16px rgba(245,158,11,0.2)' : '0 2px 16px rgba(99,102,241,0.2)',
+                transition: 'box-shadow 0.3s ease' }}>
+              {/* Sliding pill */}
+              <div style={{ position: 'absolute', top: 4, bottom: 4,
+                left: shift === 'Morning' ? 4 : 'calc(50% + 2px)',
+                width: 'calc(50% - 6px)', borderRadius: 12, transition: 'left 0.28s cubic-bezier(0.4,0,0.2,1)',
+                background: shift === 'Morning'
+                  ? 'linear-gradient(135deg, rgba(245,158,11,0.35), rgba(253,186,116,0.2))'
+                  : 'linear-gradient(135deg, rgba(99,102,241,0.35), rgba(165,180,252,0.2))',
+                border: shift === 'Morning' ? '1.5px solid rgba(245,158,11,0.5)' : '1.5px solid rgba(165,180,252,0.5)',
+                boxShadow: shift === 'Morning' ? '0 2px 12px rgba(245,158,11,0.3)' : '0 2px 12px rgba(99,102,241,0.3)' }} />
+              {/* Morning side */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
+                <Sun style={{ width: 15, height: 15, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
+                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Morning' ? '#FCD34D' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Morning</span>
+              </div>
+              {/* Evening side */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, position: 'relative', zIndex: 1 }}>
+                <Moon style={{ width: 14, height: 14, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.25)', strokeWidth: 2, transition: 'color 0.25s' }} />
+                <span style={{ fontSize: 12, fontWeight: 800, color: shift === 'Evening' ? '#A5B4FC' : 'rgba(255,255,255,0.28)', letterSpacing: '0.03em', transition: 'color 0.25s' }}>Evening</span>
+              </div>
             </div>
           </div>
 
