@@ -237,10 +237,10 @@ export function MasterQueue() {
         </div>
       </div>
 
-      {/* ── STICKY TOP: CURRENTLY CONSULTING ── */}
+      {/* ── STICKY TOP ── */}
       <div style={{ padding: '8px 16px 10px', flexShrink: 0, position: 'relative', zIndex: 10 }}>
         {/* Title row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 8px #4ADE80' }} />
             <span style={{ fontSize: 12, fontWeight: 800, color: '#FFF' }}>Master Queue</span>
@@ -251,47 +251,140 @@ export function MasterQueue() {
           </div>
         </div>
 
-        {/* Currently consulting banner */}
-        <div style={{ borderRadius: 18, padding: '12px 14px', position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(13,148,136,0.25), rgba(6,182,212,0.15))',
-          border: '1.5px solid rgba(45,212,191,0.35)',
-          boxShadow: '0 4px 20px rgba(13,148,136,0.2)', marginBottom: 10 }}>
-          <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(45,212,191,0.2) 0%, transparent 70%)', filter: 'blur(16px)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(45,212,191,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
-                Currently Consulting
+        {/* ── LARGE CURRENTLY CONSULTING CARD ── */}
+        <div style={{ borderRadius: 22, padding: '16px 16px 14px', position: 'relative', overflow: 'hidden', marginBottom: 10,
+          background: 'linear-gradient(145deg, rgba(13,148,136,0.28) 0%, rgba(6,182,212,0.16) 60%, rgba(7,11,20,0.6) 100%)',
+          border: '1.5px solid rgba(45,212,191,0.38)',
+          boxShadow: '0 8px 32px rgba(13,148,136,0.25)' }}>
+
+          {/* Background glow blobs */}
+          <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(45,212,191,0.22) 0%, transparent 70%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)', filter: 'blur(18px)', pointerEvents: 'none' }} />
+
+          {/* Live badge + consulting time */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20,
+              background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 6px #4ADE80', display: 'inline-block' }} />
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Currently Consulting</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20,
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Clock style={{ width: 9, height: 9, color: 'rgba(255,255,255,0.4)' }} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.45)' }}>12 min</span>
+            </div>
+          </div>
+
+          {/* Token + Name hero row */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+            {/* Token block */}
+            <div style={{ width: 64, height: 64, borderRadius: 18, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              background: 'linear-gradient(135deg, #0D9488, #0891B2)',
+              boxShadow: '0 4px 20px rgba(13,148,136,0.55)' }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1 }}>Token</span>
+              <span style={{ fontSize: 28, fontWeight: 900, color: '#FFF', letterSpacing: '-1.5px', lineHeight: 1.1 }}>{current?.token ?? '—'}</span>
+            </div>
+            {/* Name + badges */}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#FFF', letterSpacing: '-0.5px', lineHeight: 1.15, marginBottom: 5 }}>
+                {current?.name ?? 'No patient'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontSize: 30, fontWeight: 900, color: '#FFF', letterSpacing: '-1px', lineHeight: 1 }}>
-                  {current?.token ?? '—'}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                  background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 8 }}>
+                  {current?.age} yrs · {current?.gender === 'M' ? 'Male' : 'Female'}
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>
-                  {current?.name ?? 'No patient'}
-                </span>
+                {current && (
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 8,
+                    background: TYPE_CFG[current.type].bg, color: TYPE_CFG[current.type].color }}>
+                    {current.type}
+                  </span>
+                )}
+                {current && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+                    background: current.visitType === 'First Visit' ? 'rgba(99,102,241,0.2)' : 'rgba(16,185,129,0.2)',
+                    color: current.visitType === 'First Visit' ? '#A5B4FC' : '#6EE7B7' }}>
+                    {current.visitType}
+                  </span>
+                )}
               </div>
-              {current && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>{current.age}{current.gender}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10 }}>·</span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>{current.type}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10 }}>·</span>
-                  <span style={{ fontSize: 10, color: TEAL_LT }}>{current.visitType}</span>
+            </div>
+          </div>
+
+          {/* Patient detail grid */}
+          {current && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+              {/* Phone */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(45,212,191,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <PhoneIcon style={{ width: 12, height: 12, color: TEAL_LT }} />
                 </div>
-              )}
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Phone</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{current.phone}</div>
+                </div>
+              </div>
+              {/* Address */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MapPin style={{ width: 12, height: 12, color: '#A5B4FC' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Address</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{current.addr}</div>
+                </div>
+              </div>
+              {/* Waiting count */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Users style={{ width: 12, height: 12, color: '#FCD34D' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Waiting</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#FCD34D' }}>{waiting.length} patients · ~{waiting.length * 8}m</div>
+                </div>
+              </div>
+              {/* Consult fee */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px', borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(74,222,128,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <BadgeCheck style={{ width: 12, height: 12, color: '#4ADE80' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Consult Fee</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80' }}>
+                    {current?.type === 'Emergency' ? '₹700' : '₹500'}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Waiting</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#FCD34D', lineHeight: 1 }}>{waiting.length}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>~{waiting.length * 8}m avg</div>
-            </div>
+          )}
+
+          {/* Action buttons inside card */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => current && updateStatus(queue, setQueue, current.id, 'skipped')}
+              style={{ flex: 1, height: 42, borderRadius: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 800,
+                background: 'rgba(245,158,11,0.18)', border: '1.5px solid rgba(245,158,11,0.45)', color: '#FCD34D' }}>
+              <XCircle style={{ width: 14, height: 14 }} /> Not Shown
+            </button>
+            <button onClick={() => current && updateStatus(queue, setQueue, current.id, 'done')}
+              style={{ flex: 1, height: 42, borderRadius: 13, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: '#FFF',
+                background: 'linear-gradient(135deg, #16A34A, #22C55E)',
+                boxShadow: '0 4px 14px rgba(34,197,94,0.4)' }}>
+              <CheckCircle2 style={{ width: 14, height: 14 }} /> Done
+            </button>
           </div>
         </div>
 
         {/* Stats row */}
         <div style={{ display: 'flex', gap: 6 }}>
-          <MiniStat label="Total"   value={queue.length}  color="#A5B4FC" />
+          <MiniStat label="Total"   value={queue.length}   color="#A5B4FC" />
           <MiniStat label="Waiting" value={waiting.length} color="#FCD34D" />
           <MiniStat label="Done"    value={done}           color="#4ADE80" />
           <MiniStat label="Skipped" value={skipped}        color="#F87171" />
