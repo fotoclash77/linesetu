@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "./_shared/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Filter, MoreHorizontal, Edit, Eye, MapPin } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, Edit, Eye, MapPin, X, Building2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function Clinics() {
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newClinic, setNewClinic] = useState({ name: "", city: "", doctorName: "", phone: "" });
+
   const glassStyle = {
     backdropFilter: "blur(12px)",
     background: "rgba(255,255,255,0.7)",
@@ -33,7 +36,7 @@ export function Clinics() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Clinics Management</h1>
             <p className="text-muted-foreground mt-1">Manage onboarded clinics, doctors, and subscription status.</p>
           </div>
-          <Button className="rounded-xl shadow-md" size="lg">
+          <Button className="rounded-xl shadow-md" size="lg" onClick={() => setShowAddModal(true)}>
             <Plus className="w-5 h-5 mr-2" />
             Add Clinic
           </Button>
@@ -139,6 +142,103 @@ export function Clinics() {
           </div>
         </Card>
       </div>
+
+      {/* Add Clinic Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div
+            className="absolute inset-0 bg-black/20"
+            style={{ backdropFilter: "blur(4px)" }}
+            onClick={() => setShowAddModal(false)}
+          />
+          <div
+            className="relative z-10 w-full max-w-md rounded-3xl p-6"
+            style={{
+              background: "rgba(255,255,255,0.92)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.95)",
+              boxShadow: "0 24px 64px rgba(31,38,135,0.12)",
+            }}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Add New Clinic</h2>
+                  <p className="text-xs text-muted-foreground">Onboard a new clinic to the platform</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Clinic Name *</label>
+                <Input
+                  placeholder="e.g. Apollo Clinics Delhi"
+                  value={newClinic.name}
+                  onChange={(e) => setNewClinic({ ...newClinic, name: e.target.value })}
+                  className="rounded-xl bg-white/70 border-gray-200"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">City *</label>
+                <Input
+                  placeholder="e.g. New Delhi"
+                  value={newClinic.city}
+                  onChange={(e) => setNewClinic({ ...newClinic, city: e.target.value })}
+                  className="rounded-xl bg-white/70 border-gray-200"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Primary Doctor Name</label>
+                <Input
+                  placeholder="e.g. Dr. Ananya Sharma"
+                  value={newClinic.doctorName}
+                  onChange={(e) => setNewClinic({ ...newClinic, doctorName: e.target.value })}
+                  className="rounded-xl bg-white/70 border-gray-200"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Contact Phone</label>
+                <Input
+                  placeholder="+91 98765 43210"
+                  value={newClinic.phone}
+                  onChange={(e) => setNewClinic({ ...newClinic, phone: e.target.value })}
+                  className="rounded-xl bg-white/70 border-gray-200"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 rounded-xl shadow-lg shadow-primary/25"
+                onClick={() => setShowAddModal(false)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Clinic
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
