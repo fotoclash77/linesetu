@@ -20,15 +20,15 @@ const quickLinks = [
 ];
 
 const recommended = [
-  { name: 'Dr. Ananya Sharma', spec: 'Cardiologist',   token: 47, wait: '25 min', fee: '₹500', rating: 4.9, initials: 'AS', accent: '#EF4444' },
-  { name: 'Dr. Vikram Patel',  spec: 'Dermatologist',  token: 12, wait: '10 min', fee: '₹400', rating: 4.8, initials: 'VP', accent: '#3B82F6' },
-  { name: 'Dr. Priya Nair',    spec: 'Neurologist',    token: 31, wait: '18 min', fee: '₹600', rating: 4.7, initials: 'PN', accent: '#8B5CF6' },
+  { name: 'Dr. Ananya Sharma', spec: 'Cardiologist',   token: 47, wait: '25 min', fee: '₹500', rating: 4.9, initials: 'AS', accent: '#EF4444', photo: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  { name: 'Dr. Vikram Patel',  spec: 'Dermatologist',  token: 12, wait: '10 min', fee: '₹400', rating: 4.8, initials: 'VP', accent: '#3B82F6', photo: 'https://randomuser.me/api/portraits/men/32.jpg'   },
+  { name: 'Dr. Priya Nair',    spec: 'Neurologist',    token: 31, wait: '18 min', fee: '₹600', rating: 4.7, initials: 'PN', accent: '#8B5CF6', photo: 'https://randomuser.me/api/portraits/women/68.jpg' },
 ];
 
 const topRated = [
-  { name: 'Dr. Rohan Desai',  spec: 'Pediatrician', rating: 5.0, reviews: 312, fee: '₹350', initials: 'RD', accent: '#10B981' },
-  { name: 'Dr. Sneha Joshi',  spec: 'Gynecologist', rating: 4.9, reviews: 278, fee: '₹550', initials: 'SJ', accent: '#EC4899' },
-  { name: 'Dr. Arun Kumar',   spec: 'Orthopedic',   rating: 4.9, reviews: 195, fee: '₹450', initials: 'AK', accent: '#F97316' },
+  { name: 'Dr. Rohan Desai',  spec: 'Pediatrician', rating: 5.0, reviews: 312, fee: '₹350', initials: 'RD', accent: '#10B981', photo: 'https://randomuser.me/api/portraits/men/46.jpg'   },
+  { name: 'Dr. Sneha Joshi',  spec: 'Gynecologist', rating: 4.9, reviews: 278, fee: '₹550', initials: 'SJ', accent: '#EC4899', photo: 'https://randomuser.me/api/portraits/women/56.jpg' },
+  { name: 'Dr. Arun Kumar',   spec: 'Orthopedic',   rating: 4.9, reviews: 195, fee: '₹450', initials: 'AK', accent: '#F97316', photo: 'https://randomuser.me/api/portraits/men/74.jpg'   },
 ];
 
 const categories = [
@@ -42,9 +42,22 @@ const categories = [
   { icon: Stethoscope,label: 'General',    color: '#F59E0B' },
 ];
 
-function Avatar({ initials, accent, size = 44 }: { initials: string; accent: string; size?: number }) {
+function Avatar({ initials, accent, photo, size = 44 }: { initials: string; accent: string; photo?: string; size?: number }) {
+  const radius = size / 2.5;
+  if (photo) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: radius, border: `2px solid ${accent}55`, overflow: 'hidden', flexShrink: 0, background: accent + '22' }}>
+        <img
+          src={photo}
+          alt={initials}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+        />
+      </div>
+    );
+  }
   return (
-    <div style={{ width: size, height: size, borderRadius: size / 2.5, background: accent + '22', border: `1.5px solid ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: radius, background: accent + '22', border: `1.5px solid ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <span style={{ fontSize: size * 0.32, fontWeight: 700, color: accent }}>{initials}</span>
     </div>
   );
@@ -152,7 +165,7 @@ export function Home() {
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
             {recommended.map((doc) => (
               <div key={doc.name} style={{ minWidth: 160, borderRadius: 18, padding: '14px 13px', ...GLASS, flexShrink: 0, cursor: 'pointer' }}>
-                <Avatar initials={doc.initials} accent={doc.accent} size={44} />
+                <Avatar initials={doc.initials} accent={doc.accent} photo={doc.photo} size={44} />
                 <p style={{ fontSize: 12, fontWeight: 700, color: '#FFF', margin: '8px 0 1px', lineHeight: 1.2 }}>{doc.name}</p>
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 8px' }}>{doc.spec}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
@@ -181,7 +194,7 @@ export function Home() {
             {topRated.map((doc, i) => (
               <div key={doc.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, ...GLASS_STRONG, cursor: 'pointer' }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <Avatar initials={doc.initials} accent={doc.accent} size={46} />
+                  <Avatar initials={doc.initials} accent={doc.accent} photo={doc.photo} size={46} />
                   <div style={{ position: 'absolute', bottom: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#0A0E1A', border: `1.5px solid ${['#FFD700','#C0C0C0','#CD7F32'][i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontSize: 8, fontWeight: 800, color: ['#FFD700','#C0C0C0','#CD7F32'][i] }}>{i + 1}</span>
                   </div>
