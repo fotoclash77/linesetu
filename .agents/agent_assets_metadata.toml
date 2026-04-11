@@ -17,3 +17,9 @@ id = "dMN3TMyAMBYdKaxqSx9zT"
 uri = "file://.local/outputs/Asset-Manager.pdf"
 type = "pdf"
 title = "Asset Manager.pdf"
+
+[[outputs]]
+id = "RS8nonJchkaxJy9wlII2T"
+uri = "file://.local/outputs/LINESETU.pptx"
+type = "slides"
+title = "LINESETU.pptx"
