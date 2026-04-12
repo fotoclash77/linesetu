@@ -182,7 +182,7 @@ function LiveQueueCard({ token }: { token: TokenSample | undefined }) {
         </View>
       </View>
 
-      <Pressable style={styles.viewQueueBtn} onPress={() => router.push("/(tabs)/bookings")}>
+      <Pressable style={styles.viewQueueBtn} onPress={() => token?.id && router.push(`/queue/${token.id}`)}>
         <Text style={styles.viewQueueBtnTxt}>View Queue →</Text>
       </Pressable>
     </View>
@@ -203,8 +203,11 @@ export default function HomeScreen() {
     enabled: !!patient?.id,
   });
 
-  const apiDoctors = (doctorsData?.doctors ?? []).map((d, i: number) => ({
-    ...d,
+  const apiDoctors: DoctorSample[] = (doctorsData?.doctors ?? []).map((d, i: number) => ({
+    id: d.id,
+    name: d.name,
+    specialization: d.specialization,
+    clinicName: d.clinicName ?? "Clinic",
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
     wait: "~15 min",
@@ -213,7 +216,7 @@ export default function HomeScreen() {
     patients: "1K+",
     photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
   }));
-  const doctors = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
+  const doctors: DoctorSample[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
 
   const activeTokens = (tokenData?.tokens ?? []).filter(
     (t) => t.status === "waiting" || t.status === "in_consult"
@@ -329,7 +332,7 @@ export default function HomeScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.docList}>
-                {doctors.map((doc: any) => (
+                {doctors.map((doc) => (
                   <DoctorCard key={doc.id} doc={doc} />
                 ))}
               </View>

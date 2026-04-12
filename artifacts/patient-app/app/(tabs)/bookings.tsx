@@ -367,7 +367,7 @@ export default function BookingsScreen() {
           </View>
         ) : (
           <View style={{ marginTop: 4 }}>
-            {filtered.map((bk: any) => (
+            {filtered.map((bk) => (
               <BookingCard key={bk.id} booking={bk} showMember={showMember} />
             ))}
           </View>

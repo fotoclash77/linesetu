@@ -44,7 +44,7 @@ export default function LoginScreen() {
   }
 
   function handleOtp() {
-    if (otp.trim().length < 4) {
+    if (otp.trim().length < 6) {
       setError("Enter the 6-digit OTP sent to your number");
       return;
     }
