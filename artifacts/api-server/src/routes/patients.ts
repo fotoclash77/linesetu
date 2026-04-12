@@ -57,9 +57,8 @@ router.get("/patients/:patientId/tokens", async (req, res) => {
       where("patientId", "==", req.params.patientId),
       limit(50)
     ));
-    type TokenDoc = { id: string; bookedAt?: { seconds: number } };
     const tokens = snap.docs
-      .map(d => ({ id: d.id, ...(d.data() as Omit<TokenDoc, "id">) }))
+      .map(d => ({ id: d.id, ...d.data() as any }))
       .sort((a, b) => {
         const aTime = a.bookedAt?.seconds ?? 0;
         const bTime = b.bookedAt?.seconds ?? 0;
