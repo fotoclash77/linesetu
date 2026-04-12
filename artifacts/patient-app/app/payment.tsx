@@ -24,7 +24,7 @@ const isWeb = Platform.OS === "web";
 const PAYMENT_METHODS = [
   { id: "upi",     label: "UPI / QR Pay",       sub: "GPay, PhonePe, Paytm, BHIM",    icon: "smartphone" as const,   color: "#818CF8" },
   { id: "card",    label: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay",       icon: "credit-card" as const,  color: "#06B6D4" },
-  { id: "netbank", label: "Net Banking",          sub: "All major Indian banks",         icon: "globe" as const,        color: "#22C55E" },
+  { id: "wallet",  label: "Wallets",              sub: "Paytm, Amazon Pay, Mobikwik",    icon: "credit-card" as const,  color: "#22C55E" },
 ];
 
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];

@@ -38,22 +38,33 @@ const SAMPLE_BOOKINGS = [
 
 type FilterTab = "all" | "active" | "upcoming" | "past";
 
-interface BookingRecord {
+interface TokenItem {
   id: string;
-  memberId: string;
-  status: string;
+  doctorId?: string;
+  doctorName?: string;
   tokenNumber: number;
+  status: "waiting" | "active" | "done" | string;
+  bookedAt?: string;
+  shiftLabel?: string;
+  queuePosition?: number;
+}
+
+interface BookingItem extends TokenItem {
+  memberId: string;
   doctor: string;
   doctorPhoto: string;
   specialty: string;
-  clinicName: string;
-  clinicLoc: string;
+  clinicName?: string;
+  clinicLoc?: string;
   date: string;
   shift: string;
-  time: string;
-  visitType: string;
+  time?: string;
+  shiftTime?: string;
+  visitType?: "first" | "followup" | string;
+  tokenType?: "normal" | "emergency";
   ahead?: number;
   patientPaid: number;
+  amount?: number;
   consultFee: number;
 }
 
@@ -121,7 +132,7 @@ function MemberDropdown({ selected, onSelect }: { selected: typeof MEMBERS[0]; o
   );
 }
 
-function SummaryStrip({ bookings }: { bookings: BookingRecord[] }) {
+function SummaryStrip({ bookings }: { bookings: BookingItem[] }) {
   const active = bookings.filter(b => b.status === "waiting" || b.status === "in_consult").length;
   const upcoming = bookings.filter(b => b.status === "upcoming").length;
   const done = bookings.filter(b => b.status === "done").length;
@@ -146,7 +157,7 @@ function SummaryStrip({ bookings }: { bookings: BookingRecord[] }) {
   );
 }
 
-function BookingCard({ booking, showMember }: { booking: BookingRecord; showMember: boolean }) {
+function BookingCard({ booking, showMember }: { booking: BookingItem; showMember: boolean }) {
   const cfg = STATUS_CFG[booking.status] ?? STATUS_CFG.waiting;
   const isActive = booking.status === "waiting" || booking.status === "in_consult";
   const isSkipped = booking.status === "cancelled";
@@ -271,7 +282,7 @@ export default function BookingsScreen() {
 
   const apiTokens = data?.tokens ?? [];
 
-  const allBookings: BookingRecord[] = apiTokens.length > 0
+  const allBookings: BookingItem[] = apiTokens.length > 0
     ? apiTokens.map((t, i: number) => ({
         ...t,
         doctor: `Doctor ${i + 1}`,

@@ -33,27 +33,31 @@ const SPECIALTIES = [
   { icon: "thermometer" as const, label: "General", color: "#F59E0B" },
 ] as const;
 
-const SAMPLE_DOCTORS = [
-  { id: "demo1", name: "Dr. Ananya Sharma", specialization: "Cardiologist", clinicName: "HeartCare Clinic, Andheri", rating: "4.9", wait: "25 min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: "demo2", name: "Dr. Vikram Patel", specialization: "Dermatologist", clinicName: "Skin Glow Center, Bandra", rating: "4.8", wait: "10 min", token: 12, accent: "#3B82F6", exp: "9 yrs", patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg" },
-  { id: "demo3", name: "Dr. Priya Nair", specialization: "Neurologist", clinicName: "NeuroPlus Hospital, Powai", rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
+const SAMPLE_DOCTORS: DoctorItem[] = [
+  { id: "demo1", name: "Dr. Ananya Sharma", specialty: "Cardiologist",  clinicName: "HeartCare Clinic, Andheri",   rating: "4.9", wait: "25 min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { id: "demo2", name: "Dr. Vikram Patel",  specialty: "Dermatologist", clinicName: "Skin Glow Center, Bandra",    rating: "4.8", wait: "10 min", token: 12, accent: "#3B82F6", exp: "9 yrs",  patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg"   },
+  { id: "demo3", name: "Dr. Priya Nair",    specialty: "Neurologist",   clinicName: "NeuroPlus Hospital, Powai",   rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
 ];
 
-interface DoctorSample {
+interface DoctorItem {
   id: string;
   name: string;
-  specialization: string;
+  specialty: string;
   clinicName: string;
-  rating: string;
+  rating?: string;
+  verified?: boolean;
+  photo?: string;
+  nextTokenNo?: number;
+  estWaitMin?: number;
+  fee?: number;
+  accent: string;
   wait: string;
   token: number;
-  accent: string;
   exp: string;
   patients: string;
-  photo: string;
 }
 
-function DoctorCard({ doc }: { doc: DoctorSample }) {
+function DoctorCard({ doc }: { doc: DoctorItem }) {
   const { accent } = doc;
   return (
     <Pressable
@@ -81,7 +85,7 @@ function DoctorCard({ doc }: { doc: DoctorSample }) {
         <Text style={styles.verifiedTxt}>Verified</Text>
       </View>
       <View style={[styles.specBadge, { backgroundColor: accent + "18" }]}>
-        <Text style={[styles.specText, { color: accent }]}>{doc.specialization}</Text>
+        <Text style={[styles.specText, { color: accent }]}>{doc.specialty}</Text>
       </View>
       <View style={styles.clinicRow}>
         <Feather name="home" size={9} color="rgba(255,255,255,0.3)" />
@@ -117,15 +121,19 @@ function DoctorCard({ doc }: { doc: DoctorSample }) {
   );
 }
 
-interface TokenSample {
+interface TokenItem {
   id: string;
-  tokenNumber: number;
   doctorId: string;
-  status: string;
+  doctorName?: string;
+  tokenNumber: number;
+  status: "waiting" | "active" | "done" | string;
+  bookedAt?: string;
+  shiftLabel?: string;
+  queuePosition?: number;
   [key: string]: unknown;
 }
 
-function LiveQueueCard({ token }: { token: TokenSample | undefined }) {
+function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
   const myToken = token?.tokenNumber ?? 52;
   const currentToken = 47;
   const waitMin = 25;
@@ -203,10 +211,10 @@ export default function HomeScreen() {
     enabled: !!patient?.id,
   });
 
-  const apiDoctors: DoctorSample[] = (doctorsData?.doctors ?? []).map((d, i: number) => ({
+  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d, i: number) => ({
     id: d.id,
     name: d.name,
-    specialization: d.specialization,
+    specialty: d.specialization,
     clinicName: d.clinicName ?? "Clinic",
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
@@ -216,11 +224,11 @@ export default function HomeScreen() {
     patients: "1K+",
     photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
   }));
-  const doctors: DoctorSample[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
+  const doctors: DoctorItem[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
 
   const activeTokens = (tokenData?.tokens ?? []).filter(
     (t) => t.status === "waiting" || t.status === "in_consult"
-  ) as unknown as TokenSample[];
+  ) as unknown as TokenItem[];
   const hasActiveToken = activeTokens.length > 0;
   const activeToken = activeTokens[0];
 

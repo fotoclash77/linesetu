@@ -234,29 +234,40 @@ export default function LiveQueueScreen() {
         </View>
 
         {/* Alert Banners */}
-        {isNear && (
+        {isNext && !isDone && (
+          <View style={styles.sectionPad}>
+            <View style={styles.alertBannerGreen}>
+              <Feather name="check-circle" size={15} color="#4ADE80" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.alertTitle, { color: "#4ADE80" }]}>You're Next!</Text>
+                <Text style={styles.alertBody}>Head to the clinic now — the doctor will call you shortly.</Text>
+              </View>
+            </View>
+          </View>
+        )}
+        {isNear && !isNext && (
           <View style={styles.sectionPad}>
             <View style={styles.alertBannerYellow}>
               <Feather name="alert-triangle" size={15} color="#FCD34D" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.alertTitle}>Almost your turn!</Text>
-                <Text style={styles.alertBody}>Only {ahead} token{ahead !== 1 ? "s" : ""} ahead — make your way to the clinic now.</Text>
+                <Text style={styles.alertTitle}>Only {ahead} patient{ahead !== 1 ? "s" : ""} ahead — Get ready!</Text>
+                <Text style={styles.alertBody}>Make your way to the clinic now so you don't miss your turn.</Text>
               </View>
             </View>
           </View>
         )}
         {isDone && (
           <View style={styles.sectionPad}>
-            <View style={styles.alertBannerGreen}>
-              <Feather name="check-circle" size={15} color="#4ADE80" />
+            <View style={styles.alertBannerCyan}>
+              <Feather name="activity" size={15} color="#67E8F9" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.alertTitle, { color: "#4ADE80" }]}>You're being consulted!</Text>
+                <Text style={[styles.alertTitle, { color: "#67E8F9" }]}>You are in consultation now</Text>
                 <Text style={styles.alertBody}>Please proceed to the doctor's cabin.</Text>
               </View>
             </View>
           </View>
         )}
-        {!isNear && !isDone && (
+        {!isNear && !isNext && !isDone && (
           <View style={styles.sectionPad}>
             <View style={styles.alertBannerBlue}>
               <Feather name="info" size={15} color="#67E8F9" />
@@ -384,8 +395,9 @@ const styles = StyleSheet.create({
   statLbl: { fontSize: 8, fontWeight: "600", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.5 },
 
   alertBannerYellow: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(245,158,11,0.14)", borderWidth: 1, borderColor: "rgba(245,158,11,0.4)" },
-  alertBannerGreen: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(34,197,94,0.14)", borderWidth: 1, borderColor: "rgba(34,197,94,0.4)" },
-  alertBannerBlue: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.1)", borderWidth: 1, borderColor: "rgba(6,182,212,0.3)" },
+  alertBannerGreen:  { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(34,197,94,0.14)",  borderWidth: 1, borderColor: "rgba(34,197,94,0.4)"  },
+  alertBannerCyan:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.14)",   borderWidth: 1, borderColor: "rgba(6,182,212,0.4)"   },
+  alertBannerBlue:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.1)",    borderWidth: 1, borderColor: "rgba(6,182,212,0.3)"   },
   alertTitle: { fontSize: 12, fontWeight: "800", color: "#FCD34D", marginBottom: 2 },
   alertBody: { fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 16 },
 
