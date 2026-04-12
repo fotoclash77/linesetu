@@ -7,7 +7,7 @@ import {
   getGetLiveQueueQueryOptions,
   getGetPatientTokensQueryOptions,
 } from "@workspace/api-client-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,6 +26,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { LinearGradient as LGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -111,6 +112,21 @@ export default function LiveQueueScreen() {
     slideUpOp.value = withTiming(1, { duration: 320 });
   }, [current]);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const id = "linesetu-queue-keyframes";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      @keyframes ping { 0%{transform:scale(1);opacity:0.6} 75%,100%{transform:scale(2.2);opacity:0} }
+      @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
   const slideUpStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: slideUpY.value }],
     opacity: slideUpOp.value,
@@ -187,14 +203,25 @@ export default function LiveQueueScreen() {
           <View style={styles.heroTextLeft}>
             <Text style={styles.heroLabelSmall}>NOW CONSULTING</Text>
             <View style={styles.heroRingWrap}>
-              <Animated.View style={[styles.heroRing, ring3Style, { borderColor: ringBase }]} />
-              <Animated.View style={[styles.heroRing, ring2Style, { borderColor: ringBase }]} />
-              <Animated.View style={[styles.heroRing, ring1Style, { borderColor: ringBase }]} />
-              <View style={[styles.heroCore, { backgroundColor: isNear || isDone ? "rgba(245,158,11,0.18)" : "rgba(99,102,241,0.2)", borderColor: isNear || isDone ? "rgba(245,158,11,0.45)" : "rgba(99,102,241,0.5)" }]}>
-                <Animated.Text style={[styles.heroCoreNum, { color: isNear || isDone ? "#FCD34D" : "#A5B4FC" }, slideUpStyle]}>{current}</Animated.Text>
+              {/* Outer ping ring 120px */}
+              <Animated.View style={[styles.heroRingOuter, ring1Style, { borderColor: ringBase }]} />
+              {/* Middle static ring 92px */}
+              <View style={[styles.heroRingMid, { borderColor: isNear || isDone ? "rgba(245,158,11,0.35)" : "rgba(99,102,241,0.35)" }]} />
+              {/* Inner gradient disc 72px */}
+              <LGradient
+                colors={isNear || isDone ? ["#F59E0B", "#EF4444"] : ["#4F46E5", "#06B6D4"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.heroCore}
+              >
+                <Animated.Text style={[styles.heroCoreNum, slideUpStyle]}>{current}</Animated.Text>
                 <Text style={styles.heroCoreLabel}>Current</Text>
-              </View>
+              </LGradient>
             </View>
+            <Text style={styles.heroConsultingTxt} numberOfLines={1}>
+              Doctor is consulting Token #{current}
+            </Text>
+            <Text style={styles.heroDocName}>Dr. Ananya Sharma</Text>
           </View>
 
           <View style={styles.heroTextRight}>
@@ -431,10 +458,13 @@ const styles = StyleSheet.create({
   heroTextLeft: { flex: 1, alignItems: "center" },
   heroLabelSmall: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.3)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 18 },
   heroRingWrap: { width: RING_SIZE, height: RING_SIZE, alignItems: "center", justifyContent: "center" },
-  heroRing: { position: "absolute", width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderWidth: 1.5 },
-  heroCore: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  heroCoreNum: { fontSize: 40, fontWeight: "900", lineHeight: 44, letterSpacing: -1 },
-  heroCoreLabel: { fontSize: 9, fontWeight: "600", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.8 },
+  heroRingOuter: { position: "absolute", width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderWidth: 1.5 },
+  heroRingMid: { position: "absolute", width: 92, height: 92, borderRadius: 46, borderWidth: 1.5 },
+  heroCore: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  heroCoreNum: { fontSize: 30, fontWeight: "900", lineHeight: 34, letterSpacing: -1, color: "#FFF" },
+  heroCoreLabel: { fontSize: 8, fontWeight: "600", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 0.8 },
+  heroConsultingTxt: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.5)", marginTop: 12, textAlign: "center" },
+  heroDocName: { fontSize: 11, fontWeight: "700", color: "#A5B4FC", marginTop: 2, textAlign: "center" },
   heroTextRight: { flex: 1, alignItems: "center" },
   myTokenBlock: { alignItems: "center", gap: 6 },
   myTokenLbl: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1 },

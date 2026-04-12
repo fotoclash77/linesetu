@@ -29,11 +29,11 @@ const MEMBERS = [
 ];
 
 const SAMPLE_BOOKINGS = [
-  { id: "b1", memberId: "self", status: "waiting", tokenNumber: 56, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Today, 10 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "First Visit", ahead: 9, patientPaid: 20, consultFee: 500 },
-  { id: "b2", memberId: "self", status: "upcoming", tokenNumber: 12, doctor: "Dr. Meera Joshi", doctorPhoto: "https://randomuser.me/api/portraits/women/68.jpg", specialty: "Ophthalmologist", clinicName: "Vision Care Center", clinicLoc: "Bandra West", date: "Wed, 15 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "Follow-up", patientPaid: 20, consultFee: 400 },
-  { id: "b3", memberId: "wife", status: "upcoming", tokenNumber: 7, doctor: "Dr. Vikram Patel", doctorPhoto: "https://randomuser.me/api/portraits/men/52.jpg", specialty: "Dermatologist", clinicName: "SkinCure Clinic", clinicLoc: "Juhu", date: "Sat, 18 Apr", shift: "evening", time: "5:00 PM – 9:00 PM", visitType: "First Visit", patientPaid: 20, consultFee: 600 },
-  { id: "b4", memberId: "mother", status: "done", tokenNumber: 23, doctor: "Dr. Suresh Nair", doctorPhoto: "https://randomuser.me/api/portraits/men/45.jpg", specialty: "Orthopedist", clinicName: "Bone & Joint Clinic", clinicLoc: "Powai", date: "Sun, 5 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "Follow-up", patientPaid: 20, consultFee: 800 },
-  { id: "b5", memberId: "mother", status: "cancelled", tokenNumber: 41, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Wed, 1 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "First Visit", patientPaid: 20, consultFee: 500 },
+  { id: "b1", memberId: "self", status: "waiting" as const, tokenNumber: 56, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Today, 10 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "first" as const, ahead: 9, patientPaid: 20, consultFee: 500 },
+  { id: "b2", memberId: "self", status: "upcoming" as const, tokenNumber: 12, doctor: "Dr. Meera Joshi", doctorPhoto: "https://randomuser.me/api/portraits/women/68.jpg", specialty: "Ophthalmologist", clinicName: "Vision Care Center", clinicLoc: "Bandra West", date: "Wed, 15 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "followup" as const, patientPaid: 20, consultFee: 400 },
+  { id: "b3", memberId: "wife", status: "upcoming" as const, tokenNumber: 7, doctor: "Dr. Vikram Patel", doctorPhoto: "https://randomuser.me/api/portraits/men/52.jpg", specialty: "Dermatologist", clinicName: "SkinCure Clinic", clinicLoc: "Juhu", date: "Sat, 18 Apr", shift: "evening", time: "5:00 PM – 9:00 PM", visitType: "first" as const, patientPaid: 20, consultFee: 600 },
+  { id: "b4", memberId: "mother", status: "done" as const, tokenNumber: 23, doctor: "Dr. Suresh Nair", doctorPhoto: "https://randomuser.me/api/portraits/men/45.jpg", specialty: "Orthopedist", clinicName: "Bone & Joint Clinic", clinicLoc: "Powai", date: "Sun, 5 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "followup" as const, patientPaid: 20, consultFee: 800 },
+  { id: "b5", memberId: "mother", status: "cancelled" as const, tokenNumber: 41, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Wed, 1 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "first" as const, patientPaid: 20, consultFee: 500 },
 ];
 
 type FilterTab = "all" | "active" | "upcoming" | "past";
@@ -43,7 +43,7 @@ interface TokenItem {
   doctorId?: string;
   doctorName?: string;
   tokenNumber: number;
-  status: "waiting" | "active" | "done" | string;
+  status: "waiting" | "in_consult" | "done" | "cancelled" | "upcoming";
   bookedAt?: string;
   shiftLabel?: string;
   queuePosition?: number;
@@ -60,7 +60,7 @@ interface BookingItem extends TokenItem {
   shift: string;
   time?: string;
   shiftTime?: string;
-  visitType?: "first" | "followup" | string;
+  visitType?: "first" | "followup";
   tokenType?: "normal" | "emergency";
   ahead?: number;
   patientPaid: number;
@@ -187,8 +187,8 @@ function BookingCard({ booking, showMember }: { booking: BookingItem; showMember
             <Feather name="check-circle" size={11} color="#4F46E5" />
           </View>
           <Text style={styles.bookingSpecialty}>{booking.specialty}</Text>
-          <View style={[styles.visitTypeBadge, { backgroundColor: booking.visitType === "First Visit" ? "rgba(99,102,241,0.2)" : "rgba(16,185,129,0.2)" }]}>
-            <Text style={[styles.visitTypeTxt, { color: booking.visitType === "First Visit" ? "#A5B4FC" : "#6EE7B7" }]}>{booking.visitType}</Text>
+          <View style={[styles.visitTypeBadge, { backgroundColor: booking.visitType === "first" ? "rgba(99,102,241,0.2)" : "rgba(16,185,129,0.2)" }]}>
+            <Text style={[styles.visitTypeTxt, { color: booking.visitType === "first" ? "#A5B4FC" : "#6EE7B7" }]}>{booking.visitType === "first" ? "First Visit" : "Follow-up"}</Text>
           </View>
         </View>
         <View style={{ alignItems: "flex-end", gap: 6 }}>
@@ -282,19 +282,25 @@ export default function BookingsScreen() {
 
   const apiTokens = data?.tokens ?? [];
 
+  const BOOKING_STATUSES = new Set<BookingItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
   const allBookings: BookingItem[] = apiTokens.length > 0
     ? apiTokens.map((t, i: number) => ({
-        ...t,
+        id: t.id,
+        doctorId: t.doctorId,
+        tokenNumber: t.tokenNumber,
+        status: BOOKING_STATUSES.has(t.status as BookingItem["status"])
+          ? (t.status as BookingItem["status"])
+          : "waiting" as const,
         doctor: `Doctor ${i + 1}`,
         doctorPhoto: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
         specialty: "General",
         clinicName: "Clinic",
         clinicLoc: "Mumbai",
         date: t.date,
+        shift: t.shift,
         time: t.shift === "morning" ? "9:00 AM – 1:00 PM" : "5:00 PM – 9:00 PM",
-        visitType: "First Visit" as const,
+        visitType: "first" as const,
         memberId: "self",
-        status: t.status,
         ahead: 0,
         patientPaid: 20,
         consultFee: 500,
