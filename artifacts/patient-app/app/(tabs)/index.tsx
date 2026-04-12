@@ -39,7 +39,21 @@ const SAMPLE_DOCTORS = [
   { id: "demo3", name: "Dr. Priya Nair", specialization: "Neurologist", clinicName: "NeuroPlus Hospital, Powai", rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
 ];
 
-function DoctorCard({ doc }: { doc: any }) {
+interface DoctorSample {
+  id: string;
+  name: string;
+  specialization: string;
+  clinicName: string;
+  rating: string;
+  wait: string;
+  token: number;
+  accent: string;
+  exp: string;
+  patients: string;
+  photo: string;
+}
+
+function DoctorCard({ doc }: { doc: DoctorSample }) {
   const { accent } = doc;
   return (
     <Pressable
@@ -103,7 +117,15 @@ function DoctorCard({ doc }: { doc: any }) {
   );
 }
 
-function LiveQueueCard({ token }: { token: any }) {
+interface TokenSample {
+  id: string;
+  tokenNumber: number;
+  doctorId: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+function LiveQueueCard({ token }: { token: TokenSample | undefined }) {
   const myToken = token?.tokenNumber ?? 52;
   const currentToken = 47;
   const waitMin = 25;
@@ -181,7 +203,7 @@ export default function HomeScreen() {
     enabled: !!patient?.id,
   });
 
-  const apiDoctors = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
+  const apiDoctors = (doctorsData?.doctors ?? []).map((d, i: number) => ({
     ...d,
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
@@ -194,8 +216,8 @@ export default function HomeScreen() {
   const doctors = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
 
   const activeTokens = (tokenData?.tokens ?? []).filter(
-    (t: any) => t.status === "waiting" || t.status === "in_consult"
-  );
+    (t) => t.status === "waiting" || t.status === "in_consult"
+  ) as unknown as TokenSample[];
   const hasActiveToken = activeTokens.length > 0;
   const activeToken = activeTokens[0];
 

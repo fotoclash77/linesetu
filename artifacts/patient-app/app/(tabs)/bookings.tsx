@@ -38,6 +38,25 @@ const SAMPLE_BOOKINGS = [
 
 type FilterTab = "all" | "active" | "upcoming" | "past";
 
+interface BookingRecord {
+  id: string;
+  memberId: string;
+  status: string;
+  tokenNumber: number;
+  doctor: string;
+  doctorPhoto: string;
+  specialty: string;
+  clinicName: string;
+  clinicLoc: string;
+  date: string;
+  shift: string;
+  time: string;
+  visitType: string;
+  ahead?: number;
+  patientPaid: number;
+  consultFee: number;
+}
+
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   waiting:    { label: "Active",    color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
   in_consult: { label: "Active",    color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
@@ -102,7 +121,7 @@ function MemberDropdown({ selected, onSelect }: { selected: typeof MEMBERS[0]; o
   );
 }
 
-function SummaryStrip({ bookings }: { bookings: any[] }) {
+function SummaryStrip({ bookings }: { bookings: BookingRecord[] }) {
   const active = bookings.filter(b => b.status === "waiting" || b.status === "in_consult").length;
   const upcoming = bookings.filter(b => b.status === "upcoming").length;
   const done = bookings.filter(b => b.status === "done").length;
@@ -127,7 +146,7 @@ function SummaryStrip({ bookings }: { bookings: any[] }) {
   );
 }
 
-function BookingCard({ booking, showMember }: { booking: any; showMember: boolean }) {
+function BookingCard({ booking, showMember }: { booking: BookingRecord; showMember: boolean }) {
   const cfg = STATUS_CFG[booking.status] ?? STATUS_CFG.waiting;
   const isActive = booking.status === "waiting" || booking.status === "in_consult";
   const isSkipped = booking.status === "cancelled";
@@ -252,8 +271,8 @@ export default function BookingsScreen() {
 
   const apiTokens = data?.tokens ?? [];
 
-  const allBookings = apiTokens.length > 0
-    ? apiTokens.map((t: any, i: number) => ({
+  const allBookings: BookingRecord[] = apiTokens.length > 0
+    ? apiTokens.map((t, i: number) => ({
         ...t,
         doctor: `Doctor ${i + 1}`,
         doctorPhoto: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
@@ -266,15 +285,16 @@ export default function BookingsScreen() {
         memberId: "self",
         status: t.status,
         ahead: 0,
+        patientPaid: 20,
         consultFee: 500,
       }))
     : SAMPLE_BOOKINGS;
 
   const memberBookings = selectedMember.id === "all"
     ? allBookings
-    : allBookings.filter((b: any) => b.memberId === selectedMember.id);
+    : allBookings.filter((b) => b.memberId === selectedMember.id);
 
-  const filtered = memberBookings.filter((b: any) => {
+  const filtered = memberBookings.filter((b) => {
     if (filter === "all") return true;
     if (filter === "active") return b.status === "waiting" || b.status === "in_consult";
     if (filter === "upcoming") return b.status === "upcoming";
@@ -283,9 +303,9 @@ export default function BookingsScreen() {
 
   const tabCount = (t: FilterTab) => {
     if (t === "all") return memberBookings.length;
-    if (t === "active") return memberBookings.filter((b: any) => b.status === "waiting" || b.status === "in_consult").length;
-    if (t === "upcoming") return memberBookings.filter((b: any) => b.status === "upcoming").length;
-    return memberBookings.filter((b: any) => b.status === "done" || b.status === "cancelled").length;
+    if (t === "active") return memberBookings.filter((b) => b.status === "waiting" || b.status === "in_consult").length;
+    if (t === "upcoming") return memberBookings.filter((b) => b.status === "upcoming").length;
+    return memberBookings.filter((b) => b.status === "done" || b.status === "cancelled").length;
   };
 
   const showMember = selectedMember.id === "all";

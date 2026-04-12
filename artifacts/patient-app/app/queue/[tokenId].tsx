@@ -70,7 +70,7 @@ export default function LiveQueueScreen() {
   }[status];
 
   const { data } = useQuery(getGetPatientTokensQueryOptions(patient?.id ?? ""));
-  const token = (data?.tokens ?? []).find((t: any) => t.id === tokenId);
+  const token = (data?.tokens ?? []).find((t) => t.id === tokenId);
   const myToken = token?.tokenNumber ?? USER_TOKEN;
   const doctorId = token?.doctorId ?? "demo1";
 

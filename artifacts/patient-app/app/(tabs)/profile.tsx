@@ -53,7 +53,7 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    title: "Payments & Billing",
+    title: "Payments & Transactions",
     items: [
       { icon: "credit-card", label: "Payment History", sub: "Receipts & transaction records", color: "#67E8F9", route: null,             badge: null,    liveIndicator: false, danger: false },
       { icon: "file-text",   label: "Fee Structure",   sub: "Platform & consultation fees",   color: "#F59E0B", route: null,             badge: null,    liveIndicator: false, danger: false },
@@ -135,12 +135,19 @@ export default function ProfileScreen() {
             <View style={styles.cardGlowOrb} />
             <View style={styles.userCardRow}>
               <View style={{ position: "relative" }}>
-                <LinearGradient
-                  colors={["#4F46E5", "#06B6D4"]}
-                  style={styles.userAvatar}
-                >
-                  <Text style={styles.userAvatarTxt}>{initials}</Text>
-                </LinearGradient>
+                {patient?.profilePhoto ? (
+                  <Image
+                    source={{ uri: patient.profilePhoto }}
+                    style={styles.userAvatarPhoto}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Image
+                    source={{ uri: `https://randomuser.me/api/portraits/men/1.jpg` }}
+                    style={styles.userAvatarPhoto}
+                    contentFit="cover"
+                  />
+                )}
                 <Pressable style={styles.cameraBtn}>
                   <Feather name="camera" size={11} color="#FFF" />
                 </Pressable>
@@ -305,6 +312,7 @@ const styles = StyleSheet.create({
   userCardRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 16 },
   userAvatar: { width: 60, height: 60, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   userAvatarTxt: { fontSize: 20, fontWeight: "800", color: "#FFF" },
+  userAvatarPhoto: { width: 60, height: 60, borderRadius: 18, borderWidth: 2, borderColor: "rgba(99,102,241,0.45)" },
   cameraBtn: { position: "absolute", bottom: -4, right: -4, width: 22, height: 22, borderRadius: 8, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
   onlineIndicator: { position: "absolute", top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: "#0A0E1A", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 4 },
   userName: { fontSize: 18, fontWeight: "900", color: "#FFF", letterSpacing: -0.3 },
