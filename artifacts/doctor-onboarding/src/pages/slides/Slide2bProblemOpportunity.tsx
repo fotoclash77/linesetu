@@ -141,27 +141,27 @@ export default function Slide2bProblemOpportunity() {
           style={{ background: "linear-gradient(135deg, rgba(13,148,136,0.18), rgba(13,148,136,0.08))", border: "1.5px solid rgba(45,212,191,0.3)" }}
         >
           <div className="font-body font-semibold" style={{ fontSize: "1.1vw", color: "rgba(255,255,255,0.5)", marginBottom: "1.2vh", letterSpacing: "0.06em" }}>
-            AT 50 TOKENS PER DAY
+            AT 100 TOKENS PER DAY
           </div>
           <div className="flex items-end justify-between">
             <div className="text-center">
-              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#FFFFFF" }}>₹500</div>
+              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#FFFFFF" }}>₹1,000</div>
               <div className="font-body" style={{ fontSize: "0.9vw", color: "rgba(255,255,255,0.4)" }}>Daily</div>
             </div>
             <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "1.5vw" }}>→</div>
             <div className="text-center">
-              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#FFFFFF" }}>₹3,500</div>
+              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#FFFFFF" }}>₹7,000</div>
               <div className="font-body" style={{ fontSize: "0.9vw", color: "rgba(255,255,255,0.4)" }}>Weekly</div>
             </div>
             <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "1.5vw" }}>→</div>
             <div className="text-center">
-              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#2DD4BF" }}>₹14,000</div>
+              <div className="font-display font-black" style={{ fontSize: "2vw", color: "#2DD4BF" }}>₹30,000</div>
               <div className="font-body" style={{ fontSize: "0.9vw", color: "rgba(255,255,255,0.4)" }}>Monthly</div>
             </div>
             <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "1.5vw" }}>→</div>
             <div className="text-center">
-              <div className="font-display font-black" style={{ fontSize: "2.2vw", color: "#FCD34D" }}>₹1L+</div>
-              <div className="font-body" style={{ fontSize: "0.9vw", color: "rgba(255,255,255,0.4)" }}>Potential</div>
+              <div className="font-display font-black" style={{ fontSize: "2.2vw", color: "#FCD34D" }}>₹3.6L+</div>
+              <div className="font-body" style={{ fontSize: "0.9vw", color: "rgba(255,255,255,0.4)" }}>Yearly</div>
             </div>
           </div>
           <div
