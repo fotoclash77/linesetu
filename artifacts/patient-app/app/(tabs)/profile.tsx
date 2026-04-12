@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import type { Href } from "expo-router";
 import React, { useState } from "react";
 import {
   Platform,
@@ -22,42 +23,61 @@ const FAMILY_MEMBERS = [
   { id: "father", name: "Ramesh Sharma", relation: "Father", age: 62, blood: "B+", phone: "+91 9876543213", avatar: "https://randomuser.me/api/portraits/men/58.jpg", color: "#10B981" },
 ];
 
-const MENU_SECTIONS = [
+type MenuItem = {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+  sub: string;
+  color: string;
+  route: string | null;
+  badge: string | null;
+  liveIndicator: boolean;
+  danger: boolean;
+};
+
+type MenuSection = { title: string; items: MenuItem[] };
+
+const MENU_SECTIONS: MenuSection[] = [
   {
-    title: "Appointments",
+    title: "Bookings & Activity",
     items: [
-      { icon: "calendar" as const, label: "My Bookings", sub: "Tokens, visits & history", color: "#6366F1", route: "/(tabs)/bookings", badge: null, liveIndicator: false, danger: false },
-      { icon: "activity" as const, label: "Live Queue", sub: "Track active token in real-time", color: "#22C55E", route: null, badge: null, liveIndicator: true, danger: false },
-      { icon: "clock" as const, label: "Visit History", sub: "Past consultations & summaries", color: "#06B6D4", route: null, badge: null, liveIndicator: false, danger: false },
+      { icon: "calendar",  label: "My Bookings",   sub: "Tokens, visits & history",        color: "#6366F1", route: "/(tabs)/bookings", badge: null,    liveIndicator: false, danger: false },
+      { icon: "activity",  label: "Live Queue",     sub: "Track active token in real-time", color: "#22C55E", route: null,               badge: null,    liveIndicator: true,  danger: false },
+      { icon: "clock",     label: "Visit History",  sub: "Past consultations & summaries",  color: "#06B6D4", route: null,               badge: null,    liveIndicator: false, danger: false },
     ],
   },
   {
-    title: "Health",
+    title: "Family Management",
     items: [
-      { icon: "file-text" as const, label: "Medical Reports", sub: "Lab tests & prescriptions", color: "#8B5CF6", route: null, badge: "2 New", liveIndicator: false, danger: false },
-      { icon: "shield" as const, label: "Health Passport", sub: "Summary · Blood group · Allergies", color: "#EF4444", route: null, badge: null, liveIndicator: false, danger: false },
+      { icon: "users",     label: "Manage Family",  sub: "Spouse, parents, children",       color: "#EC4899", route: null,               badge: null,    liveIndicator: false, danger: false },
+      { icon: "user-plus", label: "Add Member",     sub: "Add a new family member",          color: "#10B981", route: null,               badge: null,    liveIndicator: false, danger: false },
+    ],
+  },
+  {
+    title: "Payments & Billing",
+    items: [
+      { icon: "credit-card", label: "Payment History", sub: "Receipts & transaction records", color: "#67E8F9", route: null,             badge: null,    liveIndicator: false, danger: false },
+      { icon: "file-text",   label: "Fee Structure",   sub: "Platform & consultation fees",   color: "#F59E0B", route: null,             badge: null,    liveIndicator: false, danger: false },
+    ],
+  },
+  {
+    title: "Settings & Preferences",
+    items: [
+      { icon: "bell",     label: "Notifications",    sub: "Token alerts & appointment reminders", color: "#F59E0B", route: null,          badge: "3",     liveIndicator: false, danger: false },
+      { icon: "sliders",  label: "Preferences",      sub: "Language, queue alerts, SMS options",   color: "#A5B4FC", route: null,          badge: null,    liveIndicator: false, danger: false },
+    ],
+  },
+  {
+    title: "App & Support",
+    items: [
+      { icon: "help-circle",    label: "Help & FAQ",       sub: "How queues, tokens & payments work", color: "#22C55E", route: null,       badge: null,    liveIndicator: false, danger: false },
+      { icon: "message-circle", label: "Contact Support",  sub: "Chat or raise a ticket",              color: "#06B6D4", route: null,       badge: null,    liveIndicator: false, danger: false },
     ],
   },
   {
     title: "Account",
     items: [
-      { icon: "bell" as const, label: "Notifications", sub: "Token alerts & appointment reminders", color: "#F59E0B", route: null, badge: "3", liveIndicator: false, danger: false },
-      { icon: "sliders" as const, label: "Preferences", sub: "Language, queue alerts, SMS options", color: "#A5B4FC", route: null, badge: null, liveIndicator: false, danger: false },
-      { icon: "credit-card" as const, label: "Payment History", sub: "Receipts & transaction records", color: "#67E8F9", route: null, badge: null, liveIndicator: false, danger: false },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { icon: "help-circle" as const, label: "Help & FAQ", sub: "How queues, tokens & payments work", color: "#22C55E", route: null, badge: null, liveIndicator: false, danger: false },
-      { icon: "message-circle" as const, label: "Contact Support", sub: "Chat or raise a ticket", color: "#06B6D4", route: null, badge: null, liveIndicator: false, danger: false },
-    ],
-  },
-  {
-    title: "Danger Zone",
-    items: [
-      { icon: "log-out" as const, label: "Sign Out", sub: "Log out of your account", color: "#F59E0B", route: null, badge: null, liveIndicator: false, danger: false },
-      { icon: "trash-2" as const, label: "Delete Account", sub: "Permanently remove all data", color: "#EF4444", route: null, badge: null, liveIndicator: false, danger: true },
+      { icon: "log-out", label: "Sign Out",        sub: "Log out of your account",              color: "#F59E0B", route: null,             badge: null,    liveIndicator: false, danger: false },
+      { icon: "trash-2", label: "Delete Account",  sub: "Permanently remove all data",           color: "#EF4444", route: null,             badge: null,    liveIndicator: false, danger: true  },
     ],
   },
 ];
@@ -227,7 +247,7 @@ export default function ProfileScreen() {
                     ]}
                     onPress={() => {
                       if (item.label === "Sign Out") { logout(); return; }
-                      if (item.route) router.push(item.route as any);
+                      if (item.route) router.push(item.route as Href);
                     }}
                   >
                     <View style={[styles.menuIconBubble, { backgroundColor: item.color + "18", borderColor: item.color + "30" }]}>

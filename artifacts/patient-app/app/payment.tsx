@@ -22,9 +22,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const isWeb = Platform.OS === "web";
 
 const PAYMENT_METHODS = [
-  { id: "upi",    label: "UPI / QR Pay",        sub: "GPay, PhonePe, Paytm, BHIM",   icon: "smartphone" as const, color: "#818CF8" },
-  { id: "card",   label: "Credit / Debit Card",  sub: "Visa, Mastercard, RuPay",      icon: "credit-card" as const, color: "#06B6D4" },
-  { id: "wallet", label: "Wallets",              sub: "Paytm, Amazon Pay, Mobikwik",  icon: "briefcase" as const,  color: "#22C55E" },
+  { id: "upi",     label: "UPI / QR Pay",       sub: "GPay, PhonePe, Paytm, BHIM",    icon: "smartphone" as const,   color: "#818CF8" },
+  { id: "card",    label: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay",       icon: "credit-card" as const,  color: "#06B6D4" },
+  { id: "netbank", label: "Net Banking",         sub: "All major Indian banks",         icon: "globe" as const,        color: "#22C55E" },
 ];
 
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -90,8 +90,8 @@ export default function PaymentScreen() {
         doctorId: params.doctorId ?? "demo1",
         patientId: patient?.id ?? params.patientId ?? "self",
         date: String(date),
-        shift: shift.toLowerCase() as any,
-        visitType: visitType.toLowerCase().replace(" ", "_") as any,
+        shift: shift.toLowerCase() as "morning" | "evening",
+        visitType: visitType.toLowerCase().replace(" ", "_") as "normal" | "emergency",
         tokenType: tokenType,
       });
       router.replace(`/queue/token-${Date.now()}`);
@@ -150,12 +150,12 @@ export default function PaymentScreen() {
 
             {/* 2×2 Info Grid */}
             <View style={styles.infoGrid}>
-              {[
-                { icon: "calendar" as const, label: "Date",    val: fmtDate(date) },
-                { icon: shift === "Morning" ? "sun" as const : "moon" as const, label: "Shift", val: `${shift} Shift` },
-                { icon: "home" as const, label: "Clinic",  val: `${clinic}\n${clinicLoc}` },
-                { icon: "clock" as const, label: "Time",   val: time },
-              ].map(({ icon, label, val }) => (
+              {([
+                { icon: "calendar",                        label: "Date",      val: fmtDate(date) },
+                { icon: shift === "Morning" ? "sun" : "moon", label: "Shift",  val: `${shift} Shift` },
+                { icon: "hash",                            label: "Token No.", val: `#${yourToken}` },
+                { icon: "clock",                           label: "Time",      val: time },
+              ] as Array<{ icon: React.ComponentProps<typeof Feather>["name"]; label: string; val: string }>).map(({ icon, label, val }) => (
                 <View key={label} style={styles.infoCell}>
                   <View style={styles.infoCellHeader}>
                     <Feather name={icon} size={10} color="rgba(255,255,255,0.3)" />
@@ -284,7 +284,7 @@ export default function PaymentScreen() {
         </Pressable>
         <View style={styles.footer}>
           <Feather name="shield" size={11} color="rgba(255,255,255,0.2)" />
-          <Text style={styles.footerTxt}>Powered by LINESETU 🔒</Text>
+          <Text style={styles.footerTxt}>Powered by LINESETU 🔒 Secure Payment</Text>
         </View>
       </View>
     </View>

@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
 import {
   getGetLiveQueueQueryOptions,
@@ -201,10 +202,10 @@ export default function LiveQueueScreen() {
               <Text style={styles.progressRight}>~{waitMin} min wait</Text>
             </View>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${progPct}%` as any }]}>
+              <View style={[styles.progressFill, { width: pct(progPct) }]}>
                 <LinearGradient colors={["#4F46E5", "#06B6D4"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
               </View>
-              <View style={[styles.youMarker, { left: `${userPct}%` as any }]}>
+              <View style={[styles.youMarker, { left: pct(userPct) }]}>
                 <View style={styles.youDot} />
                 <Text style={styles.youLabel}>YOU</Text>
               </View>
@@ -215,15 +216,15 @@ export default function LiveQueueScreen() {
         {/* Stat Tiles */}
         <View style={styles.sectionPad}>
           <View style={styles.statGrid}>
-            {[
-              { label: "In Queue",    val: TOTAL - current + "+" , color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "users"    },
-              { label: "Avg Wait",    val: "~2.5m",                 color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "clock"    },
-              { label: "Your Wait",   val: `~${waitMin}m`,          color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "activity" },
-              { label: "Tokens Left", val: String(Math.max(0, TOTAL - current)), color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)", icon: "hash" },
-            ].map(({ label, val, color, bg, border, icon }) => (
+            {([
+              { label: "My Token",  val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
+              { label: "Clinic",    val: "Open",                   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "home"     },
+              { label: "Your Wait", val: `~${waitMin}m`,           color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "clock"    },
+              { label: "Avg/Token", val: "~2.5m",                  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "activity" },
+            ] as Array<{ label: string; val: string; color: string; bg: string; border: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, bg, border, icon }) => (
               <View key={label} style={[styles.statTile, { backgroundColor: bg, borderColor: border }]}>
                 <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
-                  <Feather name={icon as any} size={14} color={color} />
+                  <Feather name={icon} size={14} color={color} />
                 </View>
                 <Text style={[styles.statVal, { color }]}>{val}</Text>
                 <Text style={styles.statLbl}>{label}</Text>

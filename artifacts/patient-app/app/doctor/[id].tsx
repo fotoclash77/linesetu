@@ -147,14 +147,14 @@ export default function DoctorDetailScreen() {
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          {[
+          {([
             { label: "Patients",   val: doctor.patients, color: "#818CF8", icon: "users"    },
             { label: "Experience", val: `${doctor.experience} yrs`, color: "#06B6D4", icon: "activity" },
             { label: "Avg Wait",   val: doctor.avgWait,  color: "#22C55E", icon: "clock"    },
-          ].map(({ label, val, color, icon }) => (
+          ] as Array<{ label: string; val: string; color: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, icon }) => (
             <View key={label} style={styles.statTile}>
               <View style={[styles.statIcon, { backgroundColor: color + "18" }]}>
-                <Feather name={icon as any} size={15} color={color} />
+                <Feather name={icon} size={15} color={color} />
               </View>
               <Text style={[styles.statVal, { color }]}>{val}</Text>
               <Text style={styles.statLbl}>{label}</Text>

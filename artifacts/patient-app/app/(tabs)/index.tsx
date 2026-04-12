@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -169,7 +170,7 @@ function LiveQueueCard({ token }: { token: any }) {
           <Text style={styles.liveProgressRight}>Cardiology OPD</Text>
         </View>
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progressPct}%` as any }]} />
+          <View style={[styles.progressFill, { width: pct(progressPct) }]} />
         </View>
       </View>
 
@@ -277,10 +278,12 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Live Queue Mini-Card — show when active token or always for demo */}
-        <View style={styles.sectionPad}>
-          <LiveQueueCard token={hasActiveToken ? activeToken : null} />
-        </View>
+        {/* Live Queue Mini-Card — only shown when patient has an active token */}
+        {hasActiveToken && (
+          <View style={styles.sectionPad}>
+            <LiveQueueCard token={activeToken} />
+          </View>
+        )}
 
         {/* Promo Banner */}
         <View style={styles.sectionPad}>

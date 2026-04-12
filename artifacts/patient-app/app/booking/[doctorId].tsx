@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
 import { getGetDoctorQueryOptions } from "@workspace/api-client-react";
 import React, { useState } from "react";
@@ -101,7 +102,7 @@ export default function BookingScreen() {
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
 
   const today = 12; // April 12 2026
-  const [visitType, setVisitType] = useState<"First Visit" | "Follow-up">("First Visit");
+  const [tokenType, setTokenType] = useState<"normal" | "emergency">("normal");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [selectedMember, setSelectedMember] = useState(FAMILY[0]);
@@ -122,8 +123,10 @@ export default function BookingScreen() {
     return true;
   });
 
-  const isEmergency = false; // Always online booking in app
-  const payableNow = isEmergency ? 30 : 20;
+  const isEmergency = tokenType === "emergency";
+  const eAppFee = isEmergency ? 20 : 10;
+  const platformFee = 10;
+  const payableNow = eAppFee + platformFee;
   const consultFee = 500;
 
   const canBook = selectedShift !== null;
@@ -139,7 +142,7 @@ export default function BookingScreen() {
         doctorId: doctorId ?? "demo1",
         doctorName: docName,
         doctorPhoto,
-        visitType,
+        visitType: tokenType,
         date: `${selectedDate}`,
         shift: selectedShift!.label,
         clinic: selectedShift!.clinic,
@@ -147,7 +150,7 @@ export default function BookingScreen() {
         time: selectedShift!.time,
         patientId: selectedMember.id,
         patientName: selectedMember.name,
-        tokenType: "normal",
+        tokenType: tokenType,
         payableNow: `${payableNow}`,
         consultFee: `${consultFee}`,
       },
@@ -191,24 +194,44 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {/* Visit Type Toggle */}
+        {/* Token Type Toggle */}
         <View style={styles.sectionPad}>
-          <Text style={styles.sectionLabel}>Visit Type</Text>
+          <Text style={styles.sectionLabel}>Token Type</Text>
           <View style={styles.toggleRow}>
-            {(["First Visit", "Follow-up"] as const).map(t => (
-              <Pressable
-                key={t}
-                style={[styles.toggleBtn, visitType === t && styles.toggleBtnActive]}
-                onPress={() => setVisitType(t)}
-              >
-                <Feather
-                  name={t === "First Visit" ? "user-plus" : "refresh-cw"}
-                  size={14}
-                  color={visitType === t ? "#FFF" : "rgba(255,255,255,0.4)"}
-                />
-                <Text style={[styles.toggleTxt, visitType === t && styles.toggleTxtActive]}>{t}</Text>
-              </Pressable>
-            ))}
+            <Pressable
+              style={[styles.toggleBtn, tokenType === "normal" && styles.toggleBtnActive]}
+              onPress={() => setTokenType("normal")}
+            >
+              <Feather name="user" size={14} color={tokenType === "normal" ? "#FFF" : "rgba(255,255,255,0.4)"} />
+              <Text style={[styles.toggleTxt, tokenType === "normal" && styles.toggleTxtActive]}>Normal</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.toggleBtn, tokenType === "emergency" && { borderColor: "#EF4444", backgroundColor: "rgba(239,68,68,0.2)" }]}
+              onPress={() => setTokenType("emergency")}
+            >
+              <Feather name="alert-triangle" size={14} color={tokenType === "emergency" ? "#F87171" : "rgba(255,255,255,0.4)"} />
+              <Text style={[styles.toggleTxt, tokenType === "emergency" && { color: "#F87171" }]}>Emergency</Text>
+            </Pressable>
+          </View>
+
+          {/* Fee Preview */}
+          <View style={styles.feePreviewCard}>
+            <View style={styles.feePreviewRow}>
+              <Feather name="monitor" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
+              <Text style={styles.feePreviewLbl}>E-Appointment Fee</Text>
+              <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#67E8F9" }]}>₹{eAppFee}</Text>
+            </View>
+            <View style={styles.feePreviewRow}>
+              <Feather name="shield" size={12} color="#818CF8" />
+              <Text style={styles.feePreviewLbl}>Platform Fee</Text>
+              <Text style={[styles.feePreviewVal, { color: "#818CF8" }]}>₹{platformFee}</Text>
+            </View>
+            <View style={[styles.feePreviewRow, { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)", marginTop: 6, paddingTop: 8 }]}>
+              <Feather name="credit-card" size={12} color="#FFF" />
+              <Text style={[styles.feePreviewLbl, { color: "#FFF", fontWeight: "700" }]}>Pay Now</Text>
+              <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#A5B4FC", fontWeight: "700", fontSize: 15 }]}>₹{payableNow}</Text>
+            </View>
+            <Text style={styles.feePreviewNote}>+ ₹{consultFee} consultation paid directly at clinic</Text>
           </View>
         </View>
 
@@ -257,10 +280,10 @@ export default function BookingScreen() {
             <Text style={styles.sectionLabel}>Available Shifts</Text>
             <View style={{ gap: 10 }}>
               {shifts.map(shift => {
-                const pct = Math.round((shift.booked / shift.max) * 100);
+                const fillPct = Math.round((shift.booked / shift.max) * 100);
                 const isSelected = selectedShift?.id === shift.id;
-                const isFull = pct >= 100;
-                const fillColor = pct >= 80 ? "#EF4444" : pct >= 60 ? "#F59E0B" : "#22C55E";
+                const isFull = fillPct >= 100;
+                const fillColor = fillPct >= 80 ? "#EF4444" : fillPct >= 60 ? "#F59E0B" : "#22C55E";
                 return (
                   <Pressable
                     key={shift.id}
@@ -288,11 +311,11 @@ export default function BookingScreen() {
                     {/* Fill Bar */}
                     <View style={{ gap: 4 }}>
                       <View style={styles.fillBarTrack}>
-                        <View style={[styles.fillBarFill, { width: `${Math.min(pct, 100)}%` as any, backgroundColor: fillColor }]} />
+                        <View style={[styles.fillBarFill, { width: pct(Math.min(fillPct, 100)), backgroundColor: fillColor }]} />
                       </View>
                       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                         <Text style={styles.fillBarLbl}>{shift.booked}/{shift.max} booked</Text>
-                        <Text style={[styles.fillBarPct, { color: fillColor }]}>{pct}% full</Text>
+                        <Text style={[styles.fillBarPct, { color: fillColor }]}>{fillPct}% full</Text>
                       </View>
                     </View>
 
@@ -426,16 +449,22 @@ const styles = StyleSheet.create({
   availPipDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#22C55E" },
   availPipTxt: { fontSize: 9, fontWeight: "700", color: "#4ADE80" },
 
-  toggleRow: { flexDirection: "row", gap: 10 },
+  toggleRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
   toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)" },
   toggleBtnActive: { backgroundColor: "rgba(79,70,229,0.3)", borderColor: "rgba(99,102,241,0.6)" },
   toggleTxt: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
   toggleTxtActive: { color: "#FFF" },
 
+  feePreviewCard: { backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderRadius: 16, padding: 12, gap: 8 },
+  feePreviewRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  feePreviewLbl: { flex: 1, fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: "500" },
+  feePreviewVal: { fontSize: 13, fontWeight: "700" },
+  feePreviewNote: { fontSize: 10, color: "rgba(255,255,255,0.28)", marginTop: 4 },
+
   calHeader: { flexDirection: "row", marginBottom: 4 },
   calDow: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
   calGrid: { flexDirection: "row", flexWrap: "wrap" },
-  calCell: { width: `${100 / 7}%` as any, aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  calCell: { width: pct(100 / 7), aspectRatio: 1, alignItems: "center", justifyContent: "center" },
   calCellSelected: { backgroundColor: "#4F46E5", borderRadius: 12 },
   calCellToday: { backgroundColor: "rgba(79,70,229,0.2)", borderRadius: 12, borderWidth: 1, borderColor: "rgba(99,102,241,0.4)" },
   calCellOff: { opacity: 0.3 },
