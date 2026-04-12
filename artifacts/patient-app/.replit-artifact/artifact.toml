@@ -13,7 +13,7 @@ version = "1.0.0"
 ensurePreviewReachable = "/status"
 name = "expo"
 paths = [ "/patient-app/" ]
-localPort = 20116
+localPort = 20117
 
 [services.development]
 run = "pnpm --filter @workspace/patient-app run dev"
@@ -23,5 +23,5 @@ build = [ "pnpm", "--filter", "@workspace/patient-app", "run", "build" ]
 run = [ "pnpm", "--filter", "@workspace/patient-app", "run", "serve" ]
 
 [services.env]
-PORT = "20116"
+PORT = "20117"
 BASE_PATH = "/patient-app/"
