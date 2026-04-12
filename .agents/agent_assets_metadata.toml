@@ -12,6 +12,12 @@ uri = "file://artifacts/doctor-onboarding/public/clinic-hero.png"
 type = "image"
 title = "doctor onboarding clinic hero"
 
+[[generated]]
+id = "V4lB6m6T7n-Hrq0sEOHr_"
+uri = "file://artifacts/doctor-onboarding/src/assets/clinic-crowd.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "dMN3TMyAMBYdKaxqSx9zT"
 uri = "file://.local/outputs/Asset-Manager.pdf"
