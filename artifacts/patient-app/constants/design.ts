@@ -27,6 +27,14 @@ export const glassCard = (extra?: ViewStyle): ViewStyle => ({
   ...extra,
 });
 
+export const glassCardStrong = (extra?: ViewStyle): ViewStyle => ({
+  backgroundColor: "rgba(79,70,229,0.12)",
+  borderWidth: 1,
+  borderColor: "rgba(79,70,229,0.35)",
+  borderRadius: 20,
+  ...extra,
+});
+
 export function pct(n: number): DimensionValue {
   return `${n}%` as DimensionValue;
 }

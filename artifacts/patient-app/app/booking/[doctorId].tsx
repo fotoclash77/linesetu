@@ -113,8 +113,8 @@ export default function BookingScreen() {
     ...getGetDoctorQueryOptions(doctorId ?? ""),
     enabled: !isDemoId,
   });
-  const docName = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.doctor?.name ?? "Dr. Ananya Sharma");
-  const docSpec = isDemoId ? "Cardiologist" : (doctorData?.doctor?.specialization ?? "Cardiologist");
+  const docName = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Dr. Ananya Sharma");
+  const docSpec = isDemoId ? "Cardiologist" : (doctorData?.specialization ?? "Cardiologist");
   const docPhoto = `https://randomuser.me/api/portraits/women/44.jpg`;
 
   const selectedDow = CAL.find(c => c.d === selectedDate)?.dow ?? 1;
@@ -141,7 +141,7 @@ export default function BookingScreen() {
       params: {
         doctorId: doctorId ?? "demo1",
         doctorName: docName,
-        doctorPhoto,
+        doctorPhoto: docPhoto,
         visitType: tokenType,
         date: `${selectedDate}`,
         shift: selectedShift!.label,

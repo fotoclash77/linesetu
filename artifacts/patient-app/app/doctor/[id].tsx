@@ -79,16 +79,16 @@ export default function DoctorDetailScreen() {
   });
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
-  const doctor = isDemoId ? SAMPLE_DOCTOR : (doctorData?.doctor ? {
+  const doctor = isDemoId ? SAMPLE_DOCTOR : (doctorData ? {
     ...SAMPLE_DOCTOR,
-    name: doctorData.doctor.name ?? SAMPLE_DOCTOR.name,
-    specialization: doctorData.doctor.specialization ?? SAMPLE_DOCTOR.specialization,
-    clinicName: doctorData.doctor.clinicName ?? SAMPLE_DOCTOR.clinicName,
-    location: doctorData.doctor.location ?? SAMPLE_DOCTOR.location,
+    name: doctorData.name ?? SAMPLE_DOCTOR.name,
+    specialization: doctorData.specialization ?? SAMPLE_DOCTOR.specialization,
+    clinicName: doctorData.clinicName ?? SAMPLE_DOCTOR.clinicName,
+    location: SAMPLE_DOCTOR.location,
   } : SAMPLE_DOCTOR);
 
-  const currentToken = queueData?.queue?.[0]?.tokenNumber ?? 47;
-  const queueCount = queueData?.queue?.length ?? 14;
+  const currentToken = queueData?.currentToken ?? 47;
+  const queueCount = queueData?.totalBooked ?? 14;
 
   return (
     <View style={styles.container}>

@@ -87,12 +87,15 @@ export default function PaymentScreen() {
     setLoading(true);
     try {
       await bookToken.mutateAsync({
-        doctorId: params.doctorId ?? "demo1",
-        patientId: patient?.id ?? params.patientId ?? "self",
-        date: String(date),
-        shift: shift.toLowerCase() as "morning" | "evening",
-        visitType: visitType.toLowerCase().replace(" ", "_") as "normal" | "emergency",
-        tokenType: tokenType,
+        data: {
+          doctorId: params.doctorId ?? "demo1",
+          patientId: patient?.id ?? params.patientId ?? "self",
+          patientName: patient?.name ?? "Patient",
+          patientPhone: patient?.phone,
+          date: String(date),
+          shift: shift.toLowerCase(),
+          type: tokenType,
+        },
       });
       router.replace(`/queue/token-${Date.now()}`);
     } catch {
