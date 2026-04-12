@@ -126,11 +126,10 @@ interface TokenItem {
   doctorId: string;
   doctorName?: string;
   tokenNumber: number;
-  status: "waiting" | "active" | "done" | string;
+  status: "waiting" | "in_consult" | "done" | "cancelled" | "upcoming";
   bookedAt?: string;
   shiftLabel?: string;
   queuePosition?: number;
-  [key: string]: unknown;
 }
 
 function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
@@ -226,9 +225,17 @@ export default function HomeScreen() {
   }));
   const doctors: DoctorItem[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
 
-  const activeTokens = (tokenData?.tokens ?? []).filter(
-    (t) => t.status === "waiting" || t.status === "in_consult"
-  ) as unknown as TokenItem[];
+  const VALID_STATUSES = new Set<TokenItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
+  const activeTokens: TokenItem[] = (tokenData?.tokens ?? [])
+    .filter((t) => t.status === "waiting" || t.status === "in_consult")
+    .map((t) => ({
+      id: t.id,
+      doctorId: t.doctorId,
+      tokenNumber: t.tokenNumber,
+      status: VALID_STATUSES.has(t.status as TokenItem["status"])
+        ? (t.status as TokenItem["status"])
+        : "waiting",
+    }));
   const hasActiveToken = activeTokens.length > 0;
   const activeToken = activeTokens[0];
 

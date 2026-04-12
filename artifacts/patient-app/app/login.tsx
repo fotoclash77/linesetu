@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { auth, googleProvider, signInWithEmailAndPassword, signInWithPopup } from "@/lib/firebase";
 
 const isWeb = Platform.OS === "web";
 
@@ -40,11 +41,17 @@ export default function LoginScreen() {
     setLoading(true);
     setError("");
     try {
-      const name = trimEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      await login({ id: trimEmail, name, phone: "" });
+      const cred = await signInWithEmailAndPassword(auth, trimEmail, password);
+      const user = cred.user;
+      await login({
+        id: user.uid,
+        name: user.displayName ?? trimEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        phone: user.phoneNumber ?? "",
+        profilePhoto: user.photoURL ?? undefined,
+      });
       router.replace("/(tabs)");
     } catch {
-      setError("Sign-in failed. Check your credentials.");
+      setError("Sign-in failed. Check your email and password.");
     } finally {
       setLoading(false);
     }
@@ -54,7 +61,14 @@ export default function LoginScreen() {
     setGLoading(true);
     setError("");
     try {
-      await login({ id: "google-demo", name: "Rahul Sharma", phone: "" });
+      const cred = await signInWithPopup(auth, googleProvider);
+      const user = cred.user;
+      await login({
+        id: user.uid,
+        name: user.displayName ?? "Patient",
+        phone: user.phoneNumber ?? "",
+        profilePhoto: user.photoURL ?? undefined,
+      });
       router.replace("/(tabs)");
     } catch {
       setError("Google sign-in failed. Try again.");

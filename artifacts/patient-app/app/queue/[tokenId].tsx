@@ -102,6 +102,20 @@ export default function LiveQueueScreen() {
     ), -1, false);
   }, []);
 
+  const slideUpY = useSharedValue(20);
+  const slideUpOp = useSharedValue(0);
+  useEffect(() => {
+    slideUpY.value = 20;
+    slideUpOp.value = 0;
+    slideUpY.value = withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) });
+    slideUpOp.value = withTiming(1, { duration: 320 });
+  }, [current]);
+
+  const slideUpStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: slideUpY.value }],
+    opacity: slideUpOp.value,
+  }));
+
   const ring1Style = useAnimatedStyle(() => ({
     transform: [{ scale: ring1.value }],
     opacity: ring1Op.value,
@@ -177,7 +191,7 @@ export default function LiveQueueScreen() {
               <Animated.View style={[styles.heroRing, ring2Style, { borderColor: ringBase }]} />
               <Animated.View style={[styles.heroRing, ring1Style, { borderColor: ringBase }]} />
               <View style={[styles.heroCore, { backgroundColor: isNear || isDone ? "rgba(245,158,11,0.18)" : "rgba(99,102,241,0.2)", borderColor: isNear || isDone ? "rgba(245,158,11,0.45)" : "rgba(99,102,241,0.5)" }]}>
-                <Text style={[styles.heroCoreNum, { color: isNear || isDone ? "#FCD34D" : "#A5B4FC" }]}>{current}</Text>
+                <Animated.Text style={[styles.heroCoreNum, { color: isNear || isDone ? "#FCD34D" : "#A5B4FC" }, slideUpStyle]}>{current}</Animated.Text>
                 <Text style={styles.heroCoreLabel}>Current</Text>
               </View>
             </View>
@@ -230,6 +244,56 @@ export default function LiveQueueScreen() {
                 <Text style={styles.statLbl}>{label}</Text>
               </View>
             ))}
+          </View>
+        </View>
+
+        {/* Your Appointment Card */}
+        <View style={styles.sectionPad}>
+          <View style={styles.apptCard}>
+            <View style={styles.apptHeader}>
+              <Text style={styles.apptTitle}>Your Appointment</Text>
+              <View style={[styles.apptStatusBadge, { backgroundColor: statusCfg.bg, borderColor: statusCfg.border }]}>
+                <Text style={[styles.apptStatusTxt, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+              </View>
+            </View>
+            <View style={styles.apptBody}>
+              <View style={[styles.apptTokenBox, { borderColor: statusCfg.border }]}>
+                <Text style={styles.apptTokenHash}>#</Text>
+                <Text style={[styles.apptTokenNum, { color: statusCfg.color }]}>{myToken}</Text>
+                <Text style={styles.apptTokenLbl}>Token</Text>
+              </View>
+              <View style={styles.apptDetails}>
+                <View style={styles.apptDetailRow}>
+                  <Feather name="users" size={12} color="#818CF8" />
+                  <Text style={styles.apptDetailLbl}>Ahead</Text>
+                  <Text style={styles.apptDetailVal}>{ahead} patient{ahead !== 1 ? "s" : ""}</Text>
+                </View>
+                <View style={styles.apptDetailRow}>
+                  <Feather name="clock" size={12} color="#06B6D4" />
+                  <Text style={styles.apptDetailLbl}>Est. Wait</Text>
+                  <Text style={styles.apptDetailVal}>~{waitMin} min</Text>
+                </View>
+                <View style={styles.apptDetailRow}>
+                  <Feather name="calendar" size={12} color="#22C55E" />
+                  <Text style={styles.apptDetailLbl}>Shift</Text>
+                  <Text style={styles.apptDetailVal}>Morning</Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.apptDoctorRow}>
+              <View style={styles.apptDoctorAvatar}>
+                <Feather name="user" size={14} color="#818CF8" />
+              </View>
+              <View>
+                <Text style={styles.apptDoctorName}>Dr. Ananya Sharma</Text>
+                <Text style={styles.apptDoctorSpec}>Cardiologist · HeartCare Clinic</Text>
+              </View>
+              <View style={{ flex: 1 }} />
+              <View style={styles.apptVerifiedBadge}>
+                <Feather name="check-circle" size={11} color="#22C55E" />
+                <Text style={styles.apptVerifiedTxt}>Verified</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -417,6 +481,27 @@ const styles = StyleSheet.create({
   shiftDetail: { flexDirection: "row", alignItems: "center", gap: 6 },
   shiftDetailTxt: { fontSize: 11, color: "rgba(255,255,255,0.55)" },
   shiftDetailDiv: { width: 1, height: 12, backgroundColor: "rgba(255,255,255,0.1)" },
+
+  apptCard: { padding: 16, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", gap: 14 },
+  apptHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  apptTitle: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  apptStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
+  apptStatusTxt: { fontSize: 10, fontWeight: "800" },
+  apptBody: { flexDirection: "row", alignItems: "center", gap: 14 },
+  apptTokenBox: { width: 72, height: 72, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1.5, backgroundColor: "rgba(99,102,241,0.12)" },
+  apptTokenHash: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)", lineHeight: 14 },
+  apptTokenNum: { fontSize: 30, fontWeight: "900", letterSpacing: -1, lineHeight: 34 },
+  apptTokenLbl: { fontSize: 8, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 2 },
+  apptDetails: { flex: 1, gap: 8 },
+  apptDetailRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  apptDetailLbl: { fontSize: 11, color: "rgba(255,255,255,0.4)", flex: 1 },
+  apptDetailVal: { fontSize: 11, fontWeight: "700", color: "#FFF" },
+  apptDoctorRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  apptDoctorAvatar: { width: 36, height: 36, borderRadius: 12, backgroundColor: "rgba(99,102,241,0.2)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
+  apptDoctorName: { fontSize: 12, fontWeight: "700", color: "#FFF" },
+  apptDoctorSpec: { fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 1 },
+  apptVerifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(34,197,94,0.12)", borderWidth: 1, borderColor: "rgba(34,197,94,0.3)" },
+  apptVerifiedTxt: { fontSize: 9, fontWeight: "700", color: "#22C55E" },
 
   bottomBar: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: "rgba(10,14,26,0.95)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", flexDirection: "row", alignItems: "center", gap: 12 },
   bottomInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },

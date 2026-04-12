@@ -53,7 +53,7 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    title: "Payments & Transactions",
+    title: "💳 Payments & Transactions",
     items: [
       { icon: "credit-card", label: "Payment History", sub: "Receipts & transaction records", color: "#67E8F9", route: null,             badge: null,    liveIndicator: false, danger: false },
       { icon: "file-text",   label: "Fee Structure",   sub: "Platform & consultation fees",   color: "#F59E0B", route: null,             badge: null,    liveIndicator: false, danger: false },
@@ -88,6 +88,7 @@ export default function ProfileScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
   const [showFamily, setShowFamily] = useState(true);
+  const [avatarError, setAvatarError] = useState(false);
 
   const name = patient?.name ?? "Rahul Sharma";
   const phone = patient?.phone ?? "+91 98765 43210";
@@ -135,17 +136,16 @@ export default function ProfileScreen() {
             <View style={styles.cardGlowOrb} />
             <View style={styles.userCardRow}>
               <View style={{ position: "relative" }}>
-                {patient?.profilePhoto ? (
-                  <Image
-                    source={{ uri: patient.profilePhoto }}
-                    style={styles.userAvatarPhoto}
-                    contentFit="cover"
-                  />
+                {avatarError ? (
+                  <View style={[styles.userAvatarPhoto, styles.userAvatarInitials]}>
+                    <Text style={styles.initialsText}>{initials}</Text>
+                  </View>
                 ) : (
                   <Image
-                    source={{ uri: `https://randomuser.me/api/portraits/men/1.jpg` }}
+                    source={{ uri: patient?.profilePhoto ?? `https://randomuser.me/api/portraits/men/1.jpg` }}
                     style={styles.userAvatarPhoto}
                     contentFit="cover"
+                    onError={() => setAvatarError(true)}
                   />
                 )}
                 <Pressable style={styles.cameraBtn}>
@@ -312,8 +312,10 @@ const styles = StyleSheet.create({
   userCardRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 16 },
   userAvatar: { width: 60, height: 60, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   userAvatarTxt: { fontSize: 20, fontWeight: "800", color: "#FFF" },
-  userAvatarPhoto: { width: 60, height: 60, borderRadius: 18, borderWidth: 2, borderColor: "rgba(99,102,241,0.45)" },
-  cameraBtn: { position: "absolute", bottom: -4, right: -4, width: 22, height: 22, borderRadius: 8, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
+  userAvatarPhoto: { width: 64, height: 64, borderRadius: 20, borderWidth: 2, borderColor: "rgba(99,102,241,0.45)" },
+  userAvatarInitials: { backgroundColor: "rgba(79,70,229,0.35)", alignItems: "center", justifyContent: "center" },
+  initialsText: { fontSize: 22, fontWeight: "700", color: "#A5B4FC", letterSpacing: 1 },
+  cameraBtn: { position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: 8, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
   onlineIndicator: { position: "absolute", top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: "#0A0E1A", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 4 },
   userName: { fontSize: 18, fontWeight: "900", color: "#FFF", letterSpacing: -0.3 },
   phoneRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
