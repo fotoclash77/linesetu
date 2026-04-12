@@ -1,12 +1,11 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,56 +13,91 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { registerPatient } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+type Step = "phone" | "otp" | "name";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [name, setName] = useState("");
+  const [step, setStep] = useState<Step>("phone");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const otpRef = useRef<TextInput>(null);
 
   const isWeb = Platform.OS === "web";
   const topPad = isWeb ? 67 : insets.top;
 
-  async function handleSignIn() {
-    const trimEmail = email.trim().toLowerCase();
-    if (!trimEmail || !trimEmail.includes("@")) {
-      setError("Enter a valid email address");
+  async function handlePhone() {
+    const trimPhone = phone.trim().replace(/\s/g, "");
+    if (trimPhone.length < 10) {
+      setError("Enter a valid 10-digit mobile number");
       return;
     }
-    if (!password) {
-      setError("Enter your password");
+    setError("");
+    setStep("otp");
+    setTimeout(() => otpRef.current?.focus(), 200);
+  }
+
+  function handleOtp() {
+    if (otp.trim().length < 4) {
+      setError("Enter the 6-digit OTP sent to your number");
+      return;
+    }
+    setError("");
+    setStep("name");
+  }
+
+  async function handleName() {
+    const trimName = name.trim();
+    if (!trimName) {
+      setError("Please enter your name");
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const name = trimEmail.split("@")[0]
-        .replace(/[._-]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      await login({ id: trimEmail, name, phone: "" });
+      const trimPhone = phone.trim().replace(/\s/g, "");
+      const patient = await registerPatient({ phone: `+91${trimPhone}`, name: trimName });
+      await login({ id: patient.id, name: patient.name, phone: patient.phone });
       router.replace("/(tabs)");
     } catch {
-      setError("Sign in failed. Please try again.");
+      setError("Could not connect. Check your internet.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogle() {
-    setLoading(true);
+  function handleContinue() {
+    if (step === "phone") handlePhone();
+    else if (step === "otp") handleOtp();
+    else handleName();
+  }
+
+  const titles: Record<Step, string> = {
+    phone: "Welcome",
+    otp:   "Verify OTP",
+    name:  "What's your name?",
+  };
+  const subs: Record<Step, string> = {
+    phone: "Enter your mobile number to continue",
+    otp:   `OTP sent to +91 ${phone.replace(/(.{5})(.{5})/, "$1 $2")}`,
+    name:  "This is how doctors will see you",
+  };
+  const ctaLabels: Record<Step, string> = {
+    phone: "Continue →",
+    otp:   "Verify OTP →",
+    name:  "Get Started",
+  };
+
+  function goBack() {
     setError("");
-    try {
-      await login({ id: "google-user", name: "Aryan Mehta", phone: "" });
-      router.replace("/(tabs)");
-    } catch {
-      setError("Google sign-in failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    if (step === "otp") setStep("phone");
+    else if (step === "name") setStep("otp");
   }
 
   return (
@@ -75,11 +109,8 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          contentContainerStyle={[styles.inner, { paddingTop: topPad + 24, paddingBottom: isWeb ? 34 : insets.bottom + 16 }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={[styles.inner, { paddingTop: topPad + 24, paddingBottom: isWeb ? 34 : insets.bottom + 16 }]}>
+
           {/* Brand */}
           <View style={styles.brandSection}>
             <View style={styles.logoBox}>
@@ -89,87 +120,79 @@ export default function LoginScreen() {
             <Text style={styles.tagline}>Smart Queue · Zero Wait Anxiety</Text>
           </View>
 
-          {/* Glass Card */}
+          {/* Step Indicators */}
+          <View style={styles.stepRow}>
+            {(["phone", "otp", "name"] as Step[]).map((s, i) => (
+              <React.Fragment key={s}>
+                <View style={[styles.stepDot, step === s && styles.stepDotActive, (step === "otp" && i === 0) || (step === "name" && i <= 1) ? styles.stepDotDone : null]} />
+                {i < 2 && <View style={[styles.stepLine, (step === "otp" && i === 0) || (step === "name" && i <= 1) ? styles.stepLineDone : null]} />}
+              </React.Fragment>
+            ))}
+          </View>
+
+          {/* Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome back</Text>
-            <Text style={styles.cardSub}>Sign in to your account</Text>
+            <Text style={styles.cardTitle}>{titles[step]}</Text>
+            <Text style={styles.cardSub}>{subs[step]}</Text>
 
-            {/* Google Button */}
-            <Pressable
-              testID="google-btn"
-              style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.85 }]}
-              onPress={handleGoogle}
-              disabled={loading}
-            >
-              <View style={styles.googleIcon}>
-                {/* Google G SVG */}
-                <View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: "#4285F4" }}>G</Text>
+            {step === "phone" && (
+              <View style={styles.phoneRow}>
+                <View style={styles.countryCode}>
+                  <Text style={styles.countryText}>🇮🇳 +91</Text>
                 </View>
-              </View>
-              <Text style={styles.googleTxt}>Continue with Google</Text>
-            </Pressable>
-
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerTxt}>or sign in with email</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Email Field */}
-            <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>Email Address</Text>
-              <View style={styles.inputRow}>
-                <Feather name="mail" size={16} color="rgba(255,255,255,0.3)" />
                 <TextInput
-                  testID="email-input"
-                  style={styles.input}
-                  placeholder="aryan.mehta@gmail.com"
+                  testID="phone-input"
+                  style={styles.phoneInput}
+                  placeholder="98765 43210"
                   placeholderTextColor="rgba(255,255,255,0.25)"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={email}
-                  onChangeText={(t) => { setEmail(t); setError(""); }}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phone}
+                  onChangeText={(t) => { setPhone(t); setError(""); }}
+                  autoFocus
+                  onSubmitEditing={handleContinue}
                 />
               </View>
-            </View>
+            )}
 
-            {/* Password Field */}
-            <View style={[styles.fieldWrap, { marginBottom: 8 }]}>
-              <Text style={styles.fieldLabel}>Password</Text>
-              <View style={[styles.inputRow, styles.inputRowFocused]}>
-                <Feather name="lock" size={16} color="#818CF8" />
+            {step === "otp" && (
+              <View style={styles.otpWrap}>
+                <Feather name="key" size={15} color="#818CF8" style={{ marginLeft: 14 }} />
                 <TextInput
-                  testID="password-input"
-                  style={[styles.input, { letterSpacing: password ? 3 : 0 }]}
-                  placeholder="••••••••••"
+                  ref={otpRef}
+                  testID="otp-input"
+                  style={styles.otpInput}
+                  placeholder="Enter 6-digit OTP"
                   placeholderTextColor="rgba(255,255,255,0.25)"
-                  secureTextEntry={!showPass}
-                  value={password}
-                  onChangeText={(t) => { setPassword(t); setError(""); }}
-                  onSubmitEditing={handleSignIn}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  value={otp}
+                  onChangeText={(t) => { setOtp(t); setError(""); }}
+                  autoFocus
+                  onSubmitEditing={handleContinue}
                 />
-                <Pressable onPress={() => setShowPass(p => !p)} style={styles.eyeBtn}>
-                  <Feather name={showPass ? "eye-off" : "eye"} size={16} color="rgba(255,255,255,0.3)" />
-                </Pressable>
               </View>
-            </View>
+            )}
 
-            {/* Forgot Password */}
-            <View style={styles.forgotRow}>
-              <Pressable>
-                <Text style={styles.forgotTxt}>Forgot password?</Text>
-              </Pressable>
-            </View>
+            {step === "name" && (
+              <TextInput
+                testID="name-input"
+                style={styles.nameInput}
+                placeholder="e.g. Rahul Sharma"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                value={name}
+                onChangeText={(t) => { setName(t); setError(""); }}
+                autoFocus
+                autoCapitalize="words"
+                onSubmitEditing={handleContinue}
+              />
+            )}
 
             {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-            {/* Sign In CTA */}
             <Pressable
-              testID="signin-btn"
-              onPress={handleSignIn}
+              testID="continue-btn"
+              onPress={handleContinue}
               disabled={loading}
               style={({ pressed }) => [styles.ctaOuter, pressed && { opacity: 0.85 }]}
             >
@@ -181,29 +204,38 @@ export default function LoginScreen() {
               >
                 {loading
                   ? <ActivityIndicator color="#FFF" />
-                  : (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                      <Text style={styles.ctaText}>Sign In</Text>
-                      <Feather name="chevron-right" size={18} color="#FFF" />
-                    </View>
-                  )}
+                  : <Text style={styles.ctaText}>{ctaLabels[step]}</Text>}
               </LinearGradient>
             </Pressable>
+
+            {step !== "phone" && (
+              <Pressable onPress={goBack} style={styles.backBtn}>
+                <Text style={styles.backText}>← {step === "otp" ? "Change number" : "Back"}</Text>
+              </Pressable>
+            )}
+
+            {step === "otp" && (
+              <View style={styles.resendRow}>
+                <Text style={styles.resendTxt}>Didn't receive OTP? </Text>
+                <Pressable onPress={() => {}}>
+                  <Text style={styles.resendLink}>Resend</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.securityRow}>
+              <Feather name="shield" size={11} color="rgba(255,255,255,0.2)" />
+              <Text style={styles.securityTxt}>256-bit encrypted · Your data is safe</Text>
+            </View>
           </View>
 
-          {/* Sign Up Link */}
-          <Text style={styles.newHere}>
-            New to LINESETU?{" "}
-            <Text style={styles.newHereLink}>Create account</Text>
-          </Text>
+          {step === "phone" && (
+            <Text style={styles.newHere}>
+              New here?{" "}
+              <Text style={styles.newHereHighlight}>You'll be registered automatically</Text>
+            </Text>
+          )}
 
-          {/* Security Note */}
-          <View style={styles.securityRow}>
-            <Feather name="shield" size={12} color="rgba(255,255,255,0.2)" />
-            <Text style={styles.securityTxt}>256-bit encrypted · Your data is safe</Text>
-          </View>
-
-          {/* Stats Strip */}
           <View style={styles.statsRow}>
             {[
               { v: "500+", l: "Clinics" },
@@ -220,14 +252,13 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Terms */}
           <Text style={styles.terms}>
             By continuing, you agree to our{" "}
             <Text style={styles.termsLink}>Terms</Text>
             {" & "}
             <Text style={styles.termsLink}>Privacy Policy</Text>
           </Text>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -237,45 +268,50 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0E1A" },
   orb1: { position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(99,102,241,0.28)" },
   orb2: { position: "absolute", bottom: 40, right: -80, width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(6,182,212,0.16)" },
-  inner: { paddingHorizontal: 20 },
+  inner: { flex: 1, paddingHorizontal: 20 },
 
   brandSection: { alignItems: "center", marginBottom: 24 },
-  logoBox: { width: 60, height: 60, borderRadius: 18, backgroundColor: "rgba(99,102,241,0.15)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  brand: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5, color: "#FFFFFF", marginBottom: 4 },
+  logoBox: { width: 64, height: 64, borderRadius: 19, backgroundColor: "rgba(99,102,241,0.15)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  brand: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5, color: "#FFFFFF", marginBottom: 5 },
   tagline: { fontSize: 13, color: "rgba(255,255,255,0.38)", fontWeight: "500" },
 
-  card: { backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)", borderRadius: 28, padding: 26, paddingHorizontal: 22, marginBottom: 18 },
+  stepRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20, gap: 0 },
+  stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  stepDotActive: { backgroundColor: "#4F46E5", borderColor: "#6366F1" },
+  stepDotDone: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+  stepLine: { width: 40, height: 1.5, backgroundColor: "rgba(255,255,255,0.1)" },
+  stepLineDone: { backgroundColor: "#22C55E" },
+
+  card: { backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)", borderRadius: 28, padding: 24, marginBottom: 14 },
   cardTitle: { fontSize: 21, fontWeight: "700", color: "#FFF", marginBottom: 4 },
-  cardSub: { fontSize: 13, color: "rgba(255,255,255,0.42)", marginBottom: 22 },
+  cardSub: { fontSize: 13, color: "rgba(255,255,255,0.42)", marginBottom: 18 },
 
-  googleBtn: { height: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.97)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 8 },
-  googleIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0,0,0,0.08)" },
-  googleTxt: { fontSize: 14, fontWeight: "600", color: "#1F1F1F", letterSpacing: 0.01 },
+  phoneRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  countryCode: { height: 52, paddingHorizontal: 14, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  countryText: { fontSize: 14, color: "rgba(255,255,255,0.8)", fontWeight: "600" },
+  phoneInput: { flex: 1, height: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.5)", paddingHorizontal: 16, fontSize: 18, fontWeight: "600", color: "#FFF", letterSpacing: 1 },
 
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.08)" },
-  dividerTxt: { fontSize: 12, color: "rgba(255,255,255,0.28)", fontWeight: "500" },
+  otpWrap: { flexDirection: "row", alignItems: "center", height: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.5)", marginBottom: 14 },
+  otpInput: { flex: 1, height: 52, paddingHorizontal: 12, fontSize: 22, fontWeight: "700", color: "#FFF", letterSpacing: 6 },
 
-  fieldWrap: { marginBottom: 12 },
-  fieldLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.07 * 11, color: "rgba(255,255,255,0.32)", textTransform: "uppercase", marginBottom: 7 },
-  inputRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", borderRadius: 14, paddingHorizontal: 14, height: 50 },
-  inputRowFocused: { borderWidth: 1.5, borderColor: "rgba(99,102,241,0.5)" },
-  input: { flex: 1, height: 50, fontSize: 14, fontWeight: "500", color: "#FFF" },
-  eyeBtn: { padding: 4 },
+  nameInput: { height: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.5)", paddingHorizontal: 16, fontSize: 16, fontWeight: "600", color: "#FFF", marginBottom: 14 },
 
-  forgotRow: { alignItems: "flex-end", marginBottom: 22 },
-  forgotTxt: { fontSize: 12, fontWeight: "600", color: "#818CF8" },
+  errorText: { fontSize: 12, color: "#F87171", marginBottom: 10, marginTop: -4 },
+  ctaOuter: { borderRadius: 14, overflow: "hidden", marginTop: 2 },
+  ctaGrad: { height: 52, alignItems: "center", justifyContent: "center" },
+  ctaText: { fontSize: 15, fontWeight: "700", color: "#FFF", letterSpacing: 0.3 },
 
-  errorText: { fontSize: 12, color: "#F87171", marginBottom: 10, marginTop: -10 },
-  ctaOuter: { borderRadius: 14, overflow: "hidden" },
-  ctaGrad: { height: 52, alignItems: "center", justifyContent: "center", shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.45, shadowRadius: 16 },
-  ctaText: { fontSize: 15, fontWeight: "700", color: "#FFF", letterSpacing: 0.01 },
+  backBtn: { alignItems: "center", marginTop: 14 },
+  backText: { fontSize: 13, color: "#818CF8", fontWeight: "600" },
+  resendRow: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
+  resendTxt: { fontSize: 12, color: "rgba(255,255,255,0.3)" },
+  resendLink: { fontSize: 12, color: "#818CF8", fontWeight: "700" },
+
+  securityRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 16 },
+  securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: "500" },
 
   newHere: { textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.3)", fontWeight: "500", marginBottom: 14 },
-  newHereLink: { color: "#818CF8", fontWeight: "700" },
-
-  securityRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 14 },
-  securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: "500" },
+  newHereHighlight: { color: "#818CF8", fontWeight: "700" },
 
   statsRow: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderRadius: 16, paddingVertical: 12, marginBottom: 14 },
   statDivider: { width: 1, height: 24, backgroundColor: "rgba(255,255,255,0.08)" },
