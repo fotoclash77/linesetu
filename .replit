@@ -11,6 +11,26 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/doctor-app: expo"
+
+[[workflows.workflow]]
+name = "artifacts/doctor-app: expo"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/doctor-app run dev"
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
@@ -34,6 +54,10 @@ externalPort = 3000
 [[ports]]
 localPort = 20116
 externalPort = 3002
+
+[[ports]]
+localPort = 20117
+externalPort = 3003
 
 [[ports]]
 localPort = 21160
