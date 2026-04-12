@@ -5,7 +5,8 @@
  * LINESETU Queue Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { DailyEarning } from "./dailyEarning";
 
-export interface HealthStatus {
-  status: string;
-}
+export type GetDoctorEarnings200 = {
+  earnings: DailyEarning[];
+};

@@ -5,7 +5,8 @@
  * LINESETU Queue Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { Token } from "./token";
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListTokens200 = {
+  tokens: Token[];
+};
