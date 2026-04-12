@@ -102,6 +102,7 @@ export default function BookingScreen() {
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
 
   const today = 12; // April 12 2026
+  const [visitType, setVisitType] = useState<"first-visit" | "follow-up">("first-visit");
   const [tokenType, setTokenType] = useState<"normal" | "emergency">("normal");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -142,7 +143,7 @@ export default function BookingScreen() {
         doctorId: doctorId ?? "demo1",
         doctorName: docName,
         doctorPhoto: docPhoto,
-        visitType: tokenType,
+        visitType: visitType,
         date: `${selectedDate}`,
         shift: selectedShift!.label,
         clinic: selectedShift!.clinic,
@@ -194,9 +195,30 @@ export default function BookingScreen() {
           </View>
         </View>
 
+        {/* Visit Type Toggle */}
+        <View style={styles.sectionPad}>
+          <Text style={styles.sectionLabel}>Visit Type</Text>
+          <View style={styles.toggleRow}>
+            <Pressable
+              style={[styles.toggleBtn, visitType === "first-visit" && styles.toggleBtnActive]}
+              onPress={() => setVisitType("first-visit")}
+            >
+              <Feather name="user-plus" size={14} color={visitType === "first-visit" ? "#FFF" : "rgba(255,255,255,0.4)"} />
+              <Text style={[styles.toggleTxt, visitType === "first-visit" && styles.toggleTxtActive]}>First Visit</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.toggleBtn, visitType === "follow-up" && styles.toggleBtnActive]}
+              onPress={() => setVisitType("follow-up")}
+            >
+              <Feather name="repeat" size={14} color={visitType === "follow-up" ? "#FFF" : "rgba(255,255,255,0.4)"} />
+              <Text style={[styles.toggleTxt, visitType === "follow-up" && styles.toggleTxtActive]}>Follow-up</Text>
+            </Pressable>
+          </View>
+        </View>
+
         {/* Token Type Toggle */}
         <View style={styles.sectionPad}>
-          <Text style={styles.sectionLabel}>Token Type</Text>
+          <Text style={styles.sectionLabel}>Token Priority</Text>
           <View style={styles.toggleRow}>
             <Pressable
               style={[styles.toggleBtn, tokenType === "normal" && styles.toggleBtnActive]}

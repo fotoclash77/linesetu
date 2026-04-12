@@ -3,11 +3,11 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { pct } from "@/constants/design";
+import { AnimatedRing } from "@/components/AnimatedRing";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
-  Animated,
   ActivityIndicator,
   Platform,
   Pressable,
@@ -59,6 +59,13 @@ function DoctorCard({ doc }: { doc: any }) {
       </View>
 
       <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+      <View style={styles.ratingRow}>
+        <Feather name="star" size={11} color="#F59E0B" />
+        <Text style={styles.ratingTxt}>{doc.rating ?? "4.9"}</Text>
+        <Text style={styles.ratingSlash}> · </Text>
+        <Feather name="check-circle" size={10} color="#06B6D4" />
+        <Text style={styles.verifiedTxt}>Verified</Text>
+      </View>
       <View style={[styles.specBadge, { backgroundColor: accent + "18" }]}>
         <Text style={[styles.specText, { color: accent }]}>{doc.specialization}</Text>
       </View>
@@ -97,28 +104,6 @@ function DoctorCard({ doc }: { doc: any }) {
 }
 
 function LiveQueueCard({ token }: { token: any }) {
-  const ring1 = useRef(new Animated.Value(1)).current;
-  const ring2 = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const anim1 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(ring1, { toValue: 1.5, duration: 1200, useNativeDriver: true }),
-        Animated.timing(ring1, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    const anim2 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(400),
-        Animated.timing(ring2, { toValue: 1.5, duration: 1200, useNativeDriver: true }),
-        Animated.timing(ring2, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    anim1.start();
-    anim2.start();
-    return () => { anim1.stop(); anim2.stop(); };
-  }, [ring1, ring2]);
-
   const myToken = token?.tokenNumber ?? 52;
   const currentToken = 47;
   const waitMin = 25;
@@ -138,7 +123,8 @@ function LiveQueueCard({ token }: { token: any }) {
       </View>
 
       <View style={styles.liveQueueStats}>
-        <View style={[styles.queueStatBox, { backgroundColor: "rgba(79,70,229,0.2)", borderColor: "rgba(99,102,241,0.4)" }]}>
+        <View style={[styles.queueStatBox, { backgroundColor: "rgba(79,70,229,0.2)", borderColor: "rgba(99,102,241,0.4)", overflow: "visible" }]}>
+          <AnimatedRing size={54} color="#818CF8" pulses={2} />
           <View style={styles.queueStatHeader}>
             <Feather name="hash" size={9} color="#818CF8" />
             <Text style={styles.queueStatLblTxt}>MY TOKEN</Text>
@@ -424,7 +410,11 @@ const styles = StyleSheet.create({
   },
   docPhoto: { width: 160, height: 160, borderRadius: 16, borderWidth: 2.5 },
   verifiedOverlay: { position: "absolute", top: -6, right: -6, width: 26, height: 26, borderRadius: 13, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
-  docName: { fontSize: 13, fontWeight: "800", color: "#FFF", marginBottom: 4 },
+  docName: { fontSize: 13, fontWeight: "800", color: "#FFF", marginBottom: 3 },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 5 },
+  ratingTxt: { fontSize: 11, fontWeight: "700", color: "#F59E0B" },
+  ratingSlash: { fontSize: 10, color: "rgba(255,255,255,0.3)" },
+  verifiedTxt: { fontSize: 10, fontWeight: "600", color: "#06B6D4" },
   specBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: "flex-start", marginBottom: 6 },
   specText: { fontSize: 10, fontWeight: "600" },
   clinicRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 10 },
