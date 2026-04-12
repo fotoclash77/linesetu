@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  query, where, orderBy, limit,
+  query, where, limit,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -55,10 +55,16 @@ router.get("/patients/:patientId/tokens", async (req, res) => {
     const snap = await getDocs(query(
       collection(db, Collections.TOKENS),
       where("patientId", "==", req.params.patientId),
-      orderBy("bookedAt", "desc"),
-      limit(20)
+      limit(50)
     ));
-    const tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const tokens = snap.docs
+      .map(d => ({ id: d.id, ...d.data() as any }))
+      .sort((a, b) => {
+        const aTime = a.bookedAt?.seconds ?? 0;
+        const bTime = b.bookedAt?.seconds ?? 0;
+        return bTime - aTime;
+      })
+      .slice(0, 20);
     res.json({ tokens });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
