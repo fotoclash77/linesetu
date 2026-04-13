@@ -608,26 +608,88 @@ export default function QueueScreen() {
                 })}
               </View>
 
-              {/* ── QUEUE TAB: waiting patients (excluding nextTok) ── */}
+              {/* ── QUEUE TAB: waiting patients + master live list ── */}
               {tab==='queue' && (
                 <View style={S.list}>
-                  {queueRest.length===0 ? (
-                    <View style={S.empty}>
-                      <Text style={S.emptyIcon}>{current||nextTok?'⏳':'🎉'}</Text>
-                      <Text style={S.emptyTxt}>
-                        {current||nextTok ? 'No more patients waiting' : 'Queue is empty for this shift'}
-                      </Text>
+                  {/* Waiting patients (action cards) */}
+                  {queueRest.map(t=>(
+                    <QCard
+                      key={t.id} tok={t}
+                      busy={busyId===t.id}
+                      onSendAlert={()=>doCall(t.id)}
+                      onNotShown={()=>doCancel(t.id)}
+                    />
+                  ))}
+
+                  {/* ── MASTER LIVE QUEUE FROM FIREBASE (SSE) ── */}
+                  <View style={S.masterSection}>
+                    <View style={S.masterHeader}>
+                      <PulseDot color={TEAL_LT} size={7}/>
+                      <Text style={S.masterTitle}>TODAY'S QUEUE — ALL TOKENS</Text>
+                      {!masterLoading && (
+                        <View style={S.masterCount}>
+                          <Text style={S.masterCountTxt}>{masterRows.length}</Text>
+                        </View>
+                      )}
                     </View>
-                  ) : (
-                    queueRest.map(t=>(
-                      <QCard
-                        key={t.id} tok={t}
-                        busy={busyId===t.id}
-                        onSendAlert={()=>doCall(t.id)}
-                        onNotShown={()=>doCancel(t.id)}
-                      />
-                    ))
-                  )}
+
+                    {masterLoading ? (
+                      <View style={S.masterLoadWrap}>
+                        <ActivityIndicator size="small" color={TEAL_LT} />
+                        <Text style={S.masterLoadTxt}>Connecting to live queue…</Text>
+                      </View>
+                    ) : masterRows.length === 0 ? (
+                      <View style={S.masterEmpty}>
+                        <Text style={S.emptyIcon}>📋</Text>
+                        <Text style={S.masterEmptyTxt}>No tokens booked today yet.</Text>
+                      </View>
+                    ) : (
+                      masterRows.map((t) => {
+                        const isE = t.type === 'emergency';
+                        const label = isE
+                          ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                          : `#${t.tokenNumber}`;
+                        const STATUS_COLOR: Record<string, string> = {
+                          waiting:    '#FCD34D',
+                          in_consult: TEAL_LT,
+                          done:       '#4ADE80',
+                          cancelled:  '#F87171',
+                        };
+                        const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
+                        const isWk = t.source === 'walkin';
+                        const isOn = t.source === 'online';
+                        const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '';
+                        const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : '';
+                        return (
+                          <View key={t.id} style={S.masterItem}>
+                            <View style={[
+                              S.masterToken,
+                              {
+                                backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
+                                borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
+                              },
+                            ]}>
+                              <Text style={S.masterTokenText}>{label}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={S.masterName}>{t.patientName}</Text>
+                              <Text style={S.masterSub}>
+                                <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>
+                                  {isE ? 'Emergency' : 'Normal'}
+                                </Text>
+                                {'  ·  '}
+                                <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
+                                {srcLabel ? (
+                                  <>{'  ·  '}<Text style={{ color: srcColor }}>{srcLabel}</Text></>
+                                ) : null}
+                              </Text>
+                            </View>
+                            <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
                 </View>
               )}
 
