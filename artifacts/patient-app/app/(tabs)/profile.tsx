@@ -14,6 +14,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -78,8 +79,9 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     title: "App & Support",
     items: [
-      { icon: "help-circle",    label: "Help & FAQ",      sub: "How queues, tokens & payments work", color: "#22C55E", route: "/help-faq", badge: null, liveIndicator: false, danger: false },
-      { icon: "message-circle", label: "Contact Support", sub: "Chat or raise a ticket",             color: "#06B6D4", route: "/contact-support", badge: null, liveIndicator: false, danger: false },
+      { icon: "help-circle",    label: "Help & FAQ",           sub: "How queues, tokens & payments work", color: "#22C55E", route: "/help-faq",       badge: null, liveIndicator: false, danger: false },
+      { icon: "message-circle", label: "Contact Support",      sub: "Chat or raise a ticket",             color: "#06B6D4", route: "/contact-support", badge: null, liveIndicator: false, danger: false },
+      { icon: "share-2",        label: "Share LINESETU App",   sub: "Invite family & friends",            color: "#A78BFA", route: null,               badge: null, liveIndicator: false, danger: false },
     ],
   },
   {
@@ -455,6 +457,15 @@ export default function ProfileScreen() {
                   key={item.label}
                   style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed, i < section.items.length - 1 && styles.menuItemBorder]}
                   onPress={() => {
+                    if (item.label === "Share LINESETU App") {
+                      Share.share({
+                        title: "LINESETU — Smart Queue & Token Management",
+                        message:
+                          "Skip the clinic wait! Book your doctor token online with LINESETU and track the live queue from your phone.\n\n📲 Download now: https://linesetu.com/app\n\nShare with your family and save their time too!",
+                        url: "https://linesetu.com/app",
+                      }).catch(() => {});
+                      return;
+                    }
                     if (item.label === "Sign Out") {
                       Alert.alert(
                         "Sign Out",
