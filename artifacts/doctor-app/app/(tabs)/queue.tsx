@@ -93,19 +93,21 @@ function useElapsed(calledAt: any) {
 }
 
 // ─── Visit type hook ─────────────────────────────────────────────
-function useVisitType(doctorId: string|undefined, phone: string|undefined) {
+function useVisitType(doctorId: string|undefined, phone: string|undefined, tokenId?: string) {
   const [vt, setVt] = useState<string>('—');
   useEffect(() => {
     if (!doctorId || !phone) { setVt('—'); return; }
     (async () => {
       try {
-        const r = await fetch(`${BASE()}/api/tokens/visit-count?doctorId=${encodeURIComponent(doctorId)}&phone=${encodeURIComponent(phone)}`);
+        let url = `${BASE()}/api/tokens/visit-count?doctorId=${encodeURIComponent(doctorId)}&phone=${encodeURIComponent(phone)}`;
+        if (tokenId) url += `&excludeId=${encodeURIComponent(tokenId)}`;
+        const r = await fetch(url);
         if (!r.ok) { setVt('—'); return; }
         const data = await r.json();
-        setVt(data.count > 1 ? 'Follow Up' : 'First Visit');
+        setVt(data.count > 0 ? 'Follow Up' : 'First Visit');
       } catch (_) { setVt('—'); }
     })();
-  }, [doctorId, phone]);
+  }, [doctorId, phone, tokenId]);
   return vt;
 }
 
@@ -115,11 +117,13 @@ function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
 }) {
   const tc = typeCfg(tok);
   const elapsed = useElapsed(tok.calledAt);
-  const visitType = useVisitType(doctorId, tok.patientPhone);
+  const visitType = useVisitType(doctorId, tok.patientPhone, tok.id);
 
-  const sourceLabel = tok.source === 'walkin' ? 'WALK-IN' : 'E-TOKEN';
-  const sourceSub   = tok.source === 'walkin' ? 'Token booked from Walk-in by Doctor App' : 'Token booked by Patient App';
-  const sourceColor = tok.source === 'walkin' ? '#67E8F9' : '#4ADE80';
+  const isWalkin = tok.source === 'walkin';
+  const isOnline = tok.source === 'online';
+  const sourceLabel = isWalkin ? 'WALK-IN' : isOnline ? 'E-TOKEN' : tok.source?.toUpperCase() ?? '—';
+  const sourceSub   = isWalkin ? 'Token booked from Walk-in by Doctor App' : isOnline ? 'Token booked by Patient App' : '';
+  const sourceColor = isWalkin ? '#67E8F9' : isOnline ? '#4ADE80' : 'rgba(255,255,255,0.5)';
   const genderLabel = tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? '—');
 
   return (
@@ -146,7 +150,7 @@ function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
         <View style={{flex:1}}>
           <Text style={S.ccName} numberOfLines={1}>{tok.patientName}</Text>
           <View style={S.ccBadges}>
-            <View style={[S.pill, {backgroundColor: tok.source==='walkin'?'rgba(6,182,212,0.18)':'rgba(34,197,94,0.18)'}]}>
+            <View style={[S.pill, {backgroundColor: isWalkin?'rgba(6,182,212,0.18)':isOnline?'rgba(34,197,94,0.18)':'rgba(255,255,255,0.08)'}]}>
               <View style={{width:5,height:5,borderRadius:3,backgroundColor:sourceColor,marginRight:3}}/>
               <Text style={[S.pillTxt,{color:sourceColor}]}>{sourceLabel}</Text>
             </View>

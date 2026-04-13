@@ -148,6 +148,29 @@ router.get("/tokens", async (req, res) => {
   }
 });
 
+// GET /api/tokens/visit-count — previous visits for a patient (must be before :tokenId)
+router.get("/tokens/visit-count", async (req, res) => {
+  try {
+    const doctorId  = req.query.doctorId as string;
+    const phone     = req.query.phone as string;
+    const excludeId = req.query.excludeId as string | undefined;
+    if (!doctorId || !phone) return res.status(400).json({ error: "doctorId and phone required" });
+
+    const snap = await getDocs(
+      query(
+        collection(db, Collections.TOKENS),
+        where("doctorId", "==", doctorId),
+        where("patientPhone", "==", phone),
+      ),
+    );
+    let count = snap.docs.length;
+    if (excludeId) count = snap.docs.filter(d => d.id !== excludeId).length;
+    res.json({ count });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/tokens/:tokenId
 router.get("/tokens/:tokenId", async (req, res) => {
   try {
@@ -281,27 +304,6 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
     }
 
     res.json({ id: req.params.tokenId, status: "cancelled" });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/tokens/visit-count — how many previous visits for a patient
-router.get("/tokens/visit-count", async (req, res) => {
-  try {
-    const doctorId = req.query.doctorId as string;
-    const phone    = req.query.phone as string;
-    if (!doctorId || !phone) return res.status(400).json({ error: "doctorId and phone required" });
-
-    const snap = await getDocs(
-      query(
-        collection(db, Collections.TOKENS),
-        where("doctorId", "==", doctorId),
-        where("patientPhone", "==", phone),
-      ),
-    );
-    const dates = new Set(snap.docs.map(d => d.data().date));
-    res.json({ count: dates.size });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
