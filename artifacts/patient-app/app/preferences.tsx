@@ -127,7 +127,7 @@ export default function PreferencesScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Preferences</Text>
-          <Text style={styles.headerSub}>Language, alerts & display</Text>
+          <Text style={styles.headerSub}>Alerts & display</Text>
         </View>
         <Pressable
           style={[styles.saveBtn, saving && { opacity: 0.6 }]}
