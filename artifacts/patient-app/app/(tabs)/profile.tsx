@@ -96,6 +96,15 @@ const MENU_SECTIONS: MenuSection[] = [
 ];
 
 async function pickSquareImage(): Promise<string | null> {
+  if (Platform.OS === "web") {
+    await new Promise<void>((resolve) =>
+      Alert.alert(
+        "Use a square (1:1) photo",
+        "For best results, please select a photo that is already square. Non-square photos may appear cropped or distorted in the circular display.",
+        [{ text: "OK, got it", onPress: () => resolve() }]
+      )
+    );
+  }
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
     Alert.alert("Permission needed", "Please allow photo library access to upload images.");
@@ -486,7 +495,10 @@ export default function ProfileScreen() {
                       <Text style={styles.modalCameraTxt}>Change Photo</Text>
                     </View>
                   </Pressable>
-                  <Text style={styles.modalPhotoHint}>Tap to upload any photo · auto-cropped to square</Text>
+                  <View style={styles.photoHintBox}>
+                    <Feather name="alert-circle" size={11} color="#F59E0B" />
+                    <Text style={styles.modalPhotoHint}>Please upload a square (1:1) photo for best results</Text>
+                  </View>
                 </View>
 
                 <FieldBlock label="Full Name">
@@ -556,7 +568,10 @@ export default function ProfileScreen() {
                       <Text style={styles.modalCameraTxt}>Upload Photo</Text>
                     </View>
                   </Pressable>
-                  <Text style={styles.modalPhotoHint}>Any shape photo → auto-cropped to square</Text>
+                  <View style={styles.photoHintBox}>
+                    <Feather name="alert-circle" size={11} color="#F59E0B" />
+                    <Text style={styles.modalPhotoHint}>Please upload a square (1:1) photo for best results</Text>
+                  </View>
                 </View>
 
                 <FieldBlock label="Full Name">
@@ -676,7 +691,8 @@ const styles = StyleSheet.create({
   modalPhotoInitials:   { fontSize: 32, fontWeight: "800", color: "#A5B4FC" },
   modalCameraOverlay:   { position: "absolute", bottom: 0, left: 0, right: 0, height: 36, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5 },
   modalCameraTxt:       { fontSize: 10, fontWeight: "700", color: "#FFF" },
-  modalPhotoHint:       { fontSize: 10, color: "rgba(255,255,255,0.35)", textAlign: "center" },
+  photoHintBox:         { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4 },
+  modalPhotoHint:       { fontSize: 10, color: "#F59E0B", fontWeight: "600", flex: 1 },
 
   fieldBlock:  { marginBottom: 18 },
   fieldLabel:  { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 },
