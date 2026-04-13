@@ -480,12 +480,15 @@ export default function QueueScreen() {
     return a.tokenNumber - b.tokenNumber;
   });
   // Priority: 1) Manually chosen via Send Next  2) Emergency  3) Normal
-  const manualNext = manualNextId ? waitSorted.find(t => t.id === manualNextId) : null;
+  const doneList    = all.filter(t => t.displayStatus === 'done');
+  const skippedList = all.filter(t => t.displayStatus === 'skipped').sort((a, b) => a.tokenNumber - b.tokenNumber);
+
+  // Skipped patients CAN be manually chosen as next — same logic as waiting
+  const manualNext = manualNextId
+    ? [...waitSorted, ...skippedList].find(t => t.id === manualNextId) ?? null
+    : null;
   const upNext = manualNext ?? waitSorted[0];
   upNextRef.current = upNext?.id; // always tracks what the Up Next card shows
-
-  const doneList    = all.filter(t => t.displayStatus === 'done');
-  const skippedList = all.filter(t => t.displayStatus === 'skipped');
 
   // ── Tab config ────────────────────────────────────────────────
   const normalList  = waitSorted.filter(t => t.type === 'normal');
