@@ -17,6 +17,7 @@ router.post("/tokens", async (req, res) => {
       doctorId, patientId, patientName, patientPhone,
       type = "normal", date, shift = "morning", paymentId,
       source = "online", // 'online' | 'walkin'
+      age, gender, address, area, notes,
     } = req.body;
 
     if (!doctorId || !patientName) {
@@ -50,6 +51,12 @@ router.post("/tokens", async (req, res) => {
       paymentStatus: paymentId ? "paid" : "pending",
       bookedAt: Timestamp.now(),
       calledAt: null, doneAt: null,
+      // extended patient profile fields
+      age: age || null,
+      gender: gender || null,
+      address: address || null,
+      area: area || null,
+      notes: notes || null,
     };
 
     const batch = writeBatch(db);

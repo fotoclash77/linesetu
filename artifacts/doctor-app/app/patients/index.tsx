@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
+// Unused but kept for reference: import { useQueryClient } from '@tanstack/react-query';
 
 const isWeb = Platform.OS === 'web';
 const BASE  = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -78,7 +79,11 @@ function PatientCard({ tok }: { tok: any }) {
   const st = statusLabel(tok.status);
   const src = sourceInfo(tok);
   return (
-    <View style={[S.card, tok.type==='emergency'&&S.cardEmerg]}>
+    <TouchableOpacity
+      style={[S.card, tok.type==='emergency'&&S.cardEmerg]}
+      onPress={() => router.push(`/patients/${tok.id}`)}
+      activeOpacity={0.75}
+    >
       {/* Left: token block */}
       <View style={[S.tokenBlock, tok.type==='emergency'&&S.tokenBlockEmerg]}>
         <Text style={S.tokenHash}>#</Text>
@@ -108,8 +113,10 @@ function PatientCard({ tok }: { tok: any }) {
           </View>
           <Text style={S.cardDate}>{fmtDate(tok)}{fmtTime(tok) ? `  ·  ${fmtTime(tok)}` : ''}</Text>
         </View>
+        {/* Tap arrow indicator */}
+        <Text style={S.cardChevron}>›</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -387,4 +394,5 @@ const S = StyleSheet.create({
   badge:{ paddingHorizontal:8, paddingVertical:3, borderRadius:20 },
   badgeTxt:{ fontSize:9, fontWeight:'800' },
   cardDate:{ fontSize:9, color:'rgba(255,255,255,0.28)', fontWeight:'600' },
+  cardChevron:{ fontSize:20, color:'rgba(255,255,255,0.18)', fontWeight:'300', alignSelf:'center', marginLeft:4 },
 });

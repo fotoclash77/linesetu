@@ -134,6 +134,10 @@ export default function AddWalkinScreen() {
           type: tokenType.toLowerCase(),
           shift: currentShift(),
           source: 'walkin',
+          age: age.trim() || null,
+          gender,
+          address: address.trim() || null,
+          area: area.trim() || null,
         }),
       });
       if (!res.ok) {
