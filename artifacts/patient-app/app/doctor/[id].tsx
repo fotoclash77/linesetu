@@ -136,13 +136,6 @@ export default function DoctorDetailScreen() {
               <Text style={styles.expBadgeTxt}>{doctor.experience} yrs exp</Text>
             </View>
           </View>
-          <View style={styles.clinicRow}>
-            <Feather name="home" size={11} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.clinicTxt}>{doctor.clinicName}</Text>
-            <Text style={styles.clinicDot}>·</Text>
-            <Feather name="map-pin" size={10} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.clinicTxt}>{doctor.location}</Text>
-          </View>
         </View>
 
         {/* Stats */}
