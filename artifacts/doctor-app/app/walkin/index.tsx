@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 5, padding: 4, borderRadius: 16, marginBottom: 14,
     backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
   },
-  tokenTypeBtn: { flex: 1, height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  tokenTypeBtn: { flex: 1, height: 52, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   tokenTypeBtnNormalActive: { backgroundColor: 'rgba(13,148,136,0.28)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.5)' },
   tokenTypeBtnEmergencyActive: { backgroundColor: 'rgba(239,68,68,0.25)', borderWidth: 1.5, borderColor: 'rgba(239,68,68,0.5)' },
   tokenTypeBtnText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.38)' },
