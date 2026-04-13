@@ -102,7 +102,7 @@ function useMasterQueue(doctorId: string) {
       setLoading(false);
     };
     poll();
-    const iv = setInterval(poll, 8000);
+    const iv = setInterval(poll, 30000);
     return () => { active = false; clearInterval(iv); };
   }, [doctorId]);
 
@@ -389,11 +389,11 @@ function UpNextEmpty() {
 }
 
 // ─── QUEUE ROW CARD (tap to open patient details) ───────────────
-function QCard({ tok, doctorId }: { tok: Token; doctorId?: string }) {
+function QCard({ tok }: { tok: Token }) {
   const tc = typeCfg(tok);
   const isEmerg = tok.type === 'emergency';
-  const visitType = useVisitType(doctorId, tok.patientPhone, tok.id);
-  const ageGender = [tok.age ? String(tok.age) : '', tok.gender === 'male' ? 'M' : tok.gender === 'female' ? 'F' : tok.gender ? tok.gender[0]?.toUpperCase() : ''].filter(Boolean).join('');
+  const genderLabel = tok.gender === 'male' ? 'M' : tok.gender === 'female' ? 'F' : tok.gender ? tok.gender[0]?.toUpperCase() : '';
+  const ageGender = [tok.age ? String(tok.age) : '', genderLabel].filter(Boolean).join('');
   return (
     <TouchableOpacity
       style={[S.qc, isEmerg && S.qcEmerg]}
@@ -417,12 +417,6 @@ function QCard({ tok, doctorId }: { tok: Token; doctorId?: string }) {
               <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: tc.dot, marginRight: 3 }} />
               <Text style={[S.pillTxt, { color: tc.color }]}>{tc.label.toUpperCase()}</Text>
             </View>
-            {/* Visit type */}
-            {visitType !== '—' && (
-              <View style={[S.pill, { backgroundColor: 'rgba(139,92,246,0.18)' }]}>
-                <Text style={[S.pillTxt, { color: '#C4B5FD' }]}>{visitType}</Text>
-              </View>
-            )}
           </View>
         </View>
         {/* Chevron */}
@@ -470,12 +464,12 @@ export default function QueueScreen() {
   const { data: qData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['dq', docId, shift],
     queryFn: () => apiFetchQueue(docId, shift),
-    enabled: !!docId, refetchInterval: 5000, staleTime: 0,
+    enabled: !!docId, refetchInterval: 20000, staleTime: 10000, retry: 1,
   });
-  const { data: aData } = useQuery({
+  const { data: aData, isLoading: aLoading } = useQuery({
     queryKey: ['da', docId],
     queryFn: () => apiFetchAll(docId),
-    enabled: !!docId, refetchInterval: 8000, staleTime: 0,
+    enabled: !!docId, refetchInterval: 20000, staleTime: 10000, retry: 1,
   });
   const { rows: masterRows, loading: masterLoading } = useMasterQueue(docId);
 
@@ -556,7 +550,7 @@ export default function QueueScreen() {
           </View>
         </View>
 
-        {isLoading ? (
+        {(aLoading && !aData) ? (
           <View style={{flex:1,alignItems:'center',justifyContent:'center'}}>
             <ActivityIndicator color={TEAL} size="large"/>
             <Text style={{color:'rgba(255,255,255,0.3)',marginTop:12,fontSize:13}}>Loading queue…</Text>
@@ -636,7 +630,7 @@ export default function QueueScreen() {
                 <View style={S.list}>
                   {/* Waiting patients (action cards) */}
                   {queueRest.map(t=>(
-                    <QCard key={t.id} tok={t} doctorId={docId} />
+                    <QCard key={t.id} tok={t} />
                   ))}
 
                   {/* ── MASTER LIVE QUEUE — NORMAL TOKENS ONLY ── */}
@@ -699,7 +693,7 @@ export default function QueueScreen() {
                   )}
                   {emergList.length===0 ? null : (
                     emergList.map(t=>(
-                      <QCard key={t.id} tok={t} doctorId={docId} />
+                      <QCard key={t.id} tok={t} />
                     ))
                   )}
 
