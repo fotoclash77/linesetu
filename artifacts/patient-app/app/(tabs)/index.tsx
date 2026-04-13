@@ -146,12 +146,42 @@ interface TokenItem {
   queuePosition?: number;
 }
 
-function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
-  const myToken = token?.tokenNumber ?? 52;
-  const currentToken = 47;
-  const waitMin = 25;
-  const ahead = Math.max(0, myToken - currentToken);
-  const progressPct = myToken > 0 ? Math.min(100, (currentToken / myToken) * 100) : 90;
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+async function fetchQueuePosition(doctorId: string, tokenId: string) {
+  const res = await fetch(`${BASE_URL}/api/queues/${doctorId}/position/${tokenId}`);
+  if (!res.ok) throw new Error("Failed");
+  return res.json() as Promise<{
+    tokenNumber: number; currentToken: number; position: number;
+    estimatedWaitMins: number; status: string; totalWaiting: number;
+  }>;
+}
+
+function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; doctorName: string }) {
+  const { data: pos } = useQuery({
+    queryKey: ["queue-pos", token?.doctorId, token?.id],
+    queryFn: () => fetchQueuePosition(token!.doctorId, token!.id),
+    enabled: !!token?.id && !!token?.doctorId,
+    refetchInterval: 12_000,
+    staleTime: 0,
+  });
+
+  const myToken      = token?.tokenNumber ?? 0;
+  const currentToken = pos?.currentToken ?? 0;
+  const waitMin      = pos?.estimatedWaitMins ?? 0;
+  const ahead        = pos?.position ?? Math.max(0, myToken - currentToken);
+  const progressPct  = myToken > 0 && currentToken > 0
+    ? Math.min(100, Math.round((currentToken / myToken) * 100)) : 0;
+
+  if (!token) {
+    return (
+      <View style={[styles.liveQueueCard, { alignItems: "center", justifyContent: "center", paddingVertical: 28 }]}>
+        <Text style={{ fontSize: 28, marginBottom: 8 }}>🏥</Text>
+        <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600" }}>No active token</Text>
+        <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 4 }}>Book a token to track your queue</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.liveQueueCard}>
@@ -161,7 +191,7 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
         <View style={{ flex: 1 }} />
         <View style={styles.liveQueueDocChip}>
           <Feather name="radio" size={10} color="#818CF8" />
-          <Text style={styles.liveQueueDocTxt}>Dr. Ananya Sharma</Text>
+          <Text style={styles.liveQueueDocTxt} numberOfLines={1}>{doctorName || "Your Doctor"}</Text>
         </View>
       </View>
 
@@ -180,7 +210,7 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
             <Feather name="radio" size={9} color="#06B6D4" />
             <Text style={styles.queueStatLblTxt}>CURRENT</Text>
           </View>
-          <Text style={[styles.queueStatNum, { color: "#67E8F9" }]}>{currentToken}</Text>
+          <Text style={[styles.queueStatNum, { color: "#67E8F9" }]}>{currentToken || "–"}</Text>
           <Text style={styles.queueStatSub}>Being served</Text>
         </View>
         <View style={[styles.queueStatBox, { backgroundColor: "rgba(34,197,94,0.1)", borderColor: "rgba(34,197,94,0.25)" }]}>
@@ -196,14 +226,14 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
       <View style={styles.liveProgressSection}>
         <View style={styles.liveProgressHeader}>
           <Text style={styles.liveProgressLbl}>{ahead} tokens ahead of you</Text>
-          <Text style={styles.liveProgressRight}>Cardiology OPD</Text>
+          <Text style={styles.liveProgressRight}>{token.specialty ?? "OPD"}</Text>
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: pct(progressPct) }]} />
         </View>
       </View>
 
-      <Pressable style={styles.viewQueueBtn} onPress={() => router.push(`/queue/${token?.id ?? "demo"}` as any)}>
+      <Pressable style={styles.viewQueueBtn} onPress={() => router.push(`/queue/${token.id}` as any)}>
         <Text style={styles.viewQueueBtnTxt}>View Queue →</Text>
       </Pressable>
     </View>
@@ -255,6 +285,10 @@ export default function HomeScreen() {
       };
     });
   const activeToken = activeTokens[0];
+  const activeDoctor = activeToken
+    ? (doctorsData?.doctors ?? []).find((d: any) => d.id === activeToken.doctorId)
+    : null;
+  const activeDoctorName: string = activeDoctor?.name ?? "";
 
   const firstName = patient?.name?.split(" ")[0] ?? "there";
   const hour = new Date().getHours();
@@ -303,7 +337,7 @@ export default function HomeScreen() {
 
         {/* Live Queue Mini-Card — always visible; uses real token when available */}
         <View style={styles.sectionPad}>
-          <LiveQueueCard token={activeToken} />
+          <LiveQueueCard token={activeToken} doctorName={activeDoctorName} />
         </View>
 
         {/* Promo Banner */}

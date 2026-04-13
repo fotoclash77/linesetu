@@ -39,13 +39,19 @@ interface TokenRow {
   bookedAt: any;
 }
 
+function currentShift(): 'morning' | 'evening' {
+  return new Date().getHours() < 13 ? 'morning' : 'evening';
+}
+
 export default function AddWalkinScreen() {
   const { doctor } = useDoctor();
   const [tokenType, setTokenType] = useState<'Normal' | 'Emergency'>('Normal');
   const [gender, setGender] = useState<'M' | 'F'>('M');
   const [showSuccess, setShowSuccess] = useState(false);
   const [bookedName, setBookedName] = useState('');
-  const [bookedToken, setBookedToken] = useState('#52');
+  const [bookedToken, setBookedToken] = useState('');
+  const [booking, setBooking] = useState(false);
+  const [bookingError, setBookingError] = useState('');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [phone, setPhone] = useState('');
@@ -105,16 +111,52 @@ export default function AddWalkinScreen() {
 
   const isEmerg = tokenType === 'Emergency';
 
-  const handleBook = () => {
-    setBookedName(name.trim() || 'Patient');
-    setBookedToken(isEmerg ? 'E03' : '#52');
-    setShowSuccess(true);
+  // Compute next token number from live queue
+  const maxTokenInQueue = queue.reduce((m, t) => Math.max(m, t.tokenNumber ?? 0), 0);
+  const nextTokenPreview = maxTokenInQueue + 1;
+
+  const handleBook = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) { setBookingError('Patient name is required'); return; }
+    if (!doctor?.id) { setBookingError('Doctor not loaded'); return; }
+
+    setBooking(true);
+    setBookingError('');
+    try {
+      const res = await fetch(`${BASE()}/api/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctorId: doctor.id,
+          patientId: null,
+          patientName: trimmedName,
+          patientPhone: phone.trim(),
+          type: tokenType.toLowerCase(),
+          shift: currentShift(),
+          source: 'walkin',
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setBookingError(err.error || 'Booking failed');
+        setBooking(false);
+        return;
+      }
+      const data = await res.json();
+      setBookedName(trimmedName);
+      setBookedToken(`#${data.tokenNumber}`);
+      setShowSuccess(true);
+    } catch (e: any) {
+      setBookingError(e.message || 'Network error');
+    }
+    setBooking(false);
   };
 
   const resetForm = () => {
     setName(''); setAge(''); setPhone('');
     setAddress(''); setArea('');
     setGender('M'); setTokenType('Normal');
+    setBookingError('');
     setShowSuccess(false);
   };
 
@@ -136,16 +178,16 @@ export default function AddWalkinScreen() {
             </View>
           </View>
 
-          {/* Next token info */}
+          {/* Next token info — real number from live queue */}
           <View style={[styles.nextTokenCard, { backgroundColor: isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(13,148,136,0.13)', borderColor: isEmerg ? 'rgba(239,68,68,0.3)' : 'rgba(13,148,136,0.3)' }]}>
             <View style={styles.nextTokenLeft}>
               <View style={[styles.nextTokenBox, { backgroundColor: isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(13,148,136,0.25)', borderColor: isEmerg ? 'rgba(239,68,68,0.4)' : 'rgba(45,212,191,0.4)' }]}>
                 <Text style={[styles.nextTokenLabel, { color: isEmerg ? '#FCA5A5' : TEAL_LT }]}>Next</Text>
-                <Text style={styles.nextTokenNum}>{isEmerg ? 'E03' : '#52'}</Text>
+                <Text style={styles.nextTokenNum}>{queueLoading ? '…' : `#${nextTokenPreview}`}</Text>
               </View>
               <View>
                 <Text style={styles.nextTokenTitle}>Next Token</Text>
-                <Text style={styles.nextTokenValue}>{isEmerg ? 'Emergency E03' : 'Normal #52'}</Text>
+                <Text style={styles.nextTokenValue}>{isEmerg ? 'Emergency' : 'Normal'} {queueLoading ? '' : `#${nextTokenPreview}`}</Text>
               </View>
             </View>
           </View>
@@ -264,12 +306,24 @@ export default function AddWalkinScreen() {
             </View>
           </View>
 
+          {/* Booking error */}
+          {!!bookingError && (
+            <View style={{ marginBottom: 10, paddingHorizontal: 4, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.12)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}>
+              <Text style={{ color: '#FCA5A5', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>⚠ {bookingError}</Text>
+            </View>
+          )}
+
           {/* Book button */}
           <TouchableOpacity
             onPress={handleBook}
-            style={[styles.bookBtn, isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal]}
+            disabled={booking}
+            style={[styles.bookBtn, isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal, booking && { opacity: 0.6 }]}
           >
-            <Text style={styles.bookBtnText}>{`✚ Book ${tokenType} Token — FREE`}</Text>
+            {booking ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <Text style={styles.bookBtnText}>{`✚ Book ${tokenType} Token — FREE`}</Text>
+            )}
           </TouchableOpacity>
 
           {/* Live queue today */}

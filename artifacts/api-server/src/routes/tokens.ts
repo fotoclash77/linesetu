@@ -16,10 +16,11 @@ router.post("/tokens", async (req, res) => {
     const {
       doctorId, patientId, patientName, patientPhone,
       type = "normal", date, shift = "morning", paymentId,
+      source = "online", // 'online' | 'walkin'
     } = req.body;
 
-    if (!doctorId || !patientId || !patientName) {
-      return res.status(400).json({ error: "doctorId, patientId, patientName required" });
+    if (!doctorId || !patientName) {
+      return res.status(400).json({ error: "doctorId and patientName are required" });
     }
 
     const tokenDate  = date || todayDate();
@@ -38,9 +39,10 @@ router.post("/tokens", async (req, res) => {
     const tokenRef = doc(collection(db, Collections.TOKENS));
     const tokenData = {
       tokenNumber: nextTokenNumber,
-      doctorId, patientId, patientName,
+      doctorId, patientId: patientId || null, patientName,
       patientPhone: patientPhone || "",
       type,
+      source, // 'online' | 'walkin'
       status: "waiting",
       date: tokenDate, shift,
       patientPaid, doctorEarns, platformFee,
@@ -91,8 +93,8 @@ router.post("/tokens", async (req, res) => {
       });
     } catch (_) {}
 
-    // Write a notification for the patient confirming booking
-    if (patientId) {
+    // Write a notification for the patient confirming booking (online bookings only)
+    if (patientId && source !== "walkin") {
       try {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           patientId,
@@ -122,9 +124,11 @@ router.get("/tokens", async (req, res) => {
     if (patientId) constraints.push(where("patientId", "==", patientId));
     if (date)      constraints.push(where("date", "==", date));
     if (status)    constraints.push(where("status", "==", status));
-    constraints.push(orderBy("tokenNumber", "asc"));
+    // No orderBy to avoid composite index requirement — sort in memory
     const snap = await getDocs(query(collection(db, Collections.TOKENS), ...constraints));
-    const tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const tokens = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
     res.json({ tokens });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

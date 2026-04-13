@@ -3,11 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getGetLiveQueueQueryOptions,
-  getGetPatientTokensQueryOptions,
-} from "@workspace/api-client-react";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,6 +14,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import {
+  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -28,39 +25,91 @@ import {
 } from "react-native";
 import { LinearGradient as LGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/contexts/AuthContext";
 
 const isWeb = Platform.OS === "web";
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const AVG_MIN_PER_TOKEN = 7; // matches server (position * 7)
 
-const USER_TOKEN = 56;
-const TOTAL = 72;
-const AVG_MIN = 2.5;
+async function fetchToken(tokenId: string) {
+  const res = await fetch(`${BASE_URL}/api/tokens/${tokenId}`);
+  if (!res.ok) throw new Error("Token not found");
+  return res.json() as Promise<{
+    id: string; tokenNumber: number; doctorId: string;
+    patientName: string; date: string; shift: string; status: string; type: string;
+  }>;
+}
+
+async function fetchPosition(doctorId: string, tokenId: string) {
+  const res = await fetch(`${BASE_URL}/api/queues/${doctorId}/position/${tokenId}`);
+  if (!res.ok) throw new Error("Position fetch failed");
+  return res.json() as Promise<{
+    tokenNumber: number; currentToken: number; position: number;
+    estimatedWaitMins: number; status: string; totalWaiting: number;
+  }>;
+}
+
+async function fetchDoctor(doctorId: string) {
+  const res = await fetch(`${BASE_URL}/api/doctors/${doctorId}`);
+  if (!res.ok) throw new Error("Doctor not found");
+  return res.json() as Promise<{
+    id: string; name: string; specialization: string;
+    clinicName: string; clinicAddress: string;
+  }>;
+}
 
 export default function LiveQueueScreen() {
   const insets = useSafeAreaInsets();
-  const { patient } = useAuth();
   const { tokenId } = useLocalSearchParams<{ tokenId: string }>();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
-  const [current, setCurrent] = useState(47);
-  const [tick, setTick] = useState(0);
+  // ── Fetch token details ───────────────────────────────────────
+  const { data: token, isLoading: tokenLoading } = useQuery({
+    queryKey: ["token", tokenId],
+    queryFn: () => fetchToken(tokenId!),
+    enabled: !!tokenId,
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCurrent(c => c < USER_TOKEN ? c + 1 : c);
-      setTick(t => t + 1);
-    }, 4000);
-    return () => clearInterval(id);
-  }, []);
+  // ── Fetch live position (polls every 10s) ────────────────────
+  const { data: pos, isLoading: posLoading } = useQuery({
+    queryKey: ["queue-position", token?.doctorId, tokenId],
+    queryFn: () => fetchPosition(token!.doctorId, tokenId!),
+    enabled: !!token?.doctorId && !!tokenId,
+    refetchInterval: 10_000,
+    staleTime: 0,
+  });
 
-  const ahead = Math.max(0, USER_TOKEN - current - 1);
-  const waitMin = Math.round(ahead * AVG_MIN);
-  const isDone = current >= USER_TOKEN;
-  const isNear = !isDone && ahead <= 3;
+  // ── Fetch doctor info ─────────────────────────────────────────
+  const { data: doctor } = useQuery({
+    queryKey: ["doctor", token?.doctorId],
+    queryFn: () => fetchDoctor(token!.doctorId),
+    enabled: !!token?.doctorId,
+    staleTime: 120_000,
+  });
+
+  // ── Derived values ────────────────────────────────────────────
+  const myToken      = token?.tokenNumber ?? 0;
+  const current      = pos?.currentToken  ?? 0;
+  const ahead        = pos?.position      ?? 0;
+  const waitMin      = pos?.estimatedWaitMins ?? ahead * AVG_MIN_PER_TOKEN;
+  const totalWaiting = pos?.totalWaiting  ?? 0;
+  const tokenStatus  = pos?.status ?? token?.status ?? "waiting";
+  const shift        = token?.shift ?? "morning";
+  const shiftLabel   = shift === "morning" ? "Morning Shift" : "Evening Shift";
+  const shiftIcon    = shift === "morning" ? "☀️" : "🌙";
+
+  const doctorName    = doctor?.name ?? "Your Doctor";
+  const clinicName    = doctor?.clinicName ?? "Clinic";
+  const clinicAddress = doctor?.clinicAddress ?? "";
+  const specialization = doctor?.specialization ?? "OPD";
+
+  const isDone = tokenStatus === "in_consult" || tokenStatus === "done";
+  const isNear = !isDone && ahead > 0 && ahead <= 3;
   const isNext = !isDone && ahead === 0;
-  const progPct = Math.min(100, Math.round((current / TOTAL) * 100));
-  const userPct = Math.min(100, Math.round((USER_TOKEN / TOTAL) * 100));
+  const progPct = myToken > 0 && current > 0
+    ? Math.min(100, Math.round((current / myToken) * 100)) : 0;
+  const userPct = 100; // "YOU" marker is always at end
 
   const status = isDone ? "done" : isNext ? "next" : isNear ? "near" : "waiting";
   const statusCfg = {
@@ -70,14 +119,7 @@ export default function LiveQueueScreen() {
     done:    { label: "In Progress",  color: "#67E8F9", bg: "rgba(6,182,212,0.18)",   border: "rgba(6,182,212,0.4)"   },
   }[status];
 
-  const { data } = useQuery(getGetPatientTokensQueryOptions(patient?.id ?? ""));
-  const token = (data?.tokens ?? []).find((t) => t.id === tokenId);
-  const myToken = token?.tokenNumber ?? USER_TOKEN;
-  const doctorId = token?.doctorId ?? "demo1";
-
-  const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(doctorId));
-
-  // Pulsing ring animations
+  // ── Animations ────────────────────────────────────────────────
   const ring1 = useSharedValue(1);
   const ring2 = useSharedValue(1);
   const ring3 = useSharedValue(1);
@@ -106,8 +148,7 @@ export default function LiveQueueScreen() {
   const slideUpY = useSharedValue(20);
   const slideUpOp = useSharedValue(0);
   useEffect(() => {
-    slideUpY.value = 20;
-    slideUpOp.value = 0;
+    slideUpY.value = 20; slideUpOp.value = 0;
     slideUpY.value = withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) });
     slideUpOp.value = withTiming(1, { duration: 320 });
   }, [current]);
@@ -127,29 +168,24 @@ export default function LiveQueueScreen() {
     document.head.appendChild(style);
   }, []);
 
-  const slideUpStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slideUpY.value }],
-    opacity: slideUpOp.value,
-  }));
-
-  const ring1Style = useAnimatedStyle(() => ({
-    transform: [{ scale: ring1.value }],
-    opacity: ring1Op.value,
-  }));
-  const ring2Style = useAnimatedStyle(() => ({
-    transform: [{ scale: ring2.value }],
-    opacity: ring2Op.value,
-  }));
-  const ring3Style = useAnimatedStyle(() => ({
-    transform: [{ scale: ring3.value }],
-    opacity: ring3Op.value,
-  }));
-  const liveStyle = useAnimatedStyle(() => ({
-    opacity: liveBlinkOp.value,
-  }));
+  const slideUpStyle = useAnimatedStyle(() => ({ transform: [{ translateY: slideUpY.value }], opacity: slideUpOp.value }));
+  const ring1Style = useAnimatedStyle(() => ({ transform: [{ scale: ring1.value }], opacity: ring1Op.value }));
+  const ring2Style = useAnimatedStyle(() => ({ transform: [{ scale: ring2.value }], opacity: ring2Op.value }));
+  const ring3Style = useAnimatedStyle(() => ({ transform: [{ scale: ring3.value }], opacity: ring3Op.value }));
+  const liveStyle  = useAnimatedStyle(() => ({ opacity: liveBlinkOp.value }));
 
   const ringColor = isNear || isDone ? "#F59E0B" : "#4F46E5";
-  const ringBase = isNear ? "rgba(245,158,11,0.6)" : isDone ? "rgba(34,197,94,0.5)" : "rgba(99,102,241,0.5)";
+  const ringBase  = isNear ? "rgba(245,158,11,0.6)" : isDone ? "rgba(34,197,94,0.5)" : "rgba(99,102,241,0.5)";
+
+  // ── Loading state ─────────────────────────────────────────────
+  if (tokenLoading || posLoading) {
+    return (
+      <View style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator color="#4F46E5" size="large" />
+        <Text style={{ color: "rgba(255,255,255,0.4)", marginTop: 14, fontSize: 13 }}>Loading queue…</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -168,33 +204,32 @@ export default function LiveQueueScreen() {
             <Text style={styles.liveBadgeTxt}>LIVE</Text>
           </Animated.View>
         </View>
-        <Pressable style={styles.headerBtn}>
-          <Feather name="bell" size={17} color="rgba(255,255,255,0.7)" />
-        </Pressable>
+        <View style={styles.headerBtn}>
+          <Text style={{ fontSize: 16 }}>🔔</Text>
+        </View>
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomPad }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Doctor & Shift Strip */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
+
+        {/* Doctor & Clinic Strip */}
         <View style={styles.sectionPad}>
           <View style={styles.shiftStrip}>
             <View style={styles.shiftLeft}>
               <Feather name="home" size={12} color="#67E8F9" />
               <View>
-                <Text style={styles.shiftClinic}>HeartCare Clinic</Text>
-                <Text style={styles.shiftLoc}>Andheri West, Mumbai · Morning Shift</Text>
+                <Text style={styles.shiftClinic}>{clinicName}</Text>
+                <Text style={styles.shiftLoc}>{clinicAddress ? `${clinicAddress} · ` : ""}{shiftLabel}</Text>
               </View>
             </View>
-            <Pressable
-              style={styles.mapsBtn}
-              onPress={() => Linking.openURL("https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai")}
-            >
-              <Feather name="navigation" size={11} color="#4285F4" />
-              <Text style={styles.mapsBtnTxt}>Maps</Text>
-            </Pressable>
+            {!!clinicAddress && (
+              <Pressable
+                style={styles.mapsBtn}
+                onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
+              >
+                <Feather name="navigation" size={11} color="#4285F4" />
+                <Text style={styles.mapsBtnTxt}>Maps</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -203,25 +238,21 @@ export default function LiveQueueScreen() {
           <View style={styles.heroTextLeft}>
             <Text style={styles.heroLabelSmall}>NOW CONSULTING</Text>
             <View style={styles.heroRingWrap}>
-              {/* Outer ping ring 120px */}
               <Animated.View style={[styles.heroRingOuter, ring1Style, { borderColor: ringBase }]} />
-              {/* Middle static ring 92px */}
               <View style={[styles.heroRingMid, { borderColor: isNear || isDone ? "rgba(245,158,11,0.35)" : "rgba(99,102,241,0.35)" }]} />
-              {/* Inner gradient disc 72px */}
               <LGradient
                 colors={isNear || isDone ? ["#F59E0B", "#EF4444"] : ["#4F46E5", "#06B6D4"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={styles.heroCore}
               >
-                <Animated.Text style={[styles.heroCoreNum, slideUpStyle]}>{current}</Animated.Text>
+                <Animated.Text style={[styles.heroCoreNum, slideUpStyle]}>{current || "–"}</Animated.Text>
                 <Text style={styles.heroCoreLabel}>Current</Text>
               </LGradient>
             </View>
             <Text style={styles.heroConsultingTxt} numberOfLines={1}>
-              Doctor is consulting Token #{current}
+              {current ? `Doctor is consulting Token #${current}` : "Queue not started yet"}
             </Text>
-            <Text style={styles.heroDocName}>Dr. Ananya Sharma</Text>
+            <Text style={styles.heroDocName}>{doctorName}</Text>
           </View>
 
           <View style={styles.heroTextRight}>
@@ -239,14 +270,14 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.progressSection}>
             <View style={styles.progressLabelRow}>
-              <Text style={styles.progressLbl}>{ahead} tokens ahead of you</Text>
+              <Text style={styles.progressLbl}>{ahead} token{ahead !== 1 ? "s" : ""} ahead of you</Text>
               <Text style={styles.progressRight}>~{waitMin} min wait</Text>
             </View>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: pct(progPct) }]}>
+              <View style={[styles.progressFill, { width: pct(Math.max(5, progPct)) }]}>
                 <LinearGradient colors={["#4F46E5", "#06B6D4"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
               </View>
-              <View style={[styles.youMarker, { left: pct(userPct) }]}>
+              <View style={[styles.youMarker, { left: "95%" as any }]}>
                 <View style={styles.youDot} />
                 <Text style={styles.youLabel}>YOU</Text>
               </View>
@@ -258,10 +289,10 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.statGrid}>
             {([
-              { label: "My Token",  val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
-              { label: "Clinic",    val: "Open",                   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "home"     },
-              { label: "Tokens Left", val: `${ahead}`,              color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "list"     },
-              { label: "Avg/Token", val: "~2.5 min",                  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "activity" },
+              { label: "My Token",    val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
+              { label: "Clinic",      val: "Open",                   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "home"     },
+              { label: "Tokens Left", val: `${ahead}`,               color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "list"     },
+              { label: "Est. Wait",   val: `~${waitMin}m`,           color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "clock"    },
             ] as Array<{ label: string; val: string; color: string; bg: string; border: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, bg, border, icon }) => (
               <View key={label} style={[styles.statTile, { backgroundColor: bg, borderColor: border }]}>
                 <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
@@ -303,7 +334,7 @@ export default function LiveQueueScreen() {
                 <View style={styles.apptDetailRow}>
                   <Feather name="calendar" size={12} color="#22C55E" />
                   <Text style={styles.apptDetailLbl}>Shift</Text>
-                  <Text style={styles.apptDetailVal}>Morning</Text>
+                  <Text style={styles.apptDetailVal}>{shiftIcon} {shiftLabel}</Text>
                 </View>
               </View>
             </View>
@@ -312,8 +343,8 @@ export default function LiveQueueScreen() {
                 <Feather name="user" size={14} color="#818CF8" />
               </View>
               <View>
-                <Text style={styles.apptDoctorName}>Dr. Ananya Sharma</Text>
-                <Text style={styles.apptDoctorSpec}>Cardiologist · HeartCare Clinic</Text>
+                <Text style={styles.apptDoctorName}>{doctorName}</Text>
+                <Text style={styles.apptDoctorSpec}>{specialization}{clinicName ? ` · ${clinicName}` : ""}</Text>
               </View>
               <View style={{ flex: 1 }} />
               <View style={styles.apptVerifiedBadge}>
@@ -364,7 +395,7 @@ export default function LiveQueueScreen() {
               <Feather name="info" size={15} color="#67E8F9" />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.alertTitle, { color: "#67E8F9" }]}>Wait at home or nearby</Text>
-                <Text style={styles.alertBody}>We'll notify you 3 tokens before yours. Arrive 5 mins early.</Text>
+                <Text style={styles.alertBody}>Queue updates every 10 seconds. Arrive a few minutes before your turn.</Text>
               </View>
             </View>
           </View>
@@ -374,14 +405,12 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.notifCard}>
             <View style={styles.notifHeader}>
-              <Feather name="bell" size={14} color="#818CF8" />
-              <Text style={styles.notifTitle}>SMS Reminder Enabled</Text>
+              <Text style={{ fontSize: 14 }}>🔔</Text>
+              <Text style={styles.notifTitle}>Reminders Active</Text>
               <View style={{ flex: 1 }} />
               <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>Active</Text></View>
             </View>
-            <Text style={styles.notifBody}>
-              You'll get an SMS when 10 tokens are left before yours. Stay relaxed!
-            </Text>
+            <Text style={styles.notifBody}>You'll get notified when your turn is approaching. Stay relaxed!</Text>
             <View style={styles.notifTokensRow}>
               {["10 tokens left", "5 tokens left", "1 token left", "Your turn"].map((t, i) => (
                 <View key={t} style={[styles.notifTokenChip, i === 0 && { backgroundColor: "rgba(129,140,248,0.2)", borderColor: "rgba(129,140,248,0.4)" }]}>
@@ -396,24 +425,22 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.shiftCard}>
             <View style={styles.shiftCardHeader}>
-              <Feather name="sun" size={12} color="#F59E0B" />
-              <Text style={styles.shiftCardTitle}>Morning Shift Details</Text>
+              <Text style={{ fontSize: 12 }}>{shiftIcon}</Text>
+              <Text style={styles.shiftCardTitle}>{shiftLabel} Details</Text>
             </View>
             <View style={styles.shiftDetail}>
               <Feather name="clock" size={11} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.shiftDetailTxt}>10:00 AM – 2:00 PM</Text>
-              <View style={styles.shiftDetailDiv} />
-              <Feather name="users" size={11} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.shiftDetailTxt}>{TOTAL} total tokens</Text>
+              <Text style={styles.shiftDetailTxt}>{shift === "morning" ? "10:00 AM – 2:00 PM" : "4:00 PM – 8:00 PM"}</Text>
             </View>
-            <View style={styles.shiftDetail}>
-              <Feather name="map-pin" size={11} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.shiftDetailTxt}>HeartCare Clinic, Andheri West, Mumbai</Text>
-            </View>
+            {!!clinicAddress && (
+              <View style={styles.shiftDetail}>
+                <Feather name="map-pin" size={11} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.shiftDetailTxt}>{clinicAddress}</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
-
     </View>
   );
 }
@@ -424,12 +451,12 @@ const styles = StyleSheet.create({
   orb1: { position: "absolute", top: -60, left: -60, width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(99,102,241,0.22)" },
   orb2: { position: "absolute", top: 200, right: -80, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(6,182,212,0.14)" },
 
-  header: { flexDirection: "row", alignItems: "center", gap: 0, paddingHorizontal: 18, paddingBottom: 14 },
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingBottom: 14 },
   backBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
   headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   headerTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
   liveBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: "rgba(34,197,94,0.18)", borderWidth: 1, borderColor: "rgba(34,197,94,0.4)" },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 4 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#22C55E" },
   liveBadgeTxt: { fontSize: 9, fontWeight: "800", color: "#4ADE80", letterSpacing: 1 },
   headerBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
 
@@ -465,60 +492,58 @@ const styles = StyleSheet.create({
   progressLbl: { fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: "600" },
   progressRight: { fontSize: 11, color: "#818CF8", fontWeight: "700" },
   progressTrack: { height: 8, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.06)", overflow: "visible", position: "relative" },
-  progressFill: { height: "100%", borderRadius: 99, overflow: "hidden" },
+  progressFill: { height: "100%" as any, borderRadius: 99, overflow: "hidden" },
   youMarker: { position: "absolute", top: -18, alignItems: "center", marginLeft: -10 },
-  youDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#FFF", borderWidth: 2, borderColor: "#4F46E5", shadowColor: "#FFF", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 4 },
+  youDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#FFF", borderWidth: 2, borderColor: "#4F46E5" },
   youLabel: { fontSize: 8, fontWeight: "800", color: "#FFF", marginTop: 2 },
 
   statGrid: { flexDirection: "row", gap: 8 },
   statTile: { flex: 1, borderRadius: 16, paddingVertical: 12, alignItems: "center", gap: 4, borderWidth: 1 },
-  statIcon: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 2 },
-  statVal: { fontSize: 16, fontWeight: "900", lineHeight: 18 },
-  statLbl: { fontSize: 8, fontWeight: "600", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.5 },
+  statIcon: { width: 28, height: 28, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  statVal: { fontSize: 13, fontWeight: "800" },
+  statLbl: { fontSize: 8, color: "rgba(255,255,255,0.35)", fontWeight: "600", textAlign: "center" },
 
-  alertBannerYellow: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(245,158,11,0.14)", borderWidth: 1, borderColor: "rgba(245,158,11,0.4)" },
-  alertBannerGreen:  { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(34,197,94,0.14)",  borderWidth: 1, borderColor: "rgba(34,197,94,0.4)"  },
-  alertBannerCyan:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.14)",   borderWidth: 1, borderColor: "rgba(6,182,212,0.4)"   },
-  alertBannerBlue:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.1)",    borderWidth: 1, borderColor: "rgba(6,182,212,0.3)"   },
-  alertTitle: { fontSize: 12, fontWeight: "800", color: "#FCD34D", marginBottom: 2 },
-  alertBody: { fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 16 },
-
-  notifCard: { padding: 14, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  notifHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
-  notifTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  notifBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, backgroundColor: "rgba(34,197,94,0.2)", borderWidth: 1, borderColor: "rgba(34,197,94,0.35)" },
-  notifBadgeTxt: { fontSize: 9, fontWeight: "700", color: "#4ADE80" },
-  notifBody: { fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 16, marginBottom: 10 },
-  notifTokensRow: { flexDirection: "row", gap: 7 },
-  notifTokenChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  notifTokenChipTxt: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
-
-  shiftCard: { padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1, borderColor: "rgba(245,158,11,0.2)", gap: 8 },
-  shiftCardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  shiftCardTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  shiftDetail: { flexDirection: "row", alignItems: "center", gap: 6 },
-  shiftDetailTxt: { fontSize: 11, color: "rgba(255,255,255,0.55)" },
-  shiftDetailDiv: { width: 1, height: 12, backgroundColor: "rgba(255,255,255,0.1)" },
-
-  apptCard: { padding: 16, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", gap: 14 },
-  apptHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  apptCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" },
+  apptHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   apptTitle: { fontSize: 13, fontWeight: "800", color: "#FFF" },
   apptStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
   apptStatusTxt: { fontSize: 10, fontWeight: "800" },
-  apptBody: { flexDirection: "row", alignItems: "center", gap: 14 },
-  apptTokenBox: { width: 72, height: 72, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1.5, backgroundColor: "rgba(99,102,241,0.12)" },
-  apptTokenHash: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.4)", lineHeight: 14 },
-  apptTokenNum: { fontSize: 30, fontWeight: "900", letterSpacing: -1, lineHeight: 34 },
-  apptTokenLbl: { fontSize: 8, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 2 },
+  apptBody: { flexDirection: "row", alignItems: "flex-start", gap: 14, marginBottom: 14 },
+  apptTokenBox: { width: 68, alignItems: "center", justifyContent: "center", paddingVertical: 10, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1.5 },
+  apptTokenHash: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
+  apptTokenNum: { fontSize: 28, fontWeight: "900", lineHeight: 32 },
+  apptTokenLbl: { fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: "600", marginTop: 2 },
   apptDetails: { flex: 1, gap: 8 },
   apptDetailRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  apptDetailLbl: { fontSize: 11, color: "rgba(255,255,255,0.4)", flex: 1 },
-  apptDetailVal: { fontSize: 11, fontWeight: "700", color: "#FFF" },
-  apptDoctorRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
-  apptDoctorAvatar: { width: 36, height: 36, borderRadius: 12, backgroundColor: "rgba(99,102,241,0.2)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
-  apptDoctorName: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  apptDoctorSpec: { fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 1 },
-  apptVerifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(34,197,94,0.12)", borderWidth: 1, borderColor: "rgba(34,197,94,0.3)" },
-  apptVerifiedTxt: { fontSize: 9, fontWeight: "700", color: "#22C55E" },
+  apptDetailLbl: { flex: 1, fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
+  apptDetailVal: { fontSize: 11, fontWeight: "800", color: "#FFF" },
+  apptDoctorRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 14, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
+  apptDoctorAvatar: { width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(99,102,241,0.18)", alignItems: "center", justifyContent: "center" },
+  apptDoctorName: { fontSize: 13, fontWeight: "700", color: "#FFF" },
+  apptDoctorSpec: { fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 },
+  apptVerifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.1)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  apptVerifiedTxt: { fontSize: 10, fontWeight: "700", color: "#22C55E" },
 
+  alertBannerGreen:  { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 16, backgroundColor: "rgba(34,197,94,0.1)",   borderWidth: 1, borderColor: "rgba(34,197,94,0.3)"  },
+  alertBannerYellow: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 16, backgroundColor: "rgba(252,211,77,0.1)",  borderWidth: 1, borderColor: "rgba(252,211,77,0.3)" },
+  alertBannerCyan:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.1)",   borderWidth: 1, borderColor: "rgba(6,182,212,0.3)"  },
+  alertBannerBlue:   { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 16, backgroundColor: "rgba(99,102,241,0.1)",  borderWidth: 1, borderColor: "rgba(99,102,241,0.3)" },
+  alertTitle: { fontSize: 13, fontWeight: "800", color: "#FCD34D", marginBottom: 3 },
+  alertBody:  { fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 16 },
+
+  notifCard: { backgroundColor: "rgba(99,102,241,0.08)", borderRadius: 18, padding: 14, borderWidth: 1, borderColor: "rgba(99,102,241,0.2)" },
+  notifHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  notifTitle: { fontSize: 12, fontWeight: "700", color: "#A5B4FC" },
+  notifBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: "rgba(34,197,94,0.2)" },
+  notifBadgeTxt: { fontSize: 9, fontWeight: "800", color: "#4ADE80" },
+  notifBody: { fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 16, marginBottom: 10 },
+  notifTokensRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+  notifTokenChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  notifTokenChipTxt: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
+
+  shiftCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  shiftCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  shiftCardTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
+  shiftDetail: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  shiftDetailTxt: { fontSize: 11, color: "rgba(255,255,255,0.4)" },
 });

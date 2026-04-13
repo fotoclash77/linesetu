@@ -58,6 +58,7 @@ interface TokenItem {
   patientName: string;
   patientPhone: string;
   type: 'normal' | 'emergency';
+  source?: string; // 'online' | 'walkin'
   status: string; // raw API status
   displayStatus: DisplayStatus;
   shift: string;
@@ -74,6 +75,7 @@ function mapToken(t: any): TokenItem {
     patientName: t.patientName ?? 'Unknown',
     patientPhone: t.patientPhone ?? '',
     type: t.type === 'emergency' ? 'emergency' : 'normal',
+    source: t.source ?? 'online',
     status: t.status,
     displayStatus,
     shift: t.shift ?? 'morning',
@@ -88,10 +90,17 @@ const STATUS_CFG = {
   skipped:    { label: 'Not Shown', color: '#F59E0B', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.3)' },
 };
 
-const TYPE_CFG = {
+const TYPE_CFG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
   normal:    { color: '#4ADE80', bg: 'rgba(34,197,94,0.15)',  icon: '📱', label: 'Online' },
   emergency: { color: '#F87171', bg: 'rgba(239,68,68,0.15)',  icon: '⚡', label: 'Emergency' },
+  walkin:    { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)', icon: '🚶', label: 'Walk-in' },
 };
+
+function getTypeCfg(token: TokenItem) {
+  if (token.type === 'emergency') return TYPE_CFG['emergency'];
+  if (token.source === 'walkin') return TYPE_CFG['walkin'];
+  return TYPE_CFG['normal'];
+}
 
 // ─── Queue Card ───────────────────────────────────────────────
 function QueueCard({ token, onCall, onDone, onSkip, busy }: {
@@ -102,7 +111,7 @@ function QueueCard({ token, onCall, onDone, onSkip, busy }: {
   busy?: boolean;
 }) {
   const sc = STATUS_CFG[token.displayStatus];
-  const tc = TYPE_CFG[token.type];
+  const tc = getTypeCfg(token);
   const isCurrent = token.displayStatus === 'consulting';
   const isPast = token.displayStatus === 'done' || token.displayStatus === 'skipped';
   const isEmergency = token.type === 'emergency';
@@ -286,9 +295,9 @@ export default function QueueScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.consultingName}>{current.patientName}</Text>
                     <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{current.patientPhone}</Text>
-                    <View style={[styles.typeBadge2, { backgroundColor: TYPE_CFG[current.type].bg, marginTop: 6 }]}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: TYPE_CFG[current.type].color }}>
-                        {TYPE_CFG[current.type].icon} {TYPE_CFG[current.type].label}
+                    <View style={[styles.typeBadge2, { backgroundColor: getTypeCfg(current).bg, marginTop: 6 }]}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: getTypeCfg(current).color }}>
+                        {getTypeCfg(current).icon} {getTypeCfg(current).label}
                       </Text>
                     </View>
                   </View>
