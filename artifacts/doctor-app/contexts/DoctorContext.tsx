@@ -23,12 +23,14 @@ interface DoctorCtx {
   isLoading: boolean;
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateDoctor: (patch: Partial<DoctorUser>) => Promise<void>;
 }
 
 const DoctorContext = createContext<DoctorCtx>({
   doctor: null, isLoading: true,
   loginWithOtp: async () => {},
   logout: async () => {},
+  updateDoctor: async () => {},
 });
 
 export const useDoctor = () => useContext(DoctorContext);
@@ -68,13 +70,26 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     setDoctor(doctorData);
   };
 
+  const updateDoctor = async (patch: Partial<DoctorUser>) => {
+    if (!doctor) return;
+    const res = await fetch(`${BASE()}/api/doctors/${doctor.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) throw new Error("Failed to update doctor profile");
+    const updated = { ...doctor, ...patch };
+    setDoctor(updated);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
   const logout = async () => {
     setDoctor(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
   };
 
   return (
-    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout }}>
+    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout, updateDoctor }}>
       {children}
     </DoctorContext.Provider>
   );

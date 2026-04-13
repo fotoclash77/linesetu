@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
@@ -84,7 +85,7 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 export default function SettingsScreen() {
-  const { doctor, logout } = useDoctor();
+  const { doctor, logout, updateDoctor } = useDoctor();
   const [section, setSection] = useState<SettingsSection>('main');
 
   // Profile state
@@ -104,15 +105,28 @@ export default function SettingsScreen() {
     { name: '', address: '', city: '', phone: '', maps: '', active: false },
   ]);
 
-  // Schedule state
-  const [morningEnabled, setMorningEnabled] = useState(true);
-  const [eveningEnabled, setEveningEnabled] = useState(true);
-  const [morningStart, setMorningStart] = useState('09:00');
-  const [morningEnd, setMorningEnd] = useState('13:00');
-  const [eveningStart, setEveningStart] = useState('17:00');
-  const [eveningEnd, setEveningEnd] = useState('20:00');
+  // Schedule state — seeded from doctor.shifts
+  const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
+  const [eveningEnabled, setEveningEnabled] = useState(() => doctor?.shifts?.evening !== false);
+  const [morningStart, setMorningStart] = useState(() => doctor?.shifts?.morningStart ?? '09:00');
+  const [morningEnd, setMorningEnd] = useState(() => doctor?.shifts?.morningEnd ?? '13:00');
+  const [eveningStart, setEveningStart] = useState(() => doctor?.shifts?.eveningStart ?? '17:00');
+  const [eveningEnd, setEveningEnd] = useState(() => doctor?.shifts?.eveningEnd ?? '20:00');
   const [morningMax, setMorningMax] = useState('20');
   const [eveningMax, setEveningMax] = useState('15');
+  const [schedSaving, setSchedSaving] = useState(false);
+  const [schedSaved, setSchedSaved] = useState(false);
+
+  // Re-seed when doctor loads (covers cold start)
+  useEffect(() => {
+    if (!doctor?.shifts) return;
+    setMorningEnabled(doctor.shifts.morning !== false);
+    setEveningEnabled(doctor.shifts.evening !== false);
+    setMorningStart(doctor.shifts.morningStart ?? '09:00');
+    setMorningEnd(doctor.shifts.morningEnd ?? '13:00');
+    setEveningStart(doctor.shifts.eveningStart ?? '17:00');
+    setEveningEnd(doctor.shifts.eveningEnd ?? '20:00');
+  }, [doctor?.id]);
 
   // Fee state
   const [consultFee, setConsultFee] = useState('500');
@@ -280,8 +294,31 @@ export default function SettingsScreen() {
                 </>
               )}
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
-              <Text style={styles.saveBtnText}>✓ Save Schedule</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, schedSaving && { opacity: 0.7 }]}
+              disabled={schedSaving}
+              onPress={async () => {
+                setSchedSaving(true); setSchedSaved(false);
+                try {
+                  await updateDoctor({
+                    shifts: {
+                      morning: morningEnabled,
+                      morningStart,
+                      morningEnd,
+                      evening: eveningEnabled,
+                      eveningStart,
+                      eveningEnd,
+                    },
+                  });
+                  setSchedSaved(true);
+                  setTimeout(() => { setSchedSaved(false); setSection('main'); }, 1200);
+                } catch { /* silent */ }
+                setSchedSaving(false);
+              }}
+            >
+              {schedSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{schedSaved ? '✓ Saved!' : '✓ Save Schedule'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
