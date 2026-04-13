@@ -122,7 +122,7 @@ function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
 
   const isWalkin = tok.source === 'walkin';
   const isOnline = tok.source === 'online';
-  const sourceLabel = isWalkin ? 'WALK-IN' : isOnline ? 'E-TOKEN' : tok.source?.toUpperCase() ?? '—';
+  const sourceLabel = isWalkin ? 'WALK-IN' : isOnline ? 'E-TOKEN' : (tok.source ? tok.source.toUpperCase() : '—');
   const sourceSub   = isWalkin ? 'Token booked from Walk-in by Doctor App' : isOnline ? 'Token booked by Patient App' : '';
   const sourceColor = isWalkin ? '#67E8F9' : isOnline ? '#4ADE80' : 'rgba(255,255,255,0.5)';
   const genderLabel = tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? '—');
