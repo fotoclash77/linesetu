@@ -39,6 +39,7 @@ interface Token {
   id: string; tokenNumber: number; patientName: string; patientPhone: string;
   type: 'normal' | 'emergency'; source: string; status: string;
   displayStatus: DisplayStatus; shift: string; calledAt?: any;
+  age?: string; gender?: string; area?: string;
 }
 
 function mapToken(t: any): Token {
@@ -54,6 +55,9 @@ function mapToken(t: any): Token {
       t.status === 'done'       ? 'done'       :
       t.status === 'cancelled'  ? 'skipped'    : 'waiting',
     shift: t.shift ?? 'morning', calledAt: t.calledAt,
+    age: t.age ?? undefined,
+    gender: t.gender ?? undefined,
+    area: t.area ?? undefined,
   };
 }
 
@@ -88,12 +92,36 @@ function useElapsed(calledAt: any) {
   return t;
 }
 
+// ─── Visit type hook ─────────────────────────────────────────────
+function useVisitType(doctorId: string|undefined, phone: string|undefined) {
+  const [vt, setVt] = useState<string>('—');
+  useEffect(() => {
+    if (!doctorId || !phone) { setVt('—'); return; }
+    (async () => {
+      try {
+        const r = await fetch(`${BASE()}/api/tokens/visit-count?doctorId=${encodeURIComponent(doctorId)}&phone=${encodeURIComponent(phone)}`);
+        if (!r.ok) { setVt('—'); return; }
+        const data = await r.json();
+        setVt(data.count > 1 ? 'Follow Up' : 'First Visit');
+      } catch (_) { setVt('—'); }
+    })();
+  }, [doctorId, phone]);
+  return vt;
+}
+
 // ─── CONSULTING CARD (large teal gradient, matches mockup) ───────
-function ConsultingCard({ tok, onNotShown, onDone, busy }: {
-  tok: Token; onNotShown:()=>void; onDone:()=>void; busy:boolean;
+function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
+  tok: Token; doctorId?:string; onNotShown:()=>void; onDone:()=>void; busy:boolean;
 }) {
   const tc = typeCfg(tok);
   const elapsed = useElapsed(tok.calledAt);
+  const visitType = useVisitType(doctorId, tok.patientPhone);
+
+  const sourceLabel = tok.source === 'walkin' ? 'WALK-IN' : 'E-TOKEN';
+  const sourceSub   = tok.source === 'walkin' ? 'Token booked from Walk-in by Doctor App' : 'Token booked by Patient App';
+  const sourceColor = tok.source === 'walkin' ? '#67E8F9' : '#4ADE80';
+  const genderLabel = tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? '—');
+
   return (
     <View style={S.cc}>
       <View style={S.ccGlow1}/><View style={S.ccGlow2}/>
@@ -118,14 +146,15 @@ function ConsultingCard({ tok, onNotShown, onDone, busy }: {
         <View style={{flex:1}}>
           <Text style={S.ccName} numberOfLines={1}>{tok.patientName}</Text>
           <View style={S.ccBadges}>
-            <View style={[S.pill, {backgroundColor:tc.bg}]}>
-              <View style={{width:5,height:5,borderRadius:3,backgroundColor:tc.dot,marginRight:3}}/>
-              <Text style={[S.pillTxt,{color:tc.color}]}>{tc.label.toUpperCase()}</Text>
+            <View style={[S.pill, {backgroundColor: tok.source==='walkin'?'rgba(6,182,212,0.18)':'rgba(34,197,94,0.18)'}]}>
+              <View style={{width:5,height:5,borderRadius:3,backgroundColor:sourceColor,marginRight:3}}/>
+              <Text style={[S.pillTxt,{color:sourceColor}]}>{sourceLabel}</Text>
             </View>
           </View>
+          <Text style={{fontSize:9,color:'rgba(255,255,255,0.3)',fontWeight:'500',marginTop:2}}>{sourceSub}</Text>
         </View>
       </View>
-      {/* Detail grid */}
+      {/* Detail grid — 3×2 */}
       <View style={S.ccGrid}>
         <View style={S.ccGridCell}>
           <View style={[S.ccGridIcon,{backgroundColor:'rgba(45,212,191,0.18)'}]}>
@@ -138,11 +167,51 @@ function ConsultingCard({ tok, onNotShown, onDone, busy }: {
         </View>
         <View style={S.ccGridCell}>
           <View style={[S.ccGridIcon,{backgroundColor:'rgba(99,102,241,0.18)'}]}>
+            <Text style={{fontSize:11}}>📅</Text>
+          </View>
+          <View>
+            <Text style={S.ccGridLabel}>AGE</Text>
+            <Text style={S.ccGridValue}>{tok.age ? `${tok.age} yrs` : '—'}</Text>
+          </View>
+        </View>
+      </View>
+      <View style={S.ccGrid}>
+        <View style={S.ccGridCell}>
+          <View style={[S.ccGridIcon,{backgroundColor:'rgba(168,85,247,0.18)'}]}>
+            <Text style={{fontSize:11}}>⚥</Text>
+          </View>
+          <View>
+            <Text style={S.ccGridLabel}>GENDER</Text>
+            <Text style={S.ccGridValue}>{genderLabel}</Text>
+          </View>
+        </View>
+        <View style={S.ccGridCell}>
+          <View style={[S.ccGridIcon,{backgroundColor:'rgba(251,191,36,0.18)'}]}>
             <Text style={{fontSize:11}}>📍</Text>
           </View>
           <View>
-            <Text style={S.ccGridLabel}>SOURCE</Text>
-            <Text style={[S.ccGridValue,{color:tc.color}]}>{tc.label}</Text>
+            <Text style={S.ccGridLabel}>AREA</Text>
+            <Text style={S.ccGridValue} numberOfLines={1}>{tok.area || '—'}</Text>
+          </View>
+        </View>
+      </View>
+      <View style={S.ccGrid}>
+        <View style={S.ccGridCell}>
+          <View style={[S.ccGridIcon,{backgroundColor:'rgba(34,197,94,0.18)'}]}>
+            <Text style={{fontSize:11}}>🔄</Text>
+          </View>
+          <View>
+            <Text style={S.ccGridLabel}>VISIT TYPE</Text>
+            <Text style={[S.ccGridValue,{color: visitType==='Follow Up'?'#FCD34D':'#4ADE80'}]}>{visitType}</Text>
+          </View>
+        </View>
+        <View style={S.ccGridCell}>
+          <View style={[S.ccGridIcon,{backgroundColor:'rgba(45,212,191,0.18)'}]}>
+            <Text style={{fontSize:11}}>🎟</Text>
+          </View>
+          <View>
+            <Text style={S.ccGridLabel}>TOKEN #</Text>
+            <Text style={[S.ccGridValue,{color:TEAL_LT}]}>#{tok.tokenNumber}</Text>
           </View>
         </View>
       </View>
@@ -389,6 +458,7 @@ export default function QueueScreen() {
               {current ? (
                 <ConsultingCard
                   tok={current}
+                  doctorId={docId}
                   onNotShown={()=>doCancel(current.id)}
                   onDone={()=>doDone(current.id)}
                   busy={busyId===current.id}

@@ -286,6 +286,27 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
   }
 });
 
+// GET /api/tokens/visit-count — how many previous visits for a patient
+router.get("/tokens/visit-count", async (req, res) => {
+  try {
+    const doctorId = req.query.doctorId as string;
+    const phone    = req.query.phone as string;
+    if (!doctorId || !phone) return res.status(400).json({ error: "doctorId and phone required" });
+
+    const snap = await getDocs(
+      query(
+        collection(db, Collections.TOKENS),
+        where("doctorId", "==", doctorId),
+        where("patientPhone", "==", phone),
+      ),
+    );
+    const dates = new Set(snap.docs.map(d => d.data().date));
+    res.json({ count: dates.size });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/tokens/stream/single/:tokenId — SSE real-time single token
 router.get("/tokens/stream/single/:tokenId", async (req, res) => {
   const { tokenId } = req.params;
