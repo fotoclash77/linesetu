@@ -162,8 +162,8 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
     queryKey: ["queue-pos", token?.doctorId, token?.id],
     queryFn: () => fetchQueuePosition(token!.doctorId, token!.id),
     enabled: !!token?.id && !!token?.doctorId,
-    refetchInterval: 12_000,
-    staleTime: 0,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   const myToken      = token?.tokenNumber ?? 0;

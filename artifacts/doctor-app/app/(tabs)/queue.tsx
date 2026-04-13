@@ -101,7 +101,7 @@ function useMasterQueue(doctorId: string) {
       setLoading(false);
     };
     poll();
-    const iv = setInterval(poll, 8000);
+    const iv = setInterval(poll, 60000);
     return () => { active = false; clearInterval(iv); };
   }, [doctorId]);
 
@@ -480,12 +480,12 @@ export default function QueueScreen() {
   const { data: qData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['dq', docId, shift],
     queryFn: () => apiFetchQueue(docId, shift),
-    enabled: !!docId, refetchInterval: 5000, staleTime: 0,
+    enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
   const { data: aData } = useQuery({
     queryKey: ['da', docId],
     queryFn: () => apiFetchAll(docId),
-    enabled: !!docId, refetchInterval: 8000, staleTime: 0,
+    enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
   const { rows: masterRows, loading: masterLoading } = useMasterQueue(docId);
 

@@ -76,8 +76,8 @@ export default function LiveQueueScreen() {
     queryKey: ["queue-position", token?.doctorId, tokenId],
     queryFn: () => fetchPosition(token!.doctorId, tokenId!),
     enabled: !!token?.doctorId && !!tokenId,
-    refetchInterval: 10_000,
-    staleTime: 0,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   // ── Fetch doctor info ─────────────────────────────────────────
