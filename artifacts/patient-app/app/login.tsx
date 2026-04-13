@@ -15,9 +15,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth, signInWithPhoneNumber } from "@/lib/firebase";
 
 const isWeb = Platform.OS === "web";
+
+function getApiBase() {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}`;
+  return "http://localhost:8080";
+}
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -31,7 +36,7 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   async function handleSendOtp() {
@@ -43,21 +48,16 @@ export default function LoginScreen() {
     const fullPhone = `${countryCode}${digits}`;
     setLoading(true);
     setError("");
+    setDevOtp(null);
     try {
-      let verifier: any = undefined;
-      if (isWeb) {
-        const { RecaptchaVerifier } = await import("firebase/auth");
-        if (!(window as any)._recaptchaVerifier) {
-          (window as any)._recaptchaVerifier = new RecaptchaVerifier(
-            auth,
-            "recaptcha-container",
-            { size: "invisible" }
-          );
-        }
-        verifier = (window as any)._recaptchaVerifier;
-      }
-      const result = await signInWithPhoneNumber(auth, fullPhone, verifier);
-      setConfirmationResult(result);
+      const resp = await fetch(`${getApiBase()}/api/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullPhone }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error ?? "Failed to send OTP");
+      if (data.devOtp) setDevOtp(data.devOtp);
       setStep("otp");
     } catch (e: any) {
       setError(e?.message ?? "Failed to send OTP. Please try again.");
@@ -72,24 +72,26 @@ export default function LoginScreen() {
       setError("Please enter the complete 6-digit OTP.");
       return;
     }
-    if (!confirmationResult) {
-      setError("Session expired. Please resend OTP.");
-      return;
-    }
+    const fullPhone = `${countryCode}${phone.replace(/\D/g, "")}`;
     setLoading(true);
     setError("");
     try {
-      const cred = await confirmationResult.confirm(code);
-      const user = cred.user;
+      const resp = await fetch(`${getApiBase()}/api/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullPhone, otp: code }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error ?? "Verification failed");
       await login({
-        id: user.uid,
-        name: user.displayName ?? "Patient",
-        phone: user.phoneNumber ?? `${countryCode}${phone}`,
-        profilePhoto: user.photoURL ?? undefined,
+        id: data.id,
+        name: data.name ?? "Patient",
+        phone: data.phone ?? fullPhone,
+        profilePhoto: data.profilePhoto ?? undefined,
       });
       router.replace("/(tabs)");
-    } catch {
-      setError("Invalid OTP. Please check and try again.");
+    } catch (e: any) {
+      setError(e?.message ?? "Invalid OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -119,16 +121,13 @@ export default function LoginScreen() {
     setStep("phone");
     setOtp(["", "", "", "", "", ""]);
     setError("");
-    setConfirmationResult(null);
+    setDevOtp(null);
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.orb1} />
       <View style={styles.orb2} />
-
-      {/* Invisible recaptcha container for Firebase phone auth on web */}
-      {isWeb && <View nativeID="recaptcha-container" style={{ position: "absolute", bottom: 0 }} />}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -155,7 +154,7 @@ export default function LoginScreen() {
                 <Text style={styles.cardTitle}>Welcome</Text>
                 <Text style={styles.cardSub}>Sign in or create your account</Text>
 
-                {/* Phone number field */}
+                {/* Phone field */}
                 <View style={styles.fieldWrap}>
                   <View style={styles.countryCode}>
                     <Text style={styles.countryCodeTxt}>{countryCode}</Text>
@@ -172,13 +171,11 @@ export default function LoginScreen() {
                     maxLength={10}
                     returnKeyType="done"
                     onSubmitEditing={handleSendOtp}
-                    autoFocus={false}
                   />
                 </View>
 
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-                {/* Send OTP button */}
                 <Pressable
                   onPress={handleSendOtp}
                   disabled={loading}
@@ -203,7 +200,6 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                {/* Back to phone */}
                 <Pressable style={styles.backRow} onPress={goBack}>
                   <Feather name="arrow-left" size={15} color="#818CF8" />
                   <Text style={styles.backTxt}>Change number</Text>
@@ -213,6 +209,14 @@ export default function LoginScreen() {
                 <Text style={styles.cardSub}>
                   6-digit code sent to {countryCode} {phone}
                 </Text>
+
+                {/* Dev OTP hint */}
+                {!!devOtp && (
+                  <View style={styles.devHint}>
+                    <Feather name="info" size={12} color="#06B6D4" />
+                    <Text style={styles.devHintTxt}>Dev OTP: <Text style={styles.devHintCode}>{devOtp}</Text></Text>
+                  </View>
+                )}
 
                 {/* OTP boxes */}
                 <View style={styles.otpRow}>
@@ -234,7 +238,6 @@ export default function LoginScreen() {
 
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-                {/* Verify button */}
                 <Pressable
                   onPress={handleVerifyOtp}
                   disabled={loading}
@@ -257,7 +260,6 @@ export default function LoginScreen() {
                   </LinearGradient>
                 </Pressable>
 
-                {/* Resend */}
                 <Pressable style={styles.resendRow} onPress={handleSendOtp} disabled={loading}>
                   <Text style={styles.resendTxt}>
                     Didn't receive OTP?{" "}
@@ -267,7 +269,6 @@ export default function LoginScreen() {
               </>
             )}
 
-            {/* Security note */}
             <View style={styles.securityRow}>
               <Feather name="shield" size={11} color="rgba(255,255,255,0.2)" />
               <Text style={styles.securityTxt}>256-bit encrypted · Your data is safe</Text>
@@ -291,7 +292,6 @@ export default function LoginScreen() {
             ))}
           </View>
 
-          {/* Terms */}
           <Text style={styles.terms}>
             By continuing, you agree to our{" "}
             <Text style={styles.termsLink}>Terms</Text>
@@ -327,6 +327,10 @@ const styles = StyleSheet.create({
   countryCodeTxt: { fontSize: 15, color: "#FFF", fontWeight: "600" },
   fieldDivider: { width: 1, height: 26, backgroundColor: "rgba(255,255,255,0.12)" },
   fieldInput: { flex: 1, fontSize: 15, color: "#FFF", fontWeight: "500", paddingHorizontal: 14 },
+
+  devHint: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(6,182,212,0.1)", borderWidth: 1, borderColor: "rgba(6,182,212,0.25)", borderRadius: 10, padding: 10, marginBottom: 16 },
+  devHintTxt: { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: "500" },
+  devHintCode: { color: "#06B6D4", fontWeight: "800", letterSpacing: 2 },
 
   otpRow: { flexDirection: "row", gap: 8, justifyContent: "center", marginBottom: 20 },
   otpBox: { width: 44, height: 54, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.35)", fontSize: 22, fontWeight: "700", color: "#FFF" },
