@@ -464,11 +464,7 @@ export default function ProfileScreen() {
                       return;
                     }
                     if (item.label === "Live Queue") {
-                      if (activeToken?.id) {
-                        router.push(`/queue/${activeToken.id}` as Href);
-                      } else {
-                        router.push("/(tabs)/bookings" as Href);
-                      }
+                      router.push(`/queue/${activeToken?.id ?? "demo"}` as Href);
                       return;
                     }
                     if (item.route) router.push(item.route as Href);
