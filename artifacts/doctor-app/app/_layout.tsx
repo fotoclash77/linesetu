@@ -24,15 +24,16 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   const { doctor, isLoading } = useDoctor();
 
+  const doctorId = doctor?.id ?? null;
   useEffect(() => {
     if (!isLoading) {
-      if (doctor) {
+      if (doctorId) {
         router.replace("/(tabs)");
       } else {
         router.replace("/");
       }
     }
-  }, [doctor, isLoading]);
+  }, [doctorId, isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
