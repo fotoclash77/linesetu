@@ -184,9 +184,13 @@ export default function DashboardScreen() {
                 <Text style={styles.walkinBtnText}>✚ Add Walk-in</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.queueBtn} onPress={() => router.push('/(tabs)/queue')}>
-                <Text style={styles.queueBtnText}>👥 View Queue</Text>
+                <Text style={styles.queueBtnText}>⏱ View Queue</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity style={styles.patientsBtn} onPress={() => router.push('/patients')}>
+              <Text style={styles.patientsBtnText}>👤  My Patients</Text>
+              <Text style={styles.patientsBtnArrow}>›</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Earnings Overview */}
@@ -399,4 +403,11 @@ const styles = StyleSheet.create({
   statBar: { height: 3, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.07)' },
   statBarFg: { height: '100%', borderRadius: 3, opacity: 0.85 },
   statSub: { fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: '500', marginTop: 3 },
+  patientsBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 8, height: 44, borderRadius: 14, paddingHorizontal: 16,
+    backgroundColor: 'rgba(99,102,241,0.14)', borderWidth: 1.5, borderColor: 'rgba(99,102,241,0.38)',
+  },
+  patientsBtnText: { fontSize: 12, fontWeight: '800', color: '#A5B4FC' },
+  patientsBtnArrow: { fontSize: 20, color: '#A5B4FC', fontWeight: '300' },
 });
