@@ -11,19 +11,21 @@ const router = Router();
 router.get("/notifications/:doctorId", async (req, res) => {
   try {
     const { doctorId } = req.params;
+    // No orderBy to avoid composite index requirement — sort in memory
     const snap = await getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("doctorId", "==", doctorId),
-        orderBy("createdAt", "desc"),
         limit(50),
       ),
     );
-    const notifications = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: (d.data().createdAt as any)?.toMillis?.() ?? Date.now(),
-    }));
+    const notifications = snap.docs
+      .map(d => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: (d.data().createdAt as any)?.toMillis?.() ?? Date.now(),
+      }))
+      .sort((a: any, b: any) => b.createdAt - a.createdAt);
     res.json({ notifications });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -47,21 +49,22 @@ router.post("/notifications/read-all", async (req, res) => {
     const { doctorId } = req.body;
     if (!doctorId) return res.status(400).json({ error: "doctorId required" });
 
+    // Fetch all for this doctor, filter unread in memory to avoid composite index
     const snap = await getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("doctorId", "==", doctorId),
-        where("read", "==", false),
       ),
     );
 
-    if (snap.empty) return res.json({ updated: 0 });
+    const unread = snap.docs.filter(d => d.data().read === false);
+    if (unread.length === 0) return res.json({ updated: 0 });
 
     const batch = writeBatch(db);
-    snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+    unread.forEach(d => batch.update(d.ref, { read: true }));
     await batch.commit();
 
-    res.json({ updated: snap.size });
+    res.json({ updated: unread.length });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
