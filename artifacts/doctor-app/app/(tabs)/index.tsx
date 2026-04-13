@@ -233,12 +233,12 @@ export default function DashboardScreen() {
 
           {/* Patient Data */}
           <View style={styles.glassCard}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
+            <View style={{ marginBottom: 14 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 10 }]}>
                 <Text style={styles.sectionDot}>📊</Text>
                 <Text style={styles.sectionTitle}>Patient Data</Text>
               </View>
-              <View style={styles.periodTabs}>
+              <View style={[styles.periodTabs, { alignSelf: 'flex-start' }]}>
                 {(['Today','Last 7 days','Last 30 days'] as PatientPeriod[]).map(p => (
                   <TouchableOpacity key={p} onPress={() => setPatientPeriod(p)} style={[styles.periodTab, patientPeriod === p && styles.periodTabActive]}>
                     <Text style={[styles.periodTabText, patientPeriod === p && styles.periodTabTextActive]}>{p}</Text>
