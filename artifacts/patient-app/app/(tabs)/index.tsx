@@ -228,7 +228,6 @@ export default function HomeScreen() {
         ? (t.status as TokenItem["status"])
         : "waiting",
     }));
-  const hasActiveToken = activeTokens.length > 0;
   const activeToken = activeTokens[0];
 
   const firstName = patient?.name?.split(" ")[0] ?? "there";
@@ -276,12 +275,10 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Live Queue Mini-Card — only shown when patient has an active token */}
-        {hasActiveToken && (
-          <View style={styles.sectionPad}>
-            <LiveQueueCard token={activeToken} />
-          </View>
-        )}
+        {/* Live Queue Mini-Card — always visible; uses real token when available */}
+        <View style={styles.sectionPad}>
+          <LiveQueueCard token={activeToken} />
+        </View>
 
         {/* Promo Banner */}
         <View style={styles.sectionPad}>
