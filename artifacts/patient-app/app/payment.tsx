@@ -13,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,11 +20,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const isWeb = Platform.OS === "web";
 
-const PAYMENT_METHODS = [
-  { id: "upi",     label: "UPI / QR Pay",       sub: "GPay, PhonePe, Paytm, BHIM",    icon: "smartphone" as const,   color: "#818CF8" },
-  { id: "card",    label: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay",       icon: "credit-card" as const,  color: "#06B6D4" },
-  { id: "wallet",  label: "Wallets",              sub: "Paytm, Amazon Pay, Mobikwik",    icon: "credit-card" as const,  color: "#22C55E" },
-];
 
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 function fmtDate(d: number) {
@@ -73,17 +67,11 @@ export default function PaymentScreen() {
   const platformFee = 10;
   const yourToken   = 43;
 
-  const [method, setMethod] = useState("upi");
-  const [upiId, setUpiId]   = useState("");
   const [loading, setLoading] = useState(false);
 
   const bookToken = useBookToken();
 
   async function handlePay() {
-    if (method === "upi" && !upiId.trim()) {
-      Alert.alert("Enter UPI ID", "Please enter your UPI ID to continue.");
-      return;
-    }
     setLoading(true);
     try {
       await bookToken.mutateAsync({
@@ -215,49 +203,6 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {/* Payment Methods */}
-        <View style={styles.sectionPad}>
-          <Text style={styles.sectionLabel}>Payment Method</Text>
-          <View style={{ gap: 8 }}>
-            {PAYMENT_METHODS.map(pm => {
-              const isSelected = method === pm.id;
-              return (
-                <Pressable
-                  key={pm.id}
-                  style={[styles.payMethodCard, isSelected && styles.payMethodSelected]}
-                  onPress={() => setMethod(pm.id)}
-                >
-                  <View style={[styles.payMethodIcon, { backgroundColor: pm.color + "18" }]}>
-                    <Feather name={pm.icon} size={18} color={pm.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.payMethodLabel, isSelected && { color: "#FFF" }]}>{pm.label}</Text>
-                    <Text style={styles.payMethodSub}>{pm.sub}</Text>
-                  </View>
-                  <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                    {isSelected && <View style={[styles.radioInner, { backgroundColor: pm.color }]} />}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* UPI ID input */}
-          {method === "upi" && (
-            <View style={styles.upiInputWrap}>
-              <Feather name="at-sign" size={14} color="#818CF8" style={{ marginLeft: 14 }} />
-              <TextInput
-                style={styles.upiInput}
-                placeholder="Enter UPI ID (e.g. name@upi)"
-                placeholderTextColor="rgba(255,255,255,0.25)"
-                value={upiId}
-                onChangeText={setUpiId}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-          )}
-        </View>
 
         {/* Security Info */}
         <View style={styles.sectionPad}>
