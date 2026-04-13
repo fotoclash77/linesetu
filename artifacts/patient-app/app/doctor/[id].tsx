@@ -70,7 +70,8 @@ const SCHEDULE = [
 const FEES = [
   { icon: "check-circle" as const, label: "Walk-in Token",         sub: "Come early at clinic by 9 AM to get your token",                     amount: "₹0",   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",  border: "rgba(34,197,94,0.3)"   },
   { icon: "monitor" as const,      label: "Clinic E-Appointment",  sub: "Take token online via LINESETU — skip standing in line, from home",  amount: "₹20",  color: "#67E8F9", bg: "rgba(6,182,212,0.1)",  border: "rgba(6,182,212,0.25)"  },
-  { icon: "home" as const,         label: "Consultation at Clinic", sub: "Pay directly at the clinic",                                        amount: "₹500", color: "#22C55E", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)"   },
+  { icon: "home" as const,         label: "Consultation at Clinic",           sub: "Pay directly at the clinic",                                        amount: "₹500",  color: "#22C55E", bg: "rgba(34,197,94,0.08)",  border: "rgba(34,197,94,0.2)"    },
+  { icon: "alert-circle" as const, label: "Emergency Consultation at Clinic", sub: "Priority access — no waiting in queue",                              amount: "₹1200", color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)"  },
 ];
 
 export default function DoctorDetailScreen() {
