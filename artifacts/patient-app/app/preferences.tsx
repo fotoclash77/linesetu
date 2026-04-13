@@ -126,9 +126,7 @@ export default function PreferencesScreen() {
     setSaving(true);
     await AsyncStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
     setSaving(false);
-    Alert.alert("Saved", "Your preferences have been saved.", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    router.back();
   };
 
   const selectedLang = LANGUAGES.find((l) => l.code === prefs.language) ?? LANGUAGES[0];
