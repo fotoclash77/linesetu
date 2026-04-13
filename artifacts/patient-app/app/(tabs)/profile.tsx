@@ -455,7 +455,17 @@ export default function ProfileScreen() {
                   key={item.label}
                   style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed, i < section.items.length - 1 && styles.menuItemBorder]}
                   onPress={() => {
-                    if (item.label === "Sign Out") { logout(); return; }
+                    if (item.label === "Sign Out") {
+                      Alert.alert(
+                        "Sign Out",
+                        "Are you sure you want to sign out of your account?",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Sign Out", style: "destructive", onPress: () => logout() },
+                        ]
+                      );
+                      return;
+                    }
                     if (item.label === "Live Queue") {
                       if (activeToken?.id) {
                         router.push(`/queue/${activeToken.id}` as Href);
