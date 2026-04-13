@@ -44,16 +44,11 @@ async function apiDone(id: string, callNextId?: string) {
     body: JSON.stringify({ callNextId: callNextId ?? null }),
   });
 }
-async function apiSendNext(id: string) {
-  const r = await fetch(`${BASE()}/api/tokens/${id}/upnext`, { method: 'PATCH' });
-  if (!r.ok) throw new Error(`sendNext failed ${r.status}`);
-  return r.json();
-}
 async function apiSkip(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/skip`,   { method: 'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method: 'PATCH' }); }
 
 // ─── Types ───────────────────────────────────────────────────────
-type DisplayStatus = 'consulting' | 'upnext' | 'waiting' | 'done' | 'skipped';
+type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
 type TabKey = 'normal' | 'emergency' | 'skipped' | 'consulted';
 
 interface MasterRow {
@@ -82,7 +77,6 @@ function mapToken(t: any): Token {
     status: t.status,
     displayStatus:
       t.status === 'in_consult' ? 'consulting' :
-      t.status === 'up_next'    ? 'upnext'     :
       t.status === 'done'       ? 'done'       :
       t.status === 'skipped'    ? 'skipped'    :
       t.status === 'cancelled'  ? 'skipped'    : 'waiting',
@@ -240,7 +234,7 @@ function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
 // ─── Stats Bar ───────────────────────────────────────────────────
 function StatsBar({ all }: { all: Token[] }) {
   const total   = all.length;
-  const waiting = all.filter(t => t.displayStatus === 'waiting' || t.displayStatus === 'upnext').length;
+  const waiting = all.filter(t => t.displayStatus === 'waiting').length;
   const done    = all.filter(t => t.displayStatus === 'done').length;
   const skipped = all.filter(t => t.displayStatus === 'skipped').length;
   const stats = [
@@ -427,9 +421,10 @@ function PastCard({ tok }: { tok: Token }) {
 export default function QueueScreen() {
   const { doctor } = useDoctor();
   const qc = useQueryClient();
-  const [tab,    setTab]  = useState<TabKey>('normal');
-  const [shift,  setShift] = useState<'morning' | 'evening'>('morning');
-  const [busyId, setBusy]  = useState<string | null>(null);
+  const [tab,          setTab]        = useState<TabKey>('normal');
+  const [shift,        setShift]      = useState<'morning' | 'evening'>('morning');
+  const [busyId,       setBusy]       = useState<string | null>(null);
+  const [manualNextId, setManualNext] = useState<string | null>(null);
   const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
@@ -450,6 +445,9 @@ export default function QueueScreen() {
     qc.invalidateQueries({ queryKey: ['da', docId] });
   }, [qc, docId]);
 
+  // Clear manual pick whenever shift changes — morning pick shouldn't carry to evening
+  useEffect(() => { setManualNext(null); }, [shift]);
+
   const doCall = async (id: string) => {
     setBusy(id); try { await apiCall(id); inv(); } catch {} setBusy(null);
   };
@@ -457,9 +455,9 @@ export default function QueueScreen() {
     const nextId = upNextRef.current; // locked at click-time — matches what Up Next card shows
     setBusy(id);
     try {
-      // Single atomic API call: marks done + calls next in ONE Firebase batch → ONE SSE event
       await apiDone(id, nextId);
-      inv(); // single invalidation after everything is committed
+      if (nextId) setManualNext(null);
+      inv();
     } catch {}
     setBusy(null);
   };
@@ -469,9 +467,6 @@ export default function QueueScreen() {
   const doCancel = async (id: string) => {
     setBusy(id); try { await apiCancel(id); inv(); } catch {} setBusy(null);
   };
-  const doSendNext = async (id: string) => {
-    setBusy(id); try { await apiSendNext(id); inv(); } catch {} setBusy(null);
-  };
 
   // ── Data (SSE is primary — instant updates; REST is fallback for initial load) ──
   const masterFiltered: Token[] = masterRows.map(mapToken).filter(t => t.shift === shift);
@@ -479,15 +474,14 @@ export default function QueueScreen() {
   const all: Token[] = masterFiltered.length > 0 ? masterFiltered : restTokens;
 
   const consulting = all.find(t => t.displayStatus === 'consulting');
-  // upnext tokens stay in the waiting list (highlighted) — they also show in the Up Next card
-  const waitSorted = all.filter(t => t.displayStatus === 'waiting' || t.displayStatus === 'upnext').sort((a, b) => {
+  const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a, b) => {
     if (a.type === 'emergency' && b.type !== 'emergency') return -1;
     if (b.type === 'emergency' && a.type !== 'emergency') return 1;
     return a.tokenNumber - b.tokenNumber;
   });
-  // Priority: 1) DB-persisted up_next pin  2) First emergency  3) First normal
-  const pinnedNext = all.find(t => t.displayStatus === 'upnext');
-  const upNext = pinnedNext ?? waitSorted[0];
+  // Priority: 1) Manually chosen via Send Next  2) Emergency  3) Normal
+  const manualNext = manualNextId ? waitSorted.find(t => t.id === manualNextId) : null;
+  const upNext = manualNext ?? waitSorted[0];
   upNextRef.current = upNext?.id; // always tracks what the Up Next card shows
 
   const doneList    = all.filter(t => t.displayStatus === 'done');
@@ -577,7 +571,7 @@ export default function QueueScreen() {
             {/* ── UP NEXT (sticky) ───────────────────── */}
             <View style={{ paddingHorizontal: 14, paddingBottom: 6 }}>
               {upNext
-                ? <UpNextCard tok={upNext} onCall={() => doCall(upNext.id)} busy={busyId === upNext.id} isManual={!!pinnedNext} />
+                ? <UpNextCard tok={upNext} onCall={() => doCall(upNext.id)} busy={busyId === upNext.id} isManual={!!manualNext} />
                 : <UpNextEmpty />
               }
             </View>
@@ -586,7 +580,7 @@ export default function QueueScreen() {
             <View style={{ paddingHorizontal: 14 }}>
               <View style={S.waitingHeader}>
                 <Text style={S.waitingTitle}>Waiting List</Text>
-                <Text style={S.waitingCount}>{waitSorted.length + (pinnedNext ? 1 : 0)} patients</Text>
+                <Text style={S.waitingCount}>{waitSorted.length} patients</Text>
               </View>
               {/* Tab bar */}
               <View style={S.tabBar}>
@@ -638,8 +632,8 @@ export default function QueueScreen() {
                     <WaitingCard
                       key={tok.id} tok={tok}
                       busy={busyId === tok.id}
-                      isManualNext={tok.displayStatus === 'upnext'}
-                      onSendNext={() => doSendNext(tok.id)}
+                      isManualNext={tok.id === manualNextId}
+                      onSendNext={() => { setManualNext(tok.id); if (!consulting) doCall(tok.id); }}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
                       onRefund={() => doCancel(tok.id)}
