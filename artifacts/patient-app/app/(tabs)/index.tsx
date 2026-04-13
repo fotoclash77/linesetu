@@ -74,9 +74,6 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
 
       <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
       <View style={styles.ratingRow}>
-        <Feather name="star" size={11} color="#F59E0B" />
-        <Text style={styles.ratingTxt}>{doc.rating ?? "4.9"}</Text>
-        <Text style={styles.ratingSlash}> · </Text>
         <Feather name="check-circle" size={10} color="#06B6D4" />
         <Text style={styles.verifiedTxt}>Verified</Text>
       </View>

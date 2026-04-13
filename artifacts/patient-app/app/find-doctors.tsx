@@ -91,11 +91,6 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
 
         <View style={styles.listStats}>
           <View style={styles.listStat}>
-            <Feather name="star" size={10} color="#F59E0B" />
-            <Text style={styles.listStatTxt}>{doc.rating}</Text>
-          </View>
-          <View style={styles.listStatDot} />
-          <View style={styles.listStat}>
             <Feather name="briefcase" size={10} color="rgba(255,255,255,0.4)" />
             <Text style={styles.listStatTxt}>{doc.exp}</Text>
           </View>
