@@ -380,10 +380,10 @@ export default function LiveQueueScreen() {
               <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>Active</Text></View>
             </View>
             <Text style={styles.notifBody}>
-              You'll get an SMS when 3 tokens are left before yours. Stay relaxed!
+              You'll get an SMS when 10 tokens are left before yours. Stay relaxed!
             </Text>
             <View style={styles.notifTokensRow}>
-              {["3 tokens left", "1 token left", "Your turn"].map((t, i) => (
+              {["10 tokens left", "5 tokens left", "1 token left", "Your turn"].map((t, i) => (
                 <View key={t} style={[styles.notifTokenChip, i === 0 && { backgroundColor: "rgba(129,140,248,0.2)", borderColor: "rgba(129,140,248,0.4)" }]}>
                   <Text style={[styles.notifTokenChipTxt, i === 0 && { color: "#A5B4FC" }]}>{t}</Text>
                 </View>
