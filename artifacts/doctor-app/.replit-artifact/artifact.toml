@@ -3,7 +3,6 @@ previewPath = "/doctor-app/"
 title = "LINESETU Doctor App"
 version = "1.0.0"
 id = "artifacts/doctor-app"
-router = "expo-domain"
 
 [[integratedSkills]]
 name = "expo"
@@ -13,7 +12,7 @@ version = "1.0.0"
 ensurePreviewReachable = "/status"
 name = "expo"
 paths = [ "/doctor-app/" ]
-localPort = 20117
+localPort = 20119
 
 [services.development]
 run = "pnpm --filter @workspace/doctor-app run dev"
@@ -23,5 +22,5 @@ build = [ "pnpm", "--filter", "@workspace/doctor-app", "run", "build" ]
 run = [ "pnpm", "--filter", "@workspace/doctor-app", "run", "serve" ]
 
 [services.env]
-PORT = "20117"
+PORT = "20119"
 BASE_PATH = "/doctor-app/"
