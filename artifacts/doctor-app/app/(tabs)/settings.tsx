@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { useDoctor } from '../../contexts/DoctorContext';
 
 type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp';
 
@@ -80,6 +81,7 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 export default function SettingsScreen() {
+  const { doctor, logout } = useDoctor();
   const [section, setSection] = useState<SettingsSection>('main');
 
   // Profile state
@@ -510,7 +512,7 @@ export default function SettingsScreen() {
                   <Text style={styles.logoutSub}>You'll need to sign in again to access your account.</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.logoutConfirmBtn}>
+              <TouchableOpacity style={styles.logoutConfirmBtn} onPress={() => { setShowLogout(false); logout(); }}>
                 <Text style={styles.logoutConfirmBtnText}>Yes, Log Out</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowLogout(false)} style={styles.logoutCancelBtn}>

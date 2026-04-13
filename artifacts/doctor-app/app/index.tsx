@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Animated,
+  KeyboardAvoidingView, Platform, ScrollView, Animated, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
+import { useDoctor } from '../contexts/DoctorContext';
 
 const STATUS_ICONS = [0.4, 0.65, 0.9, 1];
 
@@ -48,13 +49,16 @@ function OtpBox({ value, focused }: { value: string; focused: boolean }) {
 }
 
 export default function LoginScreen() {
+  const { loginWithPhone } = useDoctor();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpFocus, setOtpFocus] = useState(0);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
   const otpInputRef = useRef<TextInput>(null);
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -66,20 +70,44 @@ export default function LoginScreen() {
   const otpDigits = otp.split('').concat(Array(6).fill('')).slice(0, 6);
   const otpFilled = otp.length === 6;
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!phoneValid || sending) return;
+    setError('');
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      const res = await fetch(`https://${domain}/api/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91${phone}` }),
+      });
+      if (!res.ok) throw new Error('Failed to send OTP');
       setStep('otp');
       setTimer(30);
       setTimeout(() => otpInputRef.current?.focus(), 100);
-    }, 800);
+    } catch (e: any) {
+      setError(e.message || 'Could not send OTP. Try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleVerify = () => {
-    if (!otpFilled) return;
-    router.replace('/(tabs)');
+  const handleVerify = async () => {
+    if (!otpFilled || sending) return;
+    setError('');
+    setSending(true);
+    try {
+      const res = await fetch(`https://${domain}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91${phone}`, otp }),
+      });
+      if (!res.ok) throw new Error('Invalid OTP. Please try again.');
+      await loginWithPhone(phone);
+    } catch (e: any) {
+      setError(e.message || 'Verification failed. Try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -173,6 +201,7 @@ export default function LoginScreen() {
                     </Text>
                   </View>
 
+                  {!!error && <Text style={styles.errorText}>{error}</Text>}
                   <TouchableOpacity
                     style={[styles.ctaBtn, !phoneValid && styles.ctaBtnDisabled]}
                     onPress={handleSendOtp}
@@ -220,17 +249,16 @@ export default function LoginScreen() {
                     )}
                   </View>
 
+                  {!!error && <Text style={styles.errorText}>{error}</Text>}
                   <TouchableOpacity
-                    style={[styles.ctaBtn, !otpFilled && styles.ctaBtnDisabled]}
+                    style={[styles.ctaBtn, (!otpFilled || sending) && styles.ctaBtnDisabled]}
                     onPress={handleVerify}
-                    disabled={!otpFilled}
+                    disabled={!otpFilled || sending}
                   >
                     <Text style={styles.ctaBtnText}>
-                      {otpFilled ? '✓ Verify & Enter Dashboard' : 'Enter 6-digit OTP'}
+                      {sending ? 'Verifying…' : otpFilled ? '✓ Verify & Enter Dashboard' : 'Enter 6-digit OTP'}
                     </Text>
                   </TouchableOpacity>
-
-                  <Text style={styles.demoHint}>Demo: tap OTP boxes and type any 6 digits</Text>
                 </>
               )}
             </View>
@@ -345,7 +373,7 @@ const styles = StyleSheet.create({
   resendRow: { alignItems: 'center', marginBottom: 20 },
   resendText: { fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: '600' },
   resendLink: { fontSize: 12, fontWeight: '700', color: TEAL_LT },
-  demoHint: { textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: '500', marginTop: 12 },
+  errorText: { fontSize: 12, color: '#F87171', fontWeight: '600', textAlign: 'center', marginBottom: 10, paddingHorizontal: 4 },
   footer: { alignItems: 'center', paddingTop: 24, paddingBottom: 4 },
   footerText: { fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: '600' },
   footerSub: { fontSize: 10, color: 'rgba(255,255,255,0.12)', marginTop: 4 },
