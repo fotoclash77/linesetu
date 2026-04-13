@@ -645,8 +645,8 @@ const S = StyleSheet.create({
   consRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   ringWrap:   { position: 'relative', padding: 10, alignSelf: 'flex-start' },
   consBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  skipBtn:    { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' },
-  skipBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCA5A5' },
+  skipBtn:    { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(180,83,9,0.3)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.3)' },
+  skipBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCD34D' },
   doneBtn:    { flex: 2, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B45309', borderWidth: 1, borderColor: 'rgba(252,211,77,0.5)', shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.45, shadowRadius: 14 },
   doneBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCD34D' },
 
