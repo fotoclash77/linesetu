@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
@@ -15,7 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
 
 // Set API base URL synchronously at module load time so queries always have it
@@ -33,6 +33,18 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutNav() {
+  const { patient, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (patient) {
+        router.replace("/(tabs)");
+      } else {
+        router.replace("/login");
+      }
+    }
+  }, [patient, isLoading]);
+
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="login" />
