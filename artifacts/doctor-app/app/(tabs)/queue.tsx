@@ -250,11 +250,11 @@ function StatsBar({ all }: { all: Token[] }) {
 function InConsultationCard({ tok, onSkip, onDone, busy }: {
   tok: Token; onSkip: () => void; onDone: () => void; busy: boolean;
 }) {
-  const ringColor = tok.type === 'emergency' ? 'rgba(239,68,68,0.8)' : 'rgba(45,212,191,0.8)';
+  const ringColor = tok.type === 'emergency' ? 'rgba(251,113,133,0.85)' : 'rgba(196,181,253,0.85)';
   return (
     <View style={S.consCard}>
       <View style={S.consHeader}>
-        <PulseDot color={TEAL_LT} size={8} />
+        <PulseDot color="#C4B5FD" size={8} />
         <Text style={S.consLabel}>IN CONSULTATION</Text>
       </View>
       <View style={S.consRow}>
@@ -638,16 +638,16 @@ const S = StyleSheet.create({
   patNameLg: { fontSize: 18, fontWeight: '800' },
   patMeta:   { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
 
-  // In Consultation card
-  consCard:   { backgroundColor: 'rgba(13,148,136,0.14)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.38)', borderRadius: 18, padding: 16, shadowColor: '#0D9488', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 18 },
+  // In Consultation card — violet / purple theme
+  consCard:   { backgroundColor: 'rgba(109,40,217,0.2)', borderWidth: 1.5, borderColor: 'rgba(196,181,253,0.45)', borderRadius: 18, padding: 16, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20 },
   consHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  consLabel:  { fontSize: 11, fontWeight: '800', color: TEAL_LT, letterSpacing: 1.5, textTransform: 'uppercase' },
+  consLabel:  { fontSize: 11, fontWeight: '800', color: '#C4B5FD', letterSpacing: 1.5, textTransform: 'uppercase' },
   consRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   ringWrap:   { position: 'relative', padding: 10, alignSelf: 'flex-start' },
   consBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   skipBtn:    { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' },
   skipBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCA5A5' },
-  doneBtn:    { flex: 2, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, shadowColor: TEAL, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 14 },
+  doneBtn:    { flex: 2, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#7C3AED', shadowColor: '#A78BFA', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.55, shadowRadius: 14 },
   doneBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FFF' },
 
   // Empty placeholder cards
