@@ -20,6 +20,7 @@ export default function AddWalkinScreen() {
   const [age, setAge] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [area, setArea] = useState('');
 
   const isEmerg = tokenType === 'Emergency';
 
@@ -155,10 +156,22 @@ export default function AddWalkinScreen() {
               <Text style={styles.fieldLabel}>📍 ADDRESS</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Area / locality"
+                placeholder="Street / building"
                 placeholderTextColor="rgba(255,255,255,0.2)"
                 value={address}
                 onChangeText={setAddress}
+              />
+            </View>
+
+            {/* Area */}
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>🗺 AREA</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Area / locality / city"
+                placeholderTextColor="rgba(255,255,255,0.2)"
+                value={area}
+                onChangeText={setArea}
               />
             </View>
           </View>
