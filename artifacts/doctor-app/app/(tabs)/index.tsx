@@ -69,7 +69,6 @@ export default function DashboardScreen() {
   const { doctor } = useDoctor();
   const [period, setPeriod] = useState<EarningPeriod>('Today');
   const [available, setAvailable] = useState(true);
-  const [bookingOn, setBookingOn] = useState(true);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Today');
 
   const toggleAvailability = useCallback(async () => {
@@ -161,16 +160,6 @@ export default function DashboardScreen() {
               <Toggle value={available} onToggle={toggleAvailability} onColor="#22C55E" />
             </TouchableOpacity>
 
-            {/* Booking toggle */}
-            <View style={[styles.bookingRow, bookingOn ? styles.bookingRowOn : styles.bookingRowOff]}>
-              <View>
-                <Text style={styles.bookingTitle}>E-Token Booking</Text>
-                <Text style={[styles.bookingStatus, { color: bookingOn ? TEAL_LT : 'rgba(255,255,255,0.3)' }]}>
-                  {bookingOn ? 'Accepting new patients' : 'Bookings paused'}
-                </Text>
-              </View>
-              <Toggle value={bookingOn} onToggle={() => setBookingOn(p => !p)} onColor={TEAL} />
-            </View>
 
             {/* Quick actions */}
             <View style={styles.quickActions}>
@@ -343,14 +332,6 @@ const styles = StyleSheet.create({
   availDot: { width: 10, height: 10, borderRadius: 5 },
   availTitle: { fontSize: 14, fontWeight: '800', color: '#FFF' },
   availSub: { fontSize: 10, fontWeight: '600', marginTop: 1 },
-  bookingRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 12, borderRadius: 14, marginBottom: 12, borderWidth: 1,
-  },
-  bookingRowOn: { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.25)' },
-  bookingRowOff: { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.07)' },
-  bookingTitle: { fontSize: 13, fontWeight: '700', color: '#FFF' },
-  bookingStatus: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   toggle: { width: 46, height: 26, borderRadius: 13, justifyContent: 'center', borderWidth: 1, position: 'relative' },
   toggleOff: { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.15)' },
   toggleThumb: { position: 'absolute', width: 18, height: 18, borderRadius: 9, backgroundColor: '#FFF' },
