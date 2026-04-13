@@ -38,6 +38,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="find-doctors" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="preferences" />
       <Stack.Screen name="doctor/[id]" />
       <Stack.Screen name="booking/[doctorId]" />
       <Stack.Screen name="payment" />
