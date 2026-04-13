@@ -26,16 +26,21 @@ router.get("/queues/:doctorId", async (req, res) => {
     const queue = queueSnap.data();
 
     // Fetch tokens — no orderBy to avoid composite index requirement; sort in memory
+    // Accept both full date "2026-04-13" and short day "13" to handle legacy data
+    const dayNum = String(parseInt(date.split("-")[2] ?? date, 10));
     const tokenSnap = await getDocs(query(
       collection(db, Collections.TOKENS),
       where("doctorId", "==", req.params.doctorId),
-      where("date", "==", date),
       where("shift", "==", shift),
     ));
 
     const tokens = tokenSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter((t: any) => t.status === "waiting" || t.status === "in_consult")
+      .filter((t: any) => {
+        const td = String(t.date ?? "");
+        const match = td === date || td === dayNum || parseInt(td, 10) === parseInt(dayNum, 10);
+        return match && (t.status === "waiting" || t.status === "in_consult");
+      })
       .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
 
     res.json({ id: queueSnap.id, ...queue, tokens });
