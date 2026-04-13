@@ -310,45 +310,48 @@ function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
   );
 }
 
-// ─── NEXT PATIENT CARD (amber, always shown below consulting) ────
-function NextCard({ tok, onCall, busy }: { tok:Token; onCall:()=>void; busy:boolean }) {
-  const tc = typeCfg(tok);
+// ─── UP NEXT CARD (compact, below consulting) ───────────────────
+function UpNextCard({ tok, onCall, busy }: { tok:Token; onCall:()=>void; busy:boolean }) {
   const isEmerg = tok.type === 'emergency';
-  const borderC = isEmerg ? 'rgba(239,68,68,0.4)'  : 'rgba(245,158,11,0.42)';
-  const bgC     = isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(245,158,11,0.11)';
-  const lblC    = isEmerg ? '#F87171' : '#FCD34D';
+  const accentC = isEmerg ? '#F87171' : '#FCD34D';
+  const borderC = isEmerg ? 'rgba(239,68,68,0.45)' : 'rgba(245,158,11,0.45)';
+  const bgC     = isEmerg ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.09)';
+  const isWk = tok.source === 'walkin';
+  const isOn = tok.source === 'online';
+  const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '';
+  const srcColor = isWk ? '#67E8F9' : '#4ADE80';
   return (
-    <TouchableOpacity style={[S.nc, {backgroundColor:bgC, borderColor:borderC}]} onPress={onCall} disabled={busy} activeOpacity={0.75}>
-      <View style={S.ncInner}>
-        {/* Token block */}
-        <View style={[S.ncToken, {backgroundColor: isEmerg?'rgba(239,68,68,0.28)':'rgba(245,158,11,0.24)', borderColor:isEmerg?'rgba(239,68,68,0.55)':'rgba(245,158,11,0.55)'}]}>
-          <Text style={[S.ncTokenLabel,{color:lblC}]}>NEXT</Text>
-          <Text style={S.ncTokenNum}>#{tok.tokenNumber}</Text>
+    <View style={[S.upNext, {backgroundColor:bgC, borderColor:borderC}]}>
+      {/* Label row */}
+      <View style={S.upNextTop}>
+        <View style={S.upNextBadge}>
+          <View style={{width:5,height:5,borderRadius:3,backgroundColor:accentC,marginRight:4}}/>
+          <Text style={[S.upNextLabel,{color:accentC}]}>{isEmerg ? '⚡ UP NEXT — EMERGENCY' : '🔜 UP NEXT'}</Text>
         </View>
-        {/* Info */}
-        <View style={{flex:1,minWidth:0}}>
-          <Text style={S.ncName} numberOfLines={1}>{tok.patientName}</Text>
-          <View style={S.ncBadgeRow}>
-            <View style={[S.pill,{backgroundColor: isEmerg?'rgba(239,68,68,0.2)':'rgba(99,102,241,0.2)'}]}>
-              <View style={{width:5,height:5,borderRadius:3,backgroundColor: isEmerg?'#F87171':'#A5B4FC',marginRight:3}}/>
-              <Text style={[S.pillTxt,{color: isEmerg?'#F87171':'#A5B4FC'}]}>{isEmerg?'EMERGENCY':'NORMAL'}</Text>
-            </View>
-            <View style={[S.pill,{backgroundColor:tc.bg}]}>
-              <Text style={[S.pillTxt,{color:tc.color}]}>{tc.label.toUpperCase()}</Text>
-            </View>
+        {srcLabel ? (
+          <View style={[S.pill,{backgroundColor:'rgba(255,255,255,0.07)'}]}>
+            <Text style={[S.pillTxt,{color:srcColor}]}>{srcLabel}</Text>
           </View>
-          {!!tok.patientPhone && (
-            <View style={[S.ncFooter, {borderTopColor: isEmerg?'rgba(239,68,68,0.18)':'rgba(245,158,11,0.18)'}]}>
-              <Text style={S.ncFooterTxt}>📞 {tok.patientPhone}</Text>
-            </View>
-          )}
-        </View>
-        {/* Chevron / loading */}
-        {busy
-          ? <ActivityIndicator color={lblC} size="small"/>
-          : <Text style={[S.ncChevron,{color:lblC}]}>›</Text>}
+        ) : null}
       </View>
-    </TouchableOpacity>
+      {/* Patient row */}
+      <View style={S.upNextBody}>
+        <View style={[S.upNextTokBox,{borderColor:borderC,backgroundColor: isEmerg?'rgba(239,68,68,0.22)':'rgba(245,158,11,0.18)'}]}>
+          <Text style={[S.upNextTokNum,{color:accentC}]}>
+            {isEmerg ? `E${String(tok.tokenNumber).padStart(2,'0')}` : `#${tok.tokenNumber}`}
+          </Text>
+        </View>
+        <Text style={S.upNextName} numberOfLines={1}>{tok.patientName}</Text>
+        <TouchableOpacity
+          style={[S.upNextCallBtn,{backgroundColor: isEmerg?'rgba(239,68,68,0.28)':'rgba(245,158,11,0.22)', borderColor:borderC, opacity: busy?0.5:1}]}
+          onPress={onCall} disabled={busy} activeOpacity={0.75}
+        >
+          {busy
+            ? <ActivityIndicator color={accentC} size="small"/>
+            : <Text style={[S.upNextCallTxt,{color:accentC}]}>Call In ›</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -557,9 +560,9 @@ export default function QueueScreen() {
                 </View>
               )}
 
-              {/* ── NEXT PATIENT (always visible when waiting) ── */}
+              {/* ── UP NEXT (compact card, emergency has priority) ── */}
               {nextTok && (
-                <NextCard tok={nextTok} onCall={()=>doCall(nextTok.id)} busy={busyId===nextTok.id}/>
+                <UpNextCard tok={nextTok} onCall={()=>doCall(nextTok.id)} busy={busyId===nextTok.id}/>
               )}
 
               {/* ── STATS ROW ── */}
@@ -577,7 +580,7 @@ export default function QueueScreen() {
                 ))}
               </View>
 
-              {/* ── 4 TABS ── */}
+              {/* ── TABS + SEND NEXT ── */}
               <View style={S.tabBar}>
                 {TABS.map(t=>{
                   const active = tab === t.key;
@@ -595,6 +598,17 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
+                {/* Send Next action button */}
+                <TouchableOpacity
+                  style={[S.tabItem, S.sendNextBtn, !nextTok&&{opacity:0.35}]}
+                  onPress={()=>{ if(nextTok) doCall(nextTok.id); }}
+                  disabled={!nextTok || busyId===nextTok?.id}
+                >
+                  {busyId===nextTok?.id
+                    ? <ActivityIndicator size="small" color={TEAL_LT}/>
+                    : <Text style={{fontSize:13}}>▶</Text>}
+                  <Text style={S.sendNextTxt}>Send{'\n'}Next</Text>
+                </TouchableOpacity>
               </View>
 
               {/* ── QUEUE TAB: waiting patients + master live list ── */}
@@ -900,6 +914,22 @@ const S = StyleSheet.create({
   // Pill (shared badge)
   pill:    { flexDirection:'row', alignItems:'center', paddingHorizontal:7, paddingVertical:3, borderRadius:20 },
   pillTxt: { fontSize:9, fontWeight:'800', letterSpacing:0.3 },
+
+  // UP NEXT card
+  upNext:       { borderRadius:14, borderWidth:1.5, paddingHorizontal:12, paddingVertical:8 },
+  upNextTop:    { flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:7 },
+  upNextBadge:  { flexDirection:'row', alignItems:'center' },
+  upNextLabel:  { fontSize:9, fontWeight:'800', letterSpacing:0.8, textTransform:'uppercase' },
+  upNextBody:   { flexDirection:'row', alignItems:'center', gap:10 },
+  upNextTokBox: { width:40, height:40, borderRadius:11, borderWidth:1.5, alignItems:'center', justifyContent:'center', flexShrink:0 },
+  upNextTokNum: { fontSize:13, fontWeight:'900', letterSpacing:-0.5 },
+  upNextName:   { flex:1, fontSize:13, fontWeight:'800', color:'#FFF' },
+  upNextCallBtn:{ paddingHorizontal:12, paddingVertical:7, borderRadius:10, borderWidth:1.5 },
+  upNextCallTxt:{ fontSize:11, fontWeight:'800' },
+
+  // Send Next tab button
+  sendNextBtn:  { backgroundColor:'rgba(13,148,136,0.22)', borderWidth:1.5, borderColor:'rgba(45,212,191,0.4)' },
+  sendNextTxt:  { fontSize:8, fontWeight:'800', color:TEAL_LT, textAlign:'center', lineHeight:11 },
 
   // Master live queue
   masterSection:  { marginTop: 16 },
