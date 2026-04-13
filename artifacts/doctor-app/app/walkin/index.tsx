@@ -60,10 +60,6 @@ export default function AddWalkinScreen() {
                 <Text style={styles.nextTokenValue}>{isEmerg ? 'Emergency E03' : 'Normal #52'}</Text>
               </View>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.waitingCount}>⏱ 4 waiting</Text>
-              <Text style={[styles.freeBadge, { color: isEmerg ? '#FCA5A5' : TEAL_LT }]}>FREE</Text>
-            </View>
           </View>
 
           {/* Token type toggle */}
