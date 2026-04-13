@@ -83,11 +83,14 @@ router.patch("/doctors/:doctorId", async (req, res) => {
 // GET /api/doctors/:doctorId/earnings
 router.get("/doctors/:doctorId/earnings", async (req, res) => {
   try {
-    const { from, to } = req.query as { from?: string; to?: string };
+    const { from, to, limit: limitParam } = req.query as { from?: string; to?: string; limit?: string };
+    const maxRecords = Math.min(parseInt(limitParam ?? "365", 10) || 365, 730);
     const colRef = collection(db, Collections.DOCTORS, req.params.doctorId, "earnings");
-    const constraints: any[] = [orderBy("date", "desc"), limit(31)];
-    if (from) constraints.unshift(where("date", ">=", from));
-    if (to)   constraints.unshift(where("date", "<=", to));
+    const constraints: any[] = [];
+    if (from) constraints.push(where("date", ">=", from));
+    if (to)   constraints.push(where("date", "<=", to));
+    constraints.push(orderBy("date", "desc"));
+    constraints.push(limit(maxRecords));
     const snap = await getDocs(query(colRef, ...constraints));
     const earnings = snap.docs.map(d => ({ date: d.id, ...d.data() }));
     res.json({ earnings });

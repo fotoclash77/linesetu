@@ -1,53 +1,92 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
-
+import { useDoctor } from '../../contexts/DoctorContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const isWeb = Platform.OS === 'web';
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type Period = 'Today' | 'Week' | 'Month' | 'LastMonth' | 'AllTime';
 
-const PERIOD_DATA = {
-  Today:     { label: 'Today',      total: 840,    online: 540,   emergency: 300,  normalCount: 7,   emergCount: 2,  trend: 5.2 },
-  Week:      { label: 'This Week',  total: 5880,   online: 3780,  emergency: 2100, normalCount: 54,  emergCount: 15, trend: 8.4 },
-  Month:     { label: 'This Month', total: 25200,  online: 16200, emergency: 9000, normalCount: 231, emergCount: 64, trend: 12.1 },
-  LastMonth: { label: 'Last Month', total: 21600,  online: 14400, emergency: 7200, normalCount: 206, emergCount: 51, trend: -3.2 },
-  AllTime:   { label: 'Lifetime',   total: 206500, online: 134500,emergency: 72000,normalCount: 1920,emergCount: 514,trend: 0 },
-};
+// ─── Date Helpers ─────────────────────────────────────────────
+function pad(n: number) { return String(n).padStart(2, '0'); }
+function dateFmt(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
-const PAYOUTS = [
-  { id: 'P2026041', date: 'Today, 10 Apr',  amount: 8400,  status: 'processing', utr: null,            note: 'Processing – expected by midnight' },
-  { id: 'P2026040', date: 'Tue, 8 Apr',     amount: 12400, status: 'paid',       utr: 'HDFC82631047', note: 'Transferred to HDFC ••4782' },
-  { id: 'P2026039', date: 'Tue, 1 Apr',     amount: 18750, status: 'paid',       utr: 'ICIC74920163', note: 'Transferred to HDFC ••4782' },
-  { id: 'P2026038', date: 'Tue, 25 Mar',    amount: 9850,  status: 'paid',       utr: 'HDFC61830294', note: 'Transferred to HDFC ••4782' },
-  { id: 'P2026037', date: 'Tue, 18 Mar',    amount: 15200, status: 'paid',       utr: 'HDFC50192837', note: 'Transferred to HDFC ••4782' },
-];
-const PENDING_AMOUNT = 17950;
-const PROCESSING_AMOUNT = 8400;
-const TOTAL_PAID = PAYOUTS.filter(p => p.status === 'paid').reduce((a, p) => a + p.amount, 0);
-const AVAILABLE = PENDING_AMOUNT;
+function dateRanges() {
+  const now = new Date();
+  const today = dateFmt(now);
 
-const fmt = (n: number) =>
-  n >= 100000 ? `₹${(n/100000).toFixed(2)}L`
-  : n >= 1000  ? `₹${(n/1000).toFixed(1)}k`
-  : `₹${n}`;
-const fmtFull = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  // Monday of current week
+  const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const mon = new Date(now); mon.setDate(now.getDate() - dow);
+  const weekFrom = dateFmt(mon);
 
+  // Start of this month
+  const monthFrom = `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`;
+
+  // Last month
+  const lmDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lmEnd  = new Date(now.getFullYear(), now.getMonth(), 0);
+  const lastMonthFrom = dateFmt(lmDate);
+  const lastMonthTo   = dateFmt(lmEnd);
+
+  // For fetching: from 13 months ago
+  const yearAgo = new Date(now); yearAgo.setMonth(now.getMonth() - 13);
+  const fetchFrom = dateFmt(yearAgo);
+
+  return { today, weekFrom, monthFrom, lastMonthFrom, lastMonthTo, fetchFrom };
+}
+
+interface EarningRecord {
+  date: string;
+  earned: number;
+  totalTokens: number;
+  tokensNormal: number;
+  tokensEmergency: number;
+  shift: string;
+}
+
+interface PeriodSummary {
+  earned: number;
+  tokensNormal: number;
+  tokensEmergency: number;
+  totalTokens: number;
+}
+
+function sum(records: EarningRecord[]): PeriodSummary {
+  return records.reduce((acc, r) => ({
+    earned:          acc.earned          + (r.earned ?? 0),
+    tokensNormal:    acc.tokensNormal    + (r.tokensNormal ?? 0),
+    tokensEmergency: acc.tokensEmergency + (r.tokensEmergency ?? 0),
+    totalTokens:     acc.totalTokens     + (r.totalTokens ?? 0),
+  }), { earned: 0, tokensNormal: 0, tokensEmergency: 0, totalTokens: 0 });
+}
+
+async function fetchEarnings(doctorId: string, from: string): Promise<EarningRecord[]> {
+  const res = await fetch(`${BASE()}/api/doctors/${doctorId}/earnings?from=${from}&limit=365`);
+  if (!res.ok) throw new Error('Failed to fetch earnings');
+  const data = await res.json();
+  return data.earnings ?? [];
+}
+
+// ─── Sparkline ────────────────────────────────────────────────
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null;
   const w = 60, h = 22;
   const mn = Math.min(...data), mx = Math.max(...data);
+  const range = mx - mn || 1;
   const pts = data.map((v, i) => {
     const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - mn) / (mx - mn + 0.001)) * h;
+    const y = h - ((v - mn) / range) * h;
     return `${x},${y}`;
   });
-  const linePoints = pts.join(' ');
   const areaPath = `M0,${h} L${pts.join(' L')} L${w},${h} Z`;
-  const gradId = `g${color.replace('#','')}`;
+  const gradId = `g${color.replace('#', '')}`;
   return (
     <Svg width={w} height={h}>
       <Defs>
@@ -57,28 +96,74 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
         </LinearGradient>
       </Defs>
       <Path d={areaPath} fill={`url(#${gradId})`} />
-      <Polyline points={linePoints} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <Polyline points={pts.join(' ')} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
     </Svg>
   );
 }
 
+const fmt     = (n: number) => n >= 100000 ? `₹${(n/100000).toFixed(2)}L` : n >= 1000 ? `₹${(n/1000).toFixed(1)}k` : `₹${n}`;
+const fmtFull = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
+const PERIOD_LABELS: Record<Period, string> = {
+  Today: 'Today', Week: 'This Week', Month: 'This Month', LastMonth: 'Last Month', AllTime: 'Lifetime',
+};
+
+// ─── Main Screen ──────────────────────────────────────────────
 export default function EarningsScreen() {
-  const [tab, setTab] = useState<'earnings' | 'payouts'>('earnings');
+  const { doctor } = useDoctor();
+  const [tab, setTab]       = useState<'earnings' | 'payouts'>('earnings');
   const [period, setPeriod] = useState<Period>('Month');
 
-  const d = PERIOD_DATA[period];
-  const weekSpark = [14200, 16800, 13400, 19600, 17200, 22100, 19600];
+  const ranges = useMemo(() => dateRanges(), []);
 
-  const rows = [
-    { label: 'Online Normal Token',    value: d.online,    count: d.normalCount, icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: '₹10/token' },
-    { label: 'Online Emergency Token', value: d.emergency, count: d.emergCount,  icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: '₹20/token' },
-  ];
+  const { data: rawEarnings = [], isLoading } = useQuery<EarningRecord[]>({
+    queryKey: ['doctor-earnings', doctor?.id, ranges.fetchFrom],
+    queryFn:  () => fetchEarnings(doctor!.id, ranges.fetchFrom),
+    enabled:  !!doctor?.id,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
 
-  const payoutStatusCfg = {
-    paid:       { color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
-    processing: { color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '↻' },
-    pending:    { color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⏱' },
-  };
+  // Aggregate per period
+  const periods = useMemo<Record<Period, PeriodSummary>>(() => {
+    const todayRecs     = rawEarnings.filter(r => r.date === ranges.today);
+    const weekRecs      = rawEarnings.filter(r => r.date >= ranges.weekFrom);
+    const monthRecs     = rawEarnings.filter(r => r.date >= ranges.monthFrom && r.date <= ranges.today);
+    const lastMonthRecs = rawEarnings.filter(r => r.date >= ranges.lastMonthFrom && r.date <= ranges.lastMonthTo);
+    return {
+      Today:     sum(todayRecs),
+      Week:      sum(weekRecs),
+      Month:     sum(monthRecs),
+      LastMonth: sum(lastMonthRecs),
+      AllTime:   sum(rawEarnings),
+    };
+  }, [rawEarnings, ranges]);
+
+  // Last 7 days sparkline data
+  const sparkData = useMemo(() => {
+    const last7: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dateStr = dateFmt(d);
+      const dayRecs = rawEarnings.filter(r => r.date === dateStr);
+      last7.push(sum(dayRecs).earned);
+    }
+    return last7;
+  }, [rawEarnings]);
+
+  const d = periods[period];
+  const totalEarned = periods.AllTime.earned;
+
+  // Trend vs previous period
+  const trend = useMemo(() => {
+    if (period === 'Month') {
+      const cur = periods.Month.earned;
+      const prv = periods.LastMonth.earned;
+      if (!prv) return null;
+      return +((cur - prv) / prv * 100).toFixed(1);
+    }
+    return null;
+  }, [period, periods]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -90,46 +175,54 @@ export default function EarningsScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>My Earnings</Text>
-            <Text style={styles.headerSub}>Dr. Ananya Sharma · LINESETU</Text>
+            <Text style={styles.headerSub}>{doctor?.name ?? 'Doctor'} · LINESETU</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 7 }}>
             <View style={styles.iconBtn}><Text style={styles.iconBtnText}>⬇</Text></View>
-            <View style={[styles.iconBtn, { position: 'relative' }]}>
-              <Text style={styles.iconBtnText}>🔔</Text>
-              <View style={styles.notifDot} />
-            </View>
           </View>
         </View>
 
         {/* Balance Hero */}
         <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={styles.heroBalanceLabel}>Available Balance</Text>
-              <Text style={styles.heroBalance}>{fmtFull(AVAILABLE)}</Text>
-              <Text style={styles.heroReady}>✓ Ready for payout · Settles every Tuesday</Text>
+          {isLoading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <ActivityIndicator color={TEAL_LT} />
+              <Text style={{ color: 'rgba(255,255,255,0.3)', marginTop: 10, fontSize: 12 }}>Loading earnings…</Text>
             </View>
-            <TouchableOpacity style={styles.withdrawBtn}>
-              <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
-            </TouchableOpacity>
-          </View>
-          {/* 3-stat strip */}
-          <View style={styles.heroStats}>
-            {[
-              { label: 'Paid Out',   value: fmtFull(TOTAL_PAID),        color: '#4ADE80', sub: `${PAYOUTS.filter(p=>p.status==='paid').length} payouts` },
-              { label: 'Processing', value: fmtFull(PROCESSING_AMOUNT),  color: '#67E8F9', sub: 'By midnight' },
-              { label: 'Pending',    value: fmtFull(PENDING_AMOUNT),     color: '#FCD34D', sub: 'Next settlement' },
-            ].map((s, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <View style={styles.heroStatDivider} />}
-                <View style={styles.heroStat}>
-                  <Text style={[styles.heroStatValue, { color: s.color }]}>{s.value}</Text>
-                  <Text style={styles.heroStatLabel}>{s.label}</Text>
-                  <Text style={styles.heroStatSub}>{s.sub}</Text>
+          ) : (
+            <>
+              <View style={styles.heroTop}>
+                <View>
+                  <Text style={styles.heroBalanceLabel}>Lifetime Earned</Text>
+                  <Text style={styles.heroBalance}>{fmtFull(totalEarned)}</Text>
+                  <Text style={styles.heroReady}>
+                    {periods.Today.earned > 0
+                      ? `✓ +${fmtFull(periods.Today.earned)} today`
+                      : '✓ Live from your token data'}
+                  </Text>
                 </View>
-              </React.Fragment>
-            ))}
-          </View>
+                <TouchableOpacity style={styles.withdrawBtn}>
+                  <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.heroStats}>
+                {[
+                  { label: 'Today',      value: fmt(periods.Today.earned),     color: '#4ADE80', sub: `${periods.Today.totalTokens} tokens` },
+                  { label: 'This Week',  value: fmt(periods.Week.earned),       color: '#67E8F9', sub: `${periods.Week.totalTokens} tokens` },
+                  { label: 'This Month', value: fmt(periods.Month.earned),      color: '#FCD34D', sub: `${periods.Month.totalTokens} tokens` },
+                ].map((s, i) => (
+                  <React.Fragment key={i}>
+                    {i > 0 && <View style={styles.heroStatDivider} />}
+                    <View style={styles.heroStat}>
+                      <Text style={[styles.heroStatValue, { color: s.color }]}>{s.value}</Text>
+                      <Text style={styles.heroStatLabel}>{s.label}</Text>
+                      <Text style={styles.heroStatSub}>{s.sub}</Text>
+                    </View>
+                  </React.Fragment>
+                ))}
+              </View>
+            </>
+          )}
         </View>
 
         {/* Tab bar */}
@@ -149,72 +242,89 @@ export default function EarningsScreen() {
                 <View style={{ flexDirection: 'row', gap: 5 }}>
                   {(['Today','Week','Month','LastMonth','AllTime'] as Period[]).map(p => (
                     <TouchableOpacity key={p} onPress={() => setPeriod(p)} style={[styles.periodChip, period === p && styles.periodChipActive]}>
-                      <Text style={[styles.periodChipText, period === p && styles.periodChipTextActive]}>{PERIOD_DATA[p].label}</Text>
+                      <Text style={[styles.periodChipText, period === p && styles.periodChipTextActive]}>{PERIOD_LABELS[p]}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </ScrollView>
 
-              {/* Total + trend */}
-              <View style={styles.glassCard}>
-                <View style={styles.totalRow}>
-                  <View>
-                    <Text style={styles.totalLabel}>Total — {PERIOD_DATA[period].label}</Text>
-                    <Text style={styles.totalValue}>{fmtFull(d.total)}</Text>
-                    {period !== 'AllTime' && (
-                      <Text style={[styles.trendText, { color: d.trend >= 0 ? '#4ADE80' : '#F87171' }]}>
-                        {d.trend >= 0 ? '↑' : '↓'} {d.trend >= 0 ? '+' : ''}{d.trend}% vs previous
-                      </Text>
-                    )}
+              {isLoading ? (
+                <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+                  <ActivityIndicator color={TEAL} />
+                </View>
+              ) : d.earned === 0 && d.totalTokens === 0 ? (
+                <View style={[styles.glassCard, { alignItems: 'center', paddingVertical: 36 }]}>
+                  <Text style={{ fontSize: 36, marginBottom: 12 }}>📊</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '700' }}>No earnings yet</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 4 }}>for {PERIOD_LABELS[period]}</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Total + trend */}
+                  <View style={styles.glassCard}>
+                    <View style={styles.totalRow}>
+                      <View>
+                        <Text style={styles.totalLabel}>Total — {PERIOD_LABELS[period]}</Text>
+                        <Text style={styles.totalValue}>{fmtFull(d.earned)}</Text>
+                        {trend !== null && (
+                          <Text style={[styles.trendText, { color: trend >= 0 ? '#4ADE80' : '#F87171' }]}>
+                            {trend >= 0 ? '↑' : '↓'} {trend >= 0 ? '+' : ''}{trend}% vs last month
+                          </Text>
+                        )}
+                      </View>
+                      <MiniSparkline data={sparkData} color={TEAL_LT} />
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
+                      {[
+                        { label: `${d.tokensNormal} Normal`,    color: '#A5B4FC' },
+                        { label: `${d.tokensEmergency} Emergency`, color: '#FCD34D' },
+                      ].map(c => (
+                        <View key={c.label} style={[styles.countChip, { backgroundColor: `${c.color}18`, borderColor: `${c.color}33` }]}>
+                          <Text style={[styles.countChipText, { color: c.color }]}>{c.label}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                  <MiniSparkline data={weekSpark} color={TEAL_LT} />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
-                  {[
-                    { label: `${d.normalCount} Normal`, color: '#A5B4FC' },
-                    { label: `${d.emergCount} Emergency`, color: '#FCD34D' },
-                  ].map(c => (
-                    <View key={c.label} style={[styles.countChip, { backgroundColor: `${c.color}18`, borderColor: `${c.color}33` }]}>
-                      <Text style={[styles.countChipText, { color: c.color }]}>{c.label}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
 
-              {/* Breakdown */}
-              <View style={[styles.glassCard, { marginTop: 10 }]}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionDot}>📊</Text>
-                  <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
-                </View>
-                {rows.map((row) => {
-                  const pct = Math.round((row.value / d.total) * 100);
-                  return (
-                    <View key={row.label} style={styles.breakdownRow}>
-                      <View style={styles.breakdownTop}>
-                        <View style={[styles.breakdownIcon, { backgroundColor: row.bg }]}>
-                          <Text style={{ fontSize: 13, color: row.color }}>{row.icon}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <View style={styles.breakdownTopRow}>
-                            <Text style={styles.breakdownLabel} numberOfLines={1}>{row.label}</Text>
-                            <Text style={styles.breakdownValue}>{fmt(row.value)}</Text>
+                  {/* Breakdown */}
+                  <View style={[styles.glassCard, { marginTop: 10 }]}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionDot}>📊</Text>
+                      <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
+                    </View>
+                    {[
+                      { label: 'Online Normal Token',    value: d.tokensNormal    * 10, count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: '₹10/token' },
+                      { label: 'Online Emergency Token', value: d.tokensEmergency * 20, count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: '₹20/token' },
+                    ].map((row) => {
+                      const pct = d.earned > 0 ? Math.round((row.value / d.earned) * 100) : 0;
+                      return (
+                        <View key={row.label} style={styles.breakdownRow}>
+                          <View style={styles.breakdownTop}>
+                            <View style={[styles.breakdownIcon, { backgroundColor: row.bg }]}>
+                              <Text style={{ fontSize: 13, color: row.color }}>{row.icon}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <View style={styles.breakdownTopRow}>
+                                <Text style={styles.breakdownLabel} numberOfLines={1}>{row.label}</Text>
+                                <Text style={styles.breakdownValue}>{fmt(row.value)}</Text>
+                              </View>
+                              <View style={styles.breakdownTopRow}>
+                                <Text style={styles.breakdownSub}>{row.count} × {row.rate}</Text>
+                                <Text style={[styles.breakdownPct, { color: row.color }]}>{pct}%</Text>
+                              </View>
+                            </View>
                           </View>
-                          <View style={styles.breakdownTopRow}>
-                            <Text style={styles.breakdownSub}>{row.count} × {row.rate}</Text>
-                            <Text style={[styles.breakdownPct, { color: row.color }]}>{pct}%</Text>
+                          <View style={styles.barBg}>
+                            <View style={[styles.barFg, { width: `${pct}%` as DimensionValue, backgroundColor: row.color }]} />
                           </View>
                         </View>
-                      </View>
-                      <View style={styles.barBg}>
-                        <View style={[styles.barFg, { width: `${pct}%` as DimensionValue, backgroundColor: row.color }]} />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
-              {/* Rate Card */}
+              {/* Rate Card — always visible */}
               <View style={[styles.glassCard, { marginTop: 10 }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
@@ -224,7 +334,7 @@ export default function EarningsScreen() {
                   <Text style={styles.platformSetText}>Platform-set</Text>
                 </View>
                 {[
-                  { type: 'Online Normal Token',   earn: '₹10', platform: '₹10', patient: '₹20' },
+                  { type: 'Online Normal Token',    earn: '₹10', platform: '₹10', patient: '₹20' },
                   { type: 'Online Emergency Token', earn: '₹20', platform: '₹10', patient: '₹30' },
                 ].map(r => (
                   <View key={r.type} style={styles.rateRow}>
@@ -245,12 +355,12 @@ export default function EarningsScreen() {
 
           {tab === 'payouts' && (
             <>
-              {/* Payout status summary */}
+              {/* Payout summary from real earnings */}
               <View style={styles.payoutSummary}>
                 {[
-                  { label: 'Total Paid',  value: fmtFull(TOTAL_PAID),       color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
-                  { label: 'Processing',  value: fmtFull(PROCESSING_AMOUNT), color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '↻' },
-                  { label: 'Upcoming',    value: fmtFull(PENDING_AMOUNT),    color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⏱' },
+                  { label: 'Lifetime',    value: fmtFull(totalEarned),                   color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
+                  { label: 'This Month',  value: fmtFull(periods.Month.earned),           color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '📅' },
+                  { label: 'Today',       value: fmtFull(periods.Today.earned),           color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⚡' },
                 ].map(s => (
                   <View key={s.label} style={[styles.summaryCard, { backgroundColor: s.bg, borderColor: `${s.color}33` }]}>
                     <Text style={{ fontSize: 16, color: s.color, marginBottom: 6 }}>{s.icon}</Text>
@@ -260,57 +370,63 @@ export default function EarningsScreen() {
                 ))}
               </View>
 
-              {/* Bank info */}
+              {/* Bank info placeholder */}
               <View style={styles.bankCard}>
                 <View style={styles.bankIcon}>
                   <Text style={{ fontSize: 16, color: TEAL_LT }}>🏦</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.bankName}>HDFC Bank ••••4782</Text>
-                  <Text style={styles.bankSub}>Weekly auto-settlement · Every Tuesday</Text>
+                  <Text style={styles.bankName}>Bank Account</Text>
+                  <Text style={styles.bankSub}>Link your bank for weekly auto-settlement</Text>
                 </View>
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedBadgeText}>Verified</Text>
-                </View>
+                <TouchableOpacity style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedBadgeText}>+ Add</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Settlement note */}
               <View style={styles.settlementNote}>
                 <Text style={{ fontSize: 13, color: '#FCD34D' }}>ℹ</Text>
                 <Text style={styles.settlementNoteText}>
-                  Earnings settle automatically every Tuesday. LINESETU platform fee is deducted before transfer.
+                  Payouts are settled weekly every Tuesday. Link your bank account to enable automatic transfers.
                 </Text>
               </View>
 
-              {/* Payout list */}
+              {/* Payout history — real per-day breakdown */}
               <View style={[styles.glassCard, { marginTop: 0 }]}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionDot}>📋</Text>
-                  <Text style={styles.sectionTitle}>Payout History</Text>
+                  <Text style={styles.sectionTitle}>Earnings Per Day</Text>
                 </View>
-                {PAYOUTS.map((p) => {
-                  const cfg = p.status === 'paid' ? { color: '#4ADE80', bg: 'rgba(74,222,128,0.1)', label: 'Paid' } :
-                    p.status === 'processing' ? { color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', label: 'Processing' } :
-                    { color: '#FCD34D', bg: 'rgba(252,211,77,0.08)', label: 'Pending' };
-                  return (
-                    <View key={p.id} style={styles.payoutRow}>
-                      <View style={[styles.payoutIcon, { backgroundColor: cfg.bg }]}>
-                        <Text style={{ color: cfg.color, fontSize: 14 }}>{p.status === 'paid' ? '✓' : p.status === 'processing' ? '↻' : '⏱'}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <View style={styles.payoutTopRow}>
-                          <Text style={styles.payoutDate}>{p.date}</Text>
-                          <Text style={styles.payoutAmount}>{fmtFull(p.amount)}</Text>
+                {rawEarnings.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+                    <Text style={{ fontSize: 28, marginBottom: 8 }}>💸</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No earnings records yet</Text>
+                  </View>
+                ) : (
+                  rawEarnings.slice(0, 30).map((rec) => {
+                    const isToday = rec.date === ranges.today;
+                    return (
+                      <View key={`${rec.date}-${rec.shift}`} style={styles.payoutRow}>
+                        <View style={[styles.payoutIcon, { backgroundColor: 'rgba(45,212,191,0.12)' }]}>
+                          <Text style={{ color: TEAL_LT, fontSize: 13 }}>{rec.shift === 'morning' ? '☀️' : '🌙'}</Text>
                         </View>
-                        <Text style={styles.payoutNote}>{p.note}</Text>
-                        {p.utr && <Text style={styles.payoutUtr}>UTR: {p.utr}</Text>}
+                        <View style={{ flex: 1 }}>
+                          <View style={styles.payoutTopRow}>
+                            <Text style={styles.payoutDate}>{isToday ? 'Today' : rec.date} · {rec.shift}</Text>
+                            <Text style={styles.payoutAmount}>{fmtFull(rec.earned ?? 0)}</Text>
+                          </View>
+                          <Text style={styles.payoutNote}>
+                            {rec.totalTokens ?? 0} tokens · {rec.tokensNormal ?? 0} normal · {rec.tokensEmergency ?? 0} emergency
+                          </Text>
+                        </View>
+                        <View style={[styles.payoutStatusBadge, { backgroundColor: 'rgba(74,222,128,0.1)', borderColor: 'rgba(74,222,128,0.3)' }]}>
+                          <Text style={[styles.payoutStatusText, { color: '#4ADE80' }]}>Done</Text>
+                        </View>
                       </View>
-                      <View style={[styles.payoutStatusBadge, { backgroundColor: cfg.bg, borderColor: `${cfg.color}44` }]}>
-                        <Text style={[styles.payoutStatusText, { color: cfg.color }]}>{cfg.label}</Text>
-                      </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })
+                )}
               </View>
             </>
           )}
@@ -330,11 +446,7 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600', marginTop: 1 },
   iconBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   iconBtnText: { fontSize: 15 },
-  notifDot: { position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
-  heroCard: {
-    margin: 14, marginTop: 0, marginBottom: 0, borderRadius: 22, padding: 18,
-    backgroundColor: 'rgba(13,148,136,0.22)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.25)',
-  },
+  heroCard: { margin: 14, marginTop: 0, marginBottom: 0, borderRadius: 22, padding: 18, backgroundColor: 'rgba(13,148,136,0.22)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.25)' },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
   heroBalanceLabel: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.4)', marginBottom: 4 },
   heroBalance: { fontSize: 34, fontWeight: '900', color: '#FFF', letterSpacing: -1.5, lineHeight: 38 },
@@ -377,7 +489,7 @@ const styles = StyleSheet.create({
   breakdownSub: { fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' },
   breakdownPct: { fontSize: 9, fontWeight: '700' },
   barBg: { height: 4, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' },
-  barFg: { height: '100%', borderRadius: 4, opacity: 0.9 },
+  barFg: { height: '100%' as any, borderRadius: 4, opacity: 0.9 },
   rateRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
   rateType: { flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
   rateVal: { fontSize: 11, fontWeight: '800' },
@@ -400,7 +512,6 @@ const styles = StyleSheet.create({
   payoutDate: { fontSize: 12, fontWeight: '700', color: '#FFF' },
   payoutAmount: { fontSize: 13, fontWeight: '900', color: '#FFF' },
   payoutNote: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
-  payoutUtr: { fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: '600', marginTop: 2 },
   payoutStatusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   payoutStatusText: { fontSize: 9, fontWeight: '800' },
 });
