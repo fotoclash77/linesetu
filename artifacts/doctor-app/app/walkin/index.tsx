@@ -313,7 +313,7 @@ export default function AddWalkinScreen() {
 
             {/* Area */}
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>🗺 AREA</Text>
+              <Text style={styles.fieldLabel}>🗺 ADDRESS</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Area / locality / city"
