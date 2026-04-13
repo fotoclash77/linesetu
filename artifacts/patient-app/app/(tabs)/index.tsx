@@ -184,7 +184,7 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
         </View>
       </View>
 
-      <Pressable style={styles.viewQueueBtn} onPress={() => token?.id && router.push(`/queue/${token.id}`)}>
+      <Pressable style={styles.viewQueueBtn} onPress={() => router.push(`/queue/${token?.id ?? "demo"}` as any)}>
         <Text style={styles.viewQueueBtnTxt}>View Queue →</Text>
       </Pressable>
     </View>
