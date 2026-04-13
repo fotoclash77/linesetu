@@ -372,12 +372,19 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
                 {isManualNext ? '⭐  Set as Next' : '▶  Send Next'}
               </Text>}
         </TouchableOpacity>
-        {tok.displayStatus !== 'skipped' && (
+        {tok.displayStatus !== 'skipped' ? (
           <TouchableOpacity
             style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
             onPress={onSkip} disabled={busy}
           >
             <Text style={S.skipWaitTxt}>↷  Skip</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[S.refundBtn, { flex: 1, marginTop: 0 }, busy && { opacity: 0.5 }]}
+            onPress={onRefund} disabled={busy}
+          >
+            <Text style={S.refundTxt}>↩  Cancel</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -387,14 +394,6 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
           <Text style={S.alertBtnTxt}>🔔</Text>
         </TouchableOpacity>
       </View>
-      {tok.displayStatus === 'skipped' && (
-        <TouchableOpacity
-          style={[S.refundBtn, busy && { opacity: 0.5 }]}
-          onPress={onRefund} disabled={busy}
-        >
-          <Text style={S.refundTxt}>↩  Refund & Cancel</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
