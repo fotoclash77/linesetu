@@ -72,9 +72,9 @@ function useMasterQueue(doctorId: string) {
         try {
           const tokens: MasterRow[] = JSON.parse(e.data);
           const sorted = [...tokens].sort((a, b) => {
-            const ta = a.bookedAt?.seconds ?? 0;
-            const tb = b.bookedAt?.seconds ?? 0;
-            return tb - ta;
+            const ta = a.tokenNumber ?? 0;
+            const tb = b.tokenNumber ?? 0;
+            return ta - tb;
           });
           setRows(sorted);
           setLoading(false);
@@ -91,9 +91,9 @@ function useMasterQueue(doctorId: string) {
         const data = await res.json();
         if (data.tokens && active) {
           const sorted = [...data.tokens].sort((a: MasterRow, b: MasterRow) => {
-            const ta = a.bookedAt?.seconds ?? 0;
-            const tb = b.bookedAt?.seconds ?? 0;
-            return tb - ta;
+            const ta = a.tokenNumber ?? 0;
+            const tb = b.tokenNumber ?? 0;
+            return ta - tb;
           });
           setRows(sorted);
         }
@@ -631,6 +631,76 @@ export default function QueueScreen() {
                 </View>
               )}
 
+              {tab==='queue' && (
+                <View style={S.masterSection}>
+                  <View style={S.masterHeader}>
+                    <Text style={S.masterIcon}>📋</Text>
+                    <Text style={S.masterTitle}>QUEUE</Text>
+                    {!masterLoading && (
+                      <View style={S.masterCount}>
+                        <Text style={S.masterCountTxt}>{masterRows.length}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {masterLoading ? (
+                    <View style={S.masterLoadWrap}>
+                      <ActivityIndicator size="small" color={TEAL_LT} />
+                      <Text style={S.masterLoadTxt}>Loading queue…</Text>
+                    </View>
+                  ) : masterRows.length === 0 ? (
+                    <View style={S.masterEmpty}>
+                      <Text style={S.masterEmptyTxt}>No tokens booked today yet.</Text>
+                    </View>
+                  ) : (
+                    masterRows.map((t) => {
+                      const isE = t.type === 'emergency';
+                      const label = isE
+                        ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                        : `#${t.tokenNumber}`;
+                      const STATUS_COLOR: Record<string, string> = {
+                        waiting:    '#FCD34D',
+                        in_consult: TEAL_LT,
+                        done:       '#4ADE80',
+                        cancelled:  '#F87171',
+                      };
+                      const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
+                      const isWk = t.source === 'walkin';
+                      const isOn = t.source === 'online';
+                      const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '';
+                      const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : '';
+                      return (
+                        <View key={t.id} style={S.masterItem}>
+                          <View style={[
+                            S.masterToken,
+                            {
+                              backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
+                              borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
+                            },
+                          ]}>
+                            <Text style={S.masterTokenText}>{label}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={S.masterName}>{t.patientName}</Text>
+                            <Text style={S.masterSub}>
+                              <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>
+                                {isE ? 'Emergency' : 'Normal'}
+                              </Text>
+                              {'  ·  '}
+                              <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
+                              {srcLabel ? (
+                                <>{'  ·  '}<Text style={{ color: srcColor }}>{srcLabel}</Text></>
+                              ) : null}
+                            </Text>
+                          </View>
+                          <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+              )}
+
               {/* ── EMERGENCY TAB ── */}
               {tab==='emergency' && (
                 <View style={S.list}>
@@ -669,75 +739,6 @@ export default function QueueScreen() {
                   }
                 </View>
               )}
-
-              {/* ── MASTER LIVE QUEUE ── */}
-              <View style={S.masterSection}>
-                <View style={S.masterHeader}>
-                  <Text style={S.masterIcon}>📋</Text>
-                  <Text style={S.masterTitle}>TODAY'S QUEUE (LATEST FIRST)</Text>
-                  {!masterLoading && (
-                    <View style={S.masterCount}>
-                      <Text style={S.masterCountTxt}>{masterRows.length}</Text>
-                    </View>
-                  )}
-                </View>
-
-                {masterLoading ? (
-                  <View style={S.masterLoadWrap}>
-                    <ActivityIndicator size="small" color={TEAL_LT} />
-                    <Text style={S.masterLoadTxt}>Loading queue…</Text>
-                  </View>
-                ) : masterRows.length === 0 ? (
-                  <View style={S.masterEmpty}>
-                    <Text style={S.masterEmptyTxt}>No tokens booked today yet.</Text>
-                  </View>
-                ) : (
-                  masterRows.map((t) => {
-                    const isE = t.type === 'emergency';
-                    const label = isE
-                      ? `E${String(t.tokenNumber).padStart(2, '0')}`
-                      : `#${t.tokenNumber}`;
-                    const STATUS_COLOR: Record<string, string> = {
-                      waiting:    '#FCD34D',
-                      in_consult: TEAL_LT,
-                      done:       '#4ADE80',
-                      cancelled:  '#F87171',
-                    };
-                    const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
-                    const isWk = t.source === 'walkin';
-                    const isOn = t.source === 'online';
-                    const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '';
-                    const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : '';
-                    return (
-                      <View key={t.id} style={S.masterItem}>
-                        <View style={[
-                          S.masterToken,
-                          {
-                            backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
-                            borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
-                          },
-                        ]}>
-                          <Text style={S.masterTokenText}>{label}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={S.masterName}>{t.patientName}</Text>
-                          <Text style={S.masterSub}>
-                            <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>
-                              {isE ? 'Emergency' : 'Normal'}
-                            </Text>
-                            {'  ·  '}
-                            <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
-                            {srcLabel ? (
-                              <>{'  ·  '}<Text style={{ color: srcColor }}>{srcLabel}</Text></>
-                            ) : null}
-                          </Text>
-                        </View>
-                        <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
-                      </View>
-                    );
-                  })
-                )}
-              </View>
 
             </View>
           </ScrollView>
