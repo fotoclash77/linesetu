@@ -44,7 +44,7 @@ const INIT_EMERGENCY: Patient[] = [
 const STATUS_CFG: Record<QStatus, { label: string; color: string; bg: string; border: string }> = {
   consulting: { label: 'In Cabin',   color: '#2DD4BF', bg: 'rgba(13,148,136,0.22)',  border: 'rgba(45,212,191,0.5)'  },
   next:       { label: 'Next',       color: '#FCD34D', bg: 'rgba(245,158,11,0.18)',  border: 'rgba(245,158,11,0.45)' },
-  waiting:    { label: 'Waiting',    color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)',  border: 'rgba(99,102,241,0.35)' },
+  waiting:    { label: 'Send Next',  color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)',  border: 'rgba(99,102,241,0.35)' },
   done:       { label: 'Consulted',  color: '#4ADE80', bg: 'rgba(34,197,94,0.14)',   border: 'rgba(34,197,94,0.3)'   },
   skipped:    { label: 'Not Shown',  color: '#F59E0B', bg: 'rgba(245,158,11,0.14)',  border: 'rgba(245,158,11,0.3)'  },
 };
