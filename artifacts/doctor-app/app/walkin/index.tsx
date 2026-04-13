@@ -145,8 +145,9 @@ export default function AddWalkinScreen() {
                   placeholder="98765 43210"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   keyboardType="phone-pad"
+                  maxLength={10}
                   value={phone}
-                  onChangeText={setPhone}
+                  onChangeText={t => setPhone(t.replace(/\D/g, '').slice(0, 10))}
                 />
               </View>
             </View>
