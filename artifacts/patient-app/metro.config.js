@@ -1,3 +1,12 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
-module.exports = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
+
+config.watchFolders = [path.resolve(__dirname, "../../")];
+config.resolver.blockList = [
+  /node_modules\/razorpay\/.*/,
+  /node_modules\/.pnpm\/razorpay.*/,
+];
+
+module.exports = config;

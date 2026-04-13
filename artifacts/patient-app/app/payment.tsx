@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMutation } from "@tanstack/react-query";
 import { useBookToken } from "@workspace/api-client-react";
 import React, { useState } from "react";
 import {
@@ -17,6 +16,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import RazorpayCheckout from "@/components/RazorpayCheckout";
+
+const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
 
 const isWeb = Platform.OS === "web";
 
@@ -68,12 +70,74 @@ export default function PaymentScreen() {
   const yourToken   = 43;
 
   const [loading, setLoading] = useState(false);
+  const [rzpVisible, setRzpVisible] = useState(false);
+  const [rzpOrder, setRzpOrder] = useState<{ id: string; amount: number; currency: string } | null>(null);
 
   const bookToken = useBookToken();
+
+  const apiBase = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
   async function handlePay() {
     setLoading(true);
     try {
+      const amountPaise = payableNow * 100;
+      const res = await fetch(`${apiBase}/razorpay/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: amountPaise,
+          currency: "INR",
+          receipt: `rcpt_${patient?.id ?? "guest"}_${Date.now()}`,
+          notes: { doctorId: params.doctorId, patientId: patient?.id },
+        }),
+      });
+      if (!res.ok) throw new Error("Order creation failed");
+      const order = await res.json();
+      setRzpOrder(order);
+      if (isWeb) {
+        openRazorpayWeb(order);
+      } else {
+        setRzpVisible(true);
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err.message ?? "Could not initiate payment.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openRazorpayWeb(order: any) {
+    if (typeof window === "undefined") return;
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => {
+      const rzp = new (window as any).Razorpay({
+        key: RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.id,
+        name: "LINESETU",
+        description: `Token booking for ${doctorName}`,
+        prefill: { name: patientName, contact: patient?.phone ?? "" },
+        theme: { color: "#4F46E5" },
+        handler: (response: any) => {
+          handlePaymentSuccess(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
+        },
+      });
+      rzp.open();
+    };
+    document.body.appendChild(script);
+  }
+
+  async function handlePaymentSuccess(paymentId: string, orderId: string, signature: string) {
+    setRzpVisible(false);
+    setLoading(true);
+    try {
+      await fetch(`${apiBase}/razorpay/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature }),
+      });
       await bookToken.mutateAsync({
         data: {
           doctorId: params.doctorId ?? "demo1",
@@ -87,7 +151,7 @@ export default function PaymentScreen() {
       });
       router.replace(`/queue/token-${Date.now()}`);
     } catch {
-      Alert.alert("Payment Failed", "Unable to book token. Please try again.");
+      Alert.alert("Booking Failed", "Payment received but booking failed. Contact support.");
     } finally {
       setLoading(false);
     }
@@ -235,6 +299,28 @@ export default function PaymentScreen() {
           <Text style={styles.footerTxt}>Powered by LINESETU 🔒 Secure Payment</Text>
         </View>
       </View>
+
+      {rzpOrder && !isWeb && (
+        <RazorpayCheckout
+          visible={rzpVisible}
+          options={{
+            keyId: RAZORPAY_KEY_ID,
+            orderId: rzpOrder.id,
+            amount: rzpOrder.amount,
+            currency: rzpOrder.currency,
+            name: "LINESETU",
+            description: `Token booking — ${doctorName}`,
+            prefillName: patientName,
+            prefillContact: patient?.phone ?? "",
+          }}
+          onSuccess={handlePaymentSuccess}
+          onFailure={(err) => {
+            setRzpVisible(false);
+            Alert.alert("Payment Failed", err);
+          }}
+          onDismiss={() => setRzpVisible(false)}
+        />
+      )}
     </View>
   );
 }

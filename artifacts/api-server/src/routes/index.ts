@@ -5,6 +5,7 @@ import tokensRouter from "./tokens.js";
 import queuesRouter from "./queues.js";
 import patientsRouter from "./patients.js";
 import authRouter from "./auth.js";
+import razorpayRouter from "./razorpay.js";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(doctorsRouter);
 router.use(tokensRouter);
 router.use(queuesRouter);
 router.use(patientsRouter);
+router.use("/razorpay", razorpayRouter);
 
 export default router;
