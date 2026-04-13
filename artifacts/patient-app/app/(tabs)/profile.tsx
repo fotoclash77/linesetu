@@ -20,6 +20,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 
@@ -64,7 +66,6 @@ const MENU_SECTIONS: MenuSection[] = [
     items: [
       { icon: "calendar",  label: "My Bookings",   sub: "Tokens, visits & history",        color: "#6366F1", route: "/(tabs)/bookings", badge: null, liveIndicator: false, danger: false },
       { icon: "activity",  label: "Live Queue",     sub: "Track active token in real-time", color: "#22C55E", route: null,               badge: null, liveIndicator: true,  danger: false },
-      { icon: "clock",     label: "Visit History",  sub: "Past consultations & summaries",  color: "#06B6D4", route: null,               badge: null, liveIndicator: false, danger: false },
     ],
   },
   {
@@ -158,6 +159,15 @@ function FieldBlock({ label, required, children }: { label: string; required?: b
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { patient, logout, updatePatient } = useAuth();
+
+  const { data: tokenData } = useQuery({
+    ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
+    enabled: !!patient?.id,
+  });
+  const activeToken = (tokenData as any)?.tokens?.find?.(
+    (t: any) => t.status === "waiting" || t.status === "called"
+  );
+
   const topPad    = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
@@ -452,6 +462,14 @@ export default function ProfileScreen() {
                   style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed, i < section.items.length - 1 && styles.menuItemBorder]}
                   onPress={() => {
                     if (item.label === "Sign Out") { logout(); return; }
+                    if (item.label === "Live Queue") {
+                      if (activeToken?.id) {
+                        router.push(`/queue/${activeToken.id}` as Href);
+                      } else {
+                        Alert.alert("No Active Token", "You don't have any active token in the queue right now. Book a token first.");
+                      }
+                      return;
+                    }
                     if (item.route) router.push(item.route as Href);
                   }}
                 >
