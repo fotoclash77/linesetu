@@ -421,10 +421,6 @@ export default function LiveQueueScreen() {
           <Text style={styles.bottomInfoSep}>·</Text>
           <Text style={styles.bottomInfoTxt2}>Dr. Ananya Sharma</Text>
         </View>
-        <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-          <Feather name="x" size={14} color="#EF4444" />
-          <Text style={styles.cancelBtnTxt}>Cancel Token</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -538,6 +534,4 @@ const styles = StyleSheet.create({
   bottomInfoTxt: { fontSize: 13, fontWeight: "700", color: "#A5B4FC" },
   bottomInfoSep: { color: "rgba(255,255,255,0.2)" },
   bottomInfoTxt2: { fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1 },
-  cancelBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" },
-  cancelBtnTxt: { fontSize: 12, fontWeight: "700", color: "#EF4444" },
 });
