@@ -5,9 +5,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
 import { getGetDoctorQueryOptions } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 
 const isWeb = Platform.OS === "web";
+const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 const FAMILY: Array<{ id: string; name: string; relation: string; age: number; blood: string; gender: string; phone: string; avatar: string; color: string }> = [
   { id: "self",   name: "Rahul Sharma",  relation: "Self",   age: 32, blood: "B+",  gender: "Male",   phone: "+91 98765 43210", avatar: "https://randomuser.me/api/portraits/men/32.jpg",    color: "#6366F1" },
@@ -28,101 +29,172 @@ const FAMILY: Array<{ id: string; name: string; relation: string; age: number; b
   { id: "father", name: "Ramesh Sharma", relation: "Father", age: 62, blood: "AB+", gender: "Male",   phone: "+91 99887 12345", avatar: "https://randomuser.me/api/portraits/men/58.jpg",    color: "#10B981" },
 ];
 
-const LIVE_QUEUE_PREVIEW = [
-  { id: "4", name: "Kiran Patil",  type: "walkin",    status: "in-progress" as const },
-  { id: "5", name: "Deepa Shah",   type: "online",    status: "waiting"     as const },
-  { id: "6", name: "Sanjay Gupte", type: "walkin",    status: "waiting"     as const },
-  { id: "7", name: "Meena Rao",    type: "online",    status: "waiting"     as const },
-];
-
 const TYPE_COLOR: Record<string, string> = {
   emergency: "#F87171",
   online: "#67E8F9",
   walkin: "#4ADE80",
 };
 
-interface Shift {
-  id: string;
+const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+function isoOf(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+interface ShiftCard {
+  id: "morning" | "evening";
   label: string;
   icon: "sun" | "moon";
-  time: string;
-  clinic: string;
-  loc: string;
+  startTime: string;
+  endTime: string;
+  clinicName: string;
+  address: string;
+  locationLink: string;
+  maxTokens: number;
   color: string;
-  maps: string;
-  max: number;
-  booked: number;
 }
 
-const SHIFTS_PER_DOW: Record<number, Shift[]> = {
-  1: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "9:00 AM – 1:00 PM",  clinic: "HeartCare Clinic",  loc: "Andheri West",  color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai", max: 60, booked: 42 },
-    { id: "s2", label: "Evening", icon: "moon", time: "5:00 PM – 9:00 PM",  clinic: "City Heart Center", loc: "Bandra East",   color: "#818CF8", maps: "https://maps.google.com/?q=City+Heart+Center+Bandra+East+Mumbai",  max: 50, booked: 28 },
-  ],
-  2: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "9:00 AM – 1:00 PM",  clinic: "HeartCare Clinic",  loc: "Andheri West",  color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai", max: 60, booked: 38 },
-    { id: "s2", label: "Evening", icon: "moon", time: "5:00 PM – 9:00 PM",  clinic: "City Heart Center", loc: "Bandra East",   color: "#818CF8", maps: "https://maps.google.com/?q=City+Heart+Center+Bandra+East+Mumbai",  max: 50, booked: 21 },
-  ],
-  3: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "9:00 AM – 1:00 PM",  clinic: "HeartCare Clinic",  loc: "Andheri West",  color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai", max: 60, booked: 45 },
-    { id: "s2", label: "Evening", icon: "moon", time: "5:00 PM – 9:00 PM",  clinic: "City Heart Center", loc: "Bandra East",   color: "#818CF8", maps: "https://maps.google.com/?q=City+Heart+Center+Bandra+East+Mumbai",  max: 50, booked: 31 },
-  ],
-  4: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "10:00 AM – 2:00 PM", clinic: "HeartCare Clinic",  loc: "Andheri West",  color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai", max: 55, booked: 42 },
-  ],
-  5: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "10:00 AM – 2:00 PM", clinic: "HeartCare Clinic",  loc: "Andheri West",  color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai", max: 55, booked: 33 },
-  ],
-  6: [
-    { id: "s1", label: "Morning", icon: "sun",  time: "9:00 AM – 12:00 PM", clinic: "MedPlus Hospital",  loc: "Powai",         color: "#22C55E", maps: "https://maps.google.com/?q=MedPlus+Hospital+Powai+Mumbai",         max: 30, booked: 14 },
-  ],
-  0: [],
-};
-
-function buildCalendar() {
-  const firstDow = 3; // April 1, 2026 = Wednesday
-  const days = [];
-  for (let d = 1; d <= 30; d++) {
-    const dow = (firstDow + d - 1) % 7;
-    const altSat = dow === 6 && (d === 11 || d === 25);
-    const off = dow === 0 || (dow === 6 && !altSat);
-    days.push({ d, dow, off });
-  }
-  return days;
+interface TokenRow {
+  id: string; tokenNumber: number; patientName: string;
+  type: string; status: string; shift: string;
 }
 
-const CAL = buildCalendar();
-const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+function buildShiftCards(dayCfg: any): ShiftCard[] {
+  if (!dayCfg || dayCfg.off) return [];
+  const cards: ShiftCard[] = [];
+  const m = dayCfg.morning;
+  const e = dayCfg.evening;
+  if (m?.enabled) cards.push({
+    id: "morning", label: "Morning", icon: "sun", color: "#F59E0B",
+    startTime: m.startTime ?? "09:00", endTime: m.endTime ?? "13:00",
+    clinicName: m.clinicName ?? "", address: m.address ?? "", locationLink: m.locationLink ?? "",
+    maxTokens: parseInt(String(m.maxTokens ?? "20"), 10) || 20,
+  });
+  if (e?.enabled) cards.push({
+    id: "evening", label: "Evening", icon: "moon", color: "#818CF8",
+    startTime: e.startTime ?? "17:00", endTime: e.endTime ?? "21:00",
+    clinicName: e.clinicName ?? "", address: e.address ?? "", locationLink: e.locationLink ?? "",
+    maxTokens: parseInt(String(e.maxTokens ?? "15"), 10) || 15,
+  });
+  return cards;
+}
 
 export default function BookingScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
-  const { doctorId } = useLocalSearchParams<{ doctorId: string }>();
+  const { doctorId, date: dateParam, shift: shiftParam } = useLocalSearchParams<{
+    doctorId: string; date?: string; shift?: string;
+  }>();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
 
-  const today = 12; // April 12 2026
+  // Build rolling 30-day calendar
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayIso = isoOf(today);
+  const dates30: Date[] = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    dates30.push(d);
+  }
+  const startDow = today.getDay();
+  const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
+  while (cells.length % 7 !== 0) cells.push(null);
+  const rows: (Date | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+
+  // State
+  const initDate = (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) ? dateParam : todayIso;
+  const initShift = (shiftParam === "morning" || shiftParam === "evening") ? shiftParam : null;
+
   const [visitType, setVisitType] = useState<"first-visit" | "follow-up">("first-visit");
   const [tokenType, setTokenType] = useState<"normal" | "emergency">("normal");
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [selectedIso, setSelectedIso] = useState<string>(initDate);
+  const [selectedShiftId, setSelectedShiftId] = useState<"morning" | "evening" | null>(initShift);
   const [selectedMember, setSelectedMember] = useState(FAMILY[0]);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
+  // Real token counts for selected date (re-fetched via SSE/polling)
+  const [tokenCounts, setTokenCounts] = useState<Record<string, number>>({ morning: 0, evening: 0 });
+  const [liveQueue, setLiveQueue] = useState<TokenRow[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+
+  // Doctor data from Firebase
   const isDemoId = !doctorId || doctorId.startsWith("demo");
   const { data: doctorData } = useQuery({
     ...getGetDoctorQueryOptions(doctorId ?? ""),
     enabled: !isDemoId,
+    refetchInterval: 30_000,
   });
-  const docName = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Dr. Ananya Sharma");
-  const docSpec = isDemoId ? "Cardiologist" : (doctorData?.specialization ?? "Cardiologist");
-  const docPhoto = `https://randomuser.me/api/portraits/women/44.jpg`;
 
-  const selectedDow = CAL.find(c => c.d === selectedDate)?.dow ?? 1;
-  const shifts = (SHIFTS_PER_DOW[selectedDow] ?? []).filter(s => {
-    if (selectedDow === 6) return s.id === "s1";
-    return true;
-  });
+  const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Doctor");
+  const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? "");
+  const docPhoto = `https://randomuser.me/api/portraits/women/44.jpg`;
+  const docAvail = isDemoId ? true : ((doctorData as any)?.isAvailable !== false);
+
+  const calendar: Record<string, any> = (doctorData as any)?.calendar ?? {};
+
+  // Live queue fetch with SSE + polling fallback for the selected date
+  useEffect(() => {
+    if (isDemoId || !doctorId) {
+      setQueueLoading(false);
+      return;
+    }
+    setQueueLoading(true);
+    let active = true;
+    const url = `${BASE}/api/tokens/stream/${doctorId}?date=${selectedIso}`;
+
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(url);
+      es.onmessage = (ev) => {
+        try {
+          const tokens: TokenRow[] = JSON.parse(ev.data);
+          const valid = tokens.filter(t => t.status !== "cancelled");
+          const mc = valid.filter(t => t.shift === "morning").length;
+          const ec = valid.filter(t => t.shift === "evening").length;
+          if (active) {
+            setTokenCounts({ morning: mc, evening: ec });
+            setLiveQueue(valid.slice(0, 5));
+            setQueueLoading(false);
+          }
+        } catch (_) {}
+      };
+      es.onerror = () => { if (active) setQueueLoading(false); };
+      return () => { active = false; es.close(); };
+    }
+
+    // Polling fallback
+    const poll = async () => {
+      try {
+        const res = await fetch(`${BASE}/api/tokens?doctorId=${doctorId}&date=${selectedIso}`);
+        const data = await res.json();
+        if (data.tokens && active) {
+          const valid: TokenRow[] = data.tokens.filter((t: any) => t.status !== "cancelled");
+          const mc = valid.filter(t => t.shift === "morning").length;
+          const ec = valid.filter(t => t.shift === "evening").length;
+          setTokenCounts({ morning: mc, evening: ec });
+          setLiveQueue(valid.slice(0, 5));
+        }
+      } catch (_) {}
+      if (active) setQueueLoading(false);
+    };
+    poll();
+    const iv = setInterval(poll, 10_000);
+    return () => { active = false; clearInterval(iv); };
+  }, [doctorId, selectedIso, isDemoId]);
+
+  // Derive shift cards for selected date from calendar
+  const dayCfg = calendar[selectedIso] ?? null;
+  const shiftCards = isDemoId ? [] : buildShiftCards(dayCfg);
+
+  const selectedShift = shiftCards.find(s => s.id === selectedShiftId) ?? null;
+  const canBook = selectedShift !== null;
+
+  // If previously selected shift is no longer available on new date, clear it
+  useEffect(() => {
+    if (selectedShiftId && shiftCards.length > 0 && !shiftCards.find(s => s.id === selectedShiftId)) {
+      setSelectedShiftId(null);
+    }
+  }, [selectedIso]);
 
   const isEmergency = tokenType === "emergency";
   const eAppFee = isEmergency ? 20 : 10;
@@ -130,28 +202,45 @@ export default function BookingScreen() {
   const payableNow = eAppFee + platformFee;
   const consultFee = 500;
 
-  const canBook = selectedShift !== null;
+  // Calendar cell style based on calendar data
+  function cellStyle(cfg: any) {
+    if (!cfg) return { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.07)", off: false };
+    if (cfg.off) return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", off: true };
+    const m = cfg.morning?.enabled, e = cfg.evening?.enabled;
+    if (m && e)  return { bg: "rgba(13,148,136,0.13)",  border: "rgba(45,212,191,0.35)",  off: false };
+    if (m)       return { bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.3)",   off: false };
+    if (e)       return { bg: "rgba(139,92,246,0.12)",  border: "rgba(139,92,246,0.3)",   off: false };
+    return { bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)", off: true };
+  }
+
+  // Month label tracking
+  let prevMonth = -1;
+  const monthRows: { label: string; rowIdx: number }[] = [];
+  rows.forEach((row, ri) => {
+    const fd = row.find(c => c !== null);
+    if (fd && fd.getMonth() !== prevMonth) {
+      prevMonth = fd.getMonth();
+      monthRows.push({ label: fd.toLocaleDateString("en-IN", { month: "long", year: "numeric" }), rowIdx: ri });
+    }
+  });
 
   function handleBook() {
-    if (!canBook) {
-      Alert.alert("Select a shift", "Please select a date and shift to continue.");
-      return;
-    }
+    if (!canBook) return;
     router.push({
       pathname: "/payment",
       params: {
         doctorId: doctorId ?? "demo1",
         doctorName: docName,
         doctorPhoto: docPhoto,
-        visitType: visitType,
-        date: `${selectedDate}`,
-        shift: selectedShift!.label,
-        clinic: selectedShift!.clinic,
-        clinicLoc: selectedShift!.loc,
-        time: selectedShift!.time,
+        visitType,
+        date: selectedIso,
+        shift: selectedShift!.id,
+        clinic: selectedShift!.clinicName,
+        clinicLoc: selectedShift!.address,
+        time: `${selectedShift!.startTime} – ${selectedShift!.endTime}`,
         patientId: selectedMember.id,
         patientName: selectedMember.name,
-        tokenType: tokenType,
+        tokenType,
         payableNow: `${payableNow}`,
         consultFee: `${consultFee}`,
       },
@@ -183,14 +272,10 @@ export default function BookingScreen() {
                 <Feather name="check-circle" size={12} color="#4F46E5" />
               </View>
               <Text style={styles.docMiniSpec}>{docSpec}</Text>
-              <View style={styles.docMiniRow}>
-                <Feather name="home" size={10} color="rgba(255,255,255,0.3)" />
-                <Text style={styles.docMiniLoc}>HeartCare Clinic, Andheri West</Text>
-              </View>
             </View>
-            <View style={styles.availPip}>
-              <View style={styles.availPipDot} />
-              <Text style={styles.availPipTxt}>Available</Text>
+            <View style={[styles.availPip, !docAvail && { backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.35)" }]}>
+              <View style={[styles.availPipDot, !docAvail && { backgroundColor: "#EF4444" }]} />
+              <Text style={[styles.availPipTxt, !docAvail && { color: "#F87171" }]}>{docAvail ? "Available" : "Unavailable"}</Text>
             </View>
           </View>
         </View>
@@ -199,17 +284,11 @@ export default function BookingScreen() {
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Visit Type</Text>
           <View style={styles.toggleRow}>
-            <Pressable
-              style={[styles.toggleBtn, visitType === "first-visit" && styles.toggleBtnActive]}
-              onPress={() => setVisitType("first-visit")}
-            >
+            <Pressable style={[styles.toggleBtn, visitType === "first-visit" && styles.toggleBtnActive]} onPress={() => setVisitType("first-visit")}>
               <Feather name="user-plus" size={14} color={visitType === "first-visit" ? "#FFF" : "rgba(255,255,255,0.4)"} />
               <Text style={[styles.toggleTxt, visitType === "first-visit" && styles.toggleTxtActive]}>First Visit</Text>
             </Pressable>
-            <Pressable
-              style={[styles.toggleBtn, visitType === "follow-up" && styles.toggleBtnActive]}
-              onPress={() => setVisitType("follow-up")}
-            >
+            <Pressable style={[styles.toggleBtn, visitType === "follow-up" && styles.toggleBtnActive]} onPress={() => setVisitType("follow-up")}>
               <Feather name="repeat" size={14} color={visitType === "follow-up" ? "#FFF" : "rgba(255,255,255,0.4)"} />
               <Text style={[styles.toggleTxt, visitType === "follow-up" && styles.toggleTxtActive]}>Follow-up</Text>
             </Pressable>
@@ -220,23 +299,15 @@ export default function BookingScreen() {
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Token Priority</Text>
           <View style={styles.toggleRow}>
-            <Pressable
-              style={[styles.toggleBtn, tokenType === "normal" && styles.toggleBtnActive]}
-              onPress={() => setTokenType("normal")}
-            >
+            <Pressable style={[styles.toggleBtn, tokenType === "normal" && styles.toggleBtnActive]} onPress={() => setTokenType("normal")}>
               <Feather name="user" size={14} color={tokenType === "normal" ? "#FFF" : "rgba(255,255,255,0.4)"} />
               <Text style={[styles.toggleTxt, tokenType === "normal" && styles.toggleTxtActive]}>Normal</Text>
             </Pressable>
-            <Pressable
-              style={[styles.toggleBtn, tokenType === "emergency" && { borderColor: "#EF4444", backgroundColor: "rgba(239,68,68,0.2)" }]}
-              onPress={() => setTokenType("emergency")}
-            >
+            <Pressable style={[styles.toggleBtn, tokenType === "emergency" && { borderColor: "#EF4444", backgroundColor: "rgba(239,68,68,0.2)" }]} onPress={() => setTokenType("emergency")}>
               <Feather name="alert-triangle" size={14} color={tokenType === "emergency" ? "#F87171" : "rgba(255,255,255,0.4)"} />
               <Text style={[styles.toggleTxt, tokenType === "emergency" && { color: "#F87171" }]}>Emergency</Text>
             </Pressable>
           </View>
-
-          {/* Fee Preview */}
           <View style={styles.feePreviewCard}>
             <View style={styles.feePreviewRow}>
               <Feather name="monitor" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
@@ -257,102 +328,138 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {/* Calendar */}
+        {/* Calendar — real rolling 30 days */}
         <View style={styles.sectionPad}>
-          <Text style={styles.sectionLabel}>Select Date — April 2026</Text>
+          <Text style={styles.sectionLabel}>Select Date</Text>
           <View style={styles.calHeader}>
-            {DOW.map(d => (
-              <Text key={d} style={styles.calDow}>{d}</Text>
-            ))}
+            {DOW.map(d => <Text key={d} style={styles.calDow}>{d}</Text>)}
           </View>
-          <View style={styles.calGrid}>
-            {/* Offset */}
-            {Array.from({ length: 3 }).map((_, i) => <View key={`empty-${i}`} style={styles.calCell} />)}
-            {CAL.map(({ d, off }) => {
-              const isPast = d < today;
-              const isSelected = d === selectedDate;
-              return (
-                <Pressable
-                  key={d}
-                  style={[
-                    styles.calCell,
-                    isSelected && styles.calCellSelected,
-                    off && styles.calCellOff,
-                    isPast && !isSelected && styles.calCellPast,
-                    d === today && !isSelected && styles.calCellToday,
-                  ]}
-                  onPress={() => { if (!off && !isPast) { setSelectedDate(d); setSelectedShift(null); } }}
-                  disabled={off || isPast}
-                >
-                  <Text style={[
-                    styles.calCellTxt,
-                    isSelected && styles.calCellTxtSelected,
-                    off && styles.calCellTxtOff,
-                    isPast && styles.calCellTxtPast,
-                  ]}>{d}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {rows.map((row, ri) => {
+            const ml = monthRows.find(m => m.rowIdx === ri);
+            return (
+              <View key={ri}>
+                {ml && <Text style={calRowStyles.monthLabel}>{ml.label}</Text>}
+                <View style={styles.calGrid}>
+                  {row.map((cell, ci) => {
+                    if (!cell) return <View key={ci} style={styles.calCell} />;
+                    const iso = isoOf(cell);
+                    const cfg = calendar[iso];
+                    const cs = cellStyle(cfg);
+                    const isPast = cell < today;
+                    const isToday = cell.getTime() === today.getTime();
+                    const isSelected = iso === selectedIso;
+                    const isOff = cs.off;
+                    return (
+                      <Pressable
+                        key={ci}
+                        disabled={isPast || (isOff && !isDemoId)}
+                        onPress={() => { setSelectedIso(iso); setSelectedShiftId(null); }}
+                        style={[
+                          styles.calCell,
+                          !isDemoId && { backgroundColor: cs.bg, borderWidth: 1, borderColor: cs.border, borderRadius: 8 },
+                          isSelected && styles.calCellSelected,
+                          isToday && !isSelected && styles.calCellToday,
+                          isPast && !isSelected && styles.calCellPast,
+                        ]}
+                      >
+                        <Text style={[
+                          styles.calCellTxt,
+                          isSelected && styles.calCellTxtSelected,
+                          isPast && styles.calCellTxtPast,
+                          isOff && !isDemoId && { color: "rgba(239,68,68,0.6)", textDecorationLine: "line-through" },
+                          isToday && !isSelected && { color: "#2DD4BF", fontWeight: "800" },
+                        ]}>{cell.getDate()}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+          {!isDemoId && (
+            <View style={calRowStyles.legend}>
+              {[{ color: "#2DD4BF", label: "Both" }, { color: "#FCD34D", label: "Morning" }, { color: "#A5B4FC", label: "Evening" }, { color: "#F87171", label: "Holiday" }].map(item => (
+                <View key={item.label} style={calRowStyles.legendItem}>
+                  <View style={[calRowStyles.legendDot, { backgroundColor: item.color }]} />
+                  <Text style={calRowStyles.legendTxt}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* Shift Cards */}
-        {shifts.length > 0 && (
+        {/* Shift Cards — real from Firebase calendar */}
+        {!isDemoId && (
           <View style={styles.sectionPad}>
             <Text style={styles.sectionLabel}>Available Shifts</Text>
-            <View style={{ gap: 10 }}>
-              {shifts.map(shift => {
-                const fillPct = Math.round((shift.booked / shift.max) * 100);
-                const isSelected = selectedShift?.id === shift.id;
-                const isFull = fillPct >= 100;
-                const fillColor = fillPct >= 80 ? "#EF4444" : fillPct >= 60 ? "#F59E0B" : "#22C55E";
-                return (
-                  <Pressable
-                    key={shift.id}
-                    style={[styles.shiftCard, isSelected && styles.shiftCardSelected, isFull && styles.shiftCardFull]}
-                    onPress={() => !isFull && setSelectedShift(shift)}
-                    disabled={isFull}
-                  >
-                    <View style={styles.shiftCardTop}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <View style={[styles.shiftIcon, { backgroundColor: shift.color + "22" }]}>
-                          <Feather name={shift.icon} size={14} color={shift.color} />
+            {dayCfg?.off ? (
+              <View style={calRowStyles.offDay}>
+                <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                <Text style={{ color: "#F87171", fontWeight: "700", fontSize: 13 }}>Doctor is off on this day</Text>
+              </View>
+            ) : shiftCards.length === 0 ? (
+              <View style={calRowStyles.offDay}>
+                <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>No shifts configured for this date.</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 10 }}>
+                {shiftCards.map(shift => {
+                  const booked = tokenCounts[shift.id] ?? 0;
+                  const fillPct = Math.min(Math.round((booked / shift.maxTokens) * 100), 100);
+                  const isSelected = selectedShiftId === shift.id;
+                  const isFull = booked >= shift.maxTokens;
+                  const fillColor = fillPct >= 80 ? "#EF4444" : fillPct >= 60 ? "#F59E0B" : "#22C55E";
+                  return (
+                    <Pressable
+                      key={shift.id}
+                      style={[styles.shiftCard, isSelected && styles.shiftCardSelected, isFull && styles.shiftCardFull]}
+                      onPress={() => !isFull && setSelectedShiftId(shift.id)}
+                      disabled={isFull}
+                    >
+                      <View style={styles.shiftCardTop}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          <View style={[styles.shiftIcon, { backgroundColor: shift.color + "22" }]}>
+                            <Feather name={shift.icon} size={14} color={shift.color} />
+                          </View>
+                          <View>
+                            <Text style={[styles.shiftLabel, { color: shift.color }]}>{shift.label} Shift</Text>
+                            <Text style={styles.shiftTime}>{shift.startTime} – {shift.endTime}</Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text style={[styles.shiftLabel, { color: shift.color }]}>{shift.label} Shift</Text>
-                          <Text style={styles.shiftTime}>{shift.time}</Text>
+                        <View style={{ alignItems: "flex-end", gap: 4 }}>
+                          {isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
+                          {isFull && <Text style={styles.fullTag}>Full</Text>}
+                          {!isSelected && !isFull && <View style={styles.radioEmpty} />}
                         </View>
                       </View>
-                      <View style={{ alignItems: "flex-end", gap: 4 }}>
-                        {isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
-                        {isFull && <Text style={styles.fullTag}>Full</Text>}
-                        {!isSelected && !isFull && <View style={styles.radioEmpty} />}
+                      <View style={{ gap: 4 }}>
+                        <View style={styles.fillBarTrack}>
+                          <View style={[styles.fillBarFill, { width: pct(fillPct), backgroundColor: fillColor }]} />
+                        </View>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                          {queueLoading
+                            ? <Text style={styles.fillBarLbl}>Loading…</Text>
+                            : <Text style={styles.fillBarLbl}>{booked}/{shift.maxTokens} booked</Text>}
+                          <Text style={[styles.fillBarPct, { color: fillColor }]}>{fillPct}% full</Text>
+                        </View>
                       </View>
-                    </View>
-
-                    {/* Fill Bar */}
-                    <View style={{ gap: 4 }}>
-                      <View style={styles.fillBarTrack}>
-                        <View style={[styles.fillBarFill, { width: pct(Math.min(fillPct, 100)), backgroundColor: fillColor }]} />
+                      <View style={styles.shiftMeta}>
+                        <Feather name="home" size={10} color="rgba(255,255,255,0.3)" />
+                        <Text style={styles.shiftMetaTxt} numberOfLines={1}>
+                          {shift.clinicName}{shift.address ? ` · ${shift.address}` : ""}
+                        </Text>
+                        {shift.locationLink ? (
+                          <Pressable style={styles.mapsBtn} onPress={() => Linking.openURL(shift.locationLink)}>
+                            <Feather name="navigation" size={10} color="#4285F4" />
+                            <Text style={styles.mapsBtnTxt}>Maps</Text>
+                          </Pressable>
+                        ) : null}
                       </View>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                        <Text style={styles.fillBarLbl}>{shift.booked}/{shift.max} booked</Text>
-                        <Text style={[styles.fillBarPct, { color: fillColor }]}>{fillPct}% full</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.shiftMeta}>
-                      <Feather name="home" size={10} color="rgba(255,255,255,0.3)" />
-                      <Text style={styles.shiftMetaTxt}>{shift.clinic} · {shift.loc}</Text>
-                      <Pressable style={styles.mapsBtn} onPress={() => Linking.openURL(shift.maps)}>
-                        <Feather name="navigation" size={10} color="#4285F4" />
-                        <Text style={styles.mapsBtnTxt}>Maps</Text>
-                      </Pressable>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
@@ -385,14 +492,13 @@ export default function BookingScreen() {
                       <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={14} color="rgba(255,255,255,0.3)" />
                     </View>
                   </View>
-
                   {isExpanded && (
                     <View style={styles.memberExpanded}>
                       {[
-                        { icon: "phone" as const, label: "Phone", val: m.phone },
-                        { icon: "droplet" as const, label: "Blood Group", val: m.blood },
-                        { icon: "user" as const, label: "Gender", val: m.gender },
-                        { icon: "calendar" as const, label: "Age", val: `${m.age} years` },
+                        { icon: "phone" as const,    label: "Phone",       val: m.phone },
+                        { icon: "droplet" as const,  label: "Blood Group", val: m.blood },
+                        { icon: "user" as const,     label: "Gender",      val: m.gender },
+                        { icon: "calendar" as const, label: "Age",         val: `${m.age} years` },
                       ].map(row => (
                         <View key={row.label} style={styles.memberExpandedRow}>
                           <Feather name={row.icon} size={11} color="rgba(255,255,255,0.3)" />
@@ -408,26 +514,32 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {/* Queue Preview */}
+        {/* Live Queue Preview — real from Firebase */}
         <View style={styles.sectionPad}>
           <View style={styles.queuePreviewCard}>
             <View style={styles.queuePreviewHeader}>
               <View style={styles.livePip} />
               <Text style={styles.queuePreviewTitle}>Live Queue Preview</Text>
-              <Text style={styles.queuePreviewSub}>~42 in queue now</Text>
+              {queueLoading
+                ? <ActivityIndicator size="small" color="#22C55E" style={{ marginLeft: "auto" }} />
+                : <Text style={styles.queuePreviewSub}>{liveQueue.length} in queue</Text>}
             </View>
-            {LIVE_QUEUE_PREVIEW.map(q => (
-              <View key={q.id} style={styles.queueRow}>
-                <Text style={styles.queueRowNum}>#{q.id}</Text>
-                <Text style={styles.queueRowName} numberOfLines={1}>{q.name}</Text>
-                <View style={[styles.queueTypeBadge, { backgroundColor: TYPE_COLOR[q.type] + "18", borderColor: TYPE_COLOR[q.type] + "35" }]}>
-                  <Text style={[styles.queueTypeTxt, { color: TYPE_COLOR[q.type] }]}>{q.type}</Text>
+            {liveQueue.length === 0 && !queueLoading ? (
+              <Text style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, textAlign: "center", paddingVertical: 12 }}>No tokens booked yet for this date</Text>
+            ) : (
+              liveQueue.map(q => (
+                <View key={q.id} style={styles.queueRow}>
+                  <Text style={styles.queueRowNum}>#{q.tokenNumber}</Text>
+                  <Text style={styles.queueRowName} numberOfLines={1}>{q.patientName}</Text>
+                  <View style={[styles.queueTypeBadge, { backgroundColor: (TYPE_COLOR[q.type] ?? "#FFF") + "18", borderColor: (TYPE_COLOR[q.type] ?? "#FFF") + "35" }]}>
+                    <Text style={[styles.queueTypeTxt, { color: TYPE_COLOR[q.type] ?? "#FFF" }]}>{q.type}</Text>
+                  </View>
+                  <Text style={[styles.queueStatus, q.status === "in_consult" ? { color: "#4ADE80" } : { color: "rgba(255,255,255,0.3)" }]}>
+                    {q.status === "in_consult" ? "Active" : "Waiting"}
+                  </Text>
                 </View>
-                <Text style={[styles.queueStatus, q.status === "in-progress" ? { color: "#4ADE80" } : { color: "rgba(255,255,255,0.3)" }]}>
-                  {q.status === "in-progress" ? "Active" : "Waiting"}
-                </Text>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         </View>
       </ScrollView>
@@ -449,6 +561,15 @@ export default function BookingScreen() {
     </View>
   );
 }
+
+const calRowStyles = StyleSheet.create({
+  monthLabel: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 6, marginBottom: 2, paddingHorizontal: 2 },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendDot: { width: 7, height: 7, borderRadius: 3.5 },
+  legendTxt: { fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: "600" },
+  offDay: { paddingVertical: 24, alignItems: "center", gap: 4 },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0E1A" },
@@ -487,13 +608,11 @@ const styles = StyleSheet.create({
   calDow: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
   calGrid: { flexDirection: "row", flexWrap: "wrap" },
   calCell: { width: pct(100 / 7), aspectRatio: 1, alignItems: "center", justifyContent: "center" },
-  calCellSelected: { backgroundColor: "#4F46E5", borderRadius: 12 },
+  calCellSelected: { backgroundColor: "#4F46E5", borderRadius: 12, borderWidth: 0 },
   calCellToday: { backgroundColor: "rgba(79,70,229,0.2)", borderRadius: 12, borderWidth: 1, borderColor: "rgba(99,102,241,0.4)" },
-  calCellOff: { opacity: 0.3 },
   calCellPast: { opacity: 0.3 },
   calCellTxt: { fontSize: 13, fontWeight: "600", color: "#FFF" },
   calCellTxtSelected: { fontWeight: "800" },
-  calCellTxtOff: { color: "rgba(255,255,255,0.2)" },
   calCellTxtPast: { color: "rgba(255,255,255,0.25)" },
 
   shiftCard: { borderRadius: 18, padding: 14, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)", gap: 10 },

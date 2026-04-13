@@ -117,6 +117,13 @@ export default function AddWalkinScreen() {
   const maxTokenInQueue = queue.reduce((m, t) => Math.max(m, t.tokenNumber ?? 0), 0);
   const nextTokenPreview = maxTokenInQueue + 1;
 
+  // Max tokens from calendar for this date+shift
+  const calendarDay = (doctor as any)?.calendar?.[selectedDate];
+  const shiftCfg = calendarDay?.[selectedShift];
+  const maxTokens = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
+  const activeTokens = queue.filter(t => t.status !== 'cancelled').length;
+  const isShiftFull = maxTokens !== null && activeTokens >= maxTokens;
+
   const handleBook = async () => {
     const trimmedName    = name.trim();
     const trimmedPhone   = phone.trim();
@@ -134,6 +141,7 @@ export default function AddWalkinScreen() {
     if (!trimmedAddress) { setBookingError('Address is required'); return; }
     if (!trimmedArea)    { setBookingError('Area / city is required'); return; }
     if (!doctor?.id)     { setBookingError('Doctor not loaded'); return; }
+    if (isShiftFull)     { setBookingError(`Shift is full (${maxTokens}/${maxTokens} tokens)`); return; }
 
     setBooking(true); setBookingError('');
     try {
@@ -199,20 +207,27 @@ export default function AddWalkinScreen() {
 
           {/* Next token info */}
           <View style={[styles.nextTokenCard, {
-            backgroundColor: isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(13,148,136,0.13)',
-            borderColor:     isEmerg ? 'rgba(239,68,68,0.3)'  : 'rgba(13,148,136,0.3)',
+            backgroundColor: isShiftFull ? 'rgba(239,68,68,0.13)' : isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(13,148,136,0.13)',
+            borderColor:     isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.3)'  : 'rgba(13,148,136,0.3)',
           }]}>
             <View style={styles.nextTokenLeft}>
               <View style={[styles.nextTokenBox, {
-                backgroundColor: isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(13,148,136,0.25)',
-                borderColor:     isEmerg ? 'rgba(239,68,68,0.4)'  : 'rgba(45,212,191,0.4)',
+                backgroundColor: isShiftFull ? 'rgba(239,68,68,0.25)' : isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(13,148,136,0.25)',
+                borderColor:     isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.4)'  : 'rgba(45,212,191,0.4)',
               }]}>
-                <Text style={[styles.nextTokenLabel, { color: isEmerg ? '#FCA5A5' : TEAL_LT }]}>Next</Text>
-                <Text style={styles.nextTokenNum}>{queueLoading ? '…' : `#${nextTokenPreview}`}</Text>
+                <Text style={[styles.nextTokenLabel, { color: isShiftFull ? '#FCA5A5' : isEmerg ? '#FCA5A5' : TEAL_LT }]}>{isShiftFull ? 'Full' : 'Next'}</Text>
+                <Text style={styles.nextTokenNum}>{queueLoading ? '…' : isShiftFull ? '🚫' : `#${nextTokenPreview}`}</Text>
               </View>
               <View>
-                <Text style={styles.nextTokenTitle}>Next Token</Text>
-                <Text style={styles.nextTokenValue}>{isEmerg ? 'Emergency' : 'Normal'} {queueLoading ? '' : `#${nextTokenPreview}`}</Text>
+                <Text style={styles.nextTokenTitle}>{isShiftFull ? 'Shift Full' : 'Next Token'}</Text>
+                <Text style={styles.nextTokenValue}>
+                  {isShiftFull ? `All ${maxTokens} slots taken` : `${isEmerg ? 'Emergency' : 'Normal'} ${queueLoading ? '' : `#${nextTokenPreview}`}`}
+                </Text>
+                {maxTokens !== null && !isShiftFull && (
+                  <Text style={[styles.nextTokenTitle, { color: activeTokens / maxTokens >= 0.8 ? '#FCA5A5' : TEAL_LT, marginTop: 2 }]}>
+                    {activeTokens}/{maxTokens} slots used
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -288,12 +303,12 @@ export default function AddWalkinScreen() {
           )}
 
           <TouchableOpacity
-            onPress={handleBook} disabled={booking}
-            style={[styles.bookBtn, isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal, booking && { opacity: 0.6 }]}
+            onPress={handleBook} disabled={booking || isShiftFull}
+            style={[styles.bookBtn, isShiftFull ? styles.bookBtnFull : isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal, (booking || isShiftFull) && { opacity: 0.6 }]}
           >
             {booking
               ? <ActivityIndicator color="#FFF" size="small" />
-              : <Text style={styles.bookBtnText}>{`✚ Book ${tokenType} Token — FREE`}</Text>}
+              : <Text style={styles.bookBtnText}>{isShiftFull ? '🚫 Shift Full — No More Tokens' : `✚ Book ${tokenType} Token — FREE`}</Text>}
           </TouchableOpacity>
 
           {/* Live queue for selected date+shift */}
@@ -424,6 +439,7 @@ const styles = StyleSheet.create({
   bookBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   bookBtnNormal: { backgroundColor: TEAL },
   bookBtnEmergency: { backgroundColor: '#DC2626' },
+  bookBtnFull: { backgroundColor: 'rgba(239,68,68,0.2)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.4)' },
   bookBtnText: { fontSize: 14, fontWeight: '900', color: '#FFF' },
   recentSection: {},
   recentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
