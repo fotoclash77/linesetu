@@ -164,8 +164,8 @@ export default function ProfileScreen() {
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
     enabled: !!patient?.id,
   });
-  const activeToken = (tokenData as any)?.tokens?.find?.(
-    (t: any) => t.status === "waiting" || t.status === "called"
+  const activeToken = (tokenData?.tokens ?? []).find(
+    (t) => t.status === "waiting" || t.status === "in_consult"
   );
 
   const topPad    = isWeb ? 67 : insets.top;
