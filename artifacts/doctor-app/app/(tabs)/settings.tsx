@@ -119,25 +119,50 @@ export default function SettingsScreen() {
 
   type ShiftCfg = { enabled: boolean; startTime: string; endTime: string; maxWalkin: number; maxEToken: number; clinicName: string; address: string; locationLink: string };
   type DayCfg  = { off: boolean; morning: ShiftCfg; evening: ShiftCfg };
-  const DEFAULT_SHIFT = (start: string, end: string): ShiftCfg => ({
-    enabled: true, startTime: start, endTime: end, maxWalkin: 20, maxEToken: 15,
-    clinicName: doctor?.clinicName ?? '', address: doctor?.clinicAddress ?? '', locationLink: '',
-  });
-  const BLANK_DAY = (): DayCfg => ({
-    off: false,
-    morning: DEFAULT_SHIFT('09:00', '13:00'),
-    evening: DEFAULT_SHIFT('17:00', '20:00'),
-  });
+  type DayMode = 'morning' | 'evening' | 'both' | 'holiday';
+
+  function makeShift(start: string, end: string, clinic?: ClinicData): ShiftCfg {
+    return {
+      enabled: true, startTime: start, endTime: end, maxWalkin: 20, maxEToken: 15,
+      clinicName: clinic?.name ?? '', address: clinic?.address ?? '', locationLink: clinic?.maps ?? '',
+    };
+  }
+  function blankDay(clinic?: ClinicData): DayCfg {
+    return {
+      off: false,
+      morning: makeShift('09:00', '13:00', clinic),
+      evening: makeShift('17:00', '20:00', clinic),
+    };
+  }
+  function modeOf(cfg: DayCfg): DayMode {
+    if (cfg.off) return 'holiday';
+    const m = cfg.morning.enabled, e = cfg.evening.enabled;
+    if (m && e) return 'both';
+    if (m) return 'morning';
+    if (e) return 'evening';
+    return 'holiday';
+  }
+  function applyMode(mode: DayMode, prev: DayCfg): DayCfg {
+    if (mode === 'holiday') return { ...prev, off: true, morning: { ...prev.morning, enabled: false }, evening: { ...prev.evening, enabled: false } };
+    if (mode === 'morning') return { ...prev, off: false, morning: { ...prev.morning, enabled: true }, evening: { ...prev.evening, enabled: false } };
+    if (mode === 'evening') return { ...prev, off: false, morning: { ...prev.morning, enabled: false }, evening: { ...prev.evening, enabled: true } };
+    return { ...prev, off: false, morning: { ...prev.morning, enabled: true }, evening: { ...prev.evening, enabled: true } };
+  }
 
   // Calendar overrides: { [isoDate]: DayCfg }
   const [calendarOverrides, setCalendarOverrides] = useState<Record<string, DayCfg>>(() => (doctor as any)?.calendar ?? {});
   const [selectedCalDate, setSelectedCalDate] = useState<string | null>(null);
-  const [dayForm, setDayForm] = useState<DayCfg>(BLANK_DAY());
+  const [dayForm, setDayForm] = useState<DayCfg>(() => blankDay());
+  const [dayMode, setDayModeState] = useState<DayMode>('both');
   const [calSaving, setCalSaving] = useState(false);
   const [calSaved, setCalSaved] = useState(false);
 
   function patchShift(shift: 'morning' | 'evening', patch: Partial<ShiftCfg>) {
     setDayForm(prev => ({ ...prev, [shift]: { ...prev[shift], ...patch } }));
+  }
+  function selectMode(mode: DayMode) {
+    setDayModeState(mode);
+    setDayForm(prev => applyMode(mode, prev));
   }
 
   // Re-seed when doctor loads (covers cold start)
@@ -416,8 +441,12 @@ export default function SettingsScreen() {
                               <TouchableOpacity
                                 key={ci}
                                 onPress={() => {
+                                  const activeCli = clinics[activeClinic];
+                                  const existing = calendarOverrides[iso];
+                                  const form = existing ? JSON.parse(JSON.stringify(existing)) : blankDay(activeCli);
                                   setSelectedCalDate(iso);
-                                  setDayForm(calendarOverrides[iso] ? JSON.parse(JSON.stringify(calendarOverrides[iso])) : BLANK_DAY());
+                                  setDayForm(form);
+                                  setDayModeState(existing ? modeOf(existing) : 'both');
                                 }}
                                 style={[
                                   styles.calCell,
@@ -460,102 +489,113 @@ export default function SettingsScreen() {
                   {/* ── DAY EDITOR ─────────────────────────── */}
                   {selectedCalDate && (
                     <View style={styles.dayEditor}>
+                      {/* Header */}
                       <View style={styles.dayEditorHeader}>
-                        <Text style={styles.dayEditorDate}>✏ {friendlyDate(selectedCalDate)}</Text>
+                        <Text style={styles.dayEditorDate}>✏  {friendlyDate(selectedCalDate)}</Text>
                         <TouchableOpacity onPress={() => setSelectedCalDate(null)} style={styles.dayEditorClose}>
                           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>✕</Text>
                         </TouchableOpacity>
                       </View>
 
-                      {/* Day-Off toggle */}
-                      <View style={styles.dayOffRow}>
-                        <View>
-                          <Text style={styles.dayOffLabel}>Mark as Day Off / Holiday</Text>
-                          <Text style={styles.dayOffSub}>No appointments on this day</Text>
-                        </View>
-                        <Toggle on={dayForm.off} onChange={() => setDayForm(p => ({ ...p, off: !p.off }))} color="#EF4444" />
+                      {/* ── 4 SHIFT BUTTONS ── */}
+                      <View style={styles.shiftBtnRow}>
+                        {([
+                          { id: 'morning',  icon: '☀',  label: 'Morning',  bg: 'rgba(245,158,11,0.25)', border: '#F59E0B', txt: '#FCD34D' },
+                          { id: 'evening',  icon: '☾',  label: 'Evening',  bg: 'rgba(139,92,246,0.25)', border: '#7C3AED', txt: '#A5B4FC' },
+                          { id: 'both',     icon: '✓',  label: 'Both',     bg: 'rgba(13,148,136,0.25)', border: '#0D9488', txt: '#2DD4BF' },
+                          { id: 'holiday',  icon: '✕',  label: 'Holiday',  bg: 'rgba(239,68,68,0.22)',  border: '#DC2626', txt: '#F87171' },
+                        ] as { id: DayMode; icon: string; label: string; bg: string; border: string; txt: string }[]).map(btn => {
+                          const active = dayMode === btn.id;
+                          return (
+                            <TouchableOpacity
+                              key={btn.id}
+                              onPress={() => selectMode(btn.id)}
+                              style={[
+                                styles.shiftModeBtn,
+                                active && { backgroundColor: btn.bg, borderColor: btn.border },
+                              ]}
+                            >
+                              <Text style={{ fontSize: 15, lineHeight: 18 }}>{btn.icon}</Text>
+                              <Text style={[styles.shiftModeBtnTxt, active && { color: btn.txt }]}>{btn.label}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
 
-                      {!dayForm.off && (
-                        <>
-                          {/* Morning */}
-                          <View style={[styles.shiftCard, { marginTop: 8 }]}>
-                            <View style={styles.shiftCardHeader}>
-                              <Text style={styles.shiftCardTitle}>☀ Morning</Text>
-                              <Toggle on={dayForm.morning.enabled} onChange={() => patchShift('morning', { enabled: !dayForm.morning.enabled })} color="#FCD34D" />
-                            </View>
-                            {dayForm.morning.enabled && (
-                              <>
-                                <View style={styles.timeRow}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>START</Text>
-                                    <TextInput style={styles.fieldInput} value={dayForm.morning.startTime} onChangeText={v => patchShift('morning', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="09:00" />
-                                  </View>
-                                  <Text style={styles.timeDash}>–</Text>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>END</Text>
-                                    <TextInput style={styles.fieldInput} value={dayForm.morning.endTime} onChangeText={v => patchShift('morning', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="13:00" />
-                                  </View>
-                                </View>
-                                <View style={styles.timeRow}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
-                                    <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxWalkin)} onChangeText={v => patchShift('morning', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
-                                  </View>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
-                                    <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxEToken)} onChangeText={v => patchShift('morning', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
-                                  </View>
-                                </View>
-                                <Text style={styles.fieldLabel}>CLINIC NAME</Text>
-                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.clinicName} onChangeText={v => patchShift('morning', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
-                                <Text style={styles.fieldLabel}>ADDRESS</Text>
-                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.address} onChangeText={v => patchShift('morning', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
-                                <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
-                                <TextInput style={styles.fieldInput} value={dayForm.morning.locationLink} onChangeText={v => patchShift('morning', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
-                              </>
-                            )}
-                          </View>
+                      {/* Holiday: no further config needed */}
+                      {dayMode === 'holiday' && (
+                        <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                          <Text style={{ fontSize: 26, marginBottom: 6 }}>🚫</Text>
+                          <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>No appointments on this day</Text>
+                        </View>
+                      )}
 
-                          {/* Evening */}
-                          <View style={[styles.shiftCard, { marginTop: 8 }]}>
-                            <View style={styles.shiftCardHeader}>
-                              <Text style={styles.shiftCardTitle}>☾ Evening</Text>
-                              <Toggle on={dayForm.evening.enabled} onChange={() => patchShift('evening', { enabled: !dayForm.evening.enabled })} color="#A5B4FC" />
+                      {/* Morning or Both — show morning form */}
+                      {(dayMode === 'morning' || dayMode === 'both') && (
+                        <View style={[styles.shiftCard, { marginTop: 10, borderColor: 'rgba(245,158,11,0.25)' }]}>
+                          <Text style={[styles.shiftCardTitle, { color: '#FCD34D', marginBottom: 10 }]}>☀  Morning Shift</Text>
+                          <View style={styles.timeRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>START</Text>
+                              <TextInput style={styles.fieldInput} value={dayForm.morning.startTime} onChangeText={v => patchShift('morning', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="09:00" />
                             </View>
-                            {dayForm.evening.enabled && (
-                              <>
-                                <View style={styles.timeRow}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>START</Text>
-                                    <TextInput style={styles.fieldInput} value={dayForm.evening.startTime} onChangeText={v => patchShift('evening', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="17:00" />
-                                  </View>
-                                  <Text style={styles.timeDash}>–</Text>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>END</Text>
-                                    <TextInput style={styles.fieldInput} value={dayForm.evening.endTime} onChangeText={v => patchShift('evening', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20:00" />
-                                  </View>
-                                </View>
-                                <View style={styles.timeRow}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
-                                    <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxWalkin)} onChangeText={v => patchShift('evening', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
-                                  </View>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
-                                    <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxEToken)} onChangeText={v => patchShift('evening', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
-                                  </View>
-                                </View>
-                                <Text style={styles.fieldLabel}>CLINIC NAME</Text>
-                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.clinicName} onChangeText={v => patchShift('evening', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
-                                <Text style={styles.fieldLabel}>ADDRESS</Text>
-                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.address} onChangeText={v => patchShift('evening', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
-                                <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
-                                <TextInput style={styles.fieldInput} value={dayForm.evening.locationLink} onChangeText={v => patchShift('evening', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
-                              </>
-                            )}
+                            <Text style={styles.timeDash}>–</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>END</Text>
+                              <TextInput style={styles.fieldInput} value={dayForm.morning.endTime} onChangeText={v => patchShift('morning', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="13:00" />
+                            </View>
                           </View>
-                        </>
+                          <View style={styles.timeRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
+                              <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxWalkin)} onChangeText={v => patchShift('morning', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
+                              <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxEToken)} onChangeText={v => patchShift('morning', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
+                            </View>
+                          </View>
+                          <Text style={styles.fieldLabel}>CLINIC NAME</Text>
+                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.clinicName} onChangeText={v => patchShift('morning', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
+                          <Text style={styles.fieldLabel}>ADDRESS</Text>
+                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.address} onChangeText={v => patchShift('morning', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
+                          <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
+                          <TextInput style={styles.fieldInput} value={dayForm.morning.locationLink} onChangeText={v => patchShift('morning', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
+                        </View>
+                      )}
+
+                      {/* Evening or Both — show evening form */}
+                      {(dayMode === 'evening' || dayMode === 'both') && (
+                        <View style={[styles.shiftCard, { marginTop: 10, borderColor: 'rgba(139,92,246,0.25)' }]}>
+                          <Text style={[styles.shiftCardTitle, { color: '#A5B4FC', marginBottom: 10 }]}>☾  Evening Shift</Text>
+                          <View style={styles.timeRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>START</Text>
+                              <TextInput style={styles.fieldInput} value={dayForm.evening.startTime} onChangeText={v => patchShift('evening', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="17:00" />
+                            </View>
+                            <Text style={styles.timeDash}>–</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>END</Text>
+                              <TextInput style={styles.fieldInput} value={dayForm.evening.endTime} onChangeText={v => patchShift('evening', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20:00" />
+                            </View>
+                          </View>
+                          <View style={styles.timeRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
+                              <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxWalkin)} onChangeText={v => patchShift('evening', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
+                              <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxEToken)} onChangeText={v => patchShift('evening', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
+                            </View>
+                          </View>
+                          <Text style={styles.fieldLabel}>CLINIC NAME</Text>
+                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.clinicName} onChangeText={v => patchShift('evening', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
+                          <Text style={styles.fieldLabel}>ADDRESS</Text>
+                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.address} onChangeText={v => patchShift('evening', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
+                          <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
+                          <TextInput style={styles.fieldInput} value={dayForm.evening.locationLink} onChangeText={v => patchShift('evening', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
+                        </View>
                       )}
 
                       {/* Apply Day button */}
@@ -566,7 +606,7 @@ export default function SettingsScreen() {
                           setSelectedCalDate(null);
                         }}
                       >
-                        <Text style={styles.applyDayBtnTxt}>✓ Apply to {friendlyDate(selectedCalDate)}</Text>
+                        <Text style={styles.applyDayBtnTxt}>✓  Apply to {friendlyDate(selectedCalDate)}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -966,4 +1006,8 @@ const styles = StyleSheet.create({
   dayOffSub:       { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
   applyDayBtn:     { marginTop: 14, height: 46, borderRadius: 14, backgroundColor: 'rgba(45,212,191,0.25)', borderWidth: 1.5, borderColor: '#2DD4BF', alignItems: 'center', justifyContent: 'center' },
   applyDayBtnTxt:  { fontSize: 13, fontWeight: '900', color: '#2DD4BF' },
+  // Shift-mode 4-button row
+  shiftBtnRow:     { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  shiftModeBtn:    { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', gap: 3 },
+  shiftModeBtnTxt: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
 });
