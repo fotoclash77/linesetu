@@ -245,7 +245,7 @@ export default function HomeScreen() {
           <Text style={styles.name}>Hello, {firstName} 👋</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconBtn}>
+          <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
             <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
             <View style={styles.notifDot} />
           </Pressable>
