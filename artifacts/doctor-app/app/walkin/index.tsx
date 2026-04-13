@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,13 +8,29 @@ import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
 
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const AMBER_LT = '#FCD34D';
+const RED      = '#EF4444';
 
-function todayDate() {
-  const d = new Date();
+function dateISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayDate() {
+  return dateISO(new Date());
 }
 function currentShift(): 'morning' | 'evening' {
   return new Date().getHours() < 13 ? 'morning' : 'evening';
+}
+function getNext30Days(): Date[] {
+  return Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0); return d;
+  });
+}
+function dayLabel(d: Date): string {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+  if (d.getTime() === today.getTime())    return 'Today';
+  if (d.getTime() === tomorrow.getTime()) return 'Tmrw';
+  return d.toLocaleDateString('en-IN', { weekday: 'short' });
 }
 function relTime(bookedAt: any): string {
   let ms: number;
@@ -46,9 +62,17 @@ export default function AddWalkinScreen() {
   const { doctor } = useDoctor();
   const params = useLocalSearchParams<{ date?: string; shift?: string }>();
 
-  // Selected schedule — falls back to today + current shift if not passed
-  const selectedDate  = (params.date  as string) || todayDate();
-  const selectedShift = ((params.shift as string) === 'evening' ? 'evening' : 'morning') as 'morning' | 'evening';
+  // Selected schedule — initialized from params, changeable via picker
+  const initDate  = (params.date  as string) || todayDate();
+  const initShift = ((params.shift as string) === 'evening' ? 'evening' : 'morning') as 'morning' | 'evening';
+
+  const [selectedDate,  setSelectedDate]  = useState<string>(initDate);
+  const [selectedShift, setSelectedShift] = useState<'morning' | 'evening'>(initShift);
+
+  // Schedule picker state
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [pickDate,     setPickDate]     = useState<string>(initDate);
+  const [pickShift,    setPickShift]    = useState<'morning' | 'evening'>(initShift);
 
   const [tokenType, setTokenType] = useState<'Normal' | 'Emergency'>('Normal');
   const [gender, setGender] = useState<'M' | 'F'>('M');
@@ -199,10 +223,16 @@ export default function AddWalkinScreen() {
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Book Walk-in Token</Text>
-              <Text style={styles.headerSub}>
-                {fmtDateDisplay(selectedDate)}  ·  {selectedShift === 'morning' ? '☀ Morning' : '☾ Evening'}
-              </Text>
             </View>
+            {/* Schedule pill — tap to change date/shift */}
+            <TouchableOpacity
+              style={styles.schedPill}
+              onPress={() => { setPickDate(selectedDate); setPickShift(selectedShift); setShowSchedule(true); }}
+            >
+              <Text style={styles.schedPillTxt}>
+                📅  {fmtDateDisplay(selectedDate)}  ·  {selectedShift === 'morning' ? '☀ Morning' : '☾ Evening'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Next token info */}
@@ -365,6 +395,140 @@ export default function AddWalkinScreen() {
         </ScrollView>
       </View>
 
+      {/* ── SCHEDULE PICKER MODAL ─────────────────── */}
+      <Modal visible={showSchedule} transparent animationType="slide" onRequestClose={() => setShowSchedule(false)}>
+        <TouchableOpacity style={wStyles.modalOverlay} activeOpacity={1} onPress={() => setShowSchedule(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={wStyles.modalSheet}>
+              <View style={wStyles.modalHandle} />
+              <Text style={wStyles.modalTitle}>📅  Select Schedule</Text>
+              <Text style={wStyles.modalSub}>Dates & shifts from your configured calendar</Text>
+
+              {/* Date strip — 30-day calendar */}
+              <Text style={wStyles.modalSectionLabel}>DATE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+                <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                  {getNext30Days().map(d => {
+                    const iso = dateISO(d);
+                    const cfg = (doctor as any)?.calendar?.[iso];
+                    const isOff = cfg?.off === true;
+                    const hasMorning = cfg?.morning?.enabled === true;
+                    const hasEvening = cfg?.evening?.enabled === true;
+                    const hasAny = !isOff && (hasMorning || hasEvening);
+                    const active = pickDate === iso;
+                    return (
+                      <TouchableOpacity
+                        key={iso}
+                        onPress={() => {
+                          setPickDate(iso);
+                          if (cfg) {
+                            if (hasMorning && !hasEvening) setPickShift('morning');
+                            else if (hasEvening && !hasMorning) setPickShift('evening');
+                          }
+                        }}
+                        disabled={isOff}
+                        style={[
+                          wStyles.dateCell,
+                          active && wStyles.dateCellActive,
+                          isOff && { opacity: 0.22 },
+                          hasAny && !active && { borderColor: 'rgba(45,212,191,0.2)' },
+                        ]}
+                      >
+                        <Text style={[wStyles.dateDayLabel, active && { color: TEAL_LT }]}>{dayLabel(d)}</Text>
+                        <Text style={[wStyles.dateDayNum,   active && { color: '#FFF'  }]}>{d.getDate()}</Text>
+                        <Text style={[wStyles.dateMonth,    active && { color: TEAL_LT }]}>
+                          {d.toLocaleDateString('en-IN', { month: 'short' })}
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 3, marginTop: 2 }}>
+                          {hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: AMBER_LT }} />}
+                          {hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
+                          {isOff && <Text style={{ fontSize: 9, color: '#F87171' }}>Off</Text>}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Shift cards — real data from calendar[pickDate] */}
+              <Text style={wStyles.modalSectionLabel}>SHIFT</Text>
+              {(() => {
+                const cal = (doctor as any)?.calendar ?? {};
+                const dayCfg = cal[pickDate];
+                if (dayCfg?.off === true) {
+                  return (
+                    <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 16 }}>
+                      <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                      <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>This day is marked as Holiday</Text>
+                    </View>
+                  );
+                }
+                return (
+                  <View style={wStyles.shiftRow}>
+                    {(['morning', 'evening'] as const).map(s => {
+                      const shiftCfg = dayCfg?.[s];
+                      const enabled = dayCfg ? shiftCfg?.enabled === true : true;
+                      const active  = pickShift === s;
+                      const timeRange  = shiftCfg ? `${shiftCfg.startTime ?? ''} – ${shiftCfg.endTime ?? ''}` : '';
+                      const clinicName = shiftCfg?.clinicName ?? '';
+                      const maxTok     = shiftCfg?.maxTokens ? String(shiftCfg.maxTokens) : null;
+                      return (
+                        <TouchableOpacity
+                          key={s}
+                          onPress={() => enabled && setPickShift(s)}
+                          disabled={!enabled}
+                          style={[
+                            wStyles.shiftOpt,
+                            active && (s === 'morning' ? wStyles.shiftOptMorn : wStyles.shiftOptEve),
+                            !enabled && { opacity: 0.25 },
+                          ]}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                            <Text style={{ fontSize: 16, opacity: active ? 1 : 0.5 }}>
+                              {s === 'morning' ? '☀' : '☾'}
+                            </Text>
+                            <Text style={[wStyles.shiftOptLabel, active && { color: '#FFF' }]}>
+                              {s === 'morning' ? 'Morning' : 'Evening'}
+                            </Text>
+                            {!enabled && <Text style={{ fontSize: 9, fontWeight: '700', color: '#F87171', textTransform: 'uppercase' }}>Off</Text>}
+                          </View>
+                          {timeRange.trim() !== '–' && timeRange !== '' && (
+                            <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>
+                              🕐 {timeRange}
+                            </Text>
+                          )}
+                          {clinicName ? (
+                            <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500', marginTop: 2 }} numberOfLines={1}>
+                              🏥 {clinicName}
+                            </Text>
+                          ) : null}
+                          {maxTok ? (
+                            <Text style={{ fontSize: 10, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)', fontWeight: '700', marginTop: 3 }}>
+                              Max: {maxTok} tokens
+                            </Text>
+                          ) : null}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
+
+              <TouchableOpacity
+                style={wStyles.confirmBtn}
+                onPress={() => {
+                  setSelectedDate(pickDate);
+                  setSelectedShift(pickShift);
+                  setShowSchedule(false);
+                }}
+              >
+                <Text style={wStyles.confirmBtnTxt}>✓  Set Schedule</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Success overlay */}
       {showSuccess && (
         <View style={styles.overlay}>
@@ -470,4 +634,27 @@ const styles = StyleSheet.create({
   btnNewTokenTxt: { fontSize: 13, fontWeight: '800', color: TEAL_LT },
   btnHome: { flex: 1, height: 50, borderRadius: 16, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center' },
   btnHomeTxt: { fontSize: 13, fontWeight: '800', color: '#FFF' },
+  schedPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(13,148,136,0.18)', borderColor: 'rgba(45,212,191,0.4)' },
+  schedPillTxt: { fontSize: 11, fontWeight: '800', color: TEAL_LT },
+});
+
+const wStyles = StyleSheet.create({
+  modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalSheet:       { backgroundColor: '#0D1321', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 36, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  modalHandle:      { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 18 },
+  modalTitle:       { fontSize: 18, fontWeight: '900', color: '#FFF', marginBottom: 4 },
+  modalSub:         { fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '500', marginBottom: 16 },
+  modalSectionLabel:{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 },
+  dateCell:         { width: 60, height: 76, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  dateCellActive:   { backgroundColor: 'rgba(13,148,136,0.25)', borderColor: 'rgba(45,212,191,0.5)', borderWidth: 1.5 },
+  dateDayLabel:     { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' },
+  dateDayNum:       { fontSize: 22, fontWeight: '900', color: 'rgba(255,255,255,0.7)', lineHeight: 26 },
+  dateMonth:        { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.35)' },
+  shiftRow:         { flexDirection: 'row', gap: 10, marginBottom: 22 },
+  shiftOpt:         { flex: 1, minHeight: 72, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', backgroundColor: 'rgba(255,255,255,0.04)', padding: 12, gap: 2 },
+  shiftOptMorn:     { backgroundColor: 'rgba(245,158,11,0.18)', borderColor: 'rgba(245,158,11,0.45)', borderWidth: 1.5 },
+  shiftOptEve:      { backgroundColor: 'rgba(196,181,253,0.15)', borderColor: 'rgba(196,181,253,0.4)', borderWidth: 1.5 },
+  shiftOptLabel:    { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
+  confirmBtn:       { height: 52, borderRadius: 16, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center' },
+  confirmBtnTxt:    { fontSize: 15, fontWeight: '900', color: '#FFF' },
 });
