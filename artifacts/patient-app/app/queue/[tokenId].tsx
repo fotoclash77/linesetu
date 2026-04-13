@@ -414,14 +414,6 @@ export default function LiveQueueScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Bar */}
-      <View style={[styles.bottomBar, { paddingBottom: bottomPad + 10 }]}>
-        <View style={styles.bottomInfo}>
-          <Text style={styles.bottomInfoTxt}>Token #{myToken}</Text>
-          <Text style={styles.bottomInfoSep}>·</Text>
-          <Text style={styles.bottomInfoTxt2}>Dr. Ananya Sharma</Text>
-        </View>
-      </View>
     </View>
   );
 }
@@ -529,9 +521,4 @@ const styles = StyleSheet.create({
   apptVerifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(34,197,94,0.12)", borderWidth: 1, borderColor: "rgba(34,197,94,0.3)" },
   apptVerifiedTxt: { fontSize: 9, fontWeight: "700", color: "#22C55E" },
 
-  bottomBar: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: "rgba(10,14,26,0.95)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", flexDirection: "row", alignItems: "center", gap: 12 },
-  bottomInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  bottomInfoTxt: { fontSize: 13, fontWeight: "700", color: "#A5B4FC" },
-  bottomInfoSep: { color: "rgba(255,255,255,0.2)" },
-  bottomInfoTxt2: { fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1 },
 });
