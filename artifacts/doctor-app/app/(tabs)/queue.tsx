@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, Platform, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
@@ -257,14 +258,19 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
         <PulseDot color={AMBER_LT} size={8} />
         <Text style={S.consLabel}>IN CONSULTATION</Text>
       </View>
-      <View style={S.consRow}>
+      <TouchableOpacity
+        style={S.consRow}
+        onPress={() => router.push(`/patients/${tok.id}` as any)}
+        activeOpacity={0.75}
+      >
         {/* Token chip wrapped in animated pulse rings */}
         <View style={S.ringWrap}>
           <PulseRings color={ringColor} borderRadius={14} />
           <TokenChip token={tok.tokenNumber} type={tok.type} large amber={tok.type !== 'emergency'} />
         </View>
         <PatientInfo tok={tok} large />
-      </View>
+        <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 20, alignSelf: 'center' }}>›</Text>
+      </TouchableOpacity>
       <View style={S.consBtnRow}>
         <TouchableOpacity
           style={[S.skipBtn, busy && { opacity: 0.5 }]}
@@ -302,19 +308,31 @@ function NoConsultation({ nextTok }: { nextTok?: Token }) {
 // ─── Up Next Card ────────────────────────────────────────────────
 function UpNextCard({ tok, onCall, busy }: { tok: Token; onCall: () => void; busy: boolean }) {
   return (
-    <TouchableOpacity style={S.upNextCard} onPress={onCall} disabled={busy} activeOpacity={0.8}>
+    <View style={S.upNextCard}>
       <View style={S.upNextHeader}>
         <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: TEAL_LT, marginRight: 6 }} />
         <Text style={S.upNextLabel}>UP NEXT</Text>
       </View>
       <View style={S.upNextRow}>
-        <TokenChip token={tok.tokenNumber} type={tok.type} />
-        <PatientInfo tok={tok} />
-        {busy
-          ? <ActivityIndicator color={TEAL_LT} size="small" style={{ marginLeft: 4 }} />
-          : <Text style={S.upNextChevron}>›</Text>}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
+          onPress={() => router.push(`/patients/${tok.id}` as any)}
+          activeOpacity={0.75}
+        >
+          <TokenChip token={tok.tokenNumber} type={tok.type} />
+          <PatientInfo tok={tok} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[S.callBtn, busy && { opacity: 0.5 }]}
+          onPress={onCall} disabled={busy}
+          activeOpacity={0.8}
+        >
+          {busy
+            ? <ActivityIndicator color={TEAL_LT} size="small" />
+            : <Text style={S.upNextChevron}>›</Text>}
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -334,10 +352,15 @@ function WaitingCard({ tok, onSendNext, onSendAlert, busy }: {
 }) {
   return (
     <View style={S.waitCard}>
-      <View style={S.waitRow}>
+      <TouchableOpacity
+        style={S.waitRow}
+        onPress={() => router.push(`/patients/${tok.id}` as any)}
+        activeOpacity={0.75}
+      >
         <TokenChip token={tok.tokenNumber} type={tok.type} />
         <PatientInfo tok={tok} />
-      </View>
+        <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, marginLeft: 4 }}>›</Text>
+      </TouchableOpacity>
       <View style={S.waitBtns}>
         <TouchableOpacity
           style={[S.sendNextBtn, busy && { opacity: 0.5 }]}
@@ -362,7 +385,11 @@ function WaitingCard({ tok, onSendNext, onSendAlert, busy }: {
 function PastCard({ tok }: { tok: Token }) {
   const isDone = tok.displayStatus === 'done';
   return (
-    <View style={[S.waitCard, { opacity: 0.65 }]}>
+    <TouchableOpacity
+      style={[S.waitCard, { opacity: 0.72 }]}
+      onPress={() => router.push(`/patients/${tok.id}` as any)}
+      activeOpacity={0.65}
+    >
       <View style={[S.waitRow, { alignItems: 'center' }]}>
         <TokenChip token={tok.tokenNumber} type={tok.type} />
         <PatientInfo tok={tok} />
@@ -370,7 +397,7 @@ function PastCard({ tok }: { tok: Token }) {
           {isDone ? '✓' : '↷'}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -659,7 +686,8 @@ const S = StyleSheet.create({
   upNextHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   upNextLabel:  { fontSize: 11, fontWeight: '800', color: TEAL_LT, letterSpacing: 1.5, textTransform: 'uppercase' },
   upNextRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  upNextChevron:{ fontSize: 24, fontWeight: '300', color: TEAL_LT, marginLeft: 4 },
+  upNextChevron:{ fontSize: 24, fontWeight: '300', color: TEAL_LT },
+  callBtn:      { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(13,148,136,0.2)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.3)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
   // Waiting list header
   waitingHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' },
