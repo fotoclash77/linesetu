@@ -15,7 +15,9 @@ const RECENT = [
 export default function AddWalkinScreen() {
   const [tokenType, setTokenType] = useState<'Normal' | 'Emergency'>('Normal');
   const [gender, setGender] = useState<'M' | 'F'>('M');
-  const [booked, setBooked] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [bookedName, setBookedName] = useState('');
+  const [bookedToken, setBookedToken] = useState('#52');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [phone, setPhone] = useState('');
@@ -25,11 +27,17 @@ export default function AddWalkinScreen() {
   const isEmerg = tokenType === 'Emergency';
 
   const handleBook = () => {
-    setBooked(true);
-    setTimeout(() => setBooked(false), 2000);
+    setBookedName(name.trim() || 'Patient');
+    setBookedToken(isEmerg ? 'E03' : '#52');
+    setShowSuccess(true);
   };
 
-  const inputStyle = [styles.input];
+  const resetForm = () => {
+    setName(''); setAge(''); setPhone('');
+    setAddress(''); setArea('');
+    setGender('M'); setTokenType('Normal');
+    setShowSuccess(false);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -180,16 +188,9 @@ export default function AddWalkinScreen() {
           {/* Book button */}
           <TouchableOpacity
             onPress={handleBook}
-            style={[
-              styles.bookBtn,
-              booked ? styles.bookBtnBooked : isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal,
-            ]}
+            style={[styles.bookBtn, isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal]}
           >
-            <Text style={styles.bookBtnText}>
-              {booked
-                ? '✓ Token Booked!'
-                : `✚ Book ${tokenType} Token — FREE`}
-            </Text>
+            <Text style={styles.bookBtnText}>{`✚ Book ${tokenType} Token — FREE`}</Text>
           </TouchableOpacity>
 
           {/* Recent walk-ins */}
@@ -218,6 +219,44 @@ export default function AddWalkinScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* Success overlay */}
+      {showSuccess && (
+        <View style={styles.overlay}>
+          <View style={styles.successCard}>
+            {/* Icon */}
+            <View style={styles.successIconWrap}>
+              <Text style={styles.successIcon}>✓</Text>
+            </View>
+
+            <Text style={styles.successTitle}>Token Booked!</Text>
+            <Text style={styles.successSub}>
+              Token <Text style={styles.successHighlight}>{bookedToken}</Text> assigned to{' '}
+              <Text style={styles.successHighlight}>{bookedName}</Text>
+            </Text>
+            <Text style={styles.successNote}>Patient has been added to the queue.</Text>
+
+            {/* Buttons */}
+            <View style={styles.successBtns}>
+              <TouchableOpacity
+                style={styles.btnNewToken}
+                activeOpacity={0.8}
+                onPress={resetForm}
+              >
+                <Text style={styles.btnNewTokenTxt}>＋ Book New Token</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.btnHome}
+                activeOpacity={0.8}
+                onPress={() => { setShowSuccess(false); router.replace('/'); }}
+              >
+                <Text style={styles.btnHomeTxt}>Go Home</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -291,4 +330,38 @@ const styles = StyleSheet.create({
   recentName: { fontSize: 12, fontWeight: '700', color: '#FFF' },
   recentSub: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
   recentTime: { fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: '600' },
+
+  overlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(10,14,26,0.85)',
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  successCard: {
+    width: '100%', borderRadius: 24, padding: 24,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)',
+    alignItems: 'center', gap: 6,
+  },
+  successIconWrap: {
+    width: 64, height: 64, borderRadius: 20, marginBottom: 6,
+    backgroundColor: 'rgba(13,148,136,0.25)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  successIcon:      { fontSize: 28, color: TEAL_LT, fontWeight: '900' },
+  successTitle:     { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: -0.5, marginBottom: 2 },
+  successSub:       { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 20 },
+  successHighlight: { fontWeight: '800', color: TEAL_LT },
+  successNote:      { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.3)', marginTop: 2, marginBottom: 10 },
+  successBtns:      { flexDirection: 'column', gap: 10, width: '100%', marginTop: 8 },
+  btnNewToken: {
+    height: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: TEAL, borderWidth: 0,
+  },
+  btnNewTokenTxt:   { fontSize: 13, fontWeight: '900', color: '#FFF' },
+  btnHome: {
+    height: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)',
+  },
+  btnHomeTxt:       { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
 });
