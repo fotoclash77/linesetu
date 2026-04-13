@@ -183,7 +183,7 @@ export default function DashboardScreen() {
               <TouchableOpacity style={styles.walkinBtn} onPress={() => router.push('/walkin')}>
                 <Text style={styles.walkinBtnText}>✚ Add Walk-in</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.queueBtn} onPress={() => router.push('/(tabs)/queue')}>
+              <TouchableOpacity style={styles.queueBtn} onPress={() => router.navigate('/(tabs)/queue' as any)}>
                 <Text style={styles.queueBtnText}>⏱ View Queue</Text>
               </TouchableOpacity>
             </View>
