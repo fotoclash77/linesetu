@@ -121,10 +121,10 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View style={styles.headerIcons}>
-            <View style={styles.bellBtn}>
+            <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
               <Text style={styles.bellIcon}>🔔</Text>
               <View style={styles.bellDot} />
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
