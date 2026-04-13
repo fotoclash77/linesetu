@@ -86,7 +86,6 @@ const MENU_SECTIONS: MenuSection[] = [
     title: "Account",
     items: [
       { icon: "log-out", label: "Sign Out",       sub: "Log out of your account",         color: "#F59E0B", route: null, badge: null, liveIndicator: false, danger: false },
-      { icon: "trash-2", label: "Delete Account", sub: "Permanently remove all data",      color: "#EF4444", route: null, badge: null, liveIndicator: false, danger: true  },
     ],
   },
 ];
