@@ -141,10 +141,13 @@ function ChipSelector({ options, value, onChange, color = "#818CF8" }: {
   );
 }
 
-function FieldBlock({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldBlock({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <View style={styles.fieldBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 8 }}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        {required && <Text style={styles.fieldRequired}>*</Text>}
+      </View>
       {children}
     </View>
   );
@@ -223,7 +226,13 @@ export default function ProfileScreen() {
   };
 
   const saveProfile = async () => {
-    if (!eName.trim()) { Alert.alert("Name required", "Please enter your name."); return; }
+    if (!eName.trim())    { Alert.alert("Name required",            "Please enter your full name.");         return; }
+    if (!eEmail.trim())   { Alert.alert("Email required",           "Please enter your email address.");     return; }
+    if (!eAge.trim())     { Alert.alert("Age required",             "Please enter your age.");               return; }
+    if (!eGender)         { Alert.alert("Gender required",          "Please select your gender.");           return; }
+    if (!eBlood)          { Alert.alert("Blood group required",     "Please select your blood group.");      return; }
+    if (!eArea.trim())    { Alert.alert("Area required",            "Please enter your area / locality.");   return; }
+    if (!eAddress.trim()) { Alert.alert("Address required",         "Please enter your complete address.");  return; }
     setSaving(true);
     await updatePatient({ name: eName.trim(), age: eAge, blood: eBlood, gender: eGender, email: eEmail, profilePhoto: ePhoto, address: eAddress, area: eArea });
     setSaving(false);
@@ -256,7 +265,11 @@ export default function ProfileScreen() {
   };
 
   const saveMember = async () => {
-    if (!mName.trim()) { Alert.alert("Name required"); return; }
+    if (!mName.trim())  { Alert.alert("Name required",        "Please enter the member's full name."); return; }
+    if (!mRelation)     { Alert.alert("Relation required",    "Please select the relation.");          return; }
+    if (!mAge.trim())   { Alert.alert("Age required",         "Please enter the member's age.");       return; }
+    if (!mBlood)        { Alert.alert("Blood group required", "Please select the blood group.");       return; }
+    if (!mPhone.trim()) { Alert.alert("Phone required",       "Please enter the member's phone number."); return; }
     setMSaving(true);
     const member: FamilyMember = {
       id: editingMem?.id ?? Date.now().toString(),
@@ -505,7 +518,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
 
-                <FieldBlock label="Full Name">
+                <FieldBlock label="Full Name" required>
                   <TextInput style={styles.textInput} value={eName} onChangeText={setEName} placeholder="Enter your name" placeholderTextColor="rgba(255,255,255,0.25)" />
                 </FieldBlock>
 
@@ -515,27 +528,27 @@ export default function ProfileScreen() {
                   </View>
                 </FieldBlock>
 
-                <FieldBlock label="Email">
+                <FieldBlock label="Email" required>
                   <TextInput style={styles.textInput} value={eEmail} onChangeText={setEEmail} placeholder="Enter email address" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="email-address" autoCapitalize="none" />
                 </FieldBlock>
 
-                <FieldBlock label="Age">
+                <FieldBlock label="Age" required>
                   <TextInput style={styles.textInput} value={eAge} onChangeText={setEAge} placeholder="e.g. 32" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="numeric" />
                 </FieldBlock>
 
-                <FieldBlock label="Gender">
+                <FieldBlock label="Gender" required>
                   <ChipSelector options={GENDERS} value={eGender} onChange={setEGender} color="#818CF8" />
                 </FieldBlock>
 
-                <FieldBlock label="Blood Group">
+                <FieldBlock label="Blood Group" required>
                   <ChipSelector options={BLOOD_GROUPS} value={eBlood} onChange={setEBlood} color="#EF4444" />
                 </FieldBlock>
 
-                <FieldBlock label="Area / Locality">
+                <FieldBlock label="Area / Locality" required>
                   <TextInput style={styles.textInput} value={eArea} onChangeText={setEArea} placeholder="e.g. Andheri West, Bandra" placeholderTextColor="rgba(255,255,255,0.25)" />
                 </FieldBlock>
 
-                <FieldBlock label="Complete Address">
+                <FieldBlock label="Complete Address" required>
                   <TextInput
                     style={[styles.textInput, { minHeight: 80, textAlignVertical: "top" }]}
                     value={eAddress}
@@ -594,23 +607,23 @@ export default function ProfileScreen() {
                   </View>
                 </View>
 
-                <FieldBlock label="Full Name">
+                <FieldBlock label="Full Name" required>
                   <TextInput style={styles.textInput} value={mName} onChangeText={setMName} placeholder="Member's name" placeholderTextColor="rgba(255,255,255,0.25)" />
                 </FieldBlock>
 
-                <FieldBlock label="Relation">
+                <FieldBlock label="Relation" required>
                   <ChipSelector options={RELATIONS} value={mRelation} onChange={setMRelation} color={RELATION_COLORS[mRelation] ?? "#818CF8"} />
                 </FieldBlock>
 
-                <FieldBlock label="Age">
+                <FieldBlock label="Age" required>
                   <TextInput style={styles.textInput} value={mAge} onChangeText={setMAge} placeholder="e.g. 28" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="numeric" />
                 </FieldBlock>
 
-                <FieldBlock label="Blood Group">
+                <FieldBlock label="Blood Group" required>
                   <ChipSelector options={BLOOD_GROUPS} value={mBlood} onChange={setMBlood} color="#EF4444" />
                 </FieldBlock>
 
-                <FieldBlock label="Phone Number">
+                <FieldBlock label="Phone Number" required>
                   <TextInput style={styles.textInput} value={mPhone} onChangeText={setMPhone} placeholder="+91 XXXXX XXXXX" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="phone-pad" />
                 </FieldBlock>
 
@@ -714,8 +727,9 @@ const styles = StyleSheet.create({
   photoHintBox:         { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4 },
   modalPhotoHint:       { fontSize: 10, color: "#F59E0B", fontWeight: "600", flex: 1 },
 
-  fieldBlock:  { marginBottom: 18 },
-  fieldLabel:  { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 },
+  fieldBlock:    { marginBottom: 18 },
+  fieldLabel:    { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 0.8 },
+  fieldRequired: { fontSize: 13, fontWeight: "900", color: "#EF4444", lineHeight: 16 },
   textInput:   { backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: "#FFF", fontWeight: "600" },
 
   chip:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
