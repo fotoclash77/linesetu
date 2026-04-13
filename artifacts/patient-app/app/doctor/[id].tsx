@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const isWeb = Platform.OS === "web";
 
+const DEMO_PHOTO = require("../../assets/images/demo-doctor.jpg");
+
 const SAMPLE_DOCTOR = {
   id: "demo1",
   name: "Dr. Ananya Sharma",
@@ -109,7 +111,7 @@ export default function DoctorDetailScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad + 80 }} showsVerticalScrollIndicator={false}>
         {/* Hero Photo */}
         <View style={[styles.heroWrap, { marginTop: 12 }]}>
-          <Image source={{ uri: doctor.photo }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
+          <Image source={doctor.id === "demo1" ? DEMO_PHOTO : { uri: doctor.photo }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
           <LinearGradient colors={["transparent", "rgba(10,14,26,0.95)"]} style={styles.heroGrad} />
 
           {/* Verified badge */}
