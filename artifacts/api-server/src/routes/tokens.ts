@@ -163,8 +163,11 @@ router.get("/tokens/visit-count", async (req, res) => {
         where("patientPhone", "==", phone),
       ),
     );
-    let count = snap.docs.length;
-    if (excludeId) count = snap.docs.filter(d => d.id !== excludeId).length;
+    const completed = snap.docs.filter(d => {
+      if (excludeId && d.id === excludeId) return false;
+      return d.data().status === "done";
+    });
+    const count = completed.length;
     res.json({ count });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

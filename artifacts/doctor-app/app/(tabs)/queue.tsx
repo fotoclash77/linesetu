@@ -48,7 +48,7 @@ function mapToken(t: any): Token {
     patientName: t.patientName ?? 'Unknown',
     patientPhone: t.patientPhone ?? '',
     type: t.type === 'emergency' ? 'emergency' : 'normal',
-    source: t.source ?? 'online',
+    source: t.source || '',
     status: t.status,
     displayStatus:
       t.status === 'in_consult' ? 'consulting' :
@@ -63,8 +63,9 @@ function mapToken(t: any): Token {
 
 function typeCfg(tok: Token) {
   if (tok.type === 'emergency') return { color:'#F87171', bg:'rgba(239,68,68,0.18)',  label:'Emergency', dot:'#F87171' };
-  if (tok.source === 'walkin') return  { color:'#67E8F9', bg:'rgba(6,182,212,0.18)',  label:'Walk-in',   dot:'#67E8F9' };
-  return                               { color:'#4ADE80', bg:'rgba(34,197,94,0.18)',  label:'Online',    dot:'#4ADE80' };
+  if (tok.source === 'walkin')  return { color:'#67E8F9', bg:'rgba(6,182,212,0.18)',  label:'Walk-in',   dot:'#67E8F9' };
+  if (tok.source === 'online')  return { color:'#4ADE80', bg:'rgba(34,197,94,0.18)',  label:'Online',    dot:'#4ADE80' };
+  return                               { color:'rgba(255,255,255,0.5)', bg:'rgba(255,255,255,0.08)', label:'—', dot:'rgba(255,255,255,0.3)' };
 }
 
 // ─── Pulsing dot ─────────────────────────────────────────────────
