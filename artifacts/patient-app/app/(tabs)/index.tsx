@@ -34,9 +34,9 @@ const SPECIALTIES = [
 ] as const;
 
 const SAMPLE_DOCTORS: DoctorItem[] = [
-  { id: "demo1", name: "Dr. Ananya Sharma", specialty: "Cardiologist",  clinicName: "HeartCare Clinic, Andheri",   rating: "4.9", wait: "25 Min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: "demo2", name: "Dr. Vikram Patel",  specialty: "Dermatologist", clinicName: "Skin Glow Center, Bandra",    rating: "4.8", wait: "10 Min", token: 12, accent: "#3B82F6", exp: "9 yrs",  patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg"   },
-  { id: "demo3", name: "Dr. Priya Nair",    specialty: "Neurologist",   clinicName: "NeuroPlus Hospital, Powai",   rating: "4.7", wait: "18 Min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { id: "demo1", name: "Dr. Ananya Sharma", specialty: "Cardiologist",  clinicName: "HeartCare Clinic, Andheri",   rating: "4.9", wait: "25 min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { id: "demo2", name: "Dr. Vikram Patel",  specialty: "Dermatologist", clinicName: "Skin Glow Center, Bandra",    rating: "4.8", wait: "10 min", token: 12, accent: "#3B82F6", exp: "9 yrs",  patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg"   },
+  { id: "demo3", name: "Dr. Priya Nair",    specialty: "Neurologist",   clinicName: "NeuroPlus Hospital, Powai",   rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
 ];
 
 interface DoctorItem {
@@ -209,7 +209,7 @@ export default function HomeScreen() {
     clinicName: d.clinicName ?? "Clinic",
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
-    wait: "~15 Min",
+    wait: "~15 min",
     token: 1,
     exp: "10 yrs",
     patients: "1K+",

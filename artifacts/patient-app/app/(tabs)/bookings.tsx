@@ -233,7 +233,7 @@ function BookingCard({ booking, showMember }: { booking: BookingItem; showMember
               </View>
               <View style={styles.waitChip}>
                 <Feather name="clock" size={9} color="#F59E0B" />
-                <Text style={styles.waitChipTxt}>~{waitMin} Min</Text>
+                <Text style={styles.waitChipTxt}>~{waitMin} min</Text>
               </View>
             </View>
           )}
