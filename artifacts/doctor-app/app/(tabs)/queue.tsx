@@ -30,6 +30,12 @@ const todayISO = () => {
 function dateISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+function getNext30Days(): Date[] {
+  return Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0); return d;
+  });
+}
+// Kept for compatibility — no longer used in the modal
 function getNext7Days(): Date[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0); return d;
@@ -258,25 +264,49 @@ function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
 }
 
 // ─── Stats Bar ───────────────────────────────────────────────────
-function StatsBar({ all }: { all: Token[] }) {
-  const total   = all.length;
+function StatsBar({ all, maxTokens, clinicName, timeRange }: {
+  all: Token[]; maxTokens: number | null; clinicName: string; timeRange: string;
+}) {
+  const total   = all.filter(t => t.displayStatus !== 'skipped').length;
   const waiting = all.filter(t => t.displayStatus === 'waiting').length;
   const done    = all.filter(t => t.displayStatus === 'done').length;
   const skipped = all.filter(t => t.displayStatus === 'skipped').length;
+  const fillPct = maxTokens ? Math.min(Math.round((total / maxTokens) * 100), 100) : 0;
+  const fillColor = fillPct >= 90 ? RED : fillPct >= 70 ? AMBER : TEAL_LT;
   const stats = [
-    { label: 'Total',   val: total,   color: TEAL_LT  },
+    { label: 'Booked',  val: maxTokens ? `${total}/${maxTokens}` : String(total), color: TEAL_LT  },
     { label: 'Waiting', val: waiting, color: AMBER_LT },
     { label: 'Done',    val: done,    color: GREEN    },
     { label: 'Skipped', val: skipped, color: PURPLE   },
   ];
   return (
-    <View style={S.statsBar}>
-      {stats.map((s, i) => (
-        <View key={s.label} style={[S.statCell, i < 3 && S.statBorder]}>
-          <Text style={[S.statVal, { color: s.color }]}>{s.val}</Text>
-          <Text style={S.statLbl}>{s.label}</Text>
+    <View>
+      {/* Clinic + time info */}
+      {(clinicName || timeRange) ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, paddingHorizontal: 2 }}>
+          {clinicName ? <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>🏥 {clinicName}</Text> : null}
+          {timeRange ? <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>· 🕐 {timeRange}</Text> : null}
         </View>
-      ))}
+      ) : null}
+      <View style={S.statsBar}>
+        {stats.map((s, i) => (
+          <View key={s.label} style={[S.statCell, i < 3 && S.statBorder]}>
+            <Text style={[S.statVal, { color: s.color, fontSize: 17 }]}>{s.val}</Text>
+            <Text style={S.statLbl}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+      {/* Capacity bar */}
+      {maxTokens ? (
+        <View style={{ marginTop: 6, gap: 3 }}>
+          <View style={{ height: 4, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            <View style={{ width: `${fillPct}%`, height: '100%', borderRadius: 99, backgroundColor: fillColor }} />
+          </View>
+          <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.3)', textAlign: 'right' }}>
+            {fillPct}% capacity used · {maxTokens - total > 0 ? `${maxTokens - total} slots left` : 'Shift Full'}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -500,8 +530,8 @@ export default function QueueScreen() {
   };
 
   // ── Data (REST is primary; SSE is fallback before REST loads) ──────────────
-  const restTokens: Token[]     = (aData?.tokens ?? []).map(mapToken).filter(t => t.shift === shift);
-  const masterFiltered: Token[] = masterRows.map(mapToken).filter(t => t.shift === shift);
+  const restTokens: Token[]     = (aData?.tokens ?? []).map(mapToken).filter((t: Token) => t.shift === shift);
+  const masterFiltered: Token[] = masterRows.map(mapToken).filter((t: Token) => t.shift === shift);
   const all: Token[] = restTokens.length > 0 ? restTokens : masterFiltered;
 
   const consulting = all.find(t => t.displayStatus === 'consulting');
@@ -540,12 +570,14 @@ export default function QueueScreen() {
     return [];
   })();
 
-  const timeOfDay = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return '☀ Morning';
-    if (h < 17) return '🌤 Afternoon';
-    return '🌙 Evening';
-  })();
+  // ── Calendar-derived shift info ───────────────────────────────
+  const calendarEntry = (doctor as any)?.calendar?.[schedDate];
+  const shiftCfg = calendarEntry?.[shift];
+  const maxTokens: number | null = shiftCfg?.maxTokens ? Number(shiftCfg.maxTokens) : null;
+  const clinicName: string = shiftCfg?.clinicName ?? doctor?.clinicName ?? '';
+  const timeRange: string = shiftCfg?.startTime && shiftCfg?.endTime
+    ? `${shiftCfg.startTime} – ${shiftCfg.endTime}`
+    : '';
 
   return (
     <SafeAreaView style={S.safe} edges={['top']}>
@@ -592,7 +624,7 @@ export default function QueueScreen() {
           <>
             {/* ── STATS ──────────────────────────────── */}
             <View style={{ paddingHorizontal: 14, paddingBottom: 6 }}>
-              <StatsBar all={all} />
+              <StatsBar all={all} maxTokens={maxTokens} clinicName={clinicName} timeRange={timeRange} />
             </View>
 
             {/* ── IN CONSULTATION (sticky) ───────────── */}
@@ -693,60 +725,126 @@ export default function QueueScreen() {
             <View style={S.modalSheet}>
               <View style={S.modalHandle} />
               <Text style={S.modalTitle}>📅  Select Schedule</Text>
-              <Text style={S.modalSub}>Choose date and shift for the queue</Text>
+              <Text style={S.modalSub}>Dates & shifts from your configured calendar</Text>
 
-              {/* Date selector */}
+              {/* ── Date selector — real 30-day calendar ── */}
+              <Text style={S.modalSectionLabel}>DATE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
                 <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
-                  {getNext7Days().map(d => {
+                  {getNext30Days().map(d => {
                     const iso = dateISO(d);
+                    const cfg = (doctor as any)?.calendar?.[iso];
+                    const isOff = cfg?.off === true;
+                    const hasMorning = cfg?.morning?.enabled === true;
+                    const hasEvening = cfg?.evening?.enabled === true;
+                    const hasAny = !isOff && (hasMorning || hasEvening);
                     const active = pickDate === iso;
+                    // If no calendar entry yet, treat as a potential day (not blocked)
+                    const noEntry = !cfg;
                     return (
                       <TouchableOpacity
                         key={iso}
-                        onPress={() => setPickDate(iso)}
-                        style={[S.dateCell, active && S.dateCellActive]}
+                        onPress={() => {
+                          setPickDate(iso);
+                          // Auto-select shift based on what's enabled for this date
+                          if (cfg) {
+                            if (hasMorning && !hasEvening) setPickShift('morning');
+                            else if (hasEvening && !hasMorning) setPickShift('evening');
+                          }
+                        }}
+                        disabled={isOff}
+                        style={[
+                          S.dateCell,
+                          active && S.dateCellActive,
+                          isOff && { opacity: 0.22 },
+                          hasAny && !active && { borderColor: 'rgba(45,212,191,0.2)' },
+                        ]}
                       >
                         <Text style={[S.dateDayLabel, active && { color: TEAL_LT }]}>{dayLabel(d)}</Text>
                         <Text style={[S.dateDayNum,   active && { color: '#FFF'   }]}>{d.getDate()}</Text>
                         <Text style={[S.dateMonth,    active && { color: TEAL_LT }]}>
                           {d.toLocaleDateString('en-IN', { month: 'short' })}
                         </Text>
+                        {/* Shift dots */}
+                        <View style={{ flexDirection: 'row', gap: 3, marginTop: 2 }}>
+                          {hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FCD34D' }} />}
+                          {hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
+                          {isOff && <Text style={{ fontSize: 9, color: '#F87171' }}>Off</Text>}
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               </ScrollView>
 
-              {/* Shift selector */}
+              {/* ── Shift selector — driven by calendar[pickDate] ── */}
               <Text style={S.modalSectionLabel}>SHIFT</Text>
-              <View style={S.shiftRow}>
-                {(['morning', 'evening'] as const).map(s => {
-                  const enabled = s === 'morning'
-                    ? (doctor?.shifts?.morning !== false)
-                    : (doctor?.shifts?.evening !== false);
-                  const active = pickShift === s;
+              {(() => {
+                const cal = (doctor as any)?.calendar ?? {};
+                const dayCfg = cal[pickDate];
+                const isOff = dayCfg?.off === true;
+
+                if (isOff) {
                   return (
-                    <TouchableOpacity
-                      key={s}
-                      onPress={() => enabled && setPickShift(s)}
-                      style={[
-                        S.shiftOpt,
-                        active && (s === 'morning' ? S.shiftOptMorn : S.shiftOptEve),
-                        !enabled && { opacity: 0.35 },
-                      ]}
-                    >
-                      <Text style={[S.shiftOptIcon, active && { opacity: 1 }]}>
-                        {s === 'morning' ? '☀' : '☾'}
-                      </Text>
-                      <Text style={[S.shiftOptLabel, active && { color: '#FFF' }]}>
-                        {s === 'morning' ? 'Morning' : 'Evening'}
-                      </Text>
-                      {!enabled && <Text style={S.shiftOptOff}>Off</Text>}
-                    </TouchableOpacity>
+                    <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 16 }}>
+                      <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                      <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>This day is marked as Holiday</Text>
+                    </View>
                   );
-                })}
-              </View>
+                }
+
+                return (
+                  <View style={S.shiftRow}>
+                    {(['morning', 'evening'] as const).map(s => {
+                      const shiftCfg = dayCfg?.[s];
+                      // Enabled if explicitly set; fall back to "no calendar = show both"
+                      const enabled = dayCfg ? shiftCfg?.enabled === true : true;
+                      const active = pickShift === s;
+                      const timeRange = shiftCfg ? `${shiftCfg.startTime ?? ''} – ${shiftCfg.endTime ?? ''}` : '';
+                      const clinicName = shiftCfg?.clinicName ?? '';
+                      const maxTok = shiftCfg?.maxTokens ? String(shiftCfg.maxTokens) : null;
+                      return (
+                        <TouchableOpacity
+                          key={s}
+                          onPress={() => enabled && setPickShift(s)}
+                          disabled={!enabled}
+                          style={[
+                            S.shiftOpt,
+                            active && (s === 'morning' ? S.shiftOptMorn : S.shiftOptEve),
+                            !enabled && { opacity: 0.25 },
+                            { height: 'auto', minHeight: 68, paddingVertical: 12, paddingHorizontal: 8, gap: 3, alignItems: 'flex-start' },
+                          ]}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <Text style={[S.shiftOptIcon, active && { opacity: 1 }, { fontSize: 16 }]}>
+                              {s === 'morning' ? '☀' : '☾'}
+                            </Text>
+                            <Text style={[S.shiftOptLabel, active && { color: '#FFF' }]}>
+                              {s === 'morning' ? 'Morning' : 'Evening'}
+                            </Text>
+                            {!enabled && <Text style={S.shiftOptOff}>Off</Text>}
+                          </View>
+                          {timeRange.trim() !== '–' && timeRange !== '' && (
+                            <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>
+                              🕐 {timeRange}
+                            </Text>
+                          )}
+                          {clinicName ? (
+                            <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500' }} numberOfLines={1}>
+                              🏥 {clinicName}
+                            </Text>
+                          ) : null}
+                          {maxTok ? (
+                            <Text style={{ fontSize: 10, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)', fontWeight: '700', marginTop: 2 }}>
+                              Max: {maxTok} tokens
+                            </Text>
+                          ) : null}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
 
               {/* Confirm */}
               <TouchableOpacity
@@ -757,7 +855,7 @@ export default function QueueScreen() {
                   setShowSchedule(false);
                 }}
               >
-                <Text style={S.confirmBtnTxt}>Confirm Schedule</Text>
+                <Text style={S.confirmBtnTxt}>✓  Open Queue</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
