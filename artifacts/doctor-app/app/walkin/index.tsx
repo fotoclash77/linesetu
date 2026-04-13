@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator,
 } from 'react-native';
@@ -55,28 +55,53 @@ export default function AddWalkinScreen() {
   const [queue, setQueue]       = useState<TokenRow[]>([]);
   const [queueLoading, setQueueLoading] = useState(true);
 
-  const fetchQueue = useCallback(async () => {
-    if (!doctor?.id) return;
-    try {
-      const res  = await fetch(`${BASE()}/api/tokens?doctorId=${doctor.id}&date=${todayDate()}`);
-      const data = await res.json();
-      if (data.tokens) {
-        const sorted = [...data.tokens].sort((a: TokenRow, b: TokenRow) => {
-          const ta = a.bookedAt?.seconds ?? 0;
-          const tb = b.bookedAt?.seconds ?? 0;
-          return tb - ta;
-        });
-        setQueue(sorted);
-      }
-    } catch (_) {}
-    setQueueLoading(false);
-  }, [doctor?.id]);
-
   useEffect(() => {
-    fetchQueue();
-    const iv = setInterval(fetchQueue, 20_000);
+    if (!doctor?.id) return;
+
+    const url = `${BASE()}/api/tokens/stream/${doctor.id}?date=${todayDate()}`;
+
+    // Use SSE (EventSource) for zero-delay real-time updates
+    if (typeof EventSource !== 'undefined') {
+      const es = new EventSource(url);
+
+      es.onmessage = (e) => {
+        try {
+          const tokens: TokenRow[] = JSON.parse(e.data);
+          const sorted = [...tokens].sort((a, b) => {
+            const ta = a.bookedAt?.seconds ?? 0;
+            const tb = b.bookedAt?.seconds ?? 0;
+            return tb - ta;
+          });
+          setQueue(sorted);
+          setQueueLoading(false);
+        } catch (_) {}
+      };
+
+      es.onerror = () => setQueueLoading(false);
+
+      return () => es.close();
+    }
+
+    // Fallback: poll every 8s on platforms without EventSource
+    const poll = async () => {
+      try {
+        const res  = await fetch(`${BASE()}/api/tokens?doctorId=${doctor.id}&date=${todayDate()}`);
+        const data = await res.json();
+        if (data.tokens) {
+          const sorted = [...data.tokens].sort((a: TokenRow, b: TokenRow) => {
+            const ta = a.bookedAt?.seconds ?? 0;
+            const tb = b.bookedAt?.seconds ?? 0;
+            return tb - ta;
+          });
+          setQueue(sorted);
+        }
+      } catch (_) {}
+      setQueueLoading(false);
+    };
+    poll();
+    const iv = setInterval(poll, 8_000);
     return () => clearInterval(iv);
-  }, [fetchQueue]);
+  }, [doctor?.id]);
 
   const isEmerg = tokenType === 'Emergency';
 

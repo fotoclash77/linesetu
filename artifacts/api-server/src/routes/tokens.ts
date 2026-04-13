@@ -6,6 +6,7 @@ import {
   arrayUnion, arrayRemove, increment,
   queueDocId, todayDate,
 } from "../lib/firebase.js";
+import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
 
 const router = Router();
 
@@ -73,6 +74,7 @@ router.post("/tokens", async (req, res) => {
     }
 
     await batch.commit();
+    emitDoctorTokenChange(doctorId);
 
     // Write a real-time notification for the doctor
     try {
@@ -142,6 +144,7 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
       updatedAt:       Timestamp.now(),
     });
     await batch.commit();
+    emitDoctorTokenChange(token.doctorId);
 
     res.json({ id: req.params.tokenId, status: "in_consult" });
   } catch (err: any) {
@@ -185,6 +188,8 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     }
 
     await batch.commit();
+    emitDoctorTokenChange(token.doctorId);
+
     res.json({ id: req.params.tokenId, status: "done" });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -209,6 +214,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
       updatedAt:       Timestamp.now(),
     });
     await batch.commit();
+    emitDoctorTokenChange(token.doctorId);
 
     // Write a notification for the doctor about the cancellation
     try {
@@ -229,6 +235,51 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/tokens/stream/:doctorId — SSE real-time token stream
+router.get("/tokens/stream/:doctorId", async (req, res) => {
+  const { doctorId } = req.params;
+  const date = (req.query.date as string) || todayDate();
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  const sendTokens = async () => {
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, Collections.TOKENS),
+          where("doctorId", "==", doctorId),
+          where("date", "==", date),
+          orderBy("tokenNumber", "asc"),
+        ),
+      );
+      const tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      res.write(`data: ${JSON.stringify(tokens)}\n\n`);
+    } catch (_) {}
+  };
+
+  // Send immediately on connect
+  await sendTokens();
+
+  // Listen for changes
+  const key = `tokens:${doctorId}`;
+  const handler = () => sendTokens();
+  tokenEmitter.on(key, handler);
+
+  // Heartbeat every 30s to keep connection alive through proxies
+  const heartbeat = setInterval(() => {
+    try { res.write(": ping\n\n"); } catch (_) {}
+  }, 30_000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    tokenEmitter.off(key, handler);
+  });
 });
 
 export default router;
