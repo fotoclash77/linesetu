@@ -430,7 +430,6 @@ export default function QueueScreen() {
   const qc = useQueryClient();
   const [tab,    setTab]    = useState<TabKey>('queue');
   const [shift,  setShift]  = useState<'morning'|'evening'>('morning');
-  const [paused, setPaused] = useState(false);
   const [busyId, setBusy]   = useState<string|null>(null);
   const docId = doctor?.id ?? '';
 
@@ -577,16 +576,6 @@ export default function QueueScreen() {
                   </View>
                 ))}
               </View>
-
-              {/* ── PAUSE / RESUME ── */}
-              <TouchableOpacity
-                style={[S.pauseBtn, paused&&S.pauseBtnOn]}
-                onPress={()=>setPaused(p=>!p)}
-              >
-                <Text style={[S.pauseTxt,{color:paused?'#4ADE80':'#FCD34D'}]}>
-                  {paused ? '▶  Resume Queue' : '⏸  Pause Queue'}
-                </Text>
-              </TouchableOpacity>
 
               {/* ── 4 TABS ── */}
               <View style={S.tabBar}>
