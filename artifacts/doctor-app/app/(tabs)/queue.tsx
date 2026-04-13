@@ -314,69 +314,58 @@ function ConsultingCard({ tok, doctorId, onNotShown, onDone, busy }: {
 function UpNextCard({ tok, onCall, busy }: { tok:Token; onCall:()=>void; busy:boolean }) {
   const isEmerg = tok.type === 'emergency';
   const accentC = isEmerg ? '#F87171' : '#FCD34D';
-  const borderC = isEmerg ? 'rgba(239,68,68,0.42)' : 'rgba(245,158,11,0.42)';
-  const bgA     = isEmerg ? 'rgba(239,68,68,0.16)' : 'rgba(245,158,11,0.14)';
+  const borderC = isEmerg ? 'rgba(239,68,68,0.45)' : 'rgba(245,158,11,0.45)';
+  const cardBg  = isEmerg ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.08)';
+  const chipBg  = isEmerg ? 'rgba(239,68,68,0.32)' : 'rgba(245,158,11,0.30)';
   const isWk = tok.source === 'walkin';
   const isOn = tok.source === 'online';
-  const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : null;
-  const srcColor = isWk ? '#67E8F9' : '#4ADE80';
-  const srcDot   = isWk ? '#67E8F9' : '#4ADE80';
-  const genderLabel = tok.gender === 'male' ? 'M' : tok.gender === 'female' ? 'F' : tok.gender ? tok.gender[0].toUpperCase() : '';
+  const genderLabel = tok.gender === 'male' ? 'M' : tok.gender === 'female' ? 'F'
+    : tok.gender ? tok.gender[0]?.toUpperCase() : '';
+  const ageGender = [tok.age ? String(tok.age) : '', genderLabel].filter(Boolean).join('');
   return (
     <TouchableOpacity
-      style={[S.unCard, {backgroundColor:bgA, borderColor:borderC}]}
+      style={[S.unCard, {backgroundColor:cardBg, borderColor:borderC}]}
       onPress={onCall} disabled={busy} activeOpacity={0.78}
     >
-      {/* ── Header row: UP NEXT label + chevron ── */}
-      <View style={S.unHeader}>
-        <View style={S.unLabelRow}>
-          <View style={{width:6,height:6,borderRadius:3,backgroundColor:accentC,marginRight:5}}/>
-          <Text style={[S.unLabel,{color:accentC}]}>{isEmerg ? '⚡  UP NEXT — EMERGENCY' : '🔜  UP NEXT'}</Text>
+      {/* ── Main row: chip + info + chevron ── */}
+      <View style={S.unMain}>
+        {/* Token chip — "NEXT" label + number */}
+        <View style={[S.unChip, {backgroundColor:chipBg, borderColor: isEmerg?'rgba(239,68,68,0.55)':'rgba(245,158,11,0.55)'}]}>
+          <Text style={[S.unChipLabel, {color:accentC}]}>NEXT</Text>
+          <Text style={S.unChipNum}>{isEmerg ? `E${String(tok.tokenNumber).padStart(2,'0')}` : `#${tok.tokenNumber}`}</Text>
         </View>
-        {busy
-          ? <ActivityIndicator color={accentC} size="small"/>
-          : <Text style={[S.unChevron,{color:accentC}]}>›</Text>}
-      </View>
-
-      {/* ── Token + patient info ── */}
-      <View style={S.unBody}>
-        {/* Token chip */}
-        <View style={[S.unTokChip,{backgroundColor: isEmerg?'rgba(239,68,68,0.28)':'rgba(245,158,11,0.24)', borderColor:borderC}]}>
-          <Text style={[S.unTokLabel,{color:accentC}]}>NEXT</Text>
-          <Text style={S.unTokNum}>{isEmerg ? `E${String(tok.tokenNumber).padStart(2,'0')}` : `#${tok.tokenNumber}`}</Text>
-        </View>
-        {/* Name + badges */}
-        <View style={{flex:1,minWidth:0}}>
-          <View style={{flexDirection:'row',alignItems:'center',gap:5,marginBottom:5}}>
+        {/* Centre: name + badges */}
+        <View style={{flex:1, minWidth:0}}>
+          <View style={{flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:7}}>
             <Text style={S.unName} numberOfLines={1}>{tok.patientName}</Text>
-            {(tok.age || genderLabel) ? (
-              <Text style={S.unMeta}>{tok.age ? `${tok.age}` : ''}{genderLabel}</Text>
-            ) : null}
+            {!!ageGender && <Text style={S.unMeta}>{ageGender}</Text>}
           </View>
-          <View style={S.unBadgeRow}>
-            {/* Normal / Emergency */}
-            <View style={[S.pill,{backgroundColor: isEmerg?'rgba(239,68,68,0.2)':'rgba(99,102,241,0.2)'}]}>
-              <View style={{width:5,height:5,borderRadius:3,backgroundColor: isEmerg?'#F87171':'#A5B4FC',marginRight:3}}/>
-              <Text style={[S.pillTxt,{color: isEmerg?'#F87171':'#A5B4FC'}]}>{isEmerg?'EMERGENCY':'NORMAL'}</Text>
+          <View style={S.unBadges}>
+            <View style={[S.unPill, {backgroundColor: isEmerg?'rgba(239,68,68,0.18)':'rgba(99,102,241,0.22)', borderColor: isEmerg?'rgba(239,68,68,0.4)':'rgba(99,102,241,0.4)'}]}>
+              <Text style={{fontSize:9, marginRight:3}}>{isEmerg ? '⚡' : '✔'}</Text>
+              <Text style={[S.unPillTxt, {color: isEmerg?'#F87171':'#A5B4FC'}]}>{isEmerg ? 'EMERGENCY' : 'NORMAL'}</Text>
             </View>
-            {/* Source */}
-            {srcLabel && (
-              <View style={[S.pill,{backgroundColor: isWk?'rgba(6,182,212,0.15)':'rgba(34,197,94,0.15)'}]}>
-                <View style={{width:5,height:5,borderRadius:3,backgroundColor:srcDot,marginRight:3}}/>
-                <Text style={[S.pillTxt,{color:srcColor}]}>{srcLabel}</Text>
+            {(isWk || isOn) && (
+              <View style={[S.unPill, {backgroundColor: isWk?'rgba(6,182,212,0.18)':'rgba(34,197,94,0.18)', borderColor: isWk?'rgba(6,182,212,0.4)':'rgba(34,197,94,0.4)'}]}>
+                <Text style={{fontSize:9, marginRight:3}}>{isWk ? '👣' : '📱'}</Text>
+                <Text style={[S.unPillTxt, {color: isWk?'#67E8F9':'#4ADE80'}]}>{isWk ? 'WALK-IN' : 'E-TOKEN'}</Text>
               </View>
             )}
           </View>
         </View>
+        {/* Chevron / spinner */}
+        {busy
+          ? <ActivityIndicator color={accentC} size="small" style={{marginLeft:4}}/>
+          : <Text style={[S.unChevron, {color:accentC}]}>›</Text>}
       </View>
 
       {/* ── Footer: phone + area ── */}
-      {(tok.patientPhone || tok.area) ? (
-        <View style={[S.unFooter,{borderTopColor: isEmerg?'rgba(239,68,68,0.18)':'rgba(245,158,11,0.18)'}]}>
+      {(tok.patientPhone || tok.area) && (
+        <View style={[S.unFooter, {borderTopColor: isEmerg?'rgba(239,68,68,0.18)':'rgba(245,158,11,0.18)'}]}>
           {!!tok.patientPhone && <Text style={S.unFooterTxt}>📞 {tok.patientPhone}</Text>}
           {!!tok.area         && <Text style={S.unFooterTxt}>📍 {tok.area}</Text>}
         </View>
-      ) : null}
+      )}
     </TouchableOpacity>
   );
 }
@@ -964,21 +953,24 @@ const S = StyleSheet.create({
   pill:    { flexDirection:'row', alignItems:'center', paddingHorizontal:7, paddingVertical:3, borderRadius:20 },
   pillTxt: { fontSize:9, fontWeight:'800', letterSpacing:0.3 },
 
-  // UP NEXT rich card
-  unCard:      { borderRadius:18, borderWidth:1.5, paddingTop:10, paddingBottom:0, overflow:'hidden', marginBottom:2 },
-  unHeader:    { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:13, marginBottom:10 },
-  unLabelRow:  { flexDirection:'row', alignItems:'center' },
-  unLabel:     { fontSize:9, fontWeight:'800', letterSpacing:0.8, textTransform:'uppercase' },
-  unChevron:   { fontSize:22, fontWeight:'300', lineHeight:24 },
-  unBody:      { flexDirection:'row', alignItems:'flex-start', gap:12, paddingHorizontal:13, paddingBottom:10 },
-  unTokChip:   { width:52, height:52, borderRadius:15, borderWidth:1.5, alignItems:'center', justifyContent:'center', flexShrink:0 },
-  unTokLabel:  { fontSize:8, fontWeight:'700', letterSpacing:0.5, textTransform:'uppercase' },
-  unTokNum:    { fontSize:18, fontWeight:'900', color:'#FFF', letterSpacing:-0.8, lineHeight:22 },
-  unName:      { fontSize:14, fontWeight:'800', color:'#FFF', flex:1 },
-  unMeta:      { fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'600' },
-  unBadgeRow:  { flexDirection:'row', gap:5, flexWrap:'wrap' },
-  unFooter:    { flexDirection:'row', gap:16, paddingHorizontal:13, paddingVertical:9, borderTopWidth:1, marginTop:2 },
+  // UP NEXT rich card (matches screenshot)
+  unCard:      { borderRadius:20, borderWidth:1.5, overflow:'hidden' },
+  unMain:      { flexDirection:'row', alignItems:'center', gap:14, padding:14 },
+  unChip:      { width:58, height:58, borderRadius:16, borderWidth:1.5, alignItems:'center', justifyContent:'center', flexShrink:0 },
+  unChipLabel: { fontSize:8, fontWeight:'700', letterSpacing:0.5, textTransform:'uppercase', lineHeight:12 },
+  unChipNum:   { fontSize:20, fontWeight:'900', color:'#FFF', letterSpacing:-1, lineHeight:24 },
+  unName:      { fontSize:15, fontWeight:'800', color:'#FFF', flexShrink:1 },
+  unMeta:      { fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'600', flexShrink:0 },
+  unBadges:    { flexDirection:'row', gap:6, flexWrap:'wrap' },
+  unPill:      { flexDirection:'row', alignItems:'center', paddingHorizontal:9, paddingVertical:4, borderRadius:20, borderWidth:1 },
+  unPillTxt:   { fontSize:9, fontWeight:'800', letterSpacing:0.3 },
+  unChevron:   { fontSize:26, fontWeight:'300', lineHeight:28, flexShrink:0 },
+  unFooter:    { flexDirection:'row', gap:18, paddingHorizontal:14, paddingVertical:10, borderTopWidth:1 },
   unFooterTxt: { fontSize:10, color:'rgba(255,255,255,0.42)', fontWeight:'500' },
+  // Empty placeholder reuses unCard + unMain + unLabel
+  unLabel:     { fontSize:9, fontWeight:'800', letterSpacing:0.8, textTransform:'uppercase' },
+  unLabelRow:  { flexDirection:'row', alignItems:'center' },
+  unHeader:    { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:13, marginBottom:10 },
 
   // Master live queue
   masterSection:  { marginTop: 16 },
