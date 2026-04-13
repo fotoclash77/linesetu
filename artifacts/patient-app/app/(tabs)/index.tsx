@@ -158,7 +158,7 @@ async function fetchQueuePosition(doctorId: string, tokenId: string) {
 }
 
 function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; doctorName: string }) {
-  const { data: pos } = useQuery({
+  const { data: pos, isLoading: posLoading } = useQuery({
     queryKey: ["queue-pos", token?.doctorId, token?.id],
     queryFn: () => fetchQueuePosition(token!.doctorId, token!.id),
     enabled: !!token?.id && !!token?.doctorId,
@@ -170,6 +170,7 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
   const currentToken = pos?.currentToken ?? 0;
   const waitMin      = pos?.estimatedWaitMins ?? 0;
   const ahead        = pos?.position ?? Math.max(0, myToken - currentToken);
+  const queueStarted = currentToken > 0;
   const progressPct  = myToken > 0 && currentToken > 0
     ? Math.min(100, Math.round((currentToken / myToken) * 100)) : 0;
 
@@ -186,8 +187,13 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
   return (
     <View style={styles.liveQueueCard}>
       <View style={styles.liveQueueHeader}>
-        <View style={styles.greenDot} />
+        <View style={[styles.greenDot, !queueStarted && { backgroundColor: "#FCD34D" }]} />
         <Text style={styles.liveQueueLbl}>Live Queue</Text>
+        {!queueStarted && (
+          <View style={{ marginLeft: 6, backgroundColor: "rgba(252,211,77,0.12)", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(252,211,77,0.3)" }}>
+            <Text style={{ fontSize: 9, fontWeight: "700", color: "#FCD34D" }}>Queue not started yet</Text>
+          </View>
+        )}
         <View style={{ flex: 1 }} />
         <View style={styles.liveQueueDocChip}>
           <Feather name="radio" size={10} color="#818CF8" />
@@ -204,14 +210,20 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
           <Text style={[styles.queueStatNum, { color: "#A5B4FC" }]}>{myToken}</Text>
           <Text style={styles.queueStatSub}>Your number</Text>
         </View>
-        <View style={[styles.queueStatBox, { backgroundColor: "rgba(6,182,212,0.12)", borderColor: "rgba(6,182,212,0.3)", overflow: "visible" }]}>
-          <AnimatedRing size={54} color="#06B6D4" pulses={2} />
+        <View style={[styles.queueStatBox, { backgroundColor: queueStarted ? "rgba(6,182,212,0.12)" : "rgba(252,211,77,0.06)", borderColor: queueStarted ? "rgba(6,182,212,0.3)" : "rgba(252,211,77,0.2)", overflow: "visible" }]}>
+          {queueStarted && <AnimatedRing size={54} color="#06B6D4" pulses={2} />}
           <View style={styles.queueStatHeader}>
-            <Feather name="radio" size={9} color="#06B6D4" />
+            <Feather name="radio" size={9} color={queueStarted ? "#06B6D4" : "#FCD34D"} />
             <Text style={styles.queueStatLblTxt}>CURRENT</Text>
           </View>
-          <Text style={[styles.queueStatNum, { color: "#67E8F9" }]}>{currentToken || "–"}</Text>
-          <Text style={styles.queueStatSub}>Being served</Text>
+          {posLoading && !pos ? (
+            <ActivityIndicator size="small" color="#67E8F9" style={{ marginVertical: 4 }} />
+          ) : (
+            <Text style={[styles.queueStatNum, { color: queueStarted ? "#67E8F9" : "#FCD34D", fontSize: queueStarted ? 28 : 13 }]}>
+              {queueStarted ? currentToken : "Waiting"}
+            </Text>
+          )}
+          <Text style={styles.queueStatSub}>{queueStarted ? "Being served" : "to start"}</Text>
         </View>
         <View style={[styles.queueStatBox, { backgroundColor: "rgba(34,197,94,0.1)", borderColor: "rgba(34,197,94,0.25)" }]}>
           <View style={styles.queueStatHeader}>
@@ -225,16 +237,22 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
 
       <View style={styles.liveProgressSection}>
         <View style={styles.liveProgressHeader}>
-          <Text style={styles.liveProgressLbl}>{ahead} tokens ahead of you</Text>
+          <Text style={styles.liveProgressLbl}>
+            {queueStarted ? `${ahead} tokens ahead of you` : `${ahead} tokens in queue · waiting for doctor`}
+          </Text>
           <Text style={styles.liveProgressRight}>{token.specialty ?? "OPD"}</Text>
         </View>
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: pct(progressPct) }]} />
+          {queueStarted ? (
+            <View style={[styles.progressFill, { width: pct(progressPct) }]} />
+          ) : (
+            <View style={[styles.progressFill, { width: pct(10), backgroundColor: "#FCD34D", opacity: 0.5 }]} />
+          )}
         </View>
       </View>
 
       <Pressable style={styles.viewQueueBtn} onPress={() => router.push(`/queue/${token.id}` as any)}>
-        <Text style={styles.viewQueueBtnTxt}>View Queue →</Text>
+        <Text style={styles.viewQueueBtnTxt}>View Full Queue →</Text>
       </Pressable>
     </View>
   );
