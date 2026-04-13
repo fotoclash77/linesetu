@@ -163,6 +163,8 @@ export default function ProfileScreen() {
   const { data: tokenData } = useQuery({
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
     enabled: !!patient?.id,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
   const activeToken = (tokenData?.tokens ?? []).find(
     (t) => t.status === "waiting" || t.status === "in_consult"
