@@ -40,6 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="preferences" />
       <Stack.Screen name="help-faq" />
+      <Stack.Screen name="contact-support" />
       <Stack.Screen name="doctor/[id]" />
       <Stack.Screen name="booking/[doctorId]" />
       <Stack.Screen name="payment" />
