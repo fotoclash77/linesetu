@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections,
   collection, doc, getDocs, getDoc,
-  query, where, orderBy,
+  query, where,
   queueDocId, todayDate,
 } from "../lib/firebase.js";
 
@@ -25,19 +25,18 @@ router.get("/queues/:doctorId", async (req, res) => {
 
     const queue = queueSnap.data();
 
-    // Fetch all tokens for this doctor on this date, ordered by token number
+    // Fetch tokens — no orderBy to avoid composite index requirement; sort in memory
     const tokenSnap = await getDocs(query(
       collection(db, Collections.TOKENS),
       where("doctorId", "==", req.params.doctorId),
       where("date", "==", date),
       where("shift", "==", shift),
-      orderBy("tokenNumber", "asc")
     ));
 
-    // Filter to active tokens client-side (avoids needing composite index for "in" query)
     const tokens = tokenSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter((t: any) => t.status === "waiting" || t.status === "in_consult");
+      .filter((t: any) => t.status === "waiting" || t.status === "in_consult")
+      .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
 
     res.json({ id: queueSnap.id, ...queue, tokens });
   } catch (err: any) {
