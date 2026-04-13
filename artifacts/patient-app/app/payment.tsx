@@ -146,7 +146,7 @@ export default function PaymentScreen() {
               ) : (
                 <View style={styles.onlineBadge}>
                   <Feather name="monitor" size={10} color="#06B6D4" />
-                  <Text style={styles.onlineBadgeTxt}>E-Appointment</Text>
+                  <Text style={styles.onlineBadgeTxt}>E-Token</Text>
                 </View>
               )}
             </View>
