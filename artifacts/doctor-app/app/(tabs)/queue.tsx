@@ -598,17 +598,6 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
-                {/* Send Next action button */}
-                <TouchableOpacity
-                  style={[S.tabItem, S.sendNextBtn, !nextTok&&{opacity:0.35}]}
-                  onPress={()=>{ if(nextTok) doCall(nextTok.id); }}
-                  disabled={!nextTok || busyId===nextTok?.id}
-                >
-                  {busyId===nextTok?.id
-                    ? <ActivityIndicator size="small" color={TEAL_LT}/>
-                    : <Text style={{fontSize:13}}>▶</Text>}
-                  <Text style={S.sendNextTxt}>Send{'\n'}Next</Text>
-                </TouchableOpacity>
               </View>
 
               {/* ── QUEUE TAB: waiting patients + master live list ── */}
