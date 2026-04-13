@@ -165,11 +165,11 @@ function PulseRings({ color, borderRadius = 16 }: { color: string; borderRadius?
 }
 
 // ─── Token Chip ──────────────────────────────────────────────────
-function TokenChip({ token, type, large = false }: { token: number; type: string; large?: boolean }) {
+function TokenChip({ token, type, large = false, amber = false }: { token: number; type: string; large?: boolean; amber?: boolean }) {
   const isE = type === 'emergency';
-  const color  = isE ? RED      : TEAL_LT;
-  const bg     = isE ? 'rgba(239,68,68,0.18)'   : 'rgba(13,148,136,0.2)';
-  const border = isE ? 'rgba(239,68,68,0.4)'    : 'rgba(45,212,191,0.4)';
+  const color  = amber ? AMBER_LT : isE ? RED      : TEAL_LT;
+  const bg     = amber ? 'rgba(180,83,9,0.35)'   : isE ? 'rgba(239,68,68,0.18)'   : 'rgba(13,148,136,0.2)';
+  const border = amber ? 'rgba(252,211,77,0.55)'  : isE ? 'rgba(239,68,68,0.4)'    : 'rgba(45,212,191,0.4)';
   const label  = isE ? `E${String(token).padStart(2,'0')}` : `#${String(token).padStart(2,'0')}`;
   return (
     <View style={[S.chip, large && S.chipLg, { backgroundColor: bg, borderColor: border }]}>
@@ -261,7 +261,7 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
         {/* Token chip wrapped in animated pulse rings */}
         <View style={S.ringWrap}>
           <PulseRings color={ringColor} borderRadius={14} />
-          <TokenChip token={tok.tokenNumber} type={tok.type} large />
+          <TokenChip token={tok.tokenNumber} type={tok.type} large amber={tok.type !== 'emergency'} />
         </View>
         <PatientInfo tok={tok} large />
       </View>
