@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, Platform, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
@@ -387,58 +388,47 @@ function UpNextEmpty() {
   );
 }
 
-// ─── QUEUE ROW CARD (waiting patients) ──────────────────────────
-function QCard({ tok, onSendNext, onSendAlert, onNotShown, busy }: {
-  tok:Token; onSendNext:()=>void; onSendAlert:()=>void; onNotShown:()=>void; busy:boolean;
-}) {
+// ─── QUEUE ROW CARD (tap to open patient details) ───────────────
+function QCard({ tok, doctorId }: { tok: Token; doctorId?: string }) {
   const tc = typeCfg(tok);
   const isEmerg = tok.type === 'emergency';
-  const sendBg = isEmerg ? 'rgba(239,68,68,0.22)' : 'rgba(13,148,136,0.22)';
-  const sendBorder = isEmerg ? 'rgba(239,68,68,0.55)' : 'rgba(45,212,191,0.5)';
-  const sendColor = isEmerg ? '#F87171' : TEAL_LT;
+  const visitType = useVisitType(doctorId, tok.patientPhone, tok.id);
+  const ageGender = [tok.age ? String(tok.age) : '', tok.gender === 'male' ? 'M' : tok.gender === 'female' ? 'F' : tok.gender ? tok.gender[0]?.toUpperCase() : ''].filter(Boolean).join('');
   return (
-    <View style={[S.qc, isEmerg&&S.qcEmerg]}>
-      {/* Top row */}
+    <TouchableOpacity
+      style={[S.qc, isEmerg && S.qcEmerg]}
+      activeOpacity={0.75}
+      onPress={() => router.push(`/patients/${tok.id}` as any)}
+    >
       <View style={S.qcTop}>
-        <View style={[S.qcToken, isEmerg&&S.qcTokenEmerg]}>
-          <Text style={S.qcTokenTxt}>{isEmerg ? tok.tokenNumber : `#${tok.tokenNumber}`}</Text>
+        {/* Token number chip */}
+        <View style={[S.qcToken, isEmerg && S.qcTokenEmerg]}>
+          <Text style={S.qcTokenTxt}>{isEmerg ? `E${tok.tokenNumber}` : `#${tok.tokenNumber}`}</Text>
         </View>
-        <View style={{flex:1,minWidth:0}}>
-          <Text style={S.qcName} numberOfLines={1}>{tok.patientName}</Text>
+        {/* Name + badges */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 5 }}>
+            <Text style={S.qcName} numberOfLines={1}>{tok.patientName}</Text>
+            {!!ageGender && <Text style={S.qcMeta}>{ageGender}</Text>}
+          </View>
           <View style={S.qcBadgeRow}>
-            <View style={[S.pill,{backgroundColor:tc.bg}]}>
-              <View style={{width:5,height:5,borderRadius:3,backgroundColor:tc.dot,marginRight:3}}/>
-              <Text style={[S.pillTxt,{color:tc.color}]}>{tc.label.toUpperCase()}</Text>
+            {/* Token type */}
+            <View style={[S.pill, { backgroundColor: tc.bg }]}>
+              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: tc.dot, marginRight: 3 }} />
+              <Text style={[S.pillTxt, { color: tc.color }]}>{tc.label.toUpperCase()}</Text>
             </View>
-            {isEmerg && (
-              <View style={[S.pill,{backgroundColor:'rgba(239,68,68,0.15)'}]}>
-                <Text style={[S.pillTxt,{color:'#F87171'}]}>⚡ PRIORITY</Text>
+            {/* Visit type */}
+            {visitType !== '—' && (
+              <View style={[S.pill, { backgroundColor: 'rgba(139,92,246,0.18)' }]}>
+                <Text style={[S.pillTxt, { color: '#C4B5FD' }]}>{visitType}</Text>
               </View>
             )}
           </View>
-          {!!tok.patientPhone && <Text style={S.qcPhone}>📞 {tok.patientPhone}</Text>}
-          {!!tok.area && <Text style={S.qcArea}>📍 {tok.area}</Text>}
         </View>
-        {/* SEND NEXT button (top right) */}
-        <TouchableOpacity
-          style={[S.sendNextRowBtn, {backgroundColor:sendBg, borderColor:sendBorder}, busy&&{opacity:0.5}]}
-          onPress={onSendNext} disabled={busy}
-        >
-          {busy
-            ? <ActivityIndicator color={sendColor} size="small"/>
-            : <Text style={[S.sendNextRowTxt,{color:sendColor}]}>SEND NEXT</Text>}
-        </TouchableOpacity>
+        {/* Chevron */}
+        <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 20 }}>›</Text>
       </View>
-      {/* Action buttons */}
-      <View style={S.qcBtns}>
-        <TouchableOpacity style={[S.qcSendAlert, busy&&{opacity:.5}]} onPress={onSendAlert} disabled={busy}>
-          <Text style={S.qcSendAlertTxt}>⊙  Send Alert</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[S.qcNotShown, busy&&{opacity:.5}]} onPress={onNotShown} disabled={busy}>
-          <Text style={S.qcNotShownTxt}>⊗  Not Shown</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -646,13 +636,7 @@ export default function QueueScreen() {
                 <View style={S.list}>
                   {/* Waiting patients (action cards) */}
                   {queueRest.map(t=>(
-                    <QCard
-                      key={t.id} tok={t}
-                      busy={busyId===t.id}
-                      onSendNext={()=>doCall(t.id)}
-                      onSendAlert={()=>doCall(t.id)}
-                      onNotShown={()=>doCancel(t.id)}
-                    />
+                    <QCard key={t.id} tok={t} doctorId={docId} />
                   ))}
 
                   {/* ── MASTER LIVE QUEUE — NORMAL TOKENS ONLY ── */}
@@ -715,9 +699,7 @@ export default function QueueScreen() {
                   )}
                   {emergList.length===0 ? null : (
                     emergList.map(t=>(
-                      <QCard key={t.id} tok={t} busy={busyId===t.id}
-                        onSendNext={()=>doCall(t.id)}
-                        onSendAlert={()=>doCall(t.id)} onNotShown={()=>doCancel(t.id)}/>
+                      <QCard key={t.id} tok={t} doctorId={docId} />
                     ))
                   )}
 
@@ -941,6 +923,7 @@ const S = StyleSheet.create({
   qcSendAlertTxt:{ fontSize:11, fontWeight:'800', color:'#A5B4FC' },
   qcNotShown: { flex:1, height:38, borderRadius:11, alignItems:'center', justifyContent:'center', backgroundColor:'rgba(245,158,11,0.16)', borderWidth:1.5, borderColor:'rgba(245,158,11,0.42)' },
   qcNotShownTxt:{ fontSize:11, fontWeight:'800', color:'#FCD34D' },
+  qcMeta:     { fontSize:10, color:'rgba(255,255,255,0.38)', fontWeight:'600' },
   qcPhone:    { fontSize:10, color:'rgba(255,255,255,0.38)', fontWeight:'500', marginTop:3 },
   qcArea:     { fontSize:10, color:'rgba(255,255,255,0.32)', fontWeight:'500', marginTop:1 },
 
