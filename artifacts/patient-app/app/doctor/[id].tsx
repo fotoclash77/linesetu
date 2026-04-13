@@ -280,31 +280,6 @@ export default function DoctorDetailScreen() {
           )}
         </View>
 
-        {/* Live Queue Preview */}
-        <View style={styles.liveQueueCard}>
-          <View style={styles.liveQueueHeader}>
-            <View style={styles.liveQueueDot} />
-            <Text style={styles.liveQueueLbl}>Live Queue</Text>
-            <View style={{ flex: 1 }} />
-            <View style={styles.liveQueueChip}>
-              <Feather name="radio" size={9} color="#818CF8" />
-              <Text style={styles.liveQueueChipTxt}>Cardiology OPD</Text>
-            </View>
-          </View>
-
-          <View style={styles.liveQueueGrid}>
-            {[
-              { label: "Current Token", val: String(currentToken), color: "#67E8F9", bg: "rgba(6,182,212,0.15)", border: "rgba(6,182,212,0.3)" },
-              { label: "People Ahead",  val: String(queueCount),  color: "#A5B4FC", bg: "rgba(79,70,229,0.2)",  border: "rgba(99,102,241,0.4)" },
-              { label: "Est. Wait",     val: `~${Math.round(queueCount * 2.5)}m`, color: "#4ADE80", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" },
-            ].map(({ label, val, color, bg, border }) => (
-              <View key={label} style={[styles.liveQueueTile, { backgroundColor: bg, borderColor: border }]}>
-                <Text style={styles.liveQueueTileLbl}>{label}</Text>
-                <Text style={[styles.liveQueueTileVal, { color }]}>{val}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
       </ScrollView>
 
       {/* Bottom CTA */}
