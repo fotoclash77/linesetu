@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import { useQuery } from "@tanstack/react-query";
 import { getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
 import React, { useState } from "react";
@@ -269,6 +270,7 @@ function BookingCard({ booking, showMember }: { booking: BookingItem; showMember
 export default function BookingsScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
+  const { unreadCount } = usePatientNotifs();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
@@ -336,9 +338,9 @@ export default function BookingsScreen() {
           <Text style={styles.headerTitle}>My Bookings</Text>
           <Text style={styles.headerSub}>{allBookings.length} appointments · family</Text>
         </View>
-        <Pressable style={styles.bellBtn}>
+        <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
           <Feather name="bell" size={18} color="rgba(255,255,255,0.65)" />
-          <View style={styles.bellDot} />
+          {unreadCount > 0 && <View style={styles.bellDot} />}
         </Pressable>
       </View>
 

@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import type { Href } from "expo-router";
 import { doc, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -152,6 +153,7 @@ function FieldBlock({ label, required, children }: { label: string; required?: b
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { patient, logout, updatePatient } = useAuth();
+  const { unreadCount } = usePatientNotifs();
 
   const { data: tokenData } = useQuery({
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
@@ -307,7 +309,7 @@ export default function ProfileScreen() {
           </Pressable>
           <Pressable style={styles.headerIconBtn} onPress={() => router.push("/notifications")}>
             <Feather name="bell" size={16} color="rgba(255,255,255,0.6)" />
-            <View style={styles.notifDot} />
+            {unreadCount > 0 && <View style={styles.notifDot} />}
           </Pressable>
         </View>
       </View>

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 
 const isWeb = Platform.OS === "web";
 
@@ -212,6 +213,7 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
+  const { unreadCount } = usePatientNotifs();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
@@ -271,7 +273,7 @@ export default function HomeScreen() {
         <View style={styles.headerRight}>
           <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
             <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
-            <View style={styles.notifDot} />
+            {unreadCount > 0 && <View style={styles.notifDot} />}
           </Pressable>
         </View>
       </View>

@@ -16,6 +16,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
 
 // Set API base URL synchronously at module load time so queries always have it
 if (process.env.EXPO_PUBLIC_DOMAIN) {
@@ -71,7 +72,9 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <AuthProvider>
-              <RootLayoutNav />
+              <PatientNotifsProvider>
+                <RootLayoutNav />
+              </PatientNotifsProvider>
             </AuthProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

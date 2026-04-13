@@ -1,6 +1,7 @@
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -10,6 +11,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
+
+const BASE = () => {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  return domain ? `https://${domain}` : "";
+};
 
 const isWeb = Platform.OS === "web";
 
@@ -130,8 +138,56 @@ export default function NotificationsScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
+  const { patient } = useAuth();
+  const { refresh: refreshBell, markAllRead: markAllReadContext } = usePatientNotifs();
+
   const [filter, setFilter] = useState<NotifCategory>("all");
   const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFS);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch real notifications on mount
+  useEffect(() => {
+    if (!patient?.id) return;
+    setLoading(true);
+    fetch(`${BASE()}/api/notifications/patient/${patient.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.notifications?.length) {
+          const mapped: Notification[] = data.notifications.map((n: any) => ({
+            id: n.id,
+            type: n.type === "token_confirmed" ? "appointment" as const
+                : n.type === "token_cancelled" ? "appointment" as const
+                : "queue" as const,
+            title: n.title,
+            body: n.body,
+            time: relativeTime(n.createdAt),
+            read: n.read,
+            icon: n.type === "token_confirmed" ? "check-circle" as const
+                : n.type === "token_cancelled" ? "x-circle" as const
+                : "hash" as const,
+            iconColor: n.type === "token_confirmed" ? "#22C55E"
+                     : n.type === "token_cancelled" ? "#EF4444"
+                     : "#F59E0B",
+            iconBg: n.type === "token_confirmed" ? "rgba(34,197,94,0.15)"
+                  : n.type === "token_cancelled" ? "rgba(239,68,68,0.15)"
+                  : "rgba(245,158,11,0.15)",
+          }));
+          setNotifications(mapped);
+        } else {
+          setNotifications(SAMPLE_NOTIFS);
+        }
+      })
+      .catch(() => setNotifications(SAMPLE_NOTIFS))
+      .finally(() => setLoading(false));
+  }, [patient?.id]);
+
+  function relativeTime(ms: number): string {
+    const diff = Date.now() - ms;
+    if (diff < 60_000) return "just now";
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} hr ago`;
+    return `${Math.floor(diff / 86_400_000)}d ago`;
+  }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -143,14 +199,20 @@ export default function NotificationsScreen() {
     return true;
   });
 
-  function markAllRead() {
+  async function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await markAllReadContext();
+    refreshBell();
   }
 
-  function markRead(id: string) {
+  async function markRead(id: string) {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      await fetch(`${BASE()}/api/notifications/${id}/read`, { method: "PATCH" });
+      refreshBell();
+    } catch {}
   }
 
   return (
@@ -205,7 +267,11 @@ export default function NotificationsScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {filtered.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator color="#4F46E5" />
+          </View>
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Feather name="bell-off" size={32} color="rgba(255,255,255,0.2)" />

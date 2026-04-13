@@ -7,6 +7,52 @@ import {
 
 const router = Router();
 
+// GET /api/notifications/patient/:patientId
+router.get("/notifications/patient/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const snap = await getDocs(
+      query(
+        collection(db, Collections.NOTIFICATIONS),
+        where("patientId", "==", patientId),
+        limit(50),
+      ),
+    );
+    const notifications = snap.docs
+      .map(d => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: (d.data().createdAt as any)?.toMillis?.() ?? Date.now(),
+      }))
+      .sort((a: any, b: any) => b.createdAt - a.createdAt);
+    res.json({ notifications });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/notifications/patient-read-all — mark all patient notifications as read
+router.post("/notifications/patient-read-all", async (req, res) => {
+  try {
+    const { patientId } = req.body;
+    if (!patientId) return res.status(400).json({ error: "patientId required" });
+    const snap = await getDocs(
+      query(
+        collection(db, Collections.NOTIFICATIONS),
+        where("patientId", "==", patientId),
+      ),
+    );
+    const unread = snap.docs.filter(d => d.data().read === false);
+    if (unread.length === 0) return res.json({ updated: 0 });
+    const batch = writeBatch(db);
+    unread.forEach(d => batch.update(d.ref, { read: true }));
+    await batch.commit();
+    res.json({ updated: unread.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/notifications/:doctorId
 router.get("/notifications/:doctorId", async (req, res) => {
   try {

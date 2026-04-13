@@ -91,6 +91,22 @@ router.post("/tokens", async (req, res) => {
       });
     } catch (_) {}
 
+    // Write a notification for the patient confirming booking
+    if (patientId) {
+      try {
+        await addDoc(collection(db, Collections.NOTIFICATIONS), {
+          patientId,
+          type: "token_confirmed",
+          title: "Booking Confirmed!",
+          body: `Your Token #${nextTokenNumber} has been booked for ${tokenDate} (${shift} shift).`,
+          tokenId: tokenRef.id,
+          tokenNumber: nextTokenNumber,
+          read: false,
+          createdAt: Timestamp.now(),
+        });
+      } catch (_) {}
+    }
+
     res.status(201).json({ id: tokenRef.id, ...tokenData });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -230,6 +246,22 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
         createdAt: Timestamp.now(),
       });
     } catch (_) {}
+
+    // Write a notification for the patient about their cancellation
+    if (token.patientId) {
+      try {
+        await addDoc(collection(db, Collections.NOTIFICATIONS), {
+          patientId: token.patientId,
+          type: "token_cancelled",
+          title: "Booking Cancelled",
+          body: `Your Token #${token.tokenNumber} has been cancelled and your payment will be refunded.`,
+          tokenId: req.params.tokenId,
+          tokenNumber: token.tokenNumber,
+          read: false,
+          createdAt: Timestamp.now(),
+        });
+      } catch (_) {}
+    }
 
     res.json({ id: req.params.tokenId, status: "cancelled" });
   } catch (err: any) {
