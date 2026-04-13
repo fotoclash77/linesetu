@@ -669,10 +669,10 @@ export default function QueueScreen() {
                             </View>
                           )}
                         </View>
-                        {masterLoading ? (
+                        {masterLoading && normalRows.length === 0 ? (
                           <View style={S.masterLoadWrap}>
                             <ActivityIndicator size="small" color={TEAL_LT} />
-                            <Text style={S.masterLoadTxt}>Connecting to live queue…</Text>
+                            <Text style={S.masterLoadTxt}>Loading…</Text>
                           </View>
                         ) : normalRows.length === 0 ? (
                           <View style={S.masterEmpty}>
@@ -735,10 +735,10 @@ export default function QueueScreen() {
                             </View>
                           )}
                         </View>
-                        {masterLoading ? (
+                        {masterLoading && emergRows.length === 0 ? (
                           <View style={S.masterLoadWrap}>
                             <ActivityIndicator size="small" color="#F87171" />
-                            <Text style={S.masterLoadTxt}>Connecting…</Text>
+                            <Text style={S.masterLoadTxt}>Loading…</Text>
                           </View>
                         ) : emergRows.length === 0 ? (
                           <View style={S.masterEmpty}>
@@ -797,10 +797,10 @@ export default function QueueScreen() {
                             </View>
                           )}
                         </View>
-                        {masterLoading ? (
+                        {masterLoading && doneRows.length === 0 ? (
                           <View style={S.masterLoadWrap}>
                             <ActivityIndicator size="small" color="#4ADE80" />
-                            <Text style={S.masterLoadTxt}>Connecting…</Text>
+                            <Text style={S.masterLoadTxt}>Loading…</Text>
                           </View>
                         ) : doneRows.length === 0 ? (
                           <View style={S.masterEmpty}>
