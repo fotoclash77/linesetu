@@ -440,16 +440,16 @@ export default function QueueScreen() {
   });
   const { rows: masterRows } = useMasterQueue(docId);
 
-  const inv = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ['dq', docId] });
-    qc.invalidateQueries({ queryKey: ['da', docId] });
-  }, [qc, docId]);
+  const inv = useCallback(() => Promise.all([
+    qc.invalidateQueries({ queryKey: ['dq', docId] }),
+    qc.invalidateQueries({ queryKey: ['da', docId] }),
+  ]), [qc, docId]);
 
   // Clear manual pick whenever shift changes — morning pick shouldn't carry to evening
   useEffect(() => { setManualNext(null); }, [shift]);
 
   const doCall = async (id: string) => {
-    setBusy(id); try { await apiCall(id); inv(); } catch {} setBusy(null);
+    setBusy(id); try { await apiCall(id); await inv(); } catch {} setBusy(null);
   };
   const doDone = async (id: string) => {
     const nextId = upNextRef.current; // locked at click-time — matches what Up Next card shows
@@ -457,21 +457,21 @@ export default function QueueScreen() {
     try {
       await apiDone(id, nextId);
       if (nextId) setManualNext(null);
-      inv();
+      await inv(); // wait for refetch to complete BEFORE re-enabling the button
     } catch {}
     setBusy(null);
   };
   const doSkipToken = async (id: string) => {
-    setBusy(id); try { await apiSkip(id); inv(); } catch {} setBusy(null);
+    setBusy(id); try { await apiSkip(id); await inv(); } catch {} setBusy(null);
   };
   const doCancel = async (id: string) => {
-    setBusy(id); try { await apiCancel(id); inv(); } catch {} setBusy(null);
+    setBusy(id); try { await apiCancel(id); await inv(); } catch {} setBusy(null);
   };
 
-  // ── Data (SSE is primary — instant updates; REST is fallback for initial load) ──
-  const masterFiltered: Token[] = masterRows.map(mapToken).filter(t => t.shift === shift);
+  // ── Data (REST is primary; SSE is fallback before REST loads) ──────────────
   const restTokens: Token[]     = (aData?.tokens ?? []).map(mapToken).filter(t => t.shift === shift);
-  const all: Token[] = masterFiltered.length > 0 ? masterFiltered : restTokens;
+  const masterFiltered: Token[] = masterRows.map(mapToken).filter(t => t.shift === shift);
+  const all: Token[] = restTokens.length > 0 ? restTokens : masterFiltered;
 
   const consulting = all.find(t => t.displayStatus === 'consulting');
   const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a, b) => {
