@@ -12,6 +12,8 @@ export interface PatientUser {
   blood?: string;
   gender?: string;
   email?: string;
+  address?: string;
+  area?: string;
 }
 
 interface AuthContextType {

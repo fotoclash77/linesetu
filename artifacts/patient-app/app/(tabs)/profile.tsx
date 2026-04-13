@@ -199,13 +199,15 @@ export default function ProfileScreen() {
 
   // ── Edit Profile Modal ───────────────────────────────────
   const [editVisible, setEditVisible] = useState(false);
-  const [ePhoto,  setEPhoto]  = useState<string | undefined>(undefined);
-  const [eName,   setEName]   = useState("");
-  const [eAge,    setEAge]    = useState("");
-  const [eBlood,  setEBlood]  = useState("");
-  const [eGender, setEGender] = useState("");
-  const [eEmail,  setEEmail]  = useState("");
-  const [saving,  setSaving]  = useState(false);
+  const [ePhoto,   setEPhoto]   = useState<string | undefined>(undefined);
+  const [eName,    setEName]    = useState("");
+  const [eAge,     setEAge]     = useState("");
+  const [eBlood,   setEBlood]   = useState("");
+  const [eGender,  setEGender]  = useState("");
+  const [eEmail,   setEEmail]   = useState("");
+  const [eAddress, setEAddress] = useState("");
+  const [eArea,    setEArea]    = useState("");
+  const [saving,   setSaving]   = useState(false);
 
   const openEditProfile = () => {
     setEPhoto(patient?.profilePhoto);
@@ -214,6 +216,8 @@ export default function ProfileScreen() {
     setEBlood(patient?.blood ?? "");
     setEGender(patient?.gender ?? "");
     setEEmail(patient?.email ?? "");
+    setEAddress(patient?.address ?? "");
+    setEArea(patient?.area ?? "");
     setAvatarError(false);
     setEditVisible(true);
   };
@@ -221,7 +225,7 @@ export default function ProfileScreen() {
   const saveProfile = async () => {
     if (!eName.trim()) { Alert.alert("Name required", "Please enter your name."); return; }
     setSaving(true);
-    await updatePatient({ name: eName.trim(), age: eAge, blood: eBlood, gender: eGender, email: eEmail, profilePhoto: ePhoto });
+    await updatePatient({ name: eName.trim(), age: eAge, blood: eBlood, gender: eGender, email: eEmail, profilePhoto: ePhoto, address: eAddress, area: eArea });
     setSaving(false);
     setEditVisible(false);
   };
@@ -525,6 +529,22 @@ export default function ProfileScreen() {
 
                 <FieldBlock label="Blood Group">
                   <ChipSelector options={BLOOD_GROUPS} value={eBlood} onChange={setEBlood} color="#EF4444" />
+                </FieldBlock>
+
+                <FieldBlock label="Area / Locality">
+                  <TextInput style={styles.textInput} value={eArea} onChangeText={setEArea} placeholder="e.g. Andheri West, Bandra" placeholderTextColor="rgba(255,255,255,0.25)" />
+                </FieldBlock>
+
+                <FieldBlock label="Complete Address">
+                  <TextInput
+                    style={[styles.textInput, { minHeight: 80, textAlignVertical: "top" }]}
+                    value={eAddress}
+                    onChangeText={setEAddress}
+                    placeholder="House/Flat no., Street, Landmark, City, PIN"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    multiline
+                    numberOfLines={3}
+                  />
                 </FieldBlock>
 
                 <Pressable style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={saveProfile} disabled={saving}>
