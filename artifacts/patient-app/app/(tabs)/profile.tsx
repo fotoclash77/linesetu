@@ -69,13 +69,6 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    title: "💳 Payments & Transactions",
-    items: [
-      { icon: "credit-card", label: "Payment History", sub: "Receipts & transaction records", color: "#67E8F9", route: null, badge: null, liveIndicator: false, danger: false },
-      { icon: "file-text",   label: "Fee Structure",   sub: "Platform & consultation fees",   color: "#F59E0B", route: null, badge: null, liveIndicator: false, danger: false },
-    ],
-  },
-  {
     title: "Settings & Preferences",
     items: [
       { icon: "bell",    label: "Notifications", sub: "Token alerts & appointment reminders", color: "#F59E0B", route: null, badge: "3",  liveIndicator: false, danger: false },
