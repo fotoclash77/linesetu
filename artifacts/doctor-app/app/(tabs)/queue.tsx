@@ -324,15 +324,7 @@ function UpNextCard({ tok, onCall, busy }: { tok: Token; onCall: () => void; bus
           <TokenChip token={tok.tokenNumber} type={tok.type} />
           <PatientInfo tok={tok} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[S.callBtn, busy && { opacity: 0.5 }]}
-          onPress={onCall} disabled={busy}
-          activeOpacity={0.8}
-        >
-          {busy
-            ? <ActivityIndicator color={TEAL_LT} size="small" />
-            : <Text style={S.upNextChevron}>›</Text>}
-        </TouchableOpacity>
+        {busy && <ActivityIndicator color={TEAL_LT} size="small" style={{ marginLeft: 4 }} />}
       </View>
     </View>
   );
