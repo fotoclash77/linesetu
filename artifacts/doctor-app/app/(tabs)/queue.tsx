@@ -356,17 +356,20 @@ function UpNextCard({ tok, onCall, busy }: { tok:Token; onCall:()=>void; busy:bo
 }
 
 // ─── QUEUE ROW CARD (waiting patients) ──────────────────────────
-function QCard({ tok, onSendAlert, onNotShown, busy }: {
-  tok:Token; onSendAlert:()=>void; onNotShown:()=>void; busy:boolean;
+function QCard({ tok, onSendNext, onSendAlert, onNotShown, busy }: {
+  tok:Token; onSendNext:()=>void; onSendAlert:()=>void; onNotShown:()=>void; busy:boolean;
 }) {
   const tc = typeCfg(tok);
   const isEmerg = tok.type === 'emergency';
+  const sendBg = isEmerg ? 'rgba(239,68,68,0.22)' : 'rgba(13,148,136,0.22)';
+  const sendBorder = isEmerg ? 'rgba(239,68,68,0.55)' : 'rgba(45,212,191,0.5)';
+  const sendColor = isEmerg ? '#F87171' : TEAL_LT;
   return (
     <View style={[S.qc, isEmerg&&S.qcEmerg]}>
       {/* Top row */}
       <View style={S.qcTop}>
         <View style={[S.qcToken, isEmerg&&S.qcTokenEmerg]}>
-          <Text style={S.qcTokenTxt}>#{tok.tokenNumber}</Text>
+          <Text style={S.qcTokenTxt}>{isEmerg ? tok.tokenNumber : `#${tok.tokenNumber}`}</Text>
         </View>
         <View style={{flex:1,minWidth:0}}>
           <Text style={S.qcName} numberOfLines={1}>{tok.patientName}</Text>
@@ -382,16 +385,22 @@ function QCard({ tok, onSendAlert, onNotShown, busy }: {
             )}
           </View>
           {!!tok.patientPhone && <Text style={S.qcPhone}>📞 {tok.patientPhone}</Text>}
+          {!!tok.area && <Text style={S.qcArea}>📍 {tok.area}</Text>}
         </View>
-        {/* WAITING badge (top right) */}
-        <View style={S.waitingBadge}>
-          <Text style={S.waitingBadgeTxt}>WAITING</Text>
-        </View>
+        {/* SEND NEXT button (top right) */}
+        <TouchableOpacity
+          style={[S.sendNextRowBtn, {backgroundColor:sendBg, borderColor:sendBorder}, busy&&{opacity:0.5}]}
+          onPress={onSendNext} disabled={busy}
+        >
+          {busy
+            ? <ActivityIndicator color={sendColor} size="small"/>
+            : <Text style={[S.sendNextRowTxt,{color:sendColor}]}>SEND NEXT</Text>}
+        </TouchableOpacity>
       </View>
       {/* Action buttons */}
       <View style={S.qcBtns}>
         <TouchableOpacity style={[S.qcSendAlert, busy&&{opacity:.5}]} onPress={onSendAlert} disabled={busy}>
-          {busy ? <ActivityIndicator color="#A5B4FC" size="small"/> : <Text style={S.qcSendAlertTxt}>⊙  Send Alert</Text>}
+          <Text style={S.qcSendAlertTxt}>⊙  Send Alert</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[S.qcNotShown, busy&&{opacity:.5}]} onPress={onNotShown} disabled={busy}>
           <Text style={S.qcNotShownTxt}>⊗  Not Shown</Text>
@@ -608,6 +617,7 @@ export default function QueueScreen() {
                     <QCard
                       key={t.id} tok={t}
                       busy={busyId===t.id}
+                      onSendNext={()=>doCall(t.id)}
                       onSendAlert={()=>doCall(t.id)}
                       onNotShown={()=>doCancel(t.id)}
                     />
@@ -674,6 +684,7 @@ export default function QueueScreen() {
                   {emergList.length===0 ? null : (
                     emergList.map(t=>(
                       <QCard key={t.id} tok={t} busy={busyId===t.id}
+                        onSendNext={()=>doCall(t.id)}
                         onSendAlert={()=>doCall(t.id)} onNotShown={()=>doCancel(t.id)}/>
                     ))
                   )}
@@ -891,7 +902,6 @@ const S = StyleSheet.create({
   qcTokenTxt: { fontSize:14, fontWeight:'900', color:'#FFF', letterSpacing:-0.5 },
   qcName:     { fontSize:13, fontWeight:'800', color:'#FFF', marginBottom:4 },
   qcBadgeRow: { flexDirection:'row', gap:5, flexWrap:'wrap', marginBottom:4 },
-  qcPhone:    { fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'500' },
   waitingBadge:{ paddingHorizontal:9, paddingVertical:4, borderRadius:8, backgroundColor:'rgba(99,102,241,0.25)', borderWidth:1, borderColor:'rgba(99,102,241,0.4)', flexShrink:0 },
   waitingBadgeTxt:{ fontSize:9, fontWeight:'800', color:'#A5B4FC', letterSpacing:0.4 },
   qcBtns:     { flexDirection:'row', gap:6, padding:12, paddingTop:0 },
@@ -899,6 +909,12 @@ const S = StyleSheet.create({
   qcSendAlertTxt:{ fontSize:11, fontWeight:'800', color:'#A5B4FC' },
   qcNotShown: { flex:1, height:38, borderRadius:11, alignItems:'center', justifyContent:'center', backgroundColor:'rgba(245,158,11,0.16)', borderWidth:1.5, borderColor:'rgba(245,158,11,0.42)' },
   qcNotShownTxt:{ fontSize:11, fontWeight:'800', color:'#FCD34D' },
+  qcPhone:    { fontSize:10, color:'rgba(255,255,255,0.38)', fontWeight:'500', marginTop:3 },
+  qcArea:     { fontSize:10, color:'rgba(255,255,255,0.32)', fontWeight:'500', marginTop:1 },
+
+  // Send Next button on queue row
+  sendNextRowBtn: { paddingHorizontal:10, paddingVertical:6, borderRadius:10, borderWidth:1.5, alignItems:'center', justifyContent:'center', flexShrink:0, minWidth:76 },
+  sendNextRowTxt: { fontSize:10, fontWeight:'900', letterSpacing:0.3 },
 
   // Pill (shared badge)
   pill:    { flexDirection:'row', alignItems:'center', paddingHorizontal:7, paddingVertical:3, borderRadius:20 },
