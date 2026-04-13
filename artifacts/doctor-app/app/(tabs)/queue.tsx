@@ -349,8 +349,8 @@ function UpNextEmpty() {
 }
 
 // ─── Waiting Card ────────────────────────────────────────────────
-function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, busy }: {
-  tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; busy: boolean;
+function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy }: {
+  tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void; busy: boolean;
 }) {
   return (
     <View style={S.waitCard}>
@@ -385,6 +385,12 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, busy }: {
           <Text style={S.alertBtnTxt}>🔔</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={[S.refundBtn, busy && { opacity: 0.5 }]}
+        onPress={onRefund} disabled={busy}
+      >
+        <Text style={S.refundTxt}>↩  Refund & Cancel</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -625,6 +631,7 @@ export default function QueueScreen() {
                       onSendNext={() => doCall(tok.id)}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
+                      onRefund={() => doCancel(tok.id)}
                     />
                   );
                 })
@@ -723,6 +730,8 @@ const S = StyleSheet.create({
   skipWaitTxt:{ fontSize: 12, fontWeight: '800', color: AMBER_LT },
   alertBtn:   { width: 44, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' },
   alertBtnTxt:{ fontSize: 16 },
+  refundBtn:  { marginTop: 8, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
+  refundTxt:  { fontSize: 11, fontWeight: '800', color: '#FCA5A5', letterSpacing: 0.3 },
 
   // Empty state
   emptyState:    { alignItems: 'center', paddingVertical: 44 },
