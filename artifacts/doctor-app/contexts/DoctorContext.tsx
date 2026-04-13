@@ -6,6 +6,10 @@ const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export type DayStatus = 'holiday' | 'morning_only' | 'evening_only' | 'both';
 
+export interface ClinicEntry {
+  name: string; address: string; city: string; phone: string; maps: string; active: boolean;
+}
+
 export interface DoctorUser {
   id: string;
   name: string;
@@ -18,7 +22,8 @@ export interface DoctorUser {
     morning: boolean; morningStart: string; morningEnd: string;
     evening: boolean; eveningStart: string; eveningEnd: string;
   };
-  calendar?: Record<string, DayStatus>;
+  calendar?: Record<string, any>;
+  clinics?: ClinicEntry[];
 }
 
 interface DoctorCtx {
@@ -69,6 +74,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       profilePhoto: data.profilePhoto || "",
       shifts: data.shifts,
       calendar: data.calendar,
+      clinics: data.clinics ?? undefined,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);

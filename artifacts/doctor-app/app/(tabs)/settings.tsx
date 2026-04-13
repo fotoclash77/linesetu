@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator,
+  ActivityIndicator, Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
@@ -14,6 +14,131 @@ type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'p
 
 interface ClinicData {
   name: string; address: string; city: string; phone: string; maps: string; active: boolean;
+}
+
+// ── Time options: every 15 min from 06:00 to 22:45 ──────────────────
+const TIME_OPTIONS: string[] = [];
+for (let h = 6; h <= 22; h++) {
+  for (const m of [0, 15, 30, 45]) {
+    if (h === 22 && m > 0) break;
+    TIME_OPTIONS.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+  }
+}
+
+function TimePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, marginBottom: 8 }]}
+        onPress={() => setOpen(true)}
+      >
+        <Text style={{ color: value ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '700', fontSize: 14 }}>{value || 'Select time'}</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>🕐</Text>
+      </TouchableOpacity>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={{ backgroundColor: '#0D1321', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', width: 200, maxHeight: 340, overflow: 'hidden' }}>
+            <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' }}>
+              <Text style={{ color: '#2DD4BF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</Text>
+            </View>
+            <FlatList
+              data={TIME_OPTIONS}
+              keyExtractor={t => t}
+              getItemLayout={(_, i) => ({ length: 44, offset: 44 * i, index: i })}
+              initialScrollIndex={Math.max(0, TIME_OPTIONS.indexOf(value))}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => { onChange(item); setOpen(false); }}
+                  style={{ height: 44, paddingHorizontal: 18, justifyContent: 'center', backgroundColor: item === value ? 'rgba(45,212,191,0.18)' : 'transparent' }}
+                >
+                  <Text style={{ color: item === value ? '#2DD4BF' : 'rgba(255,255,255,0.7)', fontWeight: item === value ? '800' : '500', fontSize: 15 }}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+interface ShiftSlot { startTime: string; endTime: string; maxTokens: number; clinicName: string; address: string; locationLink: string }
+interface ShiftFormProps {
+  shift: 'morning' | 'evening';
+  accentColor: string;
+  icon: string;
+  label: string;
+  data: ShiftSlot;
+  clinics: ClinicData[];
+  onChange: (patch: Partial<ShiftSlot>) => void;
+}
+function ShiftForm({ shift, accentColor, icon, label, data, clinics, onChange }: ShiftFormProps) {
+  const activeClinics = clinics.filter(c => c.active && c.name);
+  const selectedClinicIdx = activeClinics.findIndex(c => c.name === data.clinicName);
+  return (
+    <View style={[styles.shiftCard, { marginTop: 10, borderColor: `${accentColor}40` }]}>
+      <Text style={[styles.shiftCardTitle, { color: accentColor, marginBottom: 10 }]}>{icon}  {label}</Text>
+
+      {/* Clinic selector buttons */}
+      {activeClinics.length > 0 && (
+        <>
+          <Text style={styles.fieldLabel}>SELECT CLINIC</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {activeClinics.map((c, i) => (
+              <TouchableOpacity
+                key={i}
+                onPress={() => onChange({ clinicName: c.name, address: c.address, locationLink: c.maps })}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: selectedClinicIdx === i ? accentColor : 'rgba(255,255,255,0.12)',
+                  backgroundColor: selectedClinicIdx === i ? `${accentColor}20` : 'rgba(255,255,255,0.04)',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: selectedClinicIdx === i ? accentColor : 'rgba(255,255,255,0.5)' }}>{c.name}</Text>
+                {c.city ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>{c.city}</Text> : null}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
+      {activeClinics.length === 0 && (
+        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 10, fontStyle: 'italic' }}>Add clinics in Settings → Manage Clinics to enable quick selection</Text>
+      )}
+
+      {/* Time pickers */}
+      <View style={styles.timeRow}>
+        <View style={{ flex: 1 }}>
+          <TimePicker label="START TIME" value={data.startTime} onChange={v => onChange({ startTime: v })} />
+        </View>
+        <View style={{ width: 16, alignItems: 'center', marginTop: 28 }}>
+          <Text style={styles.timeDash}>–</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <TimePicker label="END TIME" value={data.endTime} onChange={v => onChange({ endTime: v })} />
+        </View>
+      </View>
+
+      {/* Single max tokens field */}
+      <Text style={styles.fieldLabel}>MAX TOKENS (Total)</Text>
+      <TextInput
+        style={[styles.fieldInput, { marginBottom: 10 }]}
+        value={String(data.maxTokens)}
+        onChangeText={v => onChange({ maxTokens: parseInt(v) || 0 })}
+        keyboardType="number-pad"
+        placeholderTextColor="rgba(255,255,255,0.2)"
+        placeholder="30"
+      />
+
+      {/* Address & Maps (auto-filled from clinic, editable) */}
+      <Text style={styles.fieldLabel}>ADDRESS</Text>
+      <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={data.address} onChangeText={v => onChange({ address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
+      <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
+      <TextInput style={styles.fieldInput} value={data.locationLink} onChangeText={v => onChange({ locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
+    </View>
+  );
 }
 
 function Toggle({ on, onChange, color = TEAL }: { on: boolean; onChange: () => void; color?: string }) {
@@ -97,13 +222,16 @@ export default function SettingsScreen() {
   const [mobile, setMobile] = useState('98765 00001');
   const [bio, setBio] = useState('Experienced cardiologist with over 10 years of practice in cardiac care, preventive cardiology and electrophysiology.');
 
-  // Clinics state
+  // Clinics state — seeded from Firebase via doctor.clinics
+  const EMPTY_CLINIC: ClinicData = { name: '', address: '', city: '', phone: '', maps: '', active: false };
   const [activeClinic, setActiveClinic] = useState(0);
-  const [clinics, setClinics] = useState<ClinicData[]>([
-    { name: 'Sharma Heart Clinic', address: 'Shop 4, Sun CHS, Lokhandwala Complex', city: 'Mumbai', phone: '022-26331234', maps: 'https://maps.google.com/?q=Sharma+Heart+Clinic', active: true },
-    { name: 'City Cardiac Centre', address: '2nd Floor, Patel Building, SV Road', city: 'Mumbai', phone: '022-26789012', maps: '', active: true },
-    { name: '', address: '', city: '', phone: '', maps: '', active: false },
-  ]);
+  const [clinics, setClinics] = useState<ClinicData[]>(() => {
+    const saved = (doctor as any)?.clinics as ClinicData[] | undefined;
+    if (saved && saved.length) return saved;
+    return [EMPTY_CLINIC, EMPTY_CLINIC, EMPTY_CLINIC];
+  });
+  const [clinicSaving, setClinicSaving] = useState(false);
+  const [clinicSaved, setClinicSaved] = useState(false);
 
   // Schedule state — seeded from doctor.shifts
   const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
@@ -117,13 +245,13 @@ export default function SettingsScreen() {
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
-  type ShiftCfg = { enabled: boolean; startTime: string; endTime: string; maxWalkin: number; maxEToken: number; clinicName: string; address: string; locationLink: string };
+  type ShiftCfg = { enabled: boolean; startTime: string; endTime: string; maxTokens: number; clinicName: string; address: string; locationLink: string };
   type DayCfg  = { off: boolean; morning: ShiftCfg; evening: ShiftCfg };
   type DayMode = 'morning' | 'evening' | 'both' | 'holiday';
 
   function makeShift(start: string, end: string, clinic?: ClinicData): ShiftCfg {
     return {
-      enabled: true, startTime: start, endTime: end, maxWalkin: 20, maxEToken: 15,
+      enabled: true, startTime: start, endTime: end, maxTokens: 30,
       clinicName: clinic?.name ?? '', address: clinic?.address ?? '', locationLink: clinic?.maps ?? '',
     };
   }
@@ -167,14 +295,17 @@ export default function SettingsScreen() {
 
   // Re-seed when doctor loads (covers cold start)
   useEffect(() => {
-    if (!doctor?.shifts) return;
-    setMorningEnabled(doctor.shifts.morning !== false);
-    setEveningEnabled(doctor.shifts.evening !== false);
-    setMorningStart(doctor.shifts.morningStart ?? '09:00');
-    setMorningEnd(doctor.shifts.morningEnd ?? '13:00');
-    setEveningStart(doctor.shifts.eveningStart ?? '17:00');
-    setEveningEnd(doctor.shifts.eveningEnd ?? '20:00');
+    if (!doctor) return;
+    if (doctor.shifts) {
+      setMorningEnabled(doctor.shifts.morning !== false);
+      setEveningEnabled(doctor.shifts.evening !== false);
+      setMorningStart(doctor.shifts.morningStart ?? '09:00');
+      setMorningEnd(doctor.shifts.morningEnd ?? '13:00');
+      setEveningStart(doctor.shifts.eveningStart ?? '17:00');
+      setEveningEnd(doctor.shifts.eveningEnd ?? '20:00');
+    }
     if ((doctor as any).calendar) setCalendarOverrides((doctor as any).calendar);
+    if ((doctor as any).clinics?.length) setClinics((doctor as any).clinics);
   }, [doctor?.id]);
 
   // Fee state
@@ -282,8 +413,22 @@ export default function SettingsScreen() {
               <Field label="Clinic Phone" value={clinic.phone} onChange={v => updateClinic(activeClinic, { phone: v })} keyboardType="phone-pad" />
               <Field label="Google Maps Link" value={clinic.maps} onChange={v => updateClinic(activeClinic, { maps: v })} keyboardType="url" />
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
-              <Text style={styles.saveBtnText}>✓ Save Clinic Info</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, clinicSaving && { opacity: 0.7 }]}
+              disabled={clinicSaving}
+              onPress={async () => {
+                setClinicSaving(true); setClinicSaved(false);
+                try {
+                  await updateDoctor({ clinics: clinics as any });
+                  setClinicSaved(true);
+                  setTimeout(() => { setClinicSaved(false); setSection('main'); }, 1200);
+                } catch {}
+                setClinicSaving(false);
+              }}
+            >
+              {clinicSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{clinicSaved ? '✓ Clinics Saved to Firebase!' : '💾 Save Clinics'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -530,72 +675,28 @@ export default function SettingsScreen() {
                         </View>
                       )}
 
-                      {/* Morning or Both — show morning form */}
-                      {(dayMode === 'morning' || dayMode === 'both') && (
-                        <View style={[styles.shiftCard, { marginTop: 10, borderColor: 'rgba(245,158,11,0.25)' }]}>
-                          <Text style={[styles.shiftCardTitle, { color: '#FCD34D', marginBottom: 10 }]}>☀  Morning Shift</Text>
-                          <View style={styles.timeRow}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>START</Text>
-                              <TextInput style={styles.fieldInput} value={dayForm.morning.startTime} onChangeText={v => patchShift('morning', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="09:00" />
-                            </View>
-                            <Text style={styles.timeDash}>–</Text>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>END</Text>
-                              <TextInput style={styles.fieldInput} value={dayForm.morning.endTime} onChangeText={v => patchShift('morning', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="13:00" />
-                            </View>
-                          </View>
-                          <View style={styles.timeRow}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
-                              <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxWalkin)} onChangeText={v => patchShift('morning', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
-                              <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxEToken)} onChangeText={v => patchShift('morning', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
-                            </View>
-                          </View>
-                          <Text style={styles.fieldLabel}>CLINIC NAME</Text>
-                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.clinicName} onChangeText={v => patchShift('morning', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
-                          <Text style={styles.fieldLabel}>ADDRESS</Text>
-                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.address} onChangeText={v => patchShift('morning', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
-                          <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
-                          <TextInput style={styles.fieldInput} value={dayForm.morning.locationLink} onChangeText={v => patchShift('morning', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
-                        </View>
+                      {/* ── SHIFT FORMS ──────────────────────────────── */}
+                      {(['morning', 'both'].includes(dayMode)) && (
+                        <ShiftForm
+                          shift="morning"
+                          accentColor="#FCD34D"
+                          icon="☀"
+                          label="Morning Shift"
+                          data={dayForm.morning}
+                          clinics={clinics}
+                          onChange={p => patchShift('morning', p)}
+                        />
                       )}
-
-                      {/* Evening or Both — show evening form */}
-                      {(dayMode === 'evening' || dayMode === 'both') && (
-                        <View style={[styles.shiftCard, { marginTop: 10, borderColor: 'rgba(139,92,246,0.25)' }]}>
-                          <Text style={[styles.shiftCardTitle, { color: '#A5B4FC', marginBottom: 10 }]}>☾  Evening Shift</Text>
-                          <View style={styles.timeRow}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>START</Text>
-                              <TextInput style={styles.fieldInput} value={dayForm.evening.startTime} onChangeText={v => patchShift('evening', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="17:00" />
-                            </View>
-                            <Text style={styles.timeDash}>–</Text>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>END</Text>
-                              <TextInput style={styles.fieldInput} value={dayForm.evening.endTime} onChangeText={v => patchShift('evening', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20:00" />
-                            </View>
-                          </View>
-                          <View style={styles.timeRow}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
-                              <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxWalkin)} onChangeText={v => patchShift('evening', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
-                              <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxEToken)} onChangeText={v => patchShift('evening', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
-                            </View>
-                          </View>
-                          <Text style={styles.fieldLabel}>CLINIC NAME</Text>
-                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.clinicName} onChangeText={v => patchShift('evening', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
-                          <Text style={styles.fieldLabel}>ADDRESS</Text>
-                          <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.address} onChangeText={v => patchShift('evening', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
-                          <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
-                          <TextInput style={styles.fieldInput} value={dayForm.evening.locationLink} onChangeText={v => patchShift('evening', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
-                        </View>
+                      {(['evening', 'both'].includes(dayMode)) && (
+                        <ShiftForm
+                          shift="evening"
+                          accentColor="#A5B4FC"
+                          icon="☾"
+                          label="Evening Shift"
+                          data={dayForm.evening}
+                          clinics={clinics}
+                          onChange={p => patchShift('evening', p)}
+                        />
                       )}
 
                       {/* Apply Day button */}
