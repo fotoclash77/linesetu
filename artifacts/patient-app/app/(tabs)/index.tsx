@@ -269,7 +269,7 @@ export default function HomeScreen() {
         {/* Quick Links */}
         <View style={styles.quickLinksRow}>
           {[
-            { icon: "calendar" as const, label: "Book Token", color: "#4F46E5", glow: "rgba(79,70,229,0.3)", onPress: () => router.push("/(tabs)/bookings") },
+            { icon: "calendar" as const, label: "Book Token", color: "#4F46E5", glow: "rgba(79,70,229,0.3)", onPress: () => router.push("/find-doctors") },
             { icon: "list" as const, label: "My Queue", color: "#06B6D4", glow: "rgba(6,182,212,0.3)", onPress: () => router.push("/(tabs)/bookings") },
             { icon: "user-plus" as const, label: "Add Family", color: "#22C55E", glow: "rgba(34,197,94,0.3)", onPress: () => router.push("/(tabs)/profile") },
             { icon: "grid" as const, label: "Scan QR", color: "#F59E0B", glow: "rgba(245,158,11,0.3)", onPress: () => {} },
@@ -317,10 +317,10 @@ export default function HomeScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recommended for You</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 2 }} onPress={() => router.push("/find-doctors")}>
               <Text style={styles.seeAll}>See All</Text>
               <Feather name="chevron-right" size={13} color="#818CF8" />
-            </View>
+            </Pressable>
           </View>
           {isLoading ? (
             <ActivityIndicator color="#818CF8" style={{ marginVertical: 20 }} />
@@ -339,14 +339,14 @@ export default function HomeScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Browse by Specialty</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 2 }} onPress={() => router.push("/find-doctors")}>
               <Text style={styles.seeAll}>See All</Text>
               <Feather name="chevron-right" size={13} color="#818CF8" />
-            </View>
+            </Pressable>
           </View>
           <View style={styles.specGrid}>
             {SPECIALTIES.map(({ icon, label, color }) => (
-              <Pressable key={label} style={styles.specItem}>
+              <Pressable key={label} style={styles.specItem} onPress={() => router.push({ pathname: "/find-doctors", params: { specialty: label } })}>
                 <View style={[styles.specIcon, { backgroundColor: color + "1A" }]}>
                   <Feather name={icon} size={17} color={color} />
                 </View>

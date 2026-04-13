@@ -17,6 +17,11 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 
+// Set API base URL synchronously at module load time so queries always have it
+if (process.env.EXPO_PUBLIC_DOMAIN) {
+  setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -31,6 +36,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="find-doctors" />
       <Stack.Screen name="doctor/[id]" />
       <Stack.Screen name="booking/[doctorId]" />
       <Stack.Screen name="payment" />
@@ -46,12 +52,6 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
-
-  useEffect(() => {
-    if (process.env.EXPO_PUBLIC_DOMAIN) {
-      setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
-    }
-  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
