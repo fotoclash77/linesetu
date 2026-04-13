@@ -172,12 +172,6 @@ export default function ProfileScreen() {
   const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
   const [avatarError, setAvatarError] = useState(false);
 
-  const stats = [
-    { label: "Bookings", value: "14",  color: "#A5B4FC" },
-    { label: "Active",   value: "1",   color: "#4ADE80" },
-    { label: "Family",   value: String(3), color: "#67E8F9" },
-    { label: "Pending",  value: "2",   color: "#F59E0B" },
-  ];
 
   // ── Family members ──────────────────────────────────────
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
@@ -371,14 +365,6 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
 
-            <View style={styles.statsRow}>
-              {stats.map((s, i) => (
-                <View key={s.label} style={[styles.statPill, i < stats.length - 1 && styles.statPillDivider]}>
-                  <Text style={[styles.statVal, { color: s.color }]}>{s.value}</Text>
-                  <Text style={styles.statLbl}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
           </LinearGradient>
         </View>
 
