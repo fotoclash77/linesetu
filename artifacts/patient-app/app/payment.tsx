@@ -192,7 +192,7 @@ export default function PaymentScreen() {
           <View style={styles.feeCard}>
             <View style={styles.feeRow}>
               <Feather name="monitor" size={12} color="#67E8F9" />
-              <Text style={styles.feeLbl}>E-Appointment Fee</Text>
+              <Text style={styles.feeLbl}>E-Token Fee</Text>
               <Text style={[styles.feeVal, { color: "#67E8F9" }]}>₹{eAppFee}</Text>
             </View>
             <View style={styles.feeDivider} />
