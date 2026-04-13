@@ -49,7 +49,7 @@ function OtpBox({ value, focused }: { value: string; focused: boolean }) {
 }
 
 export default function LoginScreen() {
-  const { loginWithPhone } = useDoctor();
+  const { loginWithOtp } = useDoctor();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -81,8 +81,13 @@ export default function LoginScreen() {
         body: JSON.stringify({ phone: `+91${phone}` }),
       });
       if (!res.ok) throw new Error('Failed to send OTP');
+      const data = await res.json();
       setStep('otp');
       setTimer(30);
+      if (data.devOtp) {
+        setOtp(String(data.devOtp));
+        setOtpFocus(5);
+      }
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (e: any) {
       setError(e.message || 'Could not send OTP. Try again.');
@@ -96,13 +101,7 @@ export default function LoginScreen() {
     setError('');
     setSending(true);
     try {
-      const res = await fetch(`https://${domain}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+91${phone}`, otp }),
-      });
-      if (!res.ok) throw new Error('Invalid OTP. Please try again.');
-      await loginWithPhone(phone);
+      await loginWithOtp(`+91${phone}`, otp);
     } catch (e: any) {
       setError(e.message || 'Verification failed. Try again.');
     } finally {

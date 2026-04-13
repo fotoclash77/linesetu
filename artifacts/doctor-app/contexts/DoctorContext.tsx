@@ -21,13 +21,13 @@ export interface DoctorUser {
 interface DoctorCtx {
   doctor: DoctorUser | null;
   isLoading: boolean;
-  loginWithPhone: (phone: string) => Promise<void>;
+  loginWithOtp: (phone: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const DoctorContext = createContext<DoctorCtx>({
   doctor: null, isLoading: true,
-  loginWithPhone: async () => {},
+  loginWithOtp: async () => {},
   logout: async () => {},
 });
 
@@ -46,18 +46,26 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const loginWithPhone = async (phone: string) => {
-    const res = await fetch(`${BASE()}/api/doctors`);
-    if (!res.ok) throw new Error("Could not fetch doctors");
-    const { doctors } = await res.json();
-    const normalized = phone.replace(/\D/g, "").slice(-10);
-    const found = doctors.find((d: DoctorUser) => {
-      const dp = (d.phone || "").replace(/\D/g, "").slice(-10);
-      return dp === normalized;
+  const loginWithOtp = async (phone: string, otp: string) => {
+    const res = await fetch(`${BASE()}/api/auth/doctor/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, otp }),
     });
-    if (!found) throw new Error("No doctor account found for this number");
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(found));
-    setDoctor(found);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "OTP verification failed");
+    const doctorData: DoctorUser = {
+      id: data.id,
+      name: data.name,
+      phone: data.phone,
+      specialization: data.specialization || "General Physician",
+      clinicName: data.clinicName || "",
+      clinicAddress: data.clinicAddress || "",
+      profilePhoto: data.profilePhoto || "",
+      shifts: data.shifts,
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
+    setDoctor(doctorData);
   };
 
   const logout = async () => {
@@ -66,7 +74,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <DoctorContext.Provider value={{ doctor, isLoading, loginWithPhone, logout }}>
+    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout }}>
       {children}
     </DoctorContext.Provider>
   );
