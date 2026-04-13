@@ -148,7 +148,7 @@ export default function DashboardScreen() {
             {/* Booking toggle */}
             <View style={[styles.bookingRow, bookingOn ? styles.bookingRowOn : styles.bookingRowOff]}>
               <View>
-                <Text style={styles.bookingTitle}>Online Token Booking</Text>
+                <Text style={styles.bookingTitle}>E-Token Booking</Text>
                 <Text style={[styles.bookingStatus, { color: bookingOn ? TEAL_LT : 'rgba(255,255,255,0.3)' }]}>
                   {bookingOn ? 'Accepting new patients' : 'Bookings paused'}
                 </Text>
