@@ -64,6 +64,7 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
 
 export default function DashboardScreen() {
   const [period, setPeriod] = useState<EarningPeriod>('Daily');
+  const [available, setAvailable] = useState(true);
   const [bookingOn, setBookingOn] = useState(true);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Daily');
 
@@ -123,6 +124,26 @@ export default function DashboardScreen() {
               <Text style={styles.sectionDot}>⚡</Text>
               <Text style={styles.sectionTitle}>Quick Controls</Text>
             </View>
+
+            {/* Availability toggle */}
+            <TouchableOpacity
+              onPress={() => setAvailable(p => !p)}
+              style={[styles.availRow, available ? styles.availRowOn : styles.availRowOff]}
+              activeOpacity={0.85}
+            >
+              <View style={styles.availLeft}>
+                <View style={[styles.availDot, { backgroundColor: available ? '#22C55E' : '#EF4444' }]} />
+                <View>
+                  <Text style={styles.availTitle}>
+                    {available ? 'Available' : 'Unavailable'}
+                  </Text>
+                  <Text style={[styles.availSub, { color: available ? '#4ADE80' : '#F87171' }]}>
+                    {available ? 'Accepting patients now' : 'Not seeing patients'}
+                  </Text>
+                </View>
+              </View>
+              <Toggle value={available} onToggle={() => setAvailable(p => !p)} onColor="#22C55E" />
+            </TouchableOpacity>
 
             {/* Booking toggle */}
             <View style={[styles.bookingRow, bookingOn ? styles.bookingRowOn : styles.bookingRowOff]}>
@@ -301,6 +322,16 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   sectionDot: { fontSize: 14, color: TEAL_LT },
   sectionTitle: { fontSize: 12, fontWeight: '800', color: '#FFF' },
+  availRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 14, borderRadius: 16, marginBottom: 10, borderWidth: 1.5,
+  },
+  availRowOn: { backgroundColor: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.3)' },
+  availRowOff: { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' },
+  availLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  availDot: { width: 10, height: 10, borderRadius: 5 },
+  availTitle: { fontSize: 14, fontWeight: '800', color: '#FFF' },
+  availSub: { fontSize: 10, fontWeight: '600', marginTop: 1 },
   bookingRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: 12, borderRadius: 14, marginBottom: 12, borderWidth: 1,
