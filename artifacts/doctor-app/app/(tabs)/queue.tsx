@@ -473,10 +473,10 @@ export default function QueueScreen() {
     setBusy(id); try { await apiSendNext(id); inv(); } catch {} setBusy(null);
   };
 
-  // ── Data (filter to selected shift only — prevents cross-shift token bleed) ──
-  const restTokens: Token[] = (aData?.tokens ?? []).map(mapToken).filter(t => t.shift === shift);
+  // ── Data (SSE is primary — instant updates; REST is fallback for initial load) ──
   const masterFiltered: Token[] = masterRows.map(mapToken).filter(t => t.shift === shift);
-  const all: Token[] = restTokens.length > 0 ? restTokens : masterFiltered;
+  const restTokens: Token[]     = (aData?.tokens ?? []).map(mapToken).filter(t => t.shift === shift);
+  const all: Token[] = masterFiltered.length > 0 ? masterFiltered : restTokens;
 
   const consulting = all.find(t => t.displayStatus === 'consulting');
   const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a, b) => {
