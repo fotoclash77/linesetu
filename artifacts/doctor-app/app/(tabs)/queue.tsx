@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl, Platform, Animated,
+  ActivityIndicator, Platform, Animated, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -26,13 +26,38 @@ const todayISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 };
 
-async function apiFetchQueue(doctorId: string, shift: string) {
-  const r = await fetch(`${BASE()}/api/queues/${doctorId}?date=${todayISO()}&shift=${shift}`);
+// ─── Date utilities ───────────────────────────────────────────────
+function dateISO(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getNext7Days(): Date[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0); return d;
+  });
+}
+function dayLabel(d: Date): string {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+  if (d.getTime() === today.getTime())    return 'Today';
+  if (d.getTime() === tomorrow.getTime()) return 'Tmrw';
+  return d.toLocaleDateString('en-IN', { weekday: 'short' });
+}
+function fmtScheduleLabel(iso: string, shift: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const prefix = d.getTime() === today.getTime()
+    ? 'Today'
+    : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return `${prefix} · ${shift === 'morning' ? '☀ Morning' : '☾ Evening'}`;
+}
+
+async function apiFetchQueue(doctorId: string, shift: string, date: string) {
+  const r = await fetch(`${BASE()}/api/queues/${doctorId}?date=${date}&shift=${shift}`);
   if (!r.ok) throw new Error('queue fetch failed');
   return r.json();
 }
-async function apiFetchAll(doctorId: string) {
-  const r = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${todayISO()}`);
+async function apiFetchAll(doctorId: string, date: string) {
+  const r = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${date}`);
   if (!r.ok) throw new Error('tokens fetch failed');
   return r.json();
 }
@@ -88,16 +113,17 @@ function mapToken(t: any): Token {
 }
 
 // ─── Master Queue (SSE + REST polling) ───────────────────────────
-function useMasterQueue(doctorId: string) {
+function useMasterQueue(doctorId: string, date: string) {
   const [rows, setRows] = useState<MasterRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!doctorId) return;
     let active = true;
+    setRows([]); setLoading(true);
     const fetchNow = async () => {
       try {
-        const res = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${todayISO()}`);
+        const res = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${date}`);
         const data = await res.json();
         if (data.tokens && active) setRows(sortRows(data.tokens));
       } catch (_) {}
@@ -107,7 +133,7 @@ function useMasterQueue(doctorId: string) {
     const iv = setInterval(fetchNow, 30_000);
     let es: any = null;
     if (typeof EventSource !== 'undefined') {
-      es = new EventSource(`${BASE()}/api/tokens/stream/${doctorId}?date=${todayISO()}`);
+      es = new EventSource(`${BASE()}/api/tokens/stream/${doctorId}?date=${date}`);
       es.onmessage = (e: MessageEvent) => {
         try {
           const tokens: MasterRow[] = JSON.parse(e.data);
@@ -116,7 +142,7 @@ function useMasterQueue(doctorId: string) {
       };
     }
     return () => { active = false; clearInterval(iv); es?.close(); };
-  }, [doctorId]);
+  }, [doctorId, date]);
 
   return { rows, loading };
 }
@@ -424,30 +450,34 @@ export default function QueueScreen() {
   const qc = useQueryClient();
   const [tab,          setTab]        = useState<TabKey>('normal');
   const [shift,        setShift]      = useState<'morning' | 'evening'>('morning');
+  const [schedDate,    setSchedDate]  = useState<string>(todayISO);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [pickDate,     setPickDate]   = useState<string>(todayISO);
+  const [pickShift,    setPickShift]  = useState<'morning' | 'evening'>('morning');
   const [busyId,       setBusy]       = useState<string | null>(null);
   const [manualNextId, setManualNext] = useState<string | null>(null);
   const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
-  const { data: qData, refetch: refetchQ } = useQuery({
-    queryKey: ['dq', docId, shift],
-    queryFn: () => apiFetchQueue(docId, shift),
+  const { data: qData } = useQuery({
+    queryKey: ['dq', docId, schedDate, shift],
+    queryFn: () => apiFetchQueue(docId, shift, schedDate),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
-  const { data: aData, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['da', docId],
-    queryFn: () => apiFetchAll(docId),
+  const { data: aData, isLoading, isRefetching } = useQuery({
+    queryKey: ['da', docId, schedDate],
+    queryFn: () => apiFetchAll(docId, schedDate),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
-  const { rows: masterRows } = useMasterQueue(docId);
+  const { rows: masterRows } = useMasterQueue(docId, schedDate);
 
   const inv = useCallback(() => Promise.all([
-    qc.invalidateQueries({ queryKey: ['dq', docId] }),
-    qc.invalidateQueries({ queryKey: ['da', docId] }),
-  ]), [qc, docId]);
+    qc.invalidateQueries({ queryKey: ['dq', docId, schedDate] }),
+    qc.invalidateQueries({ queryKey: ['da', docId, schedDate] }),
+  ]), [qc, docId, schedDate]);
 
-  // Clear manual pick whenever shift changes — morning pick shouldn't carry to evening
-  useEffect(() => { setManualNext(null); }, [shift]);
+  // Clear manual pick whenever schedule changes
+  useEffect(() => { setManualNext(null); }, [shift, schedDate]);
 
   const doCall = async (id: string) => {
     setBusy(id); try { await apiCall(id); await inv(); } catch {} setBusy(null);
@@ -532,14 +562,20 @@ export default function QueueScreen() {
               {isRefetching ? '  ·' : ''}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            {/* Schedule pill — tap to change date/shift */}
             <TouchableOpacity
-              style={[S.shiftBtn, shift === 'morning' ? S.shiftMorn : S.shiftEve]}
-              onPress={() => setShift(s => s === 'morning' ? 'evening' : 'morning')}
+              style={S.schedBtn}
+              onPress={() => { setPickDate(schedDate); setPickShift(shift); setShowSchedule(true); }}
             >
-              <Text style={[S.shiftTxt, { color: shift === 'morning' ? AMBER_LT : '#C4B5FD' }]}>
-                {shift === 'morning' ? '☀ Morning' : '☾ Evening'}
-              </Text>
+              <Text style={S.schedTxt}>{fmtScheduleLabel(schedDate, shift)}</Text>
+            </TouchableOpacity>
+            {/* Walk-in shortcut */}
+            <TouchableOpacity
+              style={S.walkInBtn}
+              onPress={() => router.push(`/walkin?date=${schedDate}&shift=${shift}` as any)}
+            >
+              <Text style={S.walkInTxt}>＋</Text>
             </TouchableOpacity>
             <View style={S.bellBtn}>
               <Text style={{ fontSize: 16 }}>🔔</Text>
@@ -649,6 +685,84 @@ export default function QueueScreen() {
           </>
         )}
       </View>
+
+      {/* ── SCHEDULE PICKER MODAL ─────────────────── */}
+      <Modal visible={showSchedule} transparent animationType="slide" onRequestClose={() => setShowSchedule(false)}>
+        <TouchableOpacity style={S.modalOverlay} activeOpacity={1} onPress={() => setShowSchedule(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={S.modalSheet}>
+              <View style={S.modalHandle} />
+              <Text style={S.modalTitle}>📅  Select Schedule</Text>
+              <Text style={S.modalSub}>Choose date and shift for the queue</Text>
+
+              {/* Date selector */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+                <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                  {getNext7Days().map(d => {
+                    const iso = dateISO(d);
+                    const active = pickDate === iso;
+                    return (
+                      <TouchableOpacity
+                        key={iso}
+                        onPress={() => setPickDate(iso)}
+                        style={[S.dateCell, active && S.dateCellActive]}
+                      >
+                        <Text style={[S.dateDayLabel, active && { color: TEAL_LT }]}>{dayLabel(d)}</Text>
+                        <Text style={[S.dateDayNum,   active && { color: '#FFF'   }]}>{d.getDate()}</Text>
+                        <Text style={[S.dateMonth,    active && { color: TEAL_LT }]}>
+                          {d.toLocaleDateString('en-IN', { month: 'short' })}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Shift selector */}
+              <Text style={S.modalSectionLabel}>SHIFT</Text>
+              <View style={S.shiftRow}>
+                {(['morning', 'evening'] as const).map(s => {
+                  const enabled = s === 'morning'
+                    ? (doctor?.shifts?.morning !== false)
+                    : (doctor?.shifts?.evening !== false);
+                  const active = pickShift === s;
+                  return (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => enabled && setPickShift(s)}
+                      style={[
+                        S.shiftOpt,
+                        active && (s === 'morning' ? S.shiftOptMorn : S.shiftOptEve),
+                        !enabled && { opacity: 0.35 },
+                      ]}
+                    >
+                      <Text style={[S.shiftOptIcon, active && { opacity: 1 }]}>
+                        {s === 'morning' ? '☀' : '☾'}
+                      </Text>
+                      <Text style={[S.shiftOptLabel, active && { color: '#FFF' }]}>
+                        {s === 'morning' ? 'Morning' : 'Evening'}
+                      </Text>
+                      {!enabled && <Text style={S.shiftOptOff}>Off</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Confirm */}
+              <TouchableOpacity
+                style={S.confirmBtn}
+                onPress={() => {
+                  setSchedDate(pickDate);
+                  setShift(pickShift);
+                  setShowSchedule(false);
+                }}
+              >
+                <Text style={S.confirmBtnTxt}>Confirm Schedule</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -661,14 +775,36 @@ const S = StyleSheet.create({
   orbBL: { position: 'absolute', bottom: 120, left: -80, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(245,158,11,0.1)' },
 
   // Header
-  hdr:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
-  hdrSub:   { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 1.5, textTransform: 'uppercase' },
-  hdrTitle: { fontSize: 16, fontWeight: '800', color: '#FFF', marginTop: 2 },
-  shiftBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
-  shiftMorn:{ backgroundColor: 'rgba(245,158,11,0.14)', borderColor: 'rgba(245,158,11,0.35)' },
-  shiftEve: { backgroundColor: 'rgba(196,181,253,0.1)',  borderColor: 'rgba(196,181,253,0.3)' },
-  shiftTxt: { fontSize: 11, fontWeight: '800' },
-  bellBtn:  { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  hdr:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
+  hdrSub:    { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 1.5, textTransform: 'uppercase' },
+  hdrTitle:  { fontSize: 16, fontWeight: '800', color: '#FFF', marginTop: 2 },
+  schedBtn:  { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(13,148,136,0.18)', borderColor: 'rgba(45,212,191,0.4)' },
+  schedTxt:  { fontSize: 11, fontWeight: '800', color: TEAL_LT },
+  walkInBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(13,148,136,0.25)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.45)', alignItems: 'center', justifyContent: 'center' },
+  walkInTxt: { fontSize: 18, color: TEAL_LT, lineHeight: 22, fontWeight: '800' },
+  bellBtn:   { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+
+  // Schedule modal
+  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalSheet:      { backgroundColor: '#0D1321', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 36, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  modalHandle:     { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 18 },
+  modalTitle:      { fontSize: 18, fontWeight: '900', color: '#FFF', marginBottom: 4 },
+  modalSub:        { fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '500', marginBottom: 20 },
+  modalSectionLabel:{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 },
+  dateCell:        { width: 60, height: 72, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  dateCellActive:  { backgroundColor: 'rgba(13,148,136,0.25)', borderColor: 'rgba(45,212,191,0.5)', borderWidth: 1.5 },
+  dateDayLabel:    { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' },
+  dateDayNum:      { fontSize: 22, fontWeight: '900', color: 'rgba(255,255,255,0.7)', lineHeight: 26 },
+  dateMonth:       { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.35)' },
+  shiftRow:        { flexDirection: 'row', gap: 10, marginBottom: 22 },
+  shiftOpt:        { flex: 1, height: 60, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  shiftOptMorn:    { backgroundColor: 'rgba(245,158,11,0.18)', borderColor: 'rgba(245,158,11,0.45)', borderWidth: 1.5 },
+  shiftOptEve:     { backgroundColor: 'rgba(196,181,253,0.15)', borderColor: 'rgba(196,181,253,0.4)', borderWidth: 1.5 },
+  shiftOptIcon:    { fontSize: 18, opacity: 0.55 },
+  shiftOptLabel:   { fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.5)' },
+  shiftOptOff:     { fontSize: 9, fontWeight: '700', color: '#F87171', textTransform: 'uppercase' },
+  confirmBtn:      { height: 52, borderRadius: 16, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center' },
+  confirmBtnTxt:   { fontSize: 15, fontWeight: '900', color: '#FFF' },
 
   // Stats
   statsBar:  { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' },

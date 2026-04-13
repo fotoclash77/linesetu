@@ -1,0 +1,323 @@
+You are a senior full-stack developer.
+
+Build a real feature in the LINESETU Doctor App for **Walk-in Booking with Doctor Availability Date + Shift selection**, using:
+
+- React Native (Expo)
+- Firebase Auth
+- Cloud Firestore
+- Firestore real-time listeners
+
+This is a DEVELOPMENT feature, not only UI.
+
+--------------------------------------------------
+CORE REQUIREMENT
+--------------------------------------------------
+
+Before adding a walk-in patient, doctor/receptionist must first select:
+
+1. Doctor availability date
+2. Shift (Morning / Evening)
+
+This selected Date + Shift must use the **exact same queue logic** as the patient app e-token booking system.
+
+That means:
+
+- Every Date + Shift combination has its own unique queue
+- Walk-in bookings and e-token bookings both enter the same queue
+- Queue updates in real time
+- Doctor app and patient app must always stay synced
+
+Example:
+- 15 Apr 2026 + Morning = Queue A
+- 15 Apr 2026 + Evening = Queue B
+- 16 Apr 2026 + Morning = Queue C
+
+All of these are separate queues.
+
+--------------------------------------------------
+DOCTOR APP FLOW
+--------------------------------------------------
+
+On Doctor App, near the notification bell, add a button like:
+
+- "Select Schedule"
+or
+- calendar icon button
+
+When clicked:
+
+Open a modal / bottom sheet / popup that shows:
+
+1. Available Dates
+2. Available Shifts for selected date
+
+After doctor selects Date + Shift:
+
+- Save selected schedule in local screen state
+- All queue data on the screen must now load only for that selected Date + Shift
+- Doctor can then add walk-in patients into that same selected queue
+
+--------------------------------------------------
+PATIENT APP SYNC REQUIREMENT
+--------------------------------------------------
+
+Patient app already allows e-token booking.
+
+Now both sources must go into the same queue:
+
+- Walk-in token from doctor app
+- E-token booking from patient app
+
+Same Date + Shift + Doctor/Clinic = same master queue
+
+Do not create separate queue logic for walk-in and online.
+Only one unified queue.
+
+--------------------------------------------------
+FIRESTORE DATA MODEL
+--------------------------------------------------
+
+Use a queue key based on:
+
+- clinicId
+- date
+- shift
+
+Recommended derived key:
+queueKey = `${clinicId}_${yyyy-mm-dd}_${shift}`
+
+Example:
+clinicA_2026-04-15_morning
+
+--------------------------------------------------
+COLLECTIONS
+--------------------------------------------------
+
+1. clinics/{clinicId}
+Fields:
+- name
+- doctorId
+- availabilityDates: array or subcollection
+- shiftsEnabled: { morning: true, evening: true }
+
+2. bookings/{bookingId}
+Fields:
+- clinicId
+- doctorId
+- userId (null allowed for walk-in if needed)
+- queueKey
+- bookingDate (YYYY-MM-DD)
+- shift ("morning" | "evening")
+- tokenNumber
+- type ("walk-in" | "online" | "emergency")
+- status ("waiting" | "up_next" | "in_consultation" | "completed" | "skipped")
+- name
+- age
+- gender
+- phone
+- createdAt
+- source ("doctor_app" | "patient_app")
+
+3. queueCounters/{queueKey}
+Fields:
+- clinicId
+- doctorId
+- bookingDate
+- shift
+- lastTokenNumber
+- currentInConsultationToken
+- currentUpNextToken
+- updatedAt
+
+--------------------------------------------------
+TOKEN GENERATION LOGIC
+--------------------------------------------------
+
+When a new booking is created, whether from patient app or doctor app:
+
+1. Identify queueKey from clinicId + date + shift
+2. Use Firestore transaction
+3. Increment queueCounters/{queueKey}.lastTokenNumber
+4. Assign that as tokenNumber
+5. Create booking inside same queueKey
+
+This ensures:
+- token numbers are unique per Date + Shift
+- Morning and Evening are separate
+- Every date has independent queue reset automatically by queueKey design
+
+No manual reset needed if queueKey is date-based.
+
+--------------------------------------------------
+DOCTOR APP SCREEN LOGIC
+--------------------------------------------------
+
+After Date + Shift selection, show the master queue screen for that selected queueKey.
+
+Queue must be real-time using Firestore listener:
+Query bookings where:
+- clinicId == selectedClinicId
+- bookingDate == selectedDate
+- shift == selectedShift
+Order by tokenNumber ascending
+
+From same listener, segment into:
+- In Consultation
+- Up Next
+- Waiting
+- Skipped
+- Completed
+
+Also support waiting filters:
+- Normal
+- Emergency
+- Skipped
+- Consulted
+
+--------------------------------------------------
+WALK-IN BOOKING FLOW
+--------------------------------------------------
+
+After Date + Shift is selected:
+
+Doctor can click "Add Walk-in"
+
+Form fields:
+- Name
+- Age
+- Gender
+- Phone
+- Token Type (walk-in / emergency)
+
+On submit:
+- Create booking in same selected queueKey
+- Auto assign token number through transaction
+- Status default = waiting
+- Source = doctor_app
+
+This booking must immediately appear in real-time queue.
+
+--------------------------------------------------
+PATIENT APP BOOKING FLOW
+--------------------------------------------------
+
+Patient app must also use same doctor availability date + shift selection.
+
+When patient books:
+- choose doctor
+- choose available date
+- choose shift
+- booking is created in same queueKey
+- source = patient_app
+- type = online
+
+So both patient app and doctor app always write to the same queue.
+
+--------------------------------------------------
+AVAILABILITY LOGIC
+--------------------------------------------------
+
+Doctor availability settings should define:
+- which dates are open
+- which shifts are open on each date
+
+Doctor app schedule popup should fetch only valid dates/shifts.
+Patient app should also use same availability source in real time.
+
+If shift is disabled or full:
+- do not allow booking
+- show proper message
+
+--------------------------------------------------
+REAL-TIME MASTER QUEUE ACTIONS
+--------------------------------------------------
+
+For selected queueKey, support these actions:
+
+1. Send Next
+- move selected waiting patient to up_next
+
+2. Call Next
+- move up_next to in_consultation
+
+3. Skip
+- move in_consultation or waiting patient to skipped
+
+4. Consulted & Call Next
+- current in_consultation -> completed
+- next patient -> up_next or in_consultation based on flow
+
+5. Send Alert
+- mock notification function for MVP
+
+All updates must be atomic and safe against duplicate taps.
+
+--------------------------------------------------
+UI BEHAVIOR REQUIREMENTS
+--------------------------------------------------
+
+On Doctor screen, near notification bell:
+- add a calendar/schedule button
+- selected date + shift should be clearly visible at top
+- if no schedule selected, prompt user to select date and shift before showing or adding walk-ins
+
+Example top bar:
+- Date: 15 Apr 2026
+- Shift: Morning
+
+Queue sections should always reflect only selected date + shift.
+
+--------------------------------------------------
+IMPORTANT BUSINESS LOGIC
+--------------------------------------------------
+
+Each queue must be unique by:
+- doctor/clinic
+- date
+- shift
+
+So:
+- one doctor can have many date-wise queues
+- each date can have morning and evening queues
+- every queue is independent
+- walk-in and online bookings merge into one queue for that exact date + shift
+
+--------------------------------------------------
+EDGE CASES
+--------------------------------------------------
+
+Handle:
+- no schedule selected
+- no available shifts
+- no queueCounter doc exists yet -> create it in transaction
+- duplicate booking clicks
+- simultaneous bookings from patient app and doctor app
+- disabled shift
+- doctor changes date/shift -> listener rebinds instantly
+
+--------------------------------------------------
+CODE STRUCTURE
+--------------------------------------------------
+
+Use modular files like:
+- services/queueService.ts
+- services/availabilityService.ts
+- hooks/useRealtimeQueue.ts
+- hooks/useDoctorAvailability.ts
+- screens/DoctorQueueScreen.tsx
+- screens/AddWalkInModal.tsx
+- components/ScheduleSelector.tsx
+
+--------------------------------------------------
+OUTPUT REQUIREMENT
+--------------------------------------------------
+
+Provide production-ready code implementing:
+- schedule selector popup
+- date + shift based queueKey logic
+- real-time queue listener
+- walk-in booking creation
+- shared queue with patient app
+- Firestore transaction-safe token generation
+
+Build this as a real working feature, not just design.
