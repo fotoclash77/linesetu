@@ -110,7 +110,6 @@ export default function DoctorDetailScreen() {
         {/* Hero Photo */}
         <View style={[styles.heroWrap, { marginTop: 12 }]}>
           <Image source={{ uri: doctor.photo }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
-          <LinearGradient colors={["transparent", "rgba(10,14,26,0.95)"]} style={styles.heroGrad} />
 
           {/* Verified badge */}
           <View style={styles.verifiedBadge}>
