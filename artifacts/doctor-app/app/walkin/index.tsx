@@ -123,8 +123,8 @@ export default function AddWalkinScreen() {
     const trimmedArea    = area.trim();
 
     if (!trimmedName)    { setBookingError('Patient name is required'); return; }
-    if (!trimmedAge || isNaN(Number(trimmedAge)) || Number(trimmedAge) < 1 || Number(trimmedAge) > 120) {
-      setBookingError('Valid age is required (1–120)'); return;
+    if (!trimmedAge || isNaN(Number(trimmedAge)) || Number(trimmedAge) < 1 || Number(trimmedAge) > 99) {
+      setBookingError('Valid age is required (1–99)'); return;
     }
     if (!trimmedPhone || trimmedPhone.length !== 10) {
       setBookingError('10-digit phone number is required'); return;
@@ -259,8 +259,9 @@ export default function AddWalkinScreen() {
                   placeholder="e.g. 35"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   keyboardType="number-pad"
+                  maxLength={2}
                   value={age}
-                  onChangeText={setAge}
+                  onChangeText={t => setAge(t.replace(/\D/g, '').slice(0, 2))}
                 />
               </View>
               <View style={{ flex: 1 }}>
