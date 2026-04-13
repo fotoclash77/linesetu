@@ -130,7 +130,9 @@ export default function FindDoctorsScreen() {
 
   const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
 
-  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d, i) => ({
+  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? [])
+    .filter((d: any) => d.isAvailable !== false)
+    .map((d: any, i: number) => ({
     id: d.id,
     name: d.name,
     specialty: d.specialization,

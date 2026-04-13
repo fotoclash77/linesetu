@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Switch, Platform, DimensionValue,
@@ -7,6 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import Svg, { Polyline, Polygon } from 'react-native-svg';
+import { useDoctor } from '../../contexts/DoctorContext';
+
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 const isWeb = Platform.OS === 'web';
 
@@ -63,10 +66,26 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
 }
 
 export default function DashboardScreen() {
+  const { doctor } = useDoctor();
   const [period, setPeriod] = useState<EarningPeriod>('Today');
   const [available, setAvailable] = useState(true);
   const [bookingOn, setBookingOn] = useState(true);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Today');
+
+  const toggleAvailability = useCallback(async () => {
+    const newVal = !available;
+    setAvailable(newVal);
+    if (!doctor?.id) return;
+    try {
+      await fetch(`${BASE()}/api/doctors/${doctor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable: newVal }),
+      });
+    } catch {
+      setAvailable(!newVal);
+    }
+  }, [available, doctor?.id]);
 
   const earn = EARNINGS[period];
   const pd = PATIENT_DATA[patientPeriod];
@@ -124,7 +143,7 @@ export default function DashboardScreen() {
 
             {/* Availability toggle */}
             <TouchableOpacity
-              onPress={() => setAvailable(p => !p)}
+              onPress={toggleAvailability}
               style={[styles.availRow, available ? styles.availRowOn : styles.availRowOff]}
               activeOpacity={0.85}
             >
@@ -139,7 +158,7 @@ export default function DashboardScreen() {
                   </Text>
                 </View>
               </View>
-              <Toggle value={available} onToggle={() => setAvailable(p => !p)} onColor="#22C55E" />
+              <Toggle value={available} onToggle={toggleAvailability} onColor="#22C55E" />
             </TouchableOpacity>
 
             {/* Booking toggle */}
