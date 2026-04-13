@@ -211,7 +211,7 @@ function WaitingCard({ p }: { p: Patient }) {
 }
 
 function StatsBar({ patients }: { patients: Patient[] }) {
-  const total = patients.filter(p => p.status !== "consulting").length + 1;
+  const total = patients.length;
   const waiting = patients.filter(p => p.status === "waiting").length;
   const done = patients.filter(p => p.status === "consulted").length;
   const skipped = patients.filter(p => p.status === "skipped").length;
