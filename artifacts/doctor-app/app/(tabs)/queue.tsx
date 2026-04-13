@@ -519,18 +519,17 @@ export default function QueueScreen() {
   };
 
   // ── Process ──
-  const live: Token[] = (qData?.tokens ?? []).map(mapToken);
-  const current = live.find(t => t.displayStatus === 'consulting');
-  const waitSorted = live.filter(t => t.displayStatus === 'waiting').sort((a,b) => {
+  const all: Token[] = (aData?.tokens ?? []).map(mapToken);
+  const current   = all.find(t => t.displayStatus === 'consulting');
+  const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a,b) => {
     if (a.type==='emergency' && b.type!=='emergency') return -1;
     if (b.type==='emergency' && a.type!=='emergency') return 1;
     return a.tokenNumber - b.tokenNumber;
   });
-  const nextTok  = waitSorted[0];         // the "Next" patient card
+  const nextTok   = waitSorted[0];        // the "Next" patient card
   const queueRest = waitSorted.slice(1);  // rest shown in queue tab
   const emergList = waitSorted.filter(t => t.type === 'emergency');
 
-  const all: Token[] = (aData?.tokens ?? []).map(mapToken);
   const doneList    = all.filter(t => t.displayStatus === 'done').sort((a,b)=>b.tokenNumber-a.tokenNumber);
   const skippedList = all.filter(t => t.displayStatus === 'skipped').sort((a,b)=>b.tokenNumber-a.tokenNumber);
   const totalAll    = all.length;
