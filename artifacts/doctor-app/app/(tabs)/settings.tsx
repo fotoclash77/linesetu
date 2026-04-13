@@ -117,10 +117,28 @@ export default function SettingsScreen() {
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
-  // Calendar overrides: { [isoDate]: 'holiday'|'morning_only'|'evening_only'|'both'|null }
-  const [calendarOverrides, setCalendarOverrides] = useState<Record<string, string | null>>(() => (doctor as any)?.calendar ?? {});
+  type ShiftCfg = { enabled: boolean; startTime: string; endTime: string; maxWalkin: number; maxEToken: number; clinicName: string; address: string; locationLink: string };
+  type DayCfg  = { off: boolean; morning: ShiftCfg; evening: ShiftCfg };
+  const DEFAULT_SHIFT = (start: string, end: string): ShiftCfg => ({
+    enabled: true, startTime: start, endTime: end, maxWalkin: 20, maxEToken: 15,
+    clinicName: doctor?.clinicName ?? '', address: doctor?.clinicAddress ?? '', locationLink: '',
+  });
+  const BLANK_DAY = (): DayCfg => ({
+    off: false,
+    morning: DEFAULT_SHIFT('09:00', '13:00'),
+    evening: DEFAULT_SHIFT('17:00', '20:00'),
+  });
+
+  // Calendar overrides: { [isoDate]: DayCfg }
+  const [calendarOverrides, setCalendarOverrides] = useState<Record<string, DayCfg>>(() => (doctor as any)?.calendar ?? {});
+  const [selectedCalDate, setSelectedCalDate] = useState<string | null>(null);
+  const [dayForm, setDayForm] = useState<DayCfg>(BLANK_DAY());
   const [calSaving, setCalSaving] = useState(false);
   const [calSaved, setCalSaved] = useState(false);
+
+  function patchShift(shift: 'morning' | 'evening', patch: Partial<ShiftCfg>) {
+    setDayForm(prev => ({ ...prev, [shift]: { ...prev[shift], ...patch } }));
+  }
 
   // Re-seed when doctor loads (covers cold start)
   useEffect(() => {
@@ -327,81 +345,60 @@ export default function SettingsScreen() {
                 : <Text style={styles.saveBtnText}>{schedSaved ? '✓ Saved!' : '✓ Save Schedule'}</Text>}
             </TouchableOpacity>
 
-            {/* ── 30-DAY AVAILABILITY CALENDAR ────────────── */}
+            {/* ── 30-DAY SCHEDULE EDITOR ────────────────────── */}
             {(() => {
               const today = new Date(); today.setHours(0,0,0,0);
-              // Build array of 30 dates
               const dates30: Date[] = [];
               for (let i = 0; i < 30; i++) {
                 const d = new Date(today); d.setDate(today.getDate() + i);
                 dates30.push(d);
               }
-              // Pad front to align with start day-of-week of today
-              const startDow = today.getDay(); // 0=Sun
+              const startDow = today.getDay();
               const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
               while (cells.length % 7 !== 0) cells.push(null);
               const rows: (Date | null)[][] = [];
               for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-
               const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
               function isoOf(d: Date) {
                 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
               }
+              function friendlyDate(iso: string) {
+                const d = new Date(iso + 'T00:00:00');
+                return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+              }
 
-              const STATUSES = ['holiday', 'morning_only', 'evening_only', 'both'] as const;
-              const cycleFor = (cur: string | null | undefined): string | null => {
-                if (!cur) return 'holiday';
-                const i = STATUSES.indexOf(cur as any);
-                if (i === -1 || i === STATUSES.length - 1) return null;
-                return STATUSES[i + 1];
-              };
+              // Derive a dot color for each configured date
+              function dotColor(cfg: DayCfg | undefined): string {
+                if (!cfg) return '';
+                if (cfg.off) return '#F87171';
+                const m = cfg.morning.enabled, e = cfg.evening.enabled;
+                if (m && e) return '#2DD4BF';
+                if (m) return '#FCD34D';
+                if (e) return '#A5B4FC';
+                return '#F87171';
+              }
 
-              const STATUS_BG: Record<string, string> = {
-                holiday:     'rgba(239,68,68,0.22)',
-                morning_only:'rgba(245,158,11,0.22)',
-                evening_only:'rgba(139,92,246,0.22)',
-                both:        'rgba(13,148,136,0.3)',
-              };
-              const STATUS_BORDER: Record<string, string> = {
-                holiday:     'rgba(239,68,68,0.55)',
-                morning_only:'rgba(245,158,11,0.55)',
-                evening_only:'rgba(139,92,246,0.55)',
-                both:        'rgba(45,212,191,0.55)',
-              };
-              const STATUS_LABEL: Record<string, string> = {
-                holiday:     '✕',
-                morning_only:'☀',
-                evening_only:'☾',
-                both:        '✓',
-              };
-
-              // Group consecutive month labels for header
               let prevMonth = -1;
               const monthLabels: { label: string; rowIdx: number }[] = [];
               rows.forEach((row, ri) => {
-                const firstDate = row.find(c => c !== null);
-                if (firstDate && firstDate.getMonth() !== prevMonth) {
-                  prevMonth = firstDate.getMonth();
-                  monthLabels.push({
-                    label: firstDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
-                    rowIdx: ri,
-                  });
+                const fd = row.find(c => c !== null);
+                if (fd && fd.getMonth() !== prevMonth) {
+                  prevMonth = fd.getMonth();
+                  monthLabels.push({ label: fd.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }), rowIdx: ri });
                 }
               });
 
               return (
                 <View style={{ marginTop: 24 }}>
-                  <View style={styles.calHeader}>
-                    <Text style={styles.calTitle}>📅  30-DAY AVAILABILITY</Text>
-                  </View>
-                  <Text style={styles.calSub}>Tap a date to mark it — holiday, morning only, evening only, or both open</Text>
+                  <Text style={styles.calTitle}>📅  30-DAY SCHEDULE  ·  Tap date to configure</Text>
 
-                  {/* DOW row */}
-                  <View style={styles.calDowRow}>
+                  {/* DOW header */}
+                  <View style={[styles.calDowRow, { marginTop: 12 }]}>
                     {DOW.map(d => <Text key={d} style={styles.calDow}>{d}</Text>)}
                   </View>
 
+                  {/* Calendar grid */}
                   {rows.map((row, ri) => {
                     const ml = monthLabels.find(m => m.rowIdx === ri);
                     return (
@@ -411,39 +408,32 @@ export default function SettingsScreen() {
                           {row.map((cell, ci) => {
                             if (!cell) return <View key={ci} style={styles.calCell} />;
                             const iso = isoOf(cell);
-                            const status = calendarOverrides[iso] ?? null;
-                            const isPast = cell < today;
+                            const cfg = calendarOverrides[iso];
+                            const dot = dotColor(cfg);
+                            const isSelected = selectedCalDate === iso;
                             const isToday = cell.getTime() === today.getTime();
                             return (
                               <TouchableOpacity
                                 key={ci}
-                                disabled={isPast}
                                 onPress={() => {
-                                  const next = cycleFor(status);
-                                  setCalendarOverrides(prev => {
-                                    const updated = { ...prev };
-                                    if (next === null) delete updated[iso];
-                                    else updated[iso] = next;
-                                    return updated;
-                                  });
+                                  setSelectedCalDate(iso);
+                                  setDayForm(calendarOverrides[iso] ? JSON.parse(JSON.stringify(calendarOverrides[iso])) : BLANK_DAY());
                                 }}
                                 style={[
                                   styles.calCell,
-                                  status && { backgroundColor: STATUS_BG[status], borderColor: STATUS_BORDER[status], borderWidth: 1.5 },
-                                  isToday && !status && { borderColor: 'rgba(45,212,191,0.7)', borderWidth: 1.5 },
-                                  isPast && { opacity: 0.25 },
+                                  cfg?.off && { backgroundColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)' },
+                                  cfg && !cfg.off && { backgroundColor: 'rgba(13,148,136,0.14)', borderColor: 'rgba(45,212,191,0.35)' },
+                                  isSelected && { borderColor: '#FFF', borderWidth: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
+                                  isToday && !isSelected && { borderColor: '#2DD4BF', borderWidth: 1.5 },
                                 ]}
                               >
                                 <Text style={[
                                   styles.calCellDate,
                                   isToday && { color: '#2DD4BF', fontWeight: '900' },
-                                  status === 'holiday' && { color: '#F87171', textDecorationLine: 'line-through' },
+                                  isSelected && { color: '#FFF' },
+                                  cfg?.off && { textDecorationLine: 'line-through', color: '#F87171' },
                                 ]}>{cell.getDate()}</Text>
-                                {status && (
-                                  <Text style={{ fontSize: 9, lineHeight: 10, color: status === 'holiday' ? '#F87171' : status === 'morning_only' ? '#FCD34D' : status === 'evening_only' ? '#A5B4FC' : '#2DD4BF' }}>
-                                    {STATUS_LABEL[status]}
-                                  </Text>
-                                )}
+                                {dot ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: dot }} /> : null}
                               </TouchableOpacity>
                             );
                           })}
@@ -455,35 +445,149 @@ export default function SettingsScreen() {
                   {/* Legend */}
                   <View style={styles.calLegend}>
                     {[
-                      { key: 'holiday',     color: '#F87171',  label: '✕ Holiday' },
-                      { key: 'morning_only',color: '#FCD34D',  label: '☀ Morning' },
-                      { key: 'evening_only',color: '#A5B4FC',  label: '☾ Evening' },
-                      { key: 'both',        color: '#2DD4BF',  label: '✓ Both' },
+                      { color: '#F87171', label: 'Off/Holiday' },
+                      { color: '#FCD34D', label: 'Morning' },
+                      { color: '#A5B4FC', label: 'Evening' },
+                      { color: '#2DD4BF', label: 'Both open' },
                     ].map(item => (
-                      <View key={item.key} style={styles.calLegendItem}>
+                      <View key={item.label} style={styles.calLegendItem}>
                         <View style={[styles.calLegendDot, { backgroundColor: item.color }]} />
                         <Text style={styles.calLegendTxt}>{item.label}</Text>
                       </View>
                     ))}
                   </View>
-                  <Text style={styles.calHint}>No marking = default shift times apply</Text>
 
+                  {/* ── DAY EDITOR ─────────────────────────── */}
+                  {selectedCalDate && (
+                    <View style={styles.dayEditor}>
+                      <View style={styles.dayEditorHeader}>
+                        <Text style={styles.dayEditorDate}>✏ {friendlyDate(selectedCalDate)}</Text>
+                        <TouchableOpacity onPress={() => setSelectedCalDate(null)} style={styles.dayEditorClose}>
+                          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Day-Off toggle */}
+                      <View style={styles.dayOffRow}>
+                        <View>
+                          <Text style={styles.dayOffLabel}>Mark as Day Off / Holiday</Text>
+                          <Text style={styles.dayOffSub}>No appointments on this day</Text>
+                        </View>
+                        <Toggle on={dayForm.off} onChange={() => setDayForm(p => ({ ...p, off: !p.off }))} color="#EF4444" />
+                      </View>
+
+                      {!dayForm.off && (
+                        <>
+                          {/* Morning */}
+                          <View style={[styles.shiftCard, { marginTop: 8 }]}>
+                            <View style={styles.shiftCardHeader}>
+                              <Text style={styles.shiftCardTitle}>☀ Morning</Text>
+                              <Toggle on={dayForm.morning.enabled} onChange={() => patchShift('morning', { enabled: !dayForm.morning.enabled })} color="#FCD34D" />
+                            </View>
+                            {dayForm.morning.enabled && (
+                              <>
+                                <View style={styles.timeRow}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>START</Text>
+                                    <TextInput style={styles.fieldInput} value={dayForm.morning.startTime} onChangeText={v => patchShift('morning', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="09:00" />
+                                  </View>
+                                  <Text style={styles.timeDash}>–</Text>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>END</Text>
+                                    <TextInput style={styles.fieldInput} value={dayForm.morning.endTime} onChangeText={v => patchShift('morning', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="13:00" />
+                                  </View>
+                                </View>
+                                <View style={styles.timeRow}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
+                                    <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxWalkin)} onChangeText={v => patchShift('morning', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
+                                  </View>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
+                                    <TextInput style={styles.fieldInput} value={String(dayForm.morning.maxEToken)} onChangeText={v => patchShift('morning', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
+                                  </View>
+                                </View>
+                                <Text style={styles.fieldLabel}>CLINIC NAME</Text>
+                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.clinicName} onChangeText={v => patchShift('morning', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
+                                <Text style={styles.fieldLabel}>ADDRESS</Text>
+                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.morning.address} onChangeText={v => patchShift('morning', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
+                                <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
+                                <TextInput style={styles.fieldInput} value={dayForm.morning.locationLink} onChangeText={v => patchShift('morning', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
+                              </>
+                            )}
+                          </View>
+
+                          {/* Evening */}
+                          <View style={[styles.shiftCard, { marginTop: 8 }]}>
+                            <View style={styles.shiftCardHeader}>
+                              <Text style={styles.shiftCardTitle}>☾ Evening</Text>
+                              <Toggle on={dayForm.evening.enabled} onChange={() => patchShift('evening', { enabled: !dayForm.evening.enabled })} color="#A5B4FC" />
+                            </View>
+                            {dayForm.evening.enabled && (
+                              <>
+                                <View style={styles.timeRow}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>START</Text>
+                                    <TextInput style={styles.fieldInput} value={dayForm.evening.startTime} onChangeText={v => patchShift('evening', { startTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="17:00" />
+                                  </View>
+                                  <Text style={styles.timeDash}>–</Text>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>END</Text>
+                                    <TextInput style={styles.fieldInput} value={dayForm.evening.endTime} onChangeText={v => patchShift('evening', { endTime: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20:00" />
+                                  </View>
+                                </View>
+                                <View style={styles.timeRow}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>MAX WALK-IN</Text>
+                                    <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxWalkin)} onChangeText={v => patchShift('evening', { maxWalkin: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="20" />
+                                  </View>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.fieldLabel}>MAX E-TOKEN</Text>
+                                    <TextInput style={styles.fieldInput} value={String(dayForm.evening.maxEToken)} onChangeText={v => patchShift('evening', { maxEToken: parseInt(v)||0 })} keyboardType="number-pad" placeholderTextColor="rgba(255,255,255,0.2)" placeholder="15" />
+                                  </View>
+                                </View>
+                                <Text style={styles.fieldLabel}>CLINIC NAME</Text>
+                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.clinicName} onChangeText={v => patchShift('evening', { clinicName: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Sharma Heart Clinic" />
+                                <Text style={styles.fieldLabel}>ADDRESS</Text>
+                                <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={dayForm.evening.address} onChangeText={v => patchShift('evening', { address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
+                                <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
+                                <TextInput style={styles.fieldInput} value={dayForm.evening.locationLink} onChangeText={v => patchShift('evening', { locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
+                              </>
+                            )}
+                          </View>
+                        </>
+                      )}
+
+                      {/* Apply Day button */}
+                      <TouchableOpacity
+                        style={styles.applyDayBtn}
+                        onPress={() => {
+                          setCalendarOverrides(prev => ({ ...prev, [selectedCalDate]: dayForm }));
+                          setSelectedCalDate(null);
+                        }}
+                      >
+                        <Text style={styles.applyDayBtnTxt}>✓ Apply to {friendlyDate(selectedCalDate)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Save all */}
                   <TouchableOpacity
-                    style={[styles.saveBtn, calSaving && { opacity: 0.7 }]}
+                    style={[styles.saveBtn, { marginTop: 16 }, calSaving && { opacity: 0.7 }]}
                     disabled={calSaving}
                     onPress={async () => {
                       setCalSaving(true); setCalSaved(false);
                       try {
                         await updateDoctor({ calendar: calendarOverrides as any });
                         setCalSaved(true);
-                        setTimeout(() => setCalSaved(false), 1800);
+                        setTimeout(() => setCalSaved(false), 2000);
                       } catch {}
                       setCalSaving(false);
                     }}
                   >
                     {calSaving
                       ? <ActivityIndicator color="#FFF" size="small" />
-                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Calendar Saved!' : '💾 Save Availability Calendar'}</Text>}
+                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Schedule Saved to Firebase!' : '💾 Save 30-Day Schedule'}</Text>}
                   </TouchableOpacity>
                 </View>
               );
@@ -852,4 +956,14 @@ const styles = StyleSheet.create({
   calLegendDot:    { width: 8, height: 8, borderRadius: 4 },
   calLegendTxt:    { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.45)' },
   calHint:         { fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: '500', marginBottom: 14, fontStyle: 'italic' },
+  // Day editor
+  dayEditor:       { marginTop: 14, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.04)', padding: 14 },
+  dayEditorHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  dayEditorDate:   { fontSize: 14, fontWeight: '900', color: '#FFF' },
+  dayEditorClose:  { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
+  dayOffRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', marginBottom: 6 },
+  dayOffLabel:     { fontSize: 13, fontWeight: '700', color: '#FFF' },
+  dayOffSub:       { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  applyDayBtn:     { marginTop: 14, height: 46, borderRadius: 14, backgroundColor: 'rgba(45,212,191,0.25)', borderWidth: 1.5, borderColor: '#2DD4BF', alignItems: 'center', justifyContent: 'center' },
+  applyDayBtnTxt:  { fontSize: 13, fontWeight: '900', color: '#2DD4BF' },
 });
