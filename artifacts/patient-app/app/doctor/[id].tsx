@@ -95,7 +95,7 @@ export default function DoctorDetailScreen() {
       <View style={styles.orb1} />
       <View style={styles.orb2} />
 
-      {/* Top nav (overlay hero) */}
+      {/* Top nav */}
       <View style={[styles.topNav, { paddingTop: topPad + 4 }]}>
         <Pressable style={styles.navBtn} onPress={() => router.back()}>
           <Feather name="chevron-left" size={20} color="rgba(255,255,255,0.9)" />
@@ -108,7 +108,7 @@ export default function DoctorDetailScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad + 80 }} showsVerticalScrollIndicator={false}>
         {/* Hero Photo */}
-        <View style={styles.heroWrap}>
+        <View style={[styles.heroWrap, { marginTop: 12 }]}>
           <Image source={{ uri: doctor.photo }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
           <LinearGradient colors={["transparent", "rgba(10,14,26,0.95)"]} style={styles.heroGrad} />
 
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   orb1: { position: "absolute", top: -40, left: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(239,68,68,0.2)" },
   orb2: { position: "absolute", top: 180, right: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(99,102,241,0.16)" },
 
-  topNav: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 10, zIndex: 20 },
+  topNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingBottom: 10 },
   navBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.7)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
   navTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 
