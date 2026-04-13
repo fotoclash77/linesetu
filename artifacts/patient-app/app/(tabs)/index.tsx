@@ -6,7 +6,7 @@ import { pct } from "@/constants/design";
 import { AnimatedRing } from "@/components/AnimatedRing";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -14,7 +14,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -199,8 +198,6 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
-  const [search, setSearch] = useState("");
-
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
@@ -261,23 +258,6 @@ export default function HomeScreen() {
           <LinearGradient colors={["#4F46E5", "#06B6D4"]} style={styles.avatarCircle}>
             <Text style={styles.avatarTxt}>{(patient?.name?.[0] ?? "P").toUpperCase()}</Text>
           </LinearGradient>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Feather name="search" size={16} color="rgba(255,255,255,0.3)" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search doctors, clinics…"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={search}
-            onChangeText={setSearch}
-          />
-          <View style={styles.locationChip}>
-            <Feather name="map-pin" size={11} color="#06B6D4" />
-            <Text style={styles.locationTxt}>Mumbai</Text>
-          </View>
         </View>
       </View>
 
@@ -392,12 +372,6 @@ const styles = StyleSheet.create({
   notifDot: { position: "absolute", top: 8, right: 9, width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
   avatarCircle: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   avatarTxt: { fontSize: 14, fontWeight: "700", color: "#FFF" },
-  searchContainer: { paddingHorizontal: 20, paddingBottom: 16 },
-  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", borderRadius: 14, height: 46 },
-  searchIcon: { marginLeft: 14 },
-  searchInput: { flex: 1, fontSize: 14, color: "#FFF", paddingHorizontal: 10 },
-  locationChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingRight: 12 },
-  locationTxt: { fontSize: 11, fontWeight: "600", color: "#06B6D4" },
   quickLinksRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingBottom: 20 },
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
