@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   db, Collections, Timestamp,
-  collection, doc, getDocs, getDoc, setDoc, updateDoc,
+  collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc,
   query, where, orderBy, writeBatch,
   arrayUnion, arrayRemove, increment,
   queueDocId, todayDate,
@@ -73,6 +73,22 @@ router.post("/tokens", async (req, res) => {
     }
 
     await batch.commit();
+
+    // Write a real-time notification for the doctor
+    try {
+      await addDoc(collection(db, Collections.NOTIFICATIONS), {
+        doctorId,
+        type: "token_booked",
+        title: "New E-Token Booked",
+        body: `${patientName} booked Token #${nextTokenNumber} for ${tokenDate} (${shift} shift).`,
+        tokenId: tokenRef.id,
+        tokenNumber: nextTokenNumber,
+        patientName,
+        read: false,
+        createdAt: Timestamp.now(),
+      });
+    } catch (_) {}
+
     res.status(201).json({ id: tokenRef.id, ...tokenData });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -193,6 +209,21 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
       updatedAt:       Timestamp.now(),
     });
     await batch.commit();
+
+    // Write a notification for the doctor about the cancellation
+    try {
+      await addDoc(collection(db, Collections.NOTIFICATIONS), {
+        doctorId: token.doctorId,
+        type: "token_cancelled",
+        title: "Token Cancelled",
+        body: `${token.patientName} (Token #${token.tokenNumber}) cancelled their appointment.`,
+        tokenId: req.params.tokenId,
+        tokenNumber: token.tokenNumber,
+        patientName: token.patientName,
+        read: false,
+        createdAt: Timestamp.now(),
+      });
+    } catch (_) {}
 
     res.json({ id: req.params.tokenId, status: "cancelled" });
   } catch (err: any) {

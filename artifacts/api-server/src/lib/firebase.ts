@@ -44,11 +44,12 @@ export {
 };
 
 export const Collections = {
-  DOCTORS:  "doctors",
-  PATIENTS: "patients",
-  TOKENS:   "tokens",
-  QUEUES:   "queues",
-  PAYOUTS:  "payouts",
+  DOCTORS:       "doctors",
+  PATIENTS:      "patients",
+  TOKENS:        "tokens",
+  QUEUES:        "queues",
+  PAYOUTS:       "payouts",
+  NOTIFICATIONS: "notifications",
 } as const;
 
 export function queueDocId(doctorId: string, date: string, shift: "morning" | "evening") {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Switch, Platform, DimensionValue,
@@ -70,6 +70,23 @@ export default function DashboardScreen() {
   const [period, setPeriod] = useState<EarningPeriod>('Today');
   const [available, setAvailable] = useState(true);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Today');
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!doctor?.id) return;
+    const fetchUnread = async () => {
+      try {
+        const res  = await fetch(`${BASE()}/api/notifications/${doctor.id}`);
+        const data = await res.json();
+        if (data.notifications) {
+          setUnreadCount((data.notifications as any[]).filter((n: any) => !n.read).length);
+        }
+      } catch (_) {}
+    };
+    fetchUnread();
+    const iv = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(iv);
+  }, [doctor?.id]);
 
   const toggleAvailability = useCallback(async () => {
     const newVal = !available;
@@ -123,7 +140,13 @@ export default function DashboardScreen() {
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
               <Text style={styles.bellIcon}>🔔</Text>
-              <View style={styles.bellDot} />
+              {unreadCount > 0 && (
+                <View style={styles.bellDot}>
+                  {unreadCount <= 9 && (
+                    <Text style={styles.bellDotTxt}>{unreadCount}</Text>
+                  )}
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -308,7 +331,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   bellIcon: { fontSize: 17 },
-  bellDot: { position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
+  bellDot: {
+    position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8,
+    backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+  },
+  bellDotTxt: { fontSize: 9, fontWeight: '800', color: '#FFF', lineHeight: 11 },
   scroll: { flex: 1, paddingHorizontal: 16 },
   glassCard: {
     borderRadius: 22, padding: 14, marginBottom: 12,
