@@ -255,9 +255,6 @@ export default function HomeScreen() {
             <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
             <View style={styles.notifDot} />
           </Pressable>
-          <LinearGradient colors={["#4F46E5", "#06B6D4"]} style={styles.avatarCircle}>
-            <Text style={styles.avatarTxt}>{(patient?.name?.[0] ?? "P").toUpperCase()}</Text>
-          </LinearGradient>
         </View>
       </View>
 
@@ -370,8 +367,6 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: "row", gap: 10, alignItems: "center" },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
   notifDot: { position: "absolute", top: 8, right: 9, width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
-  avatarCircle: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  avatarTxt: { fontSize: 14, fontWeight: "700", color: "#FFF" },
   quickLinksRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingBottom: 20 },
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
