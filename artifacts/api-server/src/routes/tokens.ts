@@ -284,6 +284,40 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
   }
 });
 
+// PATCH /api/tokens/:tokenId/upnext — atomically mark as up_next (clears prior up_next in same shift)
+router.patch("/tokens/:tokenId/upnext", async (req, res) => {
+  try {
+    const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
+    const tokenSnap = await getDoc(tokenRef);
+    if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
+
+    const token = tokenSnap.data();
+
+    // Find any existing up_next tokens in the same doctor/date/shift
+    const existingQ = query(
+      collection(db, Collections.TOKENS),
+      where("doctorId", "==", token.doctorId),
+      where("date",     "==", token.date),
+      where("shift",    "==", token.shift),
+      where("status",   "==", "up_next"),
+    );
+    const existingSnap = await getDocs(existingQ);
+
+    const batch = writeBatch(db);
+    // Revert any previously-pinned up_next (except this token itself)
+    existingSnap.docs.forEach(d => {
+      if (d.id !== req.params.tokenId) batch.update(d.ref, { status: "waiting" });
+    });
+    batch.update(tokenRef, { status: "up_next" });
+    await batch.commit();
+
+    emitDoctorTokenChange(token.doctorId);
+    res.json({ id: req.params.tokenId, status: "up_next" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /api/tokens/:tokenId/skip — mark as skipped (not cancelled, no refund)
 router.patch("/tokens/:tokenId/skip", async (req, res) => {
   try {

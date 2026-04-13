@@ -1,0 +1,214 @@
+You are a senior full-stack developer.
+
+Build a **real-time Shift-Based Master Queue System** for the LINESETU Doctor App using:
+
+* React Native (Expo)
+* Firebase (Firestore + Auth)
+* Real-time listeners
+
+⚠️ This is NOT UI-only. Implement FULL WORKING LOGIC.
+
+---
+
+# 🎯 CORE REQUIREMENT
+
+Each doctor has **2 independent queues per clinic per day**:
+
+1. Morning Shift
+2. Evening Shift
+
+👉 Both queues must be:
+
+* Completely separate
+* Real-time synced
+* Same logic (walk-in + online tokens)
+
+---
+
+# 🧱 FIRESTORE DATA STRUCTURE (IMPORTANT)
+
+## clinics collection:
+
+clinics/{clinicId}:
+
+* name
+* doctorId
+* currentTokenMorning
+* currentTokenEvening
+
+---
+
+## bookings collection:
+
+bookings/{bookingId}:
+
+* clinicId
+* userId
+* tokenNumber
+* shift ("morning" | "evening") ✅ NEW
+* type ("walk-in" | "online" | "emergency")
+* status ("waiting" | "up_next" | "in_consultation" | "completed" | "skipped")
+* name
+* age
+* gender
+* phone
+* createdAt
+
+---
+
+# 🔁 TOKEN GENERATION LOGIC
+
+When creating booking:
+
+* Check selected shift
+* Use transaction to increment:
+
+IF shift == morning:
+increment currentTokenMorning
+
+IF shift == evening:
+increment currentTokenEvening
+
+Assign tokenNumber accordingly
+
+---
+
+# 📡 REAL-TIME QUEUE LOGIC
+
+Use Firestore listeners:
+
+Query:
+
+WHERE clinicId == X
+AND shift == selectedShift
+ORDER BY tokenNumber ASC
+
+---
+
+# 🧩 QUEUE SEGMENTATION (CRITICAL)
+
+From same query, divide into:
+
+1. IN CONSULTATION:
+   status == "in_consultation"
+
+2. UP NEXT:
+   status == "up_next"
+
+3. WAITING:
+   status == "waiting"
+
+4. SKIPPED:
+   status == "skipped"
+
+5. COMPLETED:
+   status == "completed"
+
+---
+
+# ⚡ ACTION LOGIC
+
+## 1. SEND NEXT (from waiting → up_next)
+
+* Find lowest tokenNumber with status = waiting
+* Update:
+  status = "up_next"
+
+---
+
+## 2. CALL NEXT (important)
+
+Flow:
+
+* Move current "up_next" → "in_consultation"
+* Move previous "in_consultation" → "completed"
+
+---
+
+## 3. SKIP
+
+* status → "skipped"
+
+---
+
+## 4. CONSULTED & CALL NEXT
+
+* current → completed
+* next waiting → up_next
+* auto promote up_next → in_consultation
+
+---
+
+## 5. SEND ALERT
+
+* Trigger notification (mock function for MVP)
+
+---
+
+# 🔀 SHIFT SWITCHING LOGIC
+
+Maintain local state:
+
+selectedShift = "morning" | "evening"
+
+On toggle:
+
+* Re-run Firestore query with shift filter
+* UI updates automatically
+
+---
+
+# 📊 EMERGENCY FILTER
+
+In waiting section:
+
+Filter tabs:
+
+* Normal → type != emergency
+* Emergency → type == emergency
+* Skipped → status == skipped
+* Consulted → status == completed
+
+---
+
+# ⚠️ IMPORTANT EDGE CASES
+
+* No "up_next" → auto assign from waiting
+* No waiting → disable buttons
+* Multiple clicks → prevent duplicate updates (use transactions)
+* Maintain atomic updates
+
+---
+
+# 🧠 PERFORMANCE
+
+* Use single listener per shift
+* Do NOT fetch multiple queries
+* Use client-side filtering for sections
+
+---
+
+# 🎯 OUTPUT REQUIREMENTS
+
+* Working React Native screen
+* Firebase integration
+* Real-time updates
+* Clean modular code:
+
+  * queueService.js
+  * useQueueHook.js
+  * shiftHandler.js
+
+---
+
+# 🚀 FINAL GOAL
+
+A fully working **real-time, shift-based queue engine** where:
+
+👉 Morning & Evening queues are independent
+👉 Doctor can switch instantly
+👉 Queue updates live across devices
+
+---
+
+Build production-ready logic, not mock UI.
