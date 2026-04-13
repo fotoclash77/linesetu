@@ -42,6 +42,8 @@ interface FamilyMember {
   blood: string;
   phone: string;
   avatar?: string;
+  address?: string;
+  area?: string;
 }
 
 type MenuItem = {
@@ -248,12 +250,14 @@ export default function ProfileScreen() {
   const [mAge,     setMAge]     = useState("");
   const [mBlood,   setMBlood]   = useState("");
   const [mPhone,   setMPhone]   = useState("");
+  const [mArea,    setMArea]    = useState("");
+  const [mAddress, setMAddress] = useState("");
   const [mSaving,  setMSaving]  = useState(false);
 
   const openAddMember = () => {
     setEditingMem(null);
     setMPhoto(undefined); setMName(""); setMRelation("Wife");
-    setMAge(""); setMBlood(""); setMPhone("");
+    setMAge(""); setMBlood(""); setMPhone(""); setMArea(""); setMAddress("");
     setFamVisible(true);
   };
 
@@ -261,20 +265,24 @@ export default function ProfileScreen() {
     setEditingMem(m);
     setMPhoto(m.avatar); setMName(m.name); setMRelation(m.relation);
     setMAge(m.age); setMBlood(m.blood); setMPhone(m.phone);
+    setMArea(m.area ?? ""); setMAddress(m.address ?? "");
     setFamVisible(true);
   };
 
   const saveMember = async () => {
-    if (!mName.trim())  { Alert.alert("Name required",        "Please enter the member's full name."); return; }
-    if (!mRelation)     { Alert.alert("Relation required",    "Please select the relation.");          return; }
-    if (!mAge.trim())   { Alert.alert("Age required",         "Please enter the member's age.");       return; }
-    if (!mBlood)        { Alert.alert("Blood group required", "Please select the blood group.");       return; }
-    if (!mPhone.trim()) { Alert.alert("Phone required",       "Please enter the member's phone number."); return; }
+    if (!mName.trim())    { Alert.alert("Name required",        "Please enter the member's full name.");    return; }
+    if (!mRelation)       { Alert.alert("Relation required",    "Please select the relation.");             return; }
+    if (!mAge.trim())     { Alert.alert("Age required",         "Please enter the member's age.");          return; }
+    if (!mBlood)          { Alert.alert("Blood group required", "Please select the blood group.");          return; }
+    if (!mPhone.trim())   { Alert.alert("Phone required",       "Please enter the member's phone number."); return; }
+    if (!mArea.trim())    { Alert.alert("Area required",        "Please enter the member's area.");         return; }
+    if (!mAddress.trim()) { Alert.alert("Address required",     "Please enter the member's complete address."); return; }
     setMSaving(true);
     const member: FamilyMember = {
       id: editingMem?.id ?? Date.now().toString(),
       name: mName.trim(), relation: mRelation, age: mAge,
       blood: mBlood, phone: mPhone, avatar: mPhoto,
+      area: mArea.trim(), address: mAddress.trim(),
     };
     const updated = editingMem
       ? familyMembers.map(m => m.id === editingMem.id ? member : m)
@@ -625,6 +633,22 @@ export default function ProfileScreen() {
 
                 <FieldBlock label="Phone Number" required>
                   <TextInput style={styles.textInput} value={mPhone} onChangeText={setMPhone} placeholder="+91 XXXXX XXXXX" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="phone-pad" />
+                </FieldBlock>
+
+                <FieldBlock label="Area / Locality" required>
+                  <TextInput style={styles.textInput} value={mArea} onChangeText={setMArea} placeholder="e.g. Andheri West, Bandra" placeholderTextColor="rgba(255,255,255,0.25)" />
+                </FieldBlock>
+
+                <FieldBlock label="Complete Address" required>
+                  <TextInput
+                    style={[styles.textInput, { minHeight: 80, textAlignVertical: "top" }]}
+                    value={mAddress}
+                    onChangeText={setMAddress}
+                    placeholder="House/Flat no., Street, Landmark, City, PIN"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    multiline
+                    numberOfLines={3}
+                  />
                 </FieldBlock>
 
                 <Pressable style={[styles.saveBtn, mSaving && { opacity: 0.6 }]} onPress={saveMember} disabled={mSaving}>
