@@ -385,12 +385,14 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy }: {
           <Text style={S.alertBtnTxt}>🔔</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={[S.refundBtn, busy && { opacity: 0.5 }]}
-        onPress={onRefund} disabled={busy}
-      >
-        <Text style={S.refundTxt}>↩  Refund & Cancel</Text>
-      </TouchableOpacity>
+      {tok.displayStatus === 'skipped' && (
+        <TouchableOpacity
+          style={[S.refundBtn, busy && { opacity: 0.5 }]}
+          onPress={onRefund} disabled={busy}
+        >
+          <Text style={S.refundTxt}>↩  Refund & Cancel</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
