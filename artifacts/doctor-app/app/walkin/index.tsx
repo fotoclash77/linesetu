@@ -437,7 +437,7 @@ export default function AddWalkinScreen() {
               <TouchableOpacity
                 style={styles.btnHome}
                 activeOpacity={0.8}
-                onPress={() => { setShowSuccess(false); router.replace('/'); }}
+                onPress={() => { setShowSuccess(false); router.replace('/(tabs)/'); }}
               >
                 <Text style={styles.btnHomeTxt}>Go Home</Text>
               </TouchableOpacity>
