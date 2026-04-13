@@ -446,20 +446,14 @@ export default function QueueScreen() {
   const doCall = async (id: string) => {
     setBusy(id); try { await apiCall(id); inv(); } catch {} setBusy(null);
   };
-  const doDone = async (id: string) => {
+  const doDone = async (id: string, nextId?: string) => {
     setBusy(id);
     try {
       await apiDone(id); inv();
-      await new Promise(r => setTimeout(r, 600));
-      const fresh = await apiFetchQueue(docId, shift);
-      const nxt = (fresh.tokens ?? [])
-        .filter((t: any) => t.status === 'waiting')
-        .sort((a: any, b: any) => {
-          if (a.type === 'emergency' && b.type !== 'emergency') return -1;
-          if (b.type === 'emergency' && a.type !== 'emergency') return 1;
-          return (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0);
-        })[0];
-      if (nxt) { await apiCall(nxt.id); inv(); }
+      if (nextId) {
+        await new Promise(r => setTimeout(r, 500));
+        await apiCall(nextId); inv();
+      }
     } catch {}
     setBusy(null);
   };
@@ -558,8 +552,8 @@ export default function QueueScreen() {
               {consulting
                 ? <InConsultationCard
                     tok={consulting}
-                    onSkip={() => doCancel(consulting.id)}
-                    onDone={() => doDone(consulting.id)}
+                    onSkip={() => doSkipToken(consulting.id)}
+                    onDone={() => doDone(consulting.id, upNext?.id)}
                     busy={busyId === consulting.id}
                   />
                 : <NoConsultation nextTok={upNext} />
