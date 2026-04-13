@@ -113,9 +113,10 @@ function PatientCard({ tok }: { tok: any }) {
           </View>
           <Text style={S.cardDate}>{fmtDate(tok)}{fmtTime(tok) ? `  ·  ${fmtTime(tok)}` : ''}</Text>
         </View>
-        {/* Tap arrow indicator */}
-        <Text style={S.cardChevron}>›</Text>
       </View>
+
+      {/* Tap chevron */}
+      <Text style={S.cardChevron}>›</Text>
     </TouchableOpacity>
   );
 }

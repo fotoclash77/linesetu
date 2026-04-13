@@ -38,15 +38,21 @@ function elapsed(from: any, to: any) {
 function capitalize(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'; }
 
 // ─── Row component ──────────────────────────────────────────────────────
-function Row({ icon, label, value, valueColor }: { icon:string; label:string; value?:string|null; valueColor?:string }) {
-  if (!value) return null;
+function Row({ icon, label, value, valueColor, always }: {
+  icon:string; label:string; value?:string|null; valueColor?:string; always?:boolean
+}) {
+  if (!value && !always) return null;
+  const display = value || '—';
+  const dimmed   = !value;
   return (
     <View style={S.row}>
       <View style={S.rowLeft}>
         <Text style={S.rowIcon}>{icon}</Text>
         <Text style={S.rowLabel}>{label}</Text>
       </View>
-      <Text style={[S.rowValue, valueColor ? {color:valueColor} : {}]}>{value}</Text>
+      <Text style={[S.rowValue, valueColor && value ? {color:valueColor} : {}, dimmed && {color:'rgba(255,255,255,0.2)', fontStyle:'italic'}]}>
+        {display}
+      </Text>
     </View>
   );
 }
@@ -207,15 +213,12 @@ export default function PatientDetailScreen() {
 
             {/* ── PATIENT PROFILE ── */}
             <Section title="Patient Profile" icon="👤" accent="#A5B4FC">
-              <Row icon="👤" label="Full Name"     value={tok.patientName}/>
-              <Row icon="📞" label="Phone"         value={tok.patientPhone || null}/>
-              <Row icon="📅" label="Age"           value={tok.age ? `${tok.age} years` : null}/>
-              <Row icon="⚥"  label="Gender"        value={tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : tok.gender ?? null}/>
-              <Row icon="🏠" label="Address"       value={tok.address || null}/>
-              <Row icon="📍" label="Area / City"   value={tok.area || null}/>
-              {!tok.patientPhone && !tok.age && !tok.gender && !tok.address && !tok.area && (
-                <Text style={S.emptySection}>No profile details recorded</Text>
-              )}
+              <Row icon="👤" label="Full Name"   value={tok.patientName} always/>
+              <Row icon="📞" label="Phone"       value={tok.patientPhone || null} always/>
+              <Row icon="📅" label="Age"         value={tok.age ? `${tok.age} years` : null} always/>
+              <Row icon="⚥"  label="Gender"      value={tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? null)} always/>
+              <Row icon="🏠" label="Address"     value={tok.address || null} always/>
+              <Row icon="📍" label="Area / City" value={tok.area || null} always/>
             </Section>
 
             {/* ── BOOKING DETAILS ── */}
