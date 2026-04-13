@@ -32,6 +32,13 @@ const SAMPLE_DOCTOR = {
   avgWait: "~25 min",
   photo: "https://randomuser.me/api/portraits/women/44.jpg",
   available: true,
+  about: "Dr. Ananya Sharma is a board-certified Cardiologist with over 12 years of experience in diagnosing and treating cardiovascular conditions. She specializes in preventive cardiology, heart failure management, and non-invasive cardiac imaging. Committed to patient-centered care, she ensures every patient understands their diagnosis and treatment plan.",
+  showResults: true,
+  results: [
+    "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80",
+    "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&q=80",
+    "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=400&q=80",
+  ],
 };
 
 const SCHEDULE = [
@@ -156,6 +163,32 @@ export default function DoctorDetailScreen() {
             </View>
           ))}
         </View>
+
+        {/* About Me */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Feather name="user" size={15} color="#818CF8" />
+            <Text style={styles.sectionTitle}>About Me</Text>
+          </View>
+          <Text style={styles.aboutTxt}>{(doctor as any).about ?? "No bio available."}</Text>
+        </View>
+
+        {/* My Results */}
+        {(doctor as any).showResults && (doctor as any).results?.length > 0 && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Feather name="image" size={15} color="#06B6D4" />
+              <Text style={styles.sectionTitle}>My Results</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 4 }}>
+              {((doctor as any).results as string[]).map((uri: string, i: number) => (
+                <View key={i} style={styles.resultImgWrap}>
+                  <Image source={{ uri }} style={styles.resultImg} contentFit="cover" />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Fee Breakdown */}
         <View style={styles.sectionCard}>
@@ -329,6 +362,11 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontWeight: "700", color: "#FFF" },
   rupee: { fontSize: 14, fontWeight: "700", color: "#F59E0B" },
+
+  aboutTxt: { fontSize: 13, lineHeight: 20, color: "rgba(255,255,255,0.65)" },
+
+  resultImgWrap: { width: 160, height: 120, borderRadius: 14, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  resultImg: { width: "100%", height: "100%" },
 
   feeRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 10, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1 },
   feeIcon: { width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", flexShrink: 0 },
