@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { useDoctor } from '../../contexts/DoctorContext';
 
-const RECENT = [
-  { token: '#50', name: 'Arvind Kumar', age: 41, gender: 'M', type: 'Normal',    time: '2m ago' },
-  { token: '#48', name: 'Rajan Gupta',  age: 28, gender: 'M', type: 'Normal',    time: '15m ago' },
-  { token: 'E01', name: 'Deepak Joshi', age: 58, gender: 'M', type: 'Emergency', time: '22m ago' },
-];
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+function todayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function relTime(bookedAt: any): string {
+  let ms: number;
+  if (bookedAt && typeof bookedAt === 'object' && bookedAt.seconds) {
+    ms = bookedAt.seconds * 1000;
+  } else if (typeof bookedAt === 'number') {
+    ms = bookedAt;
+  } else {
+    return '';
+  }
+  const diff = Date.now() - ms;
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  if (m < 1)  return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  return `${h}h ago`;
+}
+
+interface TokenRow {
+  id: string;
+  tokenNumber: number;
+  patientName: string;
+  type: string;
+  status: string;
+  bookedAt: any;
+}
 
 export default function AddWalkinScreen() {
+  const { doctor } = useDoctor();
   const [tokenType, setTokenType] = useState<'Normal' | 'Emergency'>('Normal');
   const [gender, setGender] = useState<'M' | 'F'>('M');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -23,6 +51,32 @@ export default function AddWalkinScreen() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [area, setArea] = useState('');
+
+  const [queue, setQueue]       = useState<TokenRow[]>([]);
+  const [queueLoading, setQueueLoading] = useState(true);
+
+  const fetchQueue = useCallback(async () => {
+    if (!doctor?.id) return;
+    try {
+      const res  = await fetch(`${BASE()}/api/tokens?doctorId=${doctor.id}&date=${todayDate()}`);
+      const data = await res.json();
+      if (data.tokens) {
+        const sorted = [...data.tokens].sort((a: TokenRow, b: TokenRow) => {
+          const ta = a.bookedAt?.seconds ?? 0;
+          const tb = b.bookedAt?.seconds ?? 0;
+          return tb - ta;
+        });
+        setQueue(sorted);
+      }
+    } catch (_) {}
+    setQueueLoading(false);
+  }, [doctor?.id]);
+
+  useEffect(() => {
+    fetchQueue();
+    const iv = setInterval(fetchQueue, 20_000);
+    return () => clearInterval(iv);
+  }, [fetchQueue]);
 
   const isEmerg = tokenType === 'Emergency';
 
@@ -193,29 +247,66 @@ export default function AddWalkinScreen() {
             <Text style={styles.bookBtnText}>{`✚ Book ${tokenType} Token — FREE`}</Text>
           </TouchableOpacity>
 
-          {/* Recent walk-ins */}
+          {/* Live queue today */}
           <View style={styles.recentSection}>
             <View style={styles.recentHeader}>
-              <Text style={styles.recentIcon}>🚶</Text>
-              <Text style={styles.recentTitle}>RECENT WALK-INS TODAY</Text>
-            </View>
-            {RECENT.map((r, i) => {
-              const isE = r.type === 'Emergency';
-              return (
-                <View key={i} style={styles.recentItem}>
-                  <View style={[styles.recentToken, { backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)', borderColor: isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)' }]}>
-                    <Text style={styles.recentTokenText}>{r.token}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.recentName}>{r.name}</Text>
-                    <Text style={styles.recentSub}>
-                      {r.age}{r.gender} · <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>{r.type}</Text>
-                    </Text>
-                  </View>
-                  <Text style={styles.recentTime}>{r.time}</Text>
+              <Text style={styles.recentIcon}>📋</Text>
+              <Text style={styles.recentTitle}>TODAY'S QUEUE (LATEST FIRST)</Text>
+              {!queueLoading && (
+                <View style={styles.queueCount}>
+                  <Text style={styles.queueCountTxt}>{queue.length}</Text>
                 </View>
-              );
-            })}
+              )}
+            </View>
+
+            {queueLoading ? (
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator size="small" color={TEAL_LT} />
+                <Text style={styles.loadingTxt}>Loading queue…</Text>
+              </View>
+            ) : queue.length === 0 ? (
+              <View style={styles.emptyQueue}>
+                <Text style={styles.emptyQueueTxt}>No tokens booked today yet.</Text>
+              </View>
+            ) : (
+              queue.map((t) => {
+                const isE = t.type === 'emergency';
+                const label = isE
+                  ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                  : `#${t.tokenNumber}`;
+                const STATUS_COLOR: Record<string, string> = {
+                  waiting:    '#FCD34D',
+                  in_consult: TEAL_LT,
+                  done:       '#4ADE80',
+                  cancelled:  '#F87171',
+                };
+                const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
+                return (
+                  <View key={t.id} style={styles.recentItem}>
+                    <View style={[
+                      styles.recentToken,
+                      {
+                        backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
+                        borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
+                      },
+                    ]}>
+                      <Text style={styles.recentTokenText}>{label}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.recentName}>{t.patientName}</Text>
+                      <Text style={styles.recentSub}>
+                        <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>
+                          {isE ? 'Emergency' : 'Normal'}
+                        </Text>
+                        {'  ·  '}
+                        <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
+                      </Text>
+                    </View>
+                    <Text style={styles.recentTime}>{relTime(t.bookedAt)}</Text>
+                  </View>
+                );
+              })
+            )}
           </View>
         </ScrollView>
       </View>
@@ -330,6 +421,12 @@ const styles = StyleSheet.create({
   recentName: { fontSize: 12, fontWeight: '700', color: '#FFF' },
   recentSub: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
   recentTime: { fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: '600' },
+  queueCount: { marginLeft: 'auto', backgroundColor: 'rgba(45,212,191,0.15)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)' },
+  queueCountTxt: { fontSize: 10, fontWeight: '800', color: TEAL_LT },
+  loadingWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, justifyContent: 'center' },
+  loadingTxt: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.3)' },
+  emptyQueue: { padding: 20, alignItems: 'center' },
+  emptyQueueTxt: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.25)', textAlign: 'center' },
 
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
