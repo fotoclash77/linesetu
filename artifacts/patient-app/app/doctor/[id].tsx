@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   navBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.7)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
   navTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 
-  heroWrap: { position: "relative", width: 200, height: 200, borderRadius: 22, overflow: "hidden", alignSelf: "center" },
+  heroWrap: { position: "relative", width: 340, height: 340, borderRadius: 22, overflow: "hidden", alignSelf: "center" },
   heroImg: { width: "100%", height: "100%" },
   heroGrad: { position: "absolute", bottom: 0, left: 0, right: 0, height: 90 },
   verifiedBadge: { position: "absolute", top: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.75)", borderWidth: 1, borderColor: "rgba(79,70,229,0.4)" },
