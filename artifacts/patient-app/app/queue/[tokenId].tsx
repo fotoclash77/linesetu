@@ -240,7 +240,7 @@ export default function LiveQueueScreen() {
           <View style={styles.progressSection}>
             <View style={styles.progressLabelRow}>
               <Text style={styles.progressLbl}>{ahead} tokens ahead of you</Text>
-              <Text style={styles.progressRight}>~{waitMin} min wait</Text>
+              <Text style={styles.progressRight}>~{waitMin} Min wait</Text>
             </View>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: pct(progPct) }]}>
@@ -261,7 +261,7 @@ export default function LiveQueueScreen() {
               { label: "My Token",  val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
               { label: "Clinic",    val: "Open",                   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "home"     },
               { label: "Tokens Left", val: `${ahead}`,              color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "list"     },
-              { label: "Avg/Token", val: "~2.5m",                  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "activity" },
+              { label: "Avg/Token", val: "~2.5 Min",                  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "activity" },
             ] as Array<{ label: string; val: string; color: string; bg: string; border: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, bg, border, icon }) => (
               <View key={label} style={[styles.statTile, { backgroundColor: bg, borderColor: border }]}>
                 <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
@@ -298,7 +298,7 @@ export default function LiveQueueScreen() {
                 <View style={styles.apptDetailRow}>
                   <Feather name="clock" size={12} color="#06B6D4" />
                   <Text style={styles.apptDetailLbl}>Est. Wait</Text>
-                  <Text style={styles.apptDetailVal}>~{waitMin} min</Text>
+                  <Text style={styles.apptDetailVal}>~{waitMin} Min</Text>
                 </View>
                 <View style={styles.apptDetailRow}>
                   <Feather name="calendar" size={12} color="#22C55E" />

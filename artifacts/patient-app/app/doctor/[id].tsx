@@ -29,7 +29,7 @@ const SAMPLE_DOCTOR = {
   experience: 12,
   rating: "4.9",
   patients: "4.2K+",
-  avgWait: "~25 min",
+  avgWait: "~25 Min",
   photo: "https://randomuser.me/api/portraits/women/44.jpg",
   available: true,
   about: "Dr. Ananya Sharma is a board-certified Cardiologist with over 12 years of experience in diagnosing and treating cardiovascular conditions. She specializes in preventive cardiology, heart failure management, and non-invasive cardiac imaging. Committed to patient-centered care, she ensures every patient understands their diagnosis and treatment plan.",
