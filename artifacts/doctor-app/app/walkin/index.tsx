@@ -316,7 +316,7 @@ export default function AddWalkinScreen() {
               <Text style={styles.fieldLabel}>🗺 ADDRESS</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Area / locality / city"
+                placeholder="Village / Colony / City / Pin Code"
                 placeholderTextColor="rgba(255,255,255,0.2)"
                 value={area}
                 onChangeText={setArea}
