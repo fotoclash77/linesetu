@@ -12,6 +12,7 @@ export const modules: ModuleMap = {
   "./components/mockups/doctor-app/Earnings.tsx": () => import("../components/mockups/doctor-app/Earnings.tsx"),
   "./components/mockups/doctor-app/Login.tsx": () => import("../components/mockups/doctor-app/Login.tsx"),
   "./components/mockups/doctor-app/MasterQueue.tsx": () => import("../components/mockups/doctor-app/MasterQueue.tsx"),
+  "./components/mockups/doctor-app/QueueRedesign.tsx": () => import("../components/mockups/doctor-app/QueueRedesign.tsx"),
   "./components/mockups/doctor-app/Schedule.tsx": () => import("../components/mockups/doctor-app/Schedule.tsx"),
   "./components/mockups/doctor-app/Settings.tsx": () => import("../components/mockups/doctor-app/Settings.tsx"),
   "./components/mockups/doctor-app/Settings2.tsx": () => import("../components/mockups/doctor-app/Settings2.tsx"),
