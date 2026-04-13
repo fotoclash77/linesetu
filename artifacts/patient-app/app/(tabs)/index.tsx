@@ -298,7 +298,7 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.promoTitle}>Book today for just ₹10</Text>
             <Text style={styles.promoSub}>Skip the queue · Pay consultation at clinic</Text>
-            <Pressable style={styles.promoCta}>
+            <Pressable style={styles.promoCta} onPress={() => router.push("/find-doctors")}>
               <Text style={styles.promoCtaTxt}>Book Now</Text>
             </Pressable>
           </LinearGradient>
