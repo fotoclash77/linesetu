@@ -584,8 +584,8 @@ export default function QueueScreen() {
             {/* ── WAITING LIST HEADER + TABS ─────────── */}
             <View style={{ paddingHorizontal: 14 }}>
               <View style={S.waitingHeader}>
-                <Text style={S.waitingTitle}>WAITING LIST</Text>
-                <Text style={S.waitingCount}>{waitSorted.length} patients</Text>
+                <Text style={S.waitingTitle}>Waiting List</Text>
+                <Text style={S.waitingCount}>{waitSorted.length + (pinnedNext ? 1 : 0)} patients</Text>
               </View>
               {/* Tab bar */}
               <View style={S.tabBar}>
@@ -719,9 +719,9 @@ const S = StyleSheet.create({
   callBtn:      { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(13,148,136,0.2)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.3)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
   // Waiting list header
-  waitingHeader:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' },
-  waitingTitle: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, textTransform: 'uppercase' },
-  waitingCount: { fontSize: 11, fontWeight: '800', color: TEAL_LT },
+  waitingHeader:{ alignItems: 'center', justifyContent: 'center', marginBottom: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)', gap: 2 },
+  waitingTitle: { fontSize: 17, fontWeight: '900', color: '#FFFFFF', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center' },
+  waitingCount: { fontSize: 12, fontWeight: '700', color: TEAL_LT, textAlign: 'center' },
 
   // Tabs
   tabBar:     { flexDirection: 'row', gap: 6, marginBottom: 4 },
