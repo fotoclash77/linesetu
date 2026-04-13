@@ -479,7 +479,8 @@ export default function QueueScreen() {
   const all: Token[] = masterFiltered.length > 0 ? masterFiltered : restTokens;
 
   const consulting = all.find(t => t.displayStatus === 'consulting');
-  const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a, b) => {
+  // upnext tokens stay in the waiting list (highlighted) — they also show in the Up Next card
+  const waitSorted = all.filter(t => t.displayStatus === 'waiting' || t.displayStatus === 'upnext').sort((a, b) => {
     if (a.type === 'emergency' && b.type !== 'emergency') return -1;
     if (b.type === 'emergency' && a.type !== 'emergency') return 1;
     return a.tokenNumber - b.tokenNumber;
@@ -637,7 +638,7 @@ export default function QueueScreen() {
                     <WaitingCard
                       key={tok.id} tok={tok}
                       busy={busyId === tok.id}
-                      isManualNext={false}
+                      isManualNext={tok.displayStatus === 'upnext'}
                       onSendNext={() => doSendNext(tok.id)}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
