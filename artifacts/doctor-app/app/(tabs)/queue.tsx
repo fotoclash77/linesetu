@@ -347,8 +347,8 @@ function UpNextEmpty() {
 }
 
 // ─── Waiting Card ────────────────────────────────────────────────
-function WaitingCard({ tok, onSendNext, onSendAlert, busy }: {
-  tok: Token; onSendNext: () => void; onSendAlert: () => void; busy: boolean;
+function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, busy }: {
+  tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; busy: boolean;
 }) {
   return (
     <View style={S.waitCard}>
@@ -371,10 +371,16 @@ function WaitingCard({ tok, onSendNext, onSendAlert, busy }: {
             : <Text style={S.sendNextTxt}>▶  Send Next</Text>}
         </TouchableOpacity>
         <TouchableOpacity
+          style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
+          onPress={onSkip} disabled={busy}
+        >
+          <Text style={S.skipWaitTxt}>↷  Skip</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[S.alertBtn, busy && { opacity: 0.5 }]}
           onPress={onSendAlert} disabled={busy}
         >
-          <Text style={S.alertBtnTxt}>🔔  Send Alert</Text>
+          <Text style={S.alertBtnTxt}>🔔</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -613,6 +619,7 @@ export default function QueueScreen() {
                       busy={busyId === tok.id}
                       onSendNext={() => doCall(tok.id)}
                       onSendAlert={() => doCall(tok.id)}
+                      onSkip={() => doCancel(tok.id)}
                     />
                   );
                 })
@@ -704,11 +711,13 @@ const S = StyleSheet.create({
   // Waiting cards
   waitCard:   { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', borderRadius: 16, padding: 14, marginBottom: 8 },
   waitRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 10 },
-  waitBtns:   { flexDirection: 'row', gap: 8 },
-  sendNextBtn:{ flex: 1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(13,148,136,0.22)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.35)' },
+  waitBtns:   { flexDirection: 'row', gap: 7, marginTop: 2 },
+  sendNextBtn:{ flex: 1.1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(13,148,136,0.22)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.35)' },
   sendNextTxt:{ fontSize: 12, fontWeight: '800', color: TEAL_LT },
-  alertBtn:   { flex: 1, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' },
-  alertBtnTxt:{ fontSize: 12, fontWeight: '800', color: AMBER_LT },
+  skipWaitBtn:{ flex: 0.9, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(180,83,9,0.18)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.3)' },
+  skipWaitTxt:{ fontSize: 12, fontWeight: '800', color: AMBER_LT },
+  alertBtn:   { width: 44, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' },
+  alertBtnTxt:{ fontSize: 16 },
 
   // Empty state
   emptyState:    { alignItems: 'center', paddingVertical: 44 },
