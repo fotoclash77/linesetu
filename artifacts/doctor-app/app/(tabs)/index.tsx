@@ -11,7 +11,6 @@ import Svg, { Polyline, Polygon } from 'react-native-svg';
 const isWeb = Platform.OS === 'web';
 
 type EarningPeriod = 'Daily' | 'Weekly' | 'Monthly';
-type Shift = 'Morning' | 'Evening';
 type PatientPeriod = 'Daily' | 'Weekly' | 'Monthly';
 
 const EARNINGS = {
@@ -65,7 +64,6 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
 
 export default function DashboardScreen() {
   const [period, setPeriod] = useState<EarningPeriod>('Daily');
-  const [shift, setShift] = useState<Shift>('Morning');
   const [bookingOn, setBookingOn] = useState(true);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Daily');
 
@@ -125,21 +123,6 @@ export default function DashboardScreen() {
               <Text style={styles.sectionDot}>⚡</Text>
               <Text style={styles.sectionTitle}>Quick Controls</Text>
             </View>
-
-            {/* Shift toggle */}
-            <Text style={styles.subLabel}>CLINIC SHIFT</Text>
-            <TouchableOpacity
-              onPress={() => setShift(s => s === 'Morning' ? 'Evening' : 'Morning')}
-              style={[styles.shiftToggle, shift === 'Morning' ? styles.shiftMorning : styles.shiftEvening]}
-            >
-              <View style={[styles.shiftPill, shift === 'Morning' ? styles.shiftPillLeft : styles.shiftPillRight]} />
-              <View style={styles.shiftSide}>
-                <Text style={[styles.shiftSideText, shift === 'Morning' && { color: '#FCD34D' }]}>☀ Morning</Text>
-              </View>
-              <View style={styles.shiftSide}>
-                <Text style={[styles.shiftSideText, shift === 'Evening' && { color: '#A5B4FC' }]}>☾ Evening</Text>
-              </View>
-            </TouchableOpacity>
 
             {/* Booking toggle */}
             <View style={[styles.bookingRow, bookingOn ? styles.bookingRowOn : styles.bookingRowOff]}>
@@ -318,21 +301,6 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   sectionDot: { fontSize: 14, color: TEAL_LT },
   sectionTitle: { fontSize: 12, fontWeight: '800', color: '#FFF' },
-  subLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 7 },
-  shiftToggle: {
-    height: 52, borderRadius: 16, flexDirection: 'row', padding: 4, marginBottom: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
-    position: 'relative', overflow: 'hidden',
-  },
-  shiftMorning: { borderColor: 'rgba(245,158,11,0.3)' },
-  shiftEvening: { borderColor: 'rgba(99,102,241,0.3)' },
-  shiftPill: {
-    position: 'absolute', top: 4, bottom: 4, width: '50%', borderRadius: 12,
-  },
-  shiftPillLeft: { left: 4, backgroundColor: 'rgba(245,158,11,0.3)', borderWidth: 1.5, borderColor: 'rgba(245,158,11,0.5)' },
-  shiftPillRight: { right: 4, backgroundColor: 'rgba(99,102,241,0.3)', borderWidth: 1.5, borderColor: 'rgba(165,180,252,0.5)' },
-  shiftSide: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
-  shiftSideText: { fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.28)' },
   bookingRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: 12, borderRadius: 14, marginBottom: 12, borderWidth: 1,
