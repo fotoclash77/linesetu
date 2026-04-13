@@ -130,16 +130,15 @@ router.get("/tokens", async (req, res) => {
     if (doctorId)  constraints.push(where("doctorId", "==", doctorId));
     if (patientId) constraints.push(where("patientId", "==", patientId));
     if (status)    constraints.push(where("status", "==", status));
-    // No orderBy to avoid composite index requirement — sort in memory
-    // Date filtering is done in memory to support both "2026-04-13" and legacy "13" formats
+    // Push date into Firestore filter when it's ISO format (YYYY-MM-DD) to minimise reads
+    const isISODate = date && /^\d{4}-\d{2}-\d{2}$/.test(date);
+    if (isISODate)  constraints.push(where("date", "==", date));
     const snap = await getDocs(query(collection(db, Collections.TOKENS), ...constraints));
     let tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (date) {
-      const dayNum = String(parseInt(date.split("-")[2] ?? date, 10));
-      tokens = tokens.filter((t: any) => {
-        const td = String(t.date ?? "");
-        return td === date || td === dayNum || parseInt(td, 10) === parseInt(dayNum, 10);
-      });
+    // In-memory date filter for legacy numeric date format only
+    if (date && !isISODate) {
+      const dayNum = parseInt(date, 10);
+      tokens = tokens.filter((t: any) => parseInt(String(t.date ?? ""), 10) === dayNum);
     }
     tokens = tokens.sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
     res.json({ tokens });

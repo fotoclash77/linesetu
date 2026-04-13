@@ -58,51 +58,47 @@ interface MasterRow {
   bookedAt: any;
 }
 
+function sortRows(tokens: MasterRow[]) {
+  return [...tokens].sort((a, b) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
+}
+
 function useMasterQueue(doctorId: string) {
   const [rows, setRows] = useState<MasterRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!doctorId) return;
-    const url = `${BASE()}/api/tokens/stream/${doctorId}?date=${todayISO()}`;
-
-    if (typeof EventSource !== 'undefined') {
-      const es = new EventSource(url);
-      es.onmessage = (e) => {
-        try {
-          const tokens: MasterRow[] = JSON.parse(e.data);
-          const sorted = [...tokens].sort((a, b) => {
-            const ta = a.tokenNumber ?? 0;
-            const tb = b.tokenNumber ?? 0;
-            return ta - tb;
-          });
-          setRows(sorted);
-          setLoading(false);
-        } catch (_) {}
-      };
-      es.onerror = () => setLoading(false);
-      return () => es.close();
-    }
-
     let active = true;
-    const poll = async () => {
+
+    // ── Immediate REST fetch (reliable, proxy-safe) ──────────────
+    const fetchNow = async () => {
       try {
         const res = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${todayISO()}`);
         const data = await res.json();
-        if (data.tokens && active) {
-          const sorted = [...data.tokens].sort((a: MasterRow, b: MasterRow) => {
-            const ta = a.tokenNumber ?? 0;
-            const tb = b.tokenNumber ?? 0;
-            return ta - tb;
-          });
-          setRows(sorted);
-        }
+        if (data.tokens && active) setRows(sortRows(data.tokens));
       } catch (_) {}
-      setLoading(false);
+      if (active) setLoading(false);
     };
-    poll();
-    const iv = setInterval(poll, 60000);
-    return () => { active = false; clearInterval(iv); };
+    fetchNow();
+    const iv = setInterval(fetchNow, 30_000);
+
+    // ── EventSource push updates (best-effort, may be buffered) ──
+    let es: any = null;
+    if (typeof EventSource !== 'undefined') {
+      es = new EventSource(`${BASE()}/api/tokens/stream/${doctorId}?date=${todayISO()}`);
+      es.onmessage = (e: MessageEvent) => {
+        try {
+          const tokens: MasterRow[] = JSON.parse(e.data);
+          if (active) { setRows(sortRows(tokens)); setLoading(false); }
+        } catch (_) {}
+      };
+    }
+
+    return () => {
+      active = false;
+      clearInterval(iv);
+      es?.close();
+    };
   }, [doctorId]);
 
   return { rows, loading };
