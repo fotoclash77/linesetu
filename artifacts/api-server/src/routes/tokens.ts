@@ -254,6 +254,31 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
   }
 });
 
+// PATCH /api/tokens/:tokenId/skip — mark as skipped (not cancelled, no refund)
+router.patch("/tokens/:tokenId/skip", async (req, res) => {
+  try {
+    const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
+    const tokenSnap = await getDoc(tokenRef);
+    if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
+
+    const token    = tokenSnap.data();
+    const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+
+    const batch = writeBatch(db);
+    batch.update(tokenRef, { status: "skipped", skippedAt: Timestamp.now() });
+    batch.update(queueRef, {
+      waitingTokenIds: arrayRemove(req.params.tokenId),
+      updatedAt:       Timestamp.now(),
+    });
+    await batch.commit();
+    emitDoctorTokenChange(token.doctorId);
+
+    res.json({ id: req.params.tokenId, status: "skipped" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /api/tokens/:tokenId/cancel
 router.patch("/tokens/:tokenId/cancel", async (req, res) => {
   try {

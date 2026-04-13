@@ -38,6 +38,7 @@ async function apiFetchAll(doctorId: string) {
 }
 async function apiCall(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/call`,   { method: 'PATCH' }); }
 async function apiDone(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/done`,   { method: 'PATCH' }); }
+async function apiSkip(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/skip`,   { method: 'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method: 'PATCH' }); }
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ function mapToken(t: any): Token {
     displayStatus:
       t.status === 'in_consult' ? 'consulting' :
       t.status === 'done'       ? 'done'       :
+      t.status === 'skipped'    ? 'skipped'    :
       t.status === 'cancelled'  ? 'skipped'    : 'waiting',
     shift: t.shift ?? 'morning', calledAt: t.calledAt,
     age: t.age ?? undefined,
@@ -453,6 +455,9 @@ export default function QueueScreen() {
     } catch {}
     setBusy(null);
   };
+  const doSkipToken = async (id: string) => {
+    setBusy(id); try { await apiSkip(id); inv(); } catch {} setBusy(null);
+  };
   const doCancel = async (id: string) => {
     setBusy(id); try { await apiCancel(id); inv(); } catch {} setBusy(null);
   };
@@ -610,7 +615,7 @@ export default function QueueScreen() {
                 </View>
               ) : (
                 tabPatients.map(tok => {
-                  if (tab === 'skipped' || tab === 'consulted') {
+                  if (tab === 'consulted') {
                     return <PastCard key={tok.id} tok={tok} />;
                   }
                   return (
@@ -619,7 +624,7 @@ export default function QueueScreen() {
                       busy={busyId === tok.id}
                       onSendNext={() => doCall(tok.id)}
                       onSendAlert={() => doCall(tok.id)}
-                      onSkip={() => doCancel(tok.id)}
+                      onSkip={() => doSkipToken(tok.id)}
                     />
                   );
                 })
