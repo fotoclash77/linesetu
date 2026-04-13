@@ -301,7 +301,7 @@ export default function AddWalkinScreen() {
 
             {/* Address */}
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>📍 ADDRESS</Text>
+              <Text style={styles.fieldLabel}>📍 AREA</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Street / building"
