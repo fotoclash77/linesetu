@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   availDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 4 },
   availTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80" },
 
-  identityCard: { marginHorizontal: 18, marginTop: -2, padding: 14, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderTopWidth: 0, marginBottom: 24 },
+  identityCard: { marginHorizontal: 18, marginTop: 14, padding: 14, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", marginBottom: 24 },
   docName: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: -0.3, marginBottom: 5 },
   identityRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
   specBadge: { backgroundColor: "rgba(239,68,68,0.15)", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 },
