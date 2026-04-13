@@ -191,12 +191,12 @@ export default function DashboardScreen() {
 
           {/* Earnings Overview */}
           <View style={styles.earningsCard}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
+            <View style={{ marginBottom: 14 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 10 }]}>
                 <Text style={styles.sectionDot}>↗</Text>
                 <Text style={styles.sectionTitle}>Earnings Overview</Text>
               </View>
-              <View style={styles.periodTabs}>
+              <View style={[styles.periodTabs, { alignSelf: 'flex-start' }]}>
                 {(['Today','Last 7 days','Last 30 days'] as EarningPeriod[]).map(p => (
                   <TouchableOpacity key={p} onPress={() => setPeriod(p)} style={[styles.periodTab, period === p && styles.periodTabActive]}>
                     <Text style={[styles.periodTabText, period === p && styles.periodTabTextActive]}>{p}</Text>
