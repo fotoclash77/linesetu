@@ -647,8 +647,8 @@ const S = StyleSheet.create({
   consBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   skipBtn:    { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' },
   skipBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCA5A5' },
-  doneBtn:    { flex: 2, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, shadowColor: TEAL, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 14 },
-  doneBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FFF' },
+  doneBtn:    { flex: 2, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B45309', borderWidth: 1, borderColor: 'rgba(252,211,77,0.5)', shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.45, shadowRadius: 14 },
+  doneBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCD34D' },
 
   // Empty placeholder cards
   emptyCard:    { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 14 },
