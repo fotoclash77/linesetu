@@ -372,10 +372,11 @@ router.get("/tokens/stream/:doctorId", async (req, res) => {
           collection(db, Collections.TOKENS),
           where("doctorId", "==", doctorId),
           where("date", "==", date),
-          orderBy("tokenNumber", "asc"),
         ),
       );
-      const tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const tokens = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
       res.write(`data: ${JSON.stringify(tokens)}\n\n`);
     } catch (_) {}
   };

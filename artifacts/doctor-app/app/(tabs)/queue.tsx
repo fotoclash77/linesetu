@@ -31,6 +31,83 @@ async function apiCall(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/c
 async function apiDone(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/done`,   { method:'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method:'PATCH' }); }
 
+function relTime(bookedAt: any): string {
+  let ms: number;
+  if (bookedAt && typeof bookedAt === 'object' && bookedAt.seconds) {
+    ms = bookedAt.seconds * 1000;
+  } else if (typeof bookedAt === 'number') {
+    ms = bookedAt;
+  } else {
+    return '';
+  }
+  const diff = Date.now() - ms;
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  if (m < 1)  return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  return `${h}h ago`;
+}
+
+interface MasterRow {
+  id: string;
+  tokenNumber: number;
+  patientName: string;
+  type: string;
+  source: string;
+  status: string;
+  bookedAt: any;
+}
+
+function useMasterQueue(doctorId: string) {
+  const [rows, setRows] = useState<MasterRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!doctorId) return;
+    const url = `${BASE()}/api/tokens/stream/${doctorId}?date=${todayISO()}`;
+
+    if (typeof EventSource !== 'undefined') {
+      const es = new EventSource(url);
+      es.onmessage = (e) => {
+        try {
+          const tokens: MasterRow[] = JSON.parse(e.data);
+          const sorted = [...tokens].sort((a, b) => {
+            const ta = a.bookedAt?.seconds ?? 0;
+            const tb = b.bookedAt?.seconds ?? 0;
+            return tb - ta;
+          });
+          setRows(sorted);
+          setLoading(false);
+        } catch (_) {}
+      };
+      es.onerror = () => setLoading(false);
+      return () => es.close();
+    }
+
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${BASE()}/api/tokens?doctorId=${doctorId}&date=${todayISO()}`);
+        const data = await res.json();
+        if (data.tokens && active) {
+          const sorted = [...data.tokens].sort((a: MasterRow, b: MasterRow) => {
+            const ta = a.bookedAt?.seconds ?? 0;
+            const tb = b.bookedAt?.seconds ?? 0;
+            return tb - ta;
+          });
+          setRows(sorted);
+        }
+      } catch (_) {}
+      setLoading(false);
+    };
+    poll();
+    const iv = setInterval(poll, 8000);
+    return () => { active = false; clearInterval(iv); };
+  }, [doctorId]);
+
+  return { rows, loading };
+}
+
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
 type TabKey = 'queue' | 'emergency' | 'notshown' | 'done';
@@ -367,6 +444,7 @@ export default function QueueScreen() {
     queryFn: () => apiFetchAll(docId),
     enabled: !!docId, refetchInterval: 8000, staleTime: 0,
   });
+  const { rows: masterRows, loading: masterLoading } = useMasterQueue(docId);
 
   const inv = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['dq', docId] });
@@ -592,6 +670,75 @@ export default function QueueScreen() {
                 </View>
               )}
 
+              {/* ── MASTER LIVE QUEUE ── */}
+              <View style={S.masterSection}>
+                <View style={S.masterHeader}>
+                  <Text style={S.masterIcon}>📋</Text>
+                  <Text style={S.masterTitle}>TODAY'S QUEUE (LATEST FIRST)</Text>
+                  {!masterLoading && (
+                    <View style={S.masterCount}>
+                      <Text style={S.masterCountTxt}>{masterRows.length}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {masterLoading ? (
+                  <View style={S.masterLoadWrap}>
+                    <ActivityIndicator size="small" color={TEAL_LT} />
+                    <Text style={S.masterLoadTxt}>Loading queue…</Text>
+                  </View>
+                ) : masterRows.length === 0 ? (
+                  <View style={S.masterEmpty}>
+                    <Text style={S.masterEmptyTxt}>No tokens booked today yet.</Text>
+                  </View>
+                ) : (
+                  masterRows.map((t) => {
+                    const isE = t.type === 'emergency';
+                    const label = isE
+                      ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                      : `#${t.tokenNumber}`;
+                    const STATUS_COLOR: Record<string, string> = {
+                      waiting:    '#FCD34D',
+                      in_consult: TEAL_LT,
+                      done:       '#4ADE80',
+                      cancelled:  '#F87171',
+                    };
+                    const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
+                    const isWk = t.source === 'walkin';
+                    const isOn = t.source === 'online';
+                    const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '';
+                    const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : '';
+                    return (
+                      <View key={t.id} style={S.masterItem}>
+                        <View style={[
+                          S.masterToken,
+                          {
+                            backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
+                            borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
+                          },
+                        ]}>
+                          <Text style={S.masterTokenText}>{label}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={S.masterName}>{t.patientName}</Text>
+                          <Text style={S.masterSub}>
+                            <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>
+                              {isE ? 'Emergency' : 'Normal'}
+                            </Text>
+                            {'  ·  '}
+                            <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
+                            {srcLabel ? (
+                              <>{'  ·  '}<Text style={{ color: srcColor }}>{srcLabel}</Text></>
+                            ) : null}
+                          </Text>
+                        </View>
+                        <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+
             </View>
           </ScrollView>
         )}
@@ -704,4 +851,22 @@ const S = StyleSheet.create({
   // Pill (shared badge)
   pill:    { flexDirection:'row', alignItems:'center', paddingHorizontal:7, paddingVertical:3, borderRadius:20 },
   pillTxt: { fontSize:9, fontWeight:'800', letterSpacing:0.3 },
+
+  // Master live queue
+  masterSection:  { marginTop: 16 },
+  masterHeader:   { flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 },
+  masterIcon:     { fontSize:11, color:'rgba(255,255,255,0.3)' },
+  masterTitle:    { fontSize:10, fontWeight:'800', color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:1 },
+  masterCount:    { marginLeft:'auto', backgroundColor:'rgba(45,212,191,0.15)', borderRadius:8, paddingHorizontal:7, paddingVertical:2, borderWidth:1, borderColor:'rgba(45,212,191,0.25)' },
+  masterCountTxt: { fontSize:10, fontWeight:'800', color:TEAL_LT },
+  masterLoadWrap: { flexDirection:'row', alignItems:'center', gap:8, padding:16, justifyContent:'center' },
+  masterLoadTxt:  { fontSize:12, fontWeight:'600', color:'rgba(255,255,255,0.3)' },
+  masterEmpty:    { padding:20, alignItems:'center' },
+  masterEmptyTxt: { fontSize:12, fontWeight:'600', color:'rgba(255,255,255,0.25)', textAlign:'center' },
+  masterItem:     { flexDirection:'row', alignItems:'center', gap:10, padding:9, borderRadius:14, marginBottom:6, backgroundColor:'rgba(255,255,255,0.05)', borderWidth:1, borderColor:'rgba(255,255,255,0.09)' },
+  masterToken:    { width:38, height:38, borderRadius:11, alignItems:'center', justifyContent:'center', flexShrink:0, borderWidth:1 },
+  masterTokenText:{ fontSize:11, fontWeight:'900', color:'#FFF', letterSpacing:-0.3 },
+  masterName:     { fontSize:12, fontWeight:'700', color:'#FFF' },
+  masterSub:      { fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'500' },
+  masterTime:     { fontSize:10, color:'rgba(255,255,255,0.25)', fontWeight:'600' },
 });
