@@ -72,7 +72,7 @@ const MENU_SECTIONS: MenuSection[] = [
     title: "Settings & Preferences",
     items: [
       { icon: "bell",    label: "Notifications", sub: "Token alerts & appointment reminders", color: "#F59E0B", route: "/notifications", badge: "3",  liveIndicator: false, danger: false },
-      { icon: "sliders", label: "Preferences",   sub: "Language, queue alerts, SMS options",  color: "#A5B4FC", route: "/preferences", badge: null, liveIndicator: false, danger: false },
+      { icon: "sliders", label: "Preferences",   sub: "SMS, Alerts & display",  color: "#A5B4FC", route: "/preferences", badge: null, liveIndicator: false, danger: false },
     ],
   },
   {
