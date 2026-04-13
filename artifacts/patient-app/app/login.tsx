@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,34 +12,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth, googleProvider, signInWithEmailAndPassword, signInWithPopup } from "@/lib/firebase";
-
-function GoogleSvgIcon({ size = 20 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-        fill="#4285F4"
-      />
-      <Path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-        fill="#34A853"
-      />
-      <Path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-        fill="#FBBC05"
-      />
-      <Path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-        fill="#EA4335"
-      />
-    </Svg>
-  );
-}
+import { auth, signInWithPhoneNumber } from "@/lib/firebase";
 
 const isWeb = Platform.OS === "web";
 
@@ -49,62 +25,110 @@ export default function LoginScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [countryCode] = useState("+91");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [gLoading, setGLoading] = useState(false);
   const [error, setError] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const otpRefs = useRef<(TextInput | null)[]>([]);
 
-  async function handleSignIn() {
-    const trimEmail = email.trim();
-    if (!trimEmail || !password) {
-      setError("Please fill in both email and password.");
+  async function handleSendOtp() {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) {
+      setError("Please enter a valid 10-digit phone number.");
       return;
     }
+    const fullPhone = `${countryCode}${digits}`;
     setLoading(true);
     setError("");
     try {
-      const cred = await signInWithEmailAndPassword(auth, trimEmail, password);
-      const user = cred.user;
-      await login({
-        id: user.uid,
-        name: user.displayName ?? trimEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-        phone: user.phoneNumber ?? "",
-        profilePhoto: user.photoURL ?? undefined,
-      });
-      router.replace("/(tabs)");
-    } catch {
-      setError("Sign-in failed. Check your email and password.");
+      let verifier: any = undefined;
+      if (isWeb) {
+        const { RecaptchaVerifier } = await import("firebase/auth");
+        if (!(window as any)._recaptchaVerifier) {
+          (window as any)._recaptchaVerifier = new RecaptchaVerifier(
+            auth,
+            "recaptcha-container",
+            { size: "invisible" }
+          );
+        }
+        verifier = (window as any)._recaptchaVerifier;
+      }
+      const result = await signInWithPhoneNumber(auth, fullPhone, verifier);
+      setConfirmationResult(result);
+      setStep("otp");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogle() {
-    setGLoading(true);
+  async function handleVerifyOtp() {
+    const code = otp.join("");
+    if (code.length < 6) {
+      setError("Please enter the complete 6-digit OTP.");
+      return;
+    }
+    if (!confirmationResult) {
+      setError("Session expired. Please resend OTP.");
+      return;
+    }
+    setLoading(true);
     setError("");
     try {
-      const cred = await signInWithPopup(auth, googleProvider);
+      const cred = await confirmationResult.confirm(code);
       const user = cred.user;
       await login({
         id: user.uid,
         name: user.displayName ?? "Patient",
-        phone: user.phoneNumber ?? "",
+        phone: user.phoneNumber ?? `${countryCode}${phone}`,
         profilePhoto: user.photoURL ?? undefined,
       });
       router.replace("/(tabs)");
     } catch {
-      setError("Google sign-in failed. Try again.");
+      setError("Invalid OTP. Please check and try again.");
     } finally {
-      setGLoading(false);
+      setLoading(false);
     }
+  }
+
+  function handleOtpChange(text: string, index: number) {
+    const char = text.replace(/\D/g, "").slice(-1);
+    const newOtp = [...otp];
+    newOtp[index] = char;
+    setOtp(newOtp);
+    setError("");
+    if (char && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }
+
+  function handleOtpKeyPress(key: string, index: number) {
+    if (key === "Backspace" && !otp[index] && index > 0) {
+      const newOtp = [...otp];
+      newOtp[index - 1] = "";
+      setOtp(newOtp);
+      otpRefs.current[index - 1]?.focus();
+    }
+  }
+
+  function goBack() {
+    setStep("phone");
+    setOtp(["", "", "", "", "", ""]);
+    setError("");
+    setConfirmationResult(null);
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.orb1} />
       <View style={styles.orb2} />
+
+      {/* Invisible recaptcha container for Firebase phone auth on web */}
+      {isWeb && <View nativeID="recaptcha-container" style={{ position: "absolute", bottom: 0 }} />}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -126,116 +150,129 @@ export default function LoginScreen() {
 
           {/* Glass Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome back</Text>
-            <Text style={styles.cardSub}>Sign in to your account</Text>
+            {step === "phone" ? (
+              <>
+                <Text style={styles.cardTitle}>Welcome</Text>
+                <Text style={styles.cardSub}>Sign in or create your account</Text>
 
-            {/* Google Button */}
-            <Pressable
-              testID="google-signin-btn"
-              onPress={handleGoogle}
-              disabled={gLoading}
-              style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.88 }]}
-            >
-              {gLoading ? (
-                <ActivityIndicator color="#1F2937" size="small" />
-              ) : (
-                <>
-                  <GoogleSvgIcon size={22} />
-                  <Text style={styles.googleBtnTxt}>Continue with Google</Text>
-                </>
-              )}
-            </Pressable>
+                {/* Phone number field */}
+                <View style={styles.fieldWrap}>
+                  <View style={styles.countryCode}>
+                    <Text style={styles.countryCodeTxt}>{countryCode}</Text>
+                    <Feather name="chevron-down" size={12} color="rgba(255,255,255,0.35)" />
+                  </View>
+                  <View style={styles.fieldDivider} />
+                  <TextInput
+                    style={styles.fieldInput}
+                    placeholder="Enter phone number"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    keyboardType="phone-pad"
+                    value={phone}
+                    onChangeText={(t) => { setPhone(t); setError(""); }}
+                    maxLength={10}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSendOtp}
+                    autoFocus={false}
+                  />
+                </View>
 
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerTxt}>or sign in with email</Text>
-              <View style={styles.dividerLine} />
-            </View>
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-            {/* Email Field */}
-            <View style={styles.fieldWrap}>
-              <View style={styles.fieldIcon}>
-                <Feather name="mail" size={15} color="rgba(255,255,255,0.4)" />
-              </View>
-              <TextInput
-                testID="email-input"
-                style={styles.fieldInput}
-                placeholder="you@example.com"
-                placeholderTextColor="rgba(255,255,255,0.25)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(t) => { setEmail(t); setError(""); }}
-                returnKeyType="next"
-              />
-            </View>
+                {/* Send OTP button */}
+                <Pressable
+                  onPress={handleSendOtp}
+                  disabled={loading}
+                  style={({ pressed }) => [styles.ctaOuter, pressed && { opacity: 0.85 }]}
+                >
+                  <LinearGradient
+                    colors={["#4F46E5", "#6366F1", "#0EA5E9"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.ctaGrad}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.ctaText}>Send OTP</Text>
+                        <Feather name="arrow-right" size={16} color="#FFF" />
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                {/* Back to phone */}
+                <Pressable style={styles.backRow} onPress={goBack}>
+                  <Feather name="arrow-left" size={15} color="#818CF8" />
+                  <Text style={styles.backTxt}>Change number</Text>
+                </Pressable>
 
-            {/* Password Field */}
-            <View style={styles.fieldWrap}>
-              <View style={styles.fieldIcon}>
-                <Feather name="lock" size={15} color="rgba(255,255,255,0.4)" />
-              </View>
-              <TextInput
-                testID="password-input"
-                style={styles.fieldInput}
-                placeholder="Password"
-                placeholderTextColor="rgba(255,255,255,0.25)"
-                secureTextEntry={!showPwd}
-                value={password}
-                onChangeText={(t) => { setPassword(t); setError(""); }}
-                returnKeyType="done"
-                onSubmitEditing={handleSignIn}
-              />
-              <Pressable onPress={() => setShowPwd(p => !p)} style={styles.eyeBtn}>
-                <Feather name={showPwd ? "eye-off" : "eye"} size={15} color="rgba(255,255,255,0.4)" />
-              </Pressable>
-            </View>
+                <Text style={styles.cardTitle}>Enter OTP</Text>
+                <Text style={styles.cardSub}>
+                  6-digit code sent to {countryCode} {phone}
+                </Text>
 
-            {/* Forgot Password */}
-            <Pressable style={styles.forgotRow}>
-              <Text style={styles.forgotTxt}>Forgot password?</Text>
-            </Pressable>
+                {/* OTP boxes */}
+                <View style={styles.otpRow}>
+                  {otp.map((digit, i) => (
+                    <TextInput
+                      key={i}
+                      ref={(r) => { otpRefs.current[i] = r; }}
+                      style={[styles.otpBox, !!digit && styles.otpBoxFilled]}
+                      value={digit}
+                      onChangeText={(t) => handleOtpChange(t, i)}
+                      onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, i)}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      textAlign="center"
+                      selectionColor="#4F46E5"
+                    />
+                  ))}
+                </View>
 
-            {!!error && <Text style={styles.errorText}>{error}</Text>}
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-            {/* Sign In CTA */}
-            <Pressable
-              testID="signin-btn"
-              onPress={handleSignIn}
-              disabled={loading}
-              style={({ pressed }) => [styles.ctaOuter, pressed && { opacity: 0.85 }]}
-            >
-              <LinearGradient
-                colors={["#4F46E5", "#6366F1", "#0EA5E9"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.ctaGrad}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Text style={styles.ctaText}>Sign In</Text>
-                    <Feather name="chevron-right" size={16} color="#FFF" />
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
+                {/* Verify button */}
+                <Pressable
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                  style={({ pressed }) => [styles.ctaOuter, pressed && { opacity: 0.85 }]}
+                >
+                  <LinearGradient
+                    colors={["#4F46E5", "#6366F1", "#0EA5E9"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.ctaGrad}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.ctaText}>Verify & Continue</Text>
+                        <Feather name="check" size={16} color="#FFF" />
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
 
-            {/* Security row */}
+                {/* Resend */}
+                <Pressable style={styles.resendRow} onPress={handleSendOtp} disabled={loading}>
+                  <Text style={styles.resendTxt}>
+                    Didn't receive OTP?{" "}
+                    <Text style={styles.resendLink}>Resend</Text>
+                  </Text>
+                </Pressable>
+              </>
+            )}
+
+            {/* Security note */}
             <View style={styles.securityRow}>
               <Feather name="shield" size={11} color="rgba(255,255,255,0.2)" />
               <Text style={styles.securityTxt}>256-bit encrypted · Your data is safe</Text>
             </View>
           </View>
-
-          {/* Create account */}
-          <Text style={styles.createAccRow}>
-            New to LINESETU?{" "}
-            <Text style={styles.createAccLink}>Create account</Text>
-          </Text>
 
           {/* Stats Strip */}
           <View style={styles.statsRow}>
@@ -282,34 +319,31 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 22, fontWeight: "800", color: "#FFF", marginBottom: 4 },
   cardSub: { fontSize: 13, color: "rgba(255,255,255,0.42)", marginBottom: 20 },
 
-  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, height: 52, borderRadius: 14, backgroundColor: "#FFFFFF", marginBottom: 18 },
-  googleIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4285F4", alignItems: "center", justifyContent: "center" },
-  googleIconG: { fontSize: 14, fontWeight: "900", color: "#FFF", letterSpacing: -0.5 },
-  googleBtnTxt: { fontSize: 15, fontWeight: "700", color: "#1F2937" },
+  backRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 16 },
+  backTxt: { fontSize: 13, color: "#818CF8", fontWeight: "600" },
 
-  divider: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.09)" },
-  dividerTxt: { fontSize: 11, color: "rgba(255,255,255,0.28)", fontWeight: "500" },
+  fieldWrap: { flexDirection: "row", alignItems: "center", height: 54, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.35)", marginBottom: 16 },
+  countryCode: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 14 },
+  countryCodeTxt: { fontSize: 15, color: "#FFF", fontWeight: "600" },
+  fieldDivider: { width: 1, height: 26, backgroundColor: "rgba(255,255,255,0.12)" },
+  fieldInput: { flex: 1, fontSize: 15, color: "#FFF", fontWeight: "500", paddingHorizontal: 14 },
 
-  fieldWrap: { flexDirection: "row", alignItems: "center", height: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.35)", marginBottom: 12 },
-  fieldIcon: { width: 44, alignItems: "center", justifyContent: "center" },
-  fieldInput: { flex: 1, fontSize: 15, color: "#FFF", fontWeight: "500" },
-  eyeBtn: { width: 44, alignItems: "center", justifyContent: "center" },
-
-  forgotRow: { alignItems: "flex-end", marginBottom: 16, marginTop: -4 },
-  forgotTxt: { fontSize: 12, color: "#6366F1", fontWeight: "700" },
+  otpRow: { flexDirection: "row", gap: 8, justifyContent: "center", marginBottom: 20 },
+  otpBox: { width: 44, height: 54, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(99,102,241,0.35)", fontSize: 22, fontWeight: "700", color: "#FFF" },
+  otpBoxFilled: { borderColor: "#4F46E5", backgroundColor: "rgba(79,70,229,0.18)" },
 
   errorText: { fontSize: 12, color: "#F87171", marginBottom: 10 },
 
-  ctaOuter: { borderRadius: 14, overflow: "hidden", marginBottom: 4 },
+  ctaOuter: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
   ctaGrad: { height: 52, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   ctaText: { fontSize: 15, fontWeight: "700", color: "#FFF", letterSpacing: 0.3 },
 
-  securityRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 16 },
-  securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: "500" },
+  resendRow: { alignItems: "center", marginBottom: 4 },
+  resendTxt: { fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: "500" },
+  resendLink: { color: "#818CF8", fontWeight: "700" },
 
-  createAccRow: { textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)", fontWeight: "500", marginBottom: 16 },
-  createAccLink: { color: "#818CF8", fontWeight: "700" },
+  securityRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 4 },
+  securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: "500" },
 
   statsRow: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderRadius: 16, paddingVertical: 12, marginBottom: 14 },
   statDivider: { width: 1, height: 24, backgroundColor: "rgba(255,255,255,0.08)" },

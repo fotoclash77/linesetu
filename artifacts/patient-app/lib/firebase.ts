@@ -1,10 +1,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
+  signInWithPhoneNumber,
   type UserCredential,
+  type ConfirmationResult,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -18,7 +17,6 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
-export { signInWithEmailAndPassword, signInWithPopup };
-export type { UserCredential };
+export { signInWithPhoneNumber };
+export type { UserCredential, ConfirmationResult };
