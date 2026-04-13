@@ -132,11 +132,6 @@ function ShiftForm({ shift, accentColor, icon, label, data, clinics, onChange }:
         placeholder="30"
       />
 
-      {/* Address & Maps (auto-filled from clinic, editable) */}
-      <Text style={styles.fieldLabel}>ADDRESS</Text>
-      <TextInput style={[styles.fieldInput, { marginBottom: 8 }]} value={data.address} onChangeText={v => onChange({ address: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="Shop 4, SV Road, Andheri" />
-      <Text style={styles.fieldLabel}>GOOGLE MAPS LINK</Text>
-      <TextInput style={styles.fieldInput} value={data.locationLink} onChangeText={v => onChange({ locationLink: v })} placeholderTextColor="rgba(255,255,255,0.2)" placeholder="https://maps.google.com/..." keyboardType="url" />
     </View>
   );
 }
