@@ -17,19 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const isWeb = Platform.OS === "web";
 const PREFS_KEY = "linesetu_preferences";
 
-const LANGUAGES = [
-  { code: "en", label: "English", native: "English" },
-  { code: "hi", label: "Hindi", native: "हिन्दी" },
-  { code: "mr", label: "Marathi", native: "मराठी" },
-  { code: "gu", label: "Gujarati", native: "ગુજરાતી" },
-  { code: "ta", label: "Tamil", native: "தமிழ்" },
-  { code: "te", label: "Telugu", native: "తెలుగు" },
-  { code: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
-  { code: "bn", label: "Bengali", native: "বাংলা" },
-];
-
 interface Preferences {
-  language: string;
   smsAlerts: boolean;
   pushAlerts: boolean;
   alertAt10: boolean;
@@ -43,7 +31,6 @@ interface Preferences {
 }
 
 const DEFAULT_PREFS: Preferences = {
-  language: "en",
   smsAlerts: true,
   pushAlerts: true,
   alertAt10: true,
@@ -103,7 +90,6 @@ export default function PreferencesScreen() {
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
-  const [langModalVisible, setLangModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -128,8 +114,6 @@ export default function PreferencesScreen() {
     setSaving(false);
     router.back();
   };
-
-  const selectedLang = LANGUAGES.find((l) => l.code === prefs.language) ?? LANGUAGES[0];
 
   return (
     <View style={styles.container}>
@@ -159,24 +143,6 @@ export default function PreferencesScreen() {
         contentContainerStyle={{ paddingBottom: bottomPad, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Language ── */}
-        <SectionLabel label="Language" icon="🌐" />
-        <View style={styles.card}>
-          <Pressable
-            style={styles.langRow}
-            onPress={() => setLangModalVisible(true)}
-          >
-            <View style={styles.langLeft}>
-              <Text style={styles.langNative}>{selectedLang.native}</Text>
-              <Text style={styles.langSub}>{selectedLang.label}</Text>
-            </View>
-            <View style={styles.langRight}>
-              <Text style={styles.langChange}>Change</Text>
-              <Feather name="chevron-right" size={16} color="#818CF8" />
-            </View>
-          </Pressable>
-        </View>
-
         {/* ── Queue Alerts ── */}
         <SectionLabel label="Queue Alerts" icon="🔔" />
         <View style={styles.card}>
@@ -293,42 +259,6 @@ export default function PreferencesScreen() {
         </Pressable>
       </ScrollView>
 
-      {/* Language Picker Modal */}
-      {langModalVisible && (
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setLangModalVisible(false)}
-        >
-          <Pressable style={styles.langModal} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.langModalTitle}>Select Language</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {LANGUAGES.map((lang) => {
-                const selected = lang.code === prefs.language;
-                return (
-                  <Pressable
-                    key={lang.code}
-                    style={[styles.langOption, selected && styles.langOptionActive]}
-                    onPress={() => {
-                      update("language", lang.code);
-                      setLangModalVisible(false);
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.langOptionNative, selected && { color: "#A5B4FC" }]}>
-                        {lang.native}
-                      </Text>
-                      <Text style={styles.langOptionSub}>{lang.label}</Text>
-                    </View>
-                    {selected && (
-                      <Feather name="check" size={16} color="#818CF8" />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -356,21 +286,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, fontWeight: "700", color: "#FFF" },
   rowSub: { fontSize: 11, color: "rgba(255,255,255,0.38)", marginTop: 2 },
 
-  langRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16 },
-  langLeft: { flex: 1 },
-  langNative: { fontSize: 18, fontWeight: "700", color: "#FFF" },
-  langSub: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 },
-  langRight: { flexDirection: "row", alignItems: "center", gap: 4 },
-  langChange: { fontSize: 13, fontWeight: "700", color: "#818CF8" },
-
   resetBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 28, marginBottom: 8, paddingVertical: 14, marginHorizontal: 16, borderRadius: 14, backgroundColor: "rgba(239,68,68,0.08)", borderWidth: 1, borderColor: "rgba(239,68,68,0.2)" },
   resetTxt: { fontSize: 13, fontWeight: "700", color: "#EF4444" },
 
-  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
-  langModal: { backgroundColor: "#131827", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: 500, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  langModalTitle: { fontSize: 18, fontWeight: "800", color: "#FFF", marginBottom: 16, letterSpacing: -0.3 },
-  langOption: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 12, borderRadius: 14, marginBottom: 4 },
-  langOptionActive: { backgroundColor: "rgba(79,70,229,0.15)", borderWidth: 1, borderColor: "rgba(79,70,229,0.3)" },
-  langOptionNative: { fontSize: 16, fontWeight: "700", color: "#FFF" },
-  langOptionSub: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 1 },
 });
