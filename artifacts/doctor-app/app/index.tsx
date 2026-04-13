@@ -124,11 +124,6 @@ export default function LoginScreen() {
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Branding */}
             <View style={styles.brand}>
-              <View style={styles.logoOuter}>
-                <View style={styles.logoInner}>
-                  <Text style={styles.logoIcon}>⚕</Text>
-                </View>
-              </View>
               <Text style={styles.brandName}>LINESETU</Text>
               <View style={styles.brandDivider}>
                 <View style={styles.dividerLine} />
@@ -298,16 +293,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   brand: { alignItems: 'center', paddingTop: 30, paddingBottom: 20 },
-  logoOuter: {
-    width: 90, height: 90, borderRadius: 28, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(13,148,136,0.3)', borderWidth: 2, borderColor: 'rgba(45,212,191,0.3)',
-    marginBottom: 18,
-  },
-  logoInner: {
-    width: 66, height: 66, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: TEAL,
-  },
-  logoIcon: { fontSize: 32, color: '#FFF' },
   brandName: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
   brandDivider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, marginBottom: 16 },
   dividerLine: { width: 28, height: 1, backgroundColor: 'rgba(45,212,191,0.5)' },
