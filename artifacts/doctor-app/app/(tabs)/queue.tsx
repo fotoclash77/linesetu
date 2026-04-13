@@ -419,6 +419,7 @@ export default function QueueScreen() {
   const [shift,        setShift]      = useState<'morning' | 'evening'>('morning');
   const [busyId,       setBusy]       = useState<string | null>(null);
   const [manualNextId, setManualNext] = useState<string | null>(null);
+  const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
   const { data: qData, refetch: refetchQ } = useQuery({
@@ -441,7 +442,8 @@ export default function QueueScreen() {
   const doCall = async (id: string) => {
     setBusy(id); try { await apiCall(id); inv(); } catch {} setBusy(null);
   };
-  const doDone = async (id: string, nextId?: string) => {
+  const doDone = async (id: string) => {
+    const nextId = upNextRef.current; // read synchronously — always matches displayed Up Next
     setBusy(id);
     try {
       await apiDone(id); inv();
@@ -473,6 +475,7 @@ export default function QueueScreen() {
   // Priority: 1) Manually chosen via Send Next  2) Emergency  3) Normal
   const manualNext = manualNextId ? waitSorted.find(t => t.id === manualNextId) : null;
   const upNext = manualNext ?? waitSorted[0];
+  upNextRef.current = upNext?.id; // always tracks what the Up Next card shows
 
   const doneList    = all.filter(t => t.displayStatus === 'done');
   const skippedList = all.filter(t => t.displayStatus === 'skipped');
@@ -551,7 +554,7 @@ export default function QueueScreen() {
                 ? <InConsultationCard
                     tok={consulting}
                     onSkip={() => doSkipToken(consulting.id)}
-                    onDone={() => doDone(consulting.id, upNext?.id)}
+                    onDone={() => doDone(consulting.id)}
                     busy={busyId === consulting.id}
                   />
                 : <NoConsultation nextTok={upNext} />
@@ -623,7 +626,7 @@ export default function QueueScreen() {
                       key={tok.id} tok={tok}
                       busy={busyId === tok.id}
                       isManualNext={tok.id === manualNextId}
-                      onSendNext={() => consulting ? setManualNext(tok.id) : doCall(tok.id)}
+                      onSendNext={() => { setManualNext(tok.id); if (!consulting) doCall(tok.id); }}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
                       onRefund={() => doCancel(tok.id)}
