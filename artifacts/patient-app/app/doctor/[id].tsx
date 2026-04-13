@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
   navBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.7)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center" },
   navTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 
-  heroWrap: { position: "relative", marginHorizontal: 18, borderRadius: 22, overflow: "hidden", height: 220 },
-  heroImg: { width: "100%", height: 220 },
+  heroWrap: { position: "relative", marginHorizontal: 18, borderRadius: 22, overflow: "hidden", aspectRatio: 1 },
+  heroImg: { width: "100%", height: "100%" },
   heroGrad: { position: "absolute", bottom: 0, left: 0, right: 0, height: 90 },
   verifiedBadge: { position: "absolute", top: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.75)", borderWidth: 1, borderColor: "rgba(79,70,229,0.4)" },
   verifiedTxt: { fontSize: 10, fontWeight: "700", color: "#A5B4FC" },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   availDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 4 },
   availTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80" },
 
-  identityCard: { marginHorizontal: 18, marginTop: -2, padding: 14, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderTopWidth: 0, marginBottom: 12 },
+  identityCard: { marginHorizontal: 18, marginTop: -2, padding: 14, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", borderTopWidth: 0, marginBottom: 24 },
   docName: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: -0.3, marginBottom: 5 },
   identityRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
   specBadge: { backgroundColor: "rgba(239,68,68,0.15)", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 },
