@@ -518,16 +518,17 @@ export default function QueueScreen() {
     setBusy(id); try { await apiCancel(id); inv(); } catch {} setBusy(null);
   };
 
-  // ── Process ──
-  const all: Token[] = (aData?.tokens ?? []).map(mapToken);
+  // ── Process — use masterRows as fallback if REST data is empty ──
+  const restTokens: Token[] = (aData?.tokens ?? []).map(mapToken);
+  const all: Token[] = restTokens.length > 0 ? restTokens : masterRows.map(mapToken);
   const current   = all.find(t => t.displayStatus === 'consulting');
   const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a,b) => {
     if (a.type==='emergency' && b.type!=='emergency') return -1;
     if (b.type==='emergency' && a.type!=='emergency') return 1;
     return a.tokenNumber - b.tokenNumber;
   });
-  const nextTok   = waitSorted[0];        // the "Next" patient card
-  const queueRest = waitSorted.slice(1);  // rest shown in queue tab
+  const nextTok   = waitSorted[0];
+  const queueRest = waitSorted.slice(1);
   const emergList = waitSorted.filter(t => t.type === 'emergency');
 
   const doneList    = all.filter(t => t.displayStatus === 'done').sort((a,b)=>b.tokenNumber-a.tokenNumber);
@@ -641,133 +642,35 @@ export default function QueueScreen() {
                 })}
               </View>
 
-              {/* ── QUEUE TAB: waiting patients + master live list ── */}
+              {/* ── QUEUE TAB: waiting patients ── */}
               {tab==='queue' && (
                 <View style={S.list}>
-                  {/* Waiting patients (action cards) */}
-                  {queueRest.map(t=>(
-                    <QCard
-                      key={t.id} tok={t}
-                      busy={busyId===t.id}
-                      onSendNext={()=>doCall(t.id)}
-                      onSendAlert={()=>doCall(t.id)}
-                      onNotShown={()=>doCancel(t.id)}
-                    />
-                  ))}
-
-                  {/* ── MASTER LIVE QUEUE — NORMAL TOKENS ONLY ── */}
-                  {(() => {
-                    const normalRows = masterRows.filter(r => r.type !== 'emergency');
-                    return (
-                      <View style={S.masterSection}>
-                        <View style={S.masterHeader}>
-                          <PulseDot color={TEAL_LT} size={7}/>
-                          <Text style={S.masterTitle}>TODAY'S QUEUE — NORMAL TOKENS</Text>
-                          {!masterLoading && (
-                            <View style={S.masterCount}>
-                              <Text style={S.masterCountTxt}>{normalRows.length}</Text>
-                            </View>
-                          )}
-                        </View>
-                        {masterLoading && normalRows.length === 0 ? (
-                          <View style={S.masterLoadWrap}>
-                            <ActivityIndicator size="small" color={TEAL_LT} />
-                            <Text style={S.masterLoadTxt}>Loading…</Text>
-                          </View>
-                        ) : normalRows.length === 0 ? (
-                          <View style={S.masterEmpty}>
-                            <Text style={S.emptyIcon}>📋</Text>
-                            <Text style={S.masterEmptyTxt}>No normal tokens today yet.</Text>
-                          </View>
-                        ) : (
-                          normalRows.map((t) => {
-                            const isWk = t.source === 'walkin';
-                            const isOn = t.source === 'online';
-                            const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '—';
-                            const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : 'rgba(255,255,255,0.3)';
-                            return (
-                              <View key={t.id} style={S.masterItem}>
-                                <View style={[S.masterToken,{backgroundColor:'rgba(13,148,136,0.2)',borderColor:'rgba(45,212,191,0.35)'}]}>
-                                  <Text style={S.masterTokenText}>#{t.tokenNumber}</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                  <Text style={S.masterName}>{t.patientName}</Text>
-                                  <Text style={[S.masterSub,{color:srcColor,fontWeight:'700'}]}>{srcLabel}</Text>
-                                </View>
-                                <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
-                              </View>
-                            );
-                          })
-                        )}
-                      </View>
-                    );
-                  })()}
+                  {queueRest.length === 0
+                    ? <View style={S.empty}><Text style={S.emptyIcon}>✅</Text><Text style={S.emptyTxt}>No more patients waiting</Text></View>
+                    : queueRest.map(t=>(
+                        <QCard
+                          key={t.id} tok={t}
+                          busy={busyId===t.id}
+                          onSendNext={()=>doCall(t.id)}
+                          onSendAlert={()=>doCall(t.id)}
+                          onNotShown={()=>doCancel(t.id)}
+                        />
+                      ))
+                  }
                 </View>
               )}
 
               {/* ── EMERGENCY TAB ── */}
               {tab==='emergency' && (
                 <View style={S.list}>
-                  {emergList.length>0&&(
-                    <View style={S.emergHdr}>
-                      <Text style={S.emergHdrTxt}>⚡  Priority — Immediate Attention</Text>
-                    </View>
-                  )}
-                  {emergList.length===0 ? null : (
-                    emergList.map(t=>(
-                      <QCard key={t.id} tok={t} busy={busyId===t.id}
-                        onSendNext={()=>doCall(t.id)}
-                        onSendAlert={()=>doCall(t.id)} onNotShown={()=>doCancel(t.id)}/>
-                    ))
-                  )}
-
-                  {/* ── LIVE EMERGENCY QUEUE FROM FIREBASE ── */}
-                  {(() => {
-                    const emergRows = masterRows.filter(r => r.type === 'emergency');
-                    return (
-                      <View style={S.masterSection}>
-                        <View style={S.masterHeader}>
-                          <PulseDot color="#F87171" size={7}/>
-                          <Text style={[S.masterTitle,{color:'rgba(239,68,68,0.7)'}]}>LIVE EMERGENCY TOKENS</Text>
-                          {!masterLoading && (
-                            <View style={[S.masterCount,{backgroundColor:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.25)'}]}>
-                              <Text style={[S.masterCountTxt,{color:'#F87171'}]}>{emergRows.length}</Text>
-                            </View>
-                          )}
-                        </View>
-                        {masterLoading && emergRows.length === 0 ? (
-                          <View style={S.masterLoadWrap}>
-                            <ActivityIndicator size="small" color="#F87171" />
-                            <Text style={S.masterLoadTxt}>Loading…</Text>
-                          </View>
-                        ) : emergRows.length === 0 ? (
-                          <View style={S.masterEmpty}>
-                            <Text style={S.emptyIcon}>✅</Text>
-                            <Text style={S.masterEmptyTxt}>No emergency tokens today.</Text>
-                          </View>
-                        ) : (
-                          emergRows.map((t) => {
-                            const isWk = t.source === 'walkin';
-                            const isOn = t.source === 'online';
-                            const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '—';
-                            const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : 'rgba(255,255,255,0.3)';
-                            return (
-                              <View key={t.id} style={S.masterItem}>
-                                <View style={[S.masterToken,{backgroundColor:'rgba(239,68,68,0.2)',borderColor:'rgba(239,68,68,0.35)'}]}>
-                                  <Text style={S.masterTokenText}>E{String(t.tokenNumber).padStart(2,'0')}</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                  <Text style={S.masterName}>{t.patientName}</Text>
-                                  <Text style={[S.masterSub,{color:srcColor,fontWeight:'700'}]}>{srcLabel}</Text>
-                                </View>
-                                <Text style={S.masterTime}>{relTime(t.bookedAt)}</Text>
-                              </View>
-                            );
-                          })
-                        )}
-                      </View>
-                    );
-                  })()}
+                  {emergList.length===0
+                    ? <View style={S.empty}><Text style={S.emptyIcon}>✅</Text><Text style={S.emptyTxt}>No emergency patients</Text></View>
+                    : emergList.map(t=>(
+                        <QCard key={t.id} tok={t} busy={busyId===t.id}
+                          onSendNext={()=>doCall(t.id)}
+                          onSendAlert={()=>doCall(t.id)} onNotShown={()=>doCancel(t.id)}/>
+                      ))
+                  }
                 </View>
               )}
 
@@ -784,53 +687,10 @@ export default function QueueScreen() {
               {/* ── DONE TAB — live consulted patients from SSE ── */}
               {tab==='done' && (
                 <View style={S.list}>
-                  {(() => {
-                    const doneRows = masterRows.filter(r => r.status === 'done');
-                    return (
-                      <View style={S.masterSection}>
-                        <View style={S.masterHeader}>
-                          <PulseDot color="#4ADE80" size={7}/>
-                          <Text style={[S.masterTitle,{color:'rgba(74,222,128,0.7)'}]}>CONSULTED PATIENTS</Text>
-                          {!masterLoading && (
-                            <View style={[S.masterCount,{backgroundColor:'rgba(34,197,94,0.15)',borderColor:'rgba(34,197,94,0.25)'}]}>
-                              <Text style={[S.masterCountTxt,{color:'#4ADE80'}]}>{doneRows.length}</Text>
-                            </View>
-                          )}
-                        </View>
-                        {masterLoading && doneRows.length === 0 ? (
-                          <View style={S.masterLoadWrap}>
-                            <ActivityIndicator size="small" color="#4ADE80" />
-                            <Text style={S.masterLoadTxt}>Loading…</Text>
-                          </View>
-                        ) : doneRows.length === 0 ? (
-                          <View style={S.masterEmpty}>
-                            <Text style={S.emptyIcon}>📋</Text>
-                            <Text style={S.masterEmptyTxt}>No completed consultations yet.</Text>
-                          </View>
-                        ) : (
-                          doneRows.map((t) => {
-                            const isE = t.type === 'emergency';
-                            const isWk = t.source === 'walkin';
-                            const isOn = t.source === 'online';
-                            const srcLabel = isWk ? 'WALK-IN' : isOn ? 'E-TOKEN' : '—';
-                            const srcColor = isWk ? '#67E8F9' : isOn ? '#4ADE80' : 'rgba(255,255,255,0.3)';
-                            return (
-                              <View key={t.id} style={[S.masterItem,{opacity:0.75}]}>
-                                <View style={[S.masterToken,{backgroundColor:'rgba(34,197,94,0.18)',borderColor:'rgba(34,197,94,0.35)'}]}>
-                                  <Text style={S.masterTokenText}>{isE?`E${String(t.tokenNumber).padStart(2,'0')}`:`#${t.tokenNumber}`}</Text>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                  <Text style={S.masterName}>{t.patientName}</Text>
-                                  <Text style={[S.masterSub,{color:srcColor,fontWeight:'700'}]}>{srcLabel}</Text>
-                                </View>
-                                <Text style={[S.masterTime,{color:'#4ADE80'}]}>✓ Done</Text>
-                              </View>
-                            );
-                          })
-                        )}
-                      </View>
-                    );
-                  })()}
+                  {doneList.length===0
+                    ? <View style={S.empty}><Text style={S.emptyIcon}>📋</Text><Text style={S.emptyTxt}>No consultations done yet</Text></View>
+                    : doneList.map(t=><PastCard key={t.id} tok={t}/>)
+                  }
                 </View>
               )}
 
