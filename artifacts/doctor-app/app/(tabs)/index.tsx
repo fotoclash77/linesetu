@@ -140,13 +140,7 @@ export default function DashboardScreen() {
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
               <Text style={styles.bellIcon}>🔔</Text>
-              {unreadCount > 0 && (
-                <View style={styles.bellDot}>
-                  {unreadCount <= 9 && (
-                    <Text style={styles.bellDotTxt}>{unreadCount}</Text>
-                  )}
-                </View>
-              )}
+              {unreadCount > 0 && <View style={styles.bellDot} />}
             </TouchableOpacity>
           </View>
         </View>
@@ -331,12 +325,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   bellIcon: { fontSize: 17 },
-  bellDot: {
-    position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8,
-    backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
-  },
-  bellDotTxt: { fontSize: 9, fontWeight: '800', color: '#FFF', lineHeight: 11 },
+  bellDot: { position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
   scroll: { flex: 1, paddingHorizontal: 16 },
   glassCard: {
     borderRadius: 22, padding: 14, marginBottom: 12,
