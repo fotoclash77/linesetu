@@ -146,8 +146,7 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
       </View>
 
       <View style={styles.liveQueueStats}>
-        <View style={[styles.queueStatBox, { backgroundColor: "rgba(79,70,229,0.2)", borderColor: "rgba(99,102,241,0.4)", overflow: "visible" }]}>
-          <AnimatedRing size={54} color="#818CF8" pulses={2} />
+        <View style={[styles.queueStatBox, { backgroundColor: "rgba(79,70,229,0.2)", borderColor: "rgba(99,102,241,0.4)" }]}>
           <View style={styles.queueStatHeader}>
             <Feather name="hash" size={9} color="#818CF8" />
             <Text style={styles.queueStatLblTxt}>MY TOKEN</Text>
@@ -155,7 +154,8 @@ function LiveQueueCard({ token }: { token: TokenItem | undefined }) {
           <Text style={[styles.queueStatNum, { color: "#A5B4FC" }]}>{myToken}</Text>
           <Text style={styles.queueStatSub}>Your number</Text>
         </View>
-        <View style={[styles.queueStatBox, { backgroundColor: "rgba(6,182,212,0.12)", borderColor: "rgba(6,182,212,0.3)" }]}>
+        <View style={[styles.queueStatBox, { backgroundColor: "rgba(6,182,212,0.12)", borderColor: "rgba(6,182,212,0.3)", overflow: "visible" }]}>
+          <AnimatedRing size={54} color="#06B6D4" pulses={2} />
           <View style={styles.queueStatHeader}>
             <Feather name="radio" size={9} color="#06B6D4" />
             <Text style={styles.queueStatLblTxt}>CURRENT</Text>
