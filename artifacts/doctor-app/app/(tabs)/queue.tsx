@@ -381,7 +381,7 @@ function UpNextEmpty() {
         </View>
       </View>
       <View style={{paddingVertical:10,alignItems:'center'}}>
-        <Text style={{color:'rgba(255,255,255,0.2)',fontSize:11,fontWeight:'600'}}>No patients waiting in this shift</Text>
+        <Text style={{color:'rgba(255,255,255,0.2)',fontSize:11,fontWeight:'600'}}>No patients waiting</Text>
       </View>
     </View>
   );
@@ -596,7 +596,7 @@ export default function QueueScreen() {
                     <Text style={[S.ccLiveText,{color:'rgba(255,255,255,0.28)'}]}>NO PATIENT IN CONSULTATION</Text>
                   </View>
                   <Text style={S.noConsultingHint}>
-                    {nextTok ? 'Tap the UP NEXT card below to call them in' : 'No patients waiting in this shift'}
+                    {nextTok ? 'Tap the UP NEXT card below to call them in' : 'No patients waiting'}
                   </Text>
                 </View>
               )}
