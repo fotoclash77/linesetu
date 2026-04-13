@@ -55,10 +55,12 @@ interface DoctorItem {
   token: number;
   exp: string;
   patients: string;
+  isAvailable?: boolean;
 }
 
 function DoctorCard({ doc }: { doc: DoctorItem }) {
   const { accent } = doc;
+  const available = doc.isAvailable !== false;
   return (
     <Pressable
       testID={`doctor-card-${doc.id}`}
@@ -68,9 +70,14 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       <View style={{ position: "relative", marginBottom: 10 }}>
         <Image
           source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
-          style={[styles.docPhoto, { borderColor: accent + "55" }]}
+          style={[styles.docPhoto, { borderColor: accent + "55", opacity: available ? 1 : 0.6 }]}
           contentFit="cover"
         />
+        {!available && (
+          <View style={styles.unavailOverlay}>
+            <Text style={styles.unavailOverlayTxt}>Unavailable</Text>
+          </View>
+        )}
       </View>
 
       <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
@@ -100,16 +107,27 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
         ))}
       </View>
 
-      <View style={styles.liveRow}>
-        <View style={styles.liveDot} />
-        <Text style={styles.liveTxt}>Token #{doc.token} Live</Text>
-        <Text style={styles.waitSmall}>~{doc.wait}</Text>
-      </View>
+      {available ? (
+        <View style={styles.liveRow}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveTxt}>Token #{doc.token} Live</Text>
+          <Text style={styles.waitSmall}>~{doc.wait}</Text>
+        </View>
+      ) : (
+        <View style={styles.unavailRow}>
+          <Feather name="slash" size={9} color="#EF4444" />
+          <Text style={styles.unavailTxt}>Not accepting patients</Text>
+        </View>
+      )}
+
       <Pressable
-        style={[styles.bookBtn, { backgroundColor: accent, shadowColor: accent }]}
-        onPress={() => router.push(`/doctor/${doc.id}`)}
+        disabled={!available}
+        style={[styles.bookBtn, { backgroundColor: available ? accent : "rgba(255,255,255,0.08)", shadowColor: available ? accent : "transparent" }]}
+        onPress={() => available && router.push(`/doctor/${doc.id}`)}
       >
-        <Text style={styles.bookBtnTxt}>Get Token</Text>
+        <Text style={[styles.bookBtnTxt, !available && { color: "rgba(255,255,255,0.3)" }]}>
+          {available ? "Get Token" : "Unavailable"}
+        </Text>
       </Pressable>
     </Pressable>
   );
@@ -203,9 +221,7 @@ export default function HomeScreen() {
     enabled: !!patient?.id,
   });
 
-  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? [])
-    .filter((d: any) => d.isAvailable !== false)
-    .map((d: any, i: number) => ({
+  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
     id: d.id,
     name: d.name,
     specialty: d.specialization,
@@ -217,6 +233,7 @@ export default function HomeScreen() {
     exp: "10 yrs",
     patients: "1K+",
     photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
+    isAvailable: d.isAvailable !== false,
   }));
   const doctors: DoctorItem[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
 
@@ -434,6 +451,10 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 3 },
   liveTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80", flex: 1 },
   waitSmall: { fontSize: 9, color: "rgba(255,255,255,0.35)" },
+  unavailRow: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(239,68,68,0.08)", borderWidth: 1, borderColor: "rgba(239,68,68,0.2)", borderRadius: 10, padding: 7, marginBottom: 10 },
+  unavailTxt: { fontSize: 10, fontWeight: "700", color: "#F87171", flex: 1 },
+  unavailOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(10,14,26,0.72)", borderBottomLeftRadius: 14, borderBottomRightRadius: 14, paddingVertical: 4, alignItems: "center" },
+  unavailOverlayTxt: { fontSize: 9, fontWeight: "700", color: "#F87171", textTransform: "uppercase", letterSpacing: 0.8 },
   bookBtn: { borderRadius: 12, paddingVertical: 9, alignItems: "center", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6 },
   bookBtnTxt: { fontSize: 12, fontWeight: "700", color: "#FFF" },
 

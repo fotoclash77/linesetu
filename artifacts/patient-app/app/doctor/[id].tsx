@@ -95,7 +95,10 @@ export default function DoctorDetailScreen() {
     specialization: doctorData.specialization ?? SAMPLE_DOCTOR.specialization,
     clinicName: doctorData.clinicName ?? SAMPLE_DOCTOR.clinicName,
     location: SAMPLE_DOCTOR.location,
+    available: (doctorData as any).isAvailable !== false,
   } : SAMPLE_DOCTOR);
+
+  const isAvailable = doctor.available;
 
   const currentToken = queueData?.currentToken ?? 47;
   const queueCount = queueData?.totalBooked ?? 14;
@@ -129,9 +132,11 @@ export default function DoctorDetailScreen() {
           </View>
 
           {/* Available badge */}
-          <View style={[styles.availBadge, doctor.available && styles.availBadgeGreen]}>
-            <View style={styles.availDot} />
-            <Text style={styles.availTxt}>{doctor.available ? "Available" : "Unavailable"}</Text>
+          <View style={[styles.availBadge, isAvailable ? styles.availBadgeGreen : styles.availBadgeRed]}>
+            <View style={[styles.availDot, !isAvailable && { backgroundColor: "#EF4444", shadowColor: "#EF4444" }]} />
+            <Text style={[styles.availTxt, !isAvailable && { color: "#F87171" }]}>
+              {isAvailable ? "Available" : "Unavailable"}
+            </Text>
           </View>
         </View>
 
@@ -285,14 +290,21 @@ export default function DoctorDetailScreen() {
 
       {/* Bottom CTA */}
       <View style={[styles.bottomCta, { paddingBottom: bottomPad }]}>
-        <Pressable
-          style={styles.bookBtn}
-          onPress={() => router.push(`/booking/${id ?? "demo1"}`)}
-        >
-          <LinearGradient colors={["#4F46E5", "#6366F1", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-          <Feather name="calendar" size={18} color="#FFF" />
-          <Text style={styles.bookBtnTxt}>Book Your Token</Text>
-        </Pressable>
+        {isAvailable ? (
+          <Pressable
+            style={styles.bookBtn}
+            onPress={() => router.push(`/booking/${id ?? "demo1"}`)}
+          >
+            <LinearGradient colors={["#4F46E5", "#6366F1", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+            <Feather name="calendar" size={18} color="#FFF" />
+            <Text style={styles.bookBtnTxt}>Book Your Token</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.bookBtnDisabled}>
+            <Feather name="slash" size={18} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.bookBtnDisabledTxt}>E-Token Booking Unavailable</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -314,6 +326,7 @@ const styles = StyleSheet.create({
   verifiedTxt: { fontSize: 10, fontWeight: "700", color: "#A5B4FC" },
   availBadge: { position: "absolute", top: 10, left: 10, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12, backgroundColor: "rgba(10,14,26,0.75)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" },
   availBadgeGreen: { borderColor: "rgba(34,197,94,0.4)" },
+  availBadgeRed: { borderColor: "rgba(239,68,68,0.5)" },
   availDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 4 },
   availTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80" },
 
@@ -385,4 +398,6 @@ const styles = StyleSheet.create({
   bottomCta: { paddingHorizontal: 18, paddingTop: 12, backgroundColor: "rgba(10,14,26,0.95)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
   bookBtn: { height: 52, borderRadius: 16, overflow: "hidden", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "rgba(79,70,229,0.45)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.6, shadowRadius: 20, elevation: 8 },
   bookBtnTxt: { fontSize: 15, fontWeight: "700", color: "#FFF" },
+  bookBtnDisabled: { height: 52, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" },
+  bookBtnDisabledTxt: { fontSize: 15, fontWeight: "700", color: "rgba(255,255,255,0.28)" },
 });

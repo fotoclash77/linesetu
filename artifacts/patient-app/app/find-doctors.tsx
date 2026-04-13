@@ -48,6 +48,7 @@ interface DoctorItem {
   patients: string;
   photo: string;
   accent: string;
+  isAvailable?: boolean;
 }
 
 const SAMPLE_DOCTORS: DoctorItem[] = [
@@ -62,6 +63,7 @@ const SAMPLE_DOCTORS: DoctorItem[] = [
 ];
 
 function DoctorListCard({ doc }: { doc: DoctorItem }) {
+  const available = doc.isAvailable !== false;
   return (
     <Pressable
       style={({ pressed }) => [styles.listCard, { opacity: pressed ? 0.88 : 1 }]}
@@ -69,16 +71,23 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
     >
       <Image
         source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
-        style={[styles.listPhoto, { borderColor: doc.accent + "55" }]}
+        style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
         contentFit="cover"
       />
       <View style={styles.listInfo}>
         <View style={styles.listNameRow}>
           <Text style={styles.listName} numberOfLines={1}>{doc.name}</Text>
-          <View style={styles.verifiedBadge}>
-            <Feather name="check-circle" size={11} color="#06B6D4" />
-            <Text style={styles.verifiedTxt}>Verified</Text>
-          </View>
+          {available ? (
+            <View style={styles.verifiedBadge}>
+              <Feather name="check-circle" size={11} color="#06B6D4" />
+              <Text style={styles.verifiedTxt}>Verified</Text>
+            </View>
+          ) : (
+            <View style={styles.unavailBadge}>
+              <Feather name="slash" size={9} color="#EF4444" />
+              <Text style={styles.unavailBadgeTxt}>Unavailable</Text>
+            </View>
+          )}
         </View>
 
         <View style={[styles.specChip, { backgroundColor: doc.accent + "18" }]}>
@@ -104,15 +113,24 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       </View>
 
       <View style={styles.listRight}>
-        <View style={styles.liveWaitBadge}>
-          <View style={styles.greenPulse} />
-          <Text style={styles.liveWaitTxt}>{doc.wait}</Text>
-        </View>
+        {available ? (
+          <View style={styles.liveWaitBadge}>
+            <View style={styles.greenPulse} />
+            <Text style={styles.liveWaitTxt}>{doc.wait}</Text>
+          </View>
+        ) : (
+          <View style={styles.unavailWaitBadge}>
+            <Text style={styles.unavailWaitTxt}>Offline</Text>
+          </View>
+        )}
         <Pressable
-          style={[styles.getTokenBtn, { backgroundColor: doc.accent }]}
-          onPress={() => router.push(`/doctor/${doc.id}`)}
+          disabled={!available}
+          style={[styles.getTokenBtn, { backgroundColor: available ? doc.accent : "rgba(255,255,255,0.07)" }]}
+          onPress={() => available && router.push(`/doctor/${doc.id}`)}
         >
-          <Text style={styles.getTokenTxt}>Book</Text>
+          <Text style={[styles.getTokenTxt, !available && { color: "rgba(255,255,255,0.3)" }]}>
+            {available ? "Book" : "N/A"}
+          </Text>
         </Pressable>
       </View>
     </Pressable>
@@ -130,9 +148,7 @@ export default function FindDoctorsScreen() {
 
   const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
 
-  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? [])
-    .filter((d: any) => d.isAvailable !== false)
-    .map((d: any, i: number) => ({
+  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
     id: d.id,
     name: d.name,
     specialty: d.specialization,
@@ -144,6 +160,7 @@ export default function FindDoctorsScreen() {
     exp: "10 yrs",
     patients: "1K+",
     photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
+    isAvailable: d.isAvailable !== false,
   }));
 
   const allDoctors = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
@@ -319,6 +336,10 @@ const styles = StyleSheet.create({
   liveWaitBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.1)", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   greenPulse: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#22C55E" },
   liveWaitTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80" },
+  unavailWaitBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(239,68,68,0.1)", borderWidth: 1, borderColor: "rgba(239,68,68,0.2)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  unavailWaitTxt: { fontSize: 10, fontWeight: "700", color: "#F87171" },
+  unavailBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(239,68,68,0.12)", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  unavailBadgeTxt: { fontSize: 9, fontWeight: "700", color: "#F87171" },
   getTokenBtn: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
   getTokenTxt: { fontSize: 12, fontWeight: "700", color: "#FFF" },
 
