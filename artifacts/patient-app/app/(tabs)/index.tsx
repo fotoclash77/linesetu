@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
+const DEMO_PHOTO = require("../../assets/images/demo-doctor.jpg");
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { pct } from "@/constants/design";
@@ -66,7 +67,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
     >
       <View style={{ position: "relative", marginBottom: 10 }}>
         <Image
-          source={{ uri: doc.photo }}
+          source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
           style={[styles.docPhoto, { borderColor: accent + "55" }]}
           contentFit="cover"
         />

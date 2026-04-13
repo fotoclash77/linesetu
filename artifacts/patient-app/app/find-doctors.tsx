@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
+const DEMO_PHOTO = require("../assets/images/demo-doctor.jpg");
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
@@ -67,7 +68,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       onPress={() => router.push(`/doctor/${doc.id}`)}
     >
       <Image
-        source={{ uri: doc.photo }}
+        source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
         style={[styles.listPhoto, { borderColor: doc.accent + "55" }]}
         contentFit="cover"
       />
