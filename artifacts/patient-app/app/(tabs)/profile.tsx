@@ -78,7 +78,7 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     title: "App & Support",
     items: [
-      { icon: "help-circle",    label: "Help & FAQ",      sub: "How queues, tokens & payments work", color: "#22C55E", route: null, badge: null, liveIndicator: false, danger: false },
+      { icon: "help-circle",    label: "Help & FAQ",      sub: "How queues, tokens & payments work", color: "#22C55E", route: "/help-faq", badge: null, liveIndicator: false, danger: false },
       { icon: "message-circle", label: "Contact Support", sub: "Chat or raise a ticket",             color: "#06B6D4", route: null, badge: null, liveIndicator: false, danger: false },
     ],
   },
