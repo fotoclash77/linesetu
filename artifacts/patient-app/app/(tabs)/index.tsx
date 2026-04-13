@@ -119,6 +119,7 @@ interface TokenItem {
   id: string;
   doctorId: string;
   doctorName?: string;
+  specialty?: string;
   tokenNumber: number;
   status: "waiting" | "in_consult" | "done" | "cancelled" | "upcoming";
   bookedAt?: string;
@@ -220,14 +221,18 @@ export default function HomeScreen() {
   const VALID_STATUSES = new Set<TokenItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
   const activeTokens: TokenItem[] = (tokenData?.tokens ?? [])
     .filter((t) => t.status === "waiting" || t.status === "in_consult")
-    .map((t) => ({
-      id: t.id,
-      doctorId: t.doctorId,
-      tokenNumber: t.tokenNumber,
-      status: VALID_STATUSES.has(t.status as TokenItem["status"])
-        ? (t.status as TokenItem["status"])
-        : "waiting",
-    }));
+    .map((t) => {
+      const matchedDoc = (doctorsData?.doctors ?? []).find((d) => d.id === t.doctorId);
+      return {
+        id: t.id,
+        doctorId: t.doctorId,
+        tokenNumber: t.tokenNumber,
+        specialty: matchedDoc?.specialization,
+        status: VALID_STATUSES.has(t.status as TokenItem["status"])
+          ? (t.status as TokenItem["status"])
+          : "waiting",
+      };
+    });
   const activeToken = activeTokens[0];
 
   const firstName = patient?.name?.split(" ")[0] ?? "there";
