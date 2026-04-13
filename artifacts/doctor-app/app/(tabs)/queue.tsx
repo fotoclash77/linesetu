@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform, Animated, Modal,
+  ActivityIndicator, Platform, Animated, Modal, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -464,7 +464,7 @@ export default function QueueScreen() {
     queryFn: () => apiFetchQueue(docId, shift, schedDate),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
-  const { data: aData, isLoading, isRefetching } = useQuery({
+  const { data: aData, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['da', docId, schedDate],
     queryFn: () => apiFetchAll(docId, schedDate),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
