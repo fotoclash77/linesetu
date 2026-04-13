@@ -116,9 +116,22 @@ export default function AddWalkinScreen() {
   const nextTokenPreview = maxTokenInQueue + 1;
 
   const handleBook = async () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) { setBookingError('Patient name is required'); return; }
-    if (!doctor?.id) { setBookingError('Doctor not loaded'); return; }
+    const trimmedName    = name.trim();
+    const trimmedPhone   = phone.trim();
+    const trimmedAge     = age.trim();
+    const trimmedAddress = address.trim();
+    const trimmedArea    = area.trim();
+
+    if (!trimmedName)    { setBookingError('Patient name is required'); return; }
+    if (!trimmedAge || isNaN(Number(trimmedAge)) || Number(trimmedAge) < 1 || Number(trimmedAge) > 120) {
+      setBookingError('Valid age is required (1–120)'); return;
+    }
+    if (!trimmedPhone || trimmedPhone.length !== 10) {
+      setBookingError('10-digit phone number is required'); return;
+    }
+    if (!trimmedAddress) { setBookingError('Address is required'); return; }
+    if (!trimmedArea)    { setBookingError('Area / city is required'); return; }
+    if (!doctor?.id)     { setBookingError('Doctor not loaded'); return; }
 
     setBooking(true);
     setBookingError('');
@@ -134,10 +147,10 @@ export default function AddWalkinScreen() {
           type: tokenType.toLowerCase(),
           shift: currentShift(),
           source: 'walkin',
-          age: age.trim() || null,
+          age: trimmedAge,
           gender,
-          address: address.trim() || null,
-          area: area.trim() || null,
+          address: trimmedAddress,
+          area: trimmedArea,
         }),
       });
       if (!res.ok) {

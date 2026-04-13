@@ -1,20 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
-const isWeb = Platform.OS === 'web';
-const BASE  = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-async function fetchToken(id: string) {
-  const r = await fetch(`${BASE()}/api/tokens/${id}`);
-  if (!r.ok) throw new Error('not found');
-  return r.json();
+// ─── Real-time SSE hook for a single token ──────────────────────────────
+function useTokenLive(id: string | undefined) {
+  const [tok,       setTok]       = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    setIsLoading(true);
+    setError(null);
+
+    const url = `${BASE()}/api/tokens/stream/single/${id}`;
+
+    if (typeof EventSource !== 'undefined') {
+      const es = new EventSource(url);
+      es.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data === null) { setError('Token not found'); }
+          else               { setTok(data); }
+        } catch (_) {}
+        setIsLoading(false);
+      };
+      es.onerror = () => {
+        setError('Connection lost');
+        setIsLoading(false);
+      };
+      return () => es.close();
+    }
+
+    // Fallback: poll every 5s
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const r = await fetch(`${BASE()}/api/tokens/${id}`);
+        if (!r.ok) { setError('Token not found'); setIsLoading(false); return; }
+        const data = await r.json();
+        if (!cancelled) setTok(data);
+      } catch (_) { if (!cancelled) setError('Network error'); }
+      setIsLoading(false);
+    };
+    poll();
+    const iv = setInterval(poll, 5_000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [id]);
+
+  return { tok, isLoading, error };
 }
 
 // ─── Formatters ────────────────────────────────────────────────────────
@@ -103,12 +144,7 @@ function statusCfg(s: string) {
 // ─── MAIN ──────────────────────────────────────────────────────────────
 export default function PatientDetailScreen() {
   const { id } = useLocalSearchParams<{id:string}>();
-
-  const { data: tok, isLoading, error } = useQuery({
-    queryKey: ['token', id],
-    queryFn: () => fetchToken(id!),
-    enabled: !!id,
-  });
+  const { tok, isLoading, error } = useTokenLive(id);
 
   const isEmerg  = tok?.type === 'emergency';
   const isWalkin = tok?.source === 'walkin';
@@ -279,7 +315,7 @@ export default function PatientDetailScreen() {
 
 // ─── STYLES ────────────────────────────────────────────────────────────
 const S = StyleSheet.create({
-  safe: { flex:1, backgroundColor:BG, ...(isWeb&&{paddingTop:44}) },
+  safe: { flex:1, backgroundColor:BG },
   root: { flex:1, backgroundColor:BG },
   glow1:{ position:'absolute', top:-50, left:-50, width:180, height:180, borderRadius:90 },
   glow2:{ position:'absolute', top:280, right:-50, width:140, height:140, borderRadius:70, backgroundColor:'rgba(99,102,241,0.12)' },

@@ -286,6 +286,48 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
   }
 });
 
+// GET /api/tokens/stream/single/:tokenId — SSE real-time single token
+router.get("/tokens/stream/single/:tokenId", async (req, res) => {
+  const { tokenId } = req.params;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  let doctorId: string | null = null;
+  let emitterKey: string | null = null;
+
+  const sendToken = async () => {
+    try {
+      const snap = await getDoc(doc(db, Collections.TOKENS, tokenId));
+      if (!snap.exists()) { res.write(`data: null\n\n`); return; }
+      const data = { id: snap.id, ...snap.data() };
+      if (!doctorId) doctorId = (data as any).doctorId ?? null;
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (_) {}
+  };
+
+  await sendToken();
+
+  const handler = () => sendToken();
+
+  if (doctorId) {
+    emitterKey = `tokens:${doctorId}`;
+    tokenEmitter.on(emitterKey, handler);
+  }
+
+  const heartbeat = setInterval(() => {
+    try { res.write(": ping\n\n"); } catch (_) {}
+  }, 30_000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    if (emitterKey) tokenEmitter.off(emitterKey, handler);
+  });
+});
+
 // GET /api/tokens/stream/:doctorId — SSE real-time token stream
 router.get("/tokens/stream/:doctorId", async (req, res) => {
   const { doctorId } = req.params;
