@@ -107,9 +107,6 @@ export default function DashboardScreen() {
               <Text style={styles.bellIcon}>🔔</Text>
               <View style={styles.bellDot} />
             </View>
-            <View style={styles.avatarBtn}>
-              <Text style={styles.avatarIcon}>⚕</Text>
-            </View>
           </View>
         </View>
 
@@ -304,11 +301,6 @@ const styles = StyleSheet.create({
   },
   bellIcon: { fontSize: 17 },
   bellDot: { position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
-  avatarBtn: {
-    width: 38, height: 38, borderRadius: 13, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(45,212,191,0.3)',
-  },
-  avatarIcon: { fontSize: 18, color: '#FFF' },
   scroll: { flex: 1, paddingHorizontal: 16 },
   glassCard: {
     borderRadius: 22, padding: 14, marginBottom: 12,
