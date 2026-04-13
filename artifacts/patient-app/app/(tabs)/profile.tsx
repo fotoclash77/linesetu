@@ -25,7 +25,7 @@ import { db } from "@/lib/firebase";
 
 const isWeb = Platform.OS === "web";
 
-const BLOOD_GROUPS  = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const BLOOD_GROUPS  = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "I Don't Know"];
 const GENDERS       = ["Male", "Female", "Other"];
 const RELATIONS     = ["Wife", "Husband", "Mother", "Father", "Son", "Daughter", "Brother", "Sister", "Other"];
 const RELATION_COLORS: Record<string, string> = {
