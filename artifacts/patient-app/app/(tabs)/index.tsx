@@ -70,9 +70,6 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
           style={[styles.docPhoto, { borderColor: accent + "55" }]}
           contentFit="cover"
         />
-        <View style={styles.verifiedOverlay}>
-          <Feather name="check-circle" size={20} color="#4F46E5" />
-        </View>
       </View>
 
       <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
@@ -418,7 +415,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, overflow: "hidden",
   },
   docPhoto: { width: 160, height: 160, borderRadius: 16, borderWidth: 2.5 },
-  verifiedOverlay: { position: "absolute", top: -6, right: -6, width: 26, height: 26, borderRadius: 13, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
   docName: { fontSize: 13, fontWeight: "800", color: "#FFF", marginBottom: 3 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 5 },
   ratingTxt: { fontSize: 11, fontWeight: "700", color: "#F59E0B" },
