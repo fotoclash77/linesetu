@@ -372,12 +372,14 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
                 {isManualNext ? '⭐  Set as Next' : '▶  Send Next'}
               </Text>}
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
-          onPress={onSkip} disabled={busy}
-        >
-          <Text style={S.skipWaitTxt}>↷  Skip</Text>
-        </TouchableOpacity>
+        {tok.displayStatus !== 'skipped' && (
+          <TouchableOpacity
+            style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
+            onPress={onSkip} disabled={busy}
+          >
+            <Text style={S.skipWaitTxt}>↷  Skip</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[S.alertBtn, busy && { opacity: 0.5 }]}
           onPress={onSendAlert} disabled={busy}
