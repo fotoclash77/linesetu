@@ -140,9 +140,6 @@ export default function LoginScreen() {
         >
           {/* Brand */}
           <View style={styles.brandSection}>
-            <View style={styles.logoBox}>
-              <Feather name="activity" size={26} color="#818CF8" />
-            </View>
             <Text style={styles.brand}>LINESETU</Text>
             <Text style={styles.tagline}>Smart Queue · Zero Wait Anxiety</Text>
           </View>
@@ -311,7 +308,6 @@ const styles = StyleSheet.create({
   inner: { paddingHorizontal: 20 },
 
   brandSection: { alignItems: "center", marginBottom: 24 },
-  logoBox: { width: 64, height: 64, borderRadius: 19, backgroundColor: "rgba(99,102,241,0.15)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
   brand: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5, color: "#FFFFFF", marginBottom: 5 },
   tagline: { fontSize: 13, color: "rgba(255,255,255,0.38)", fontWeight: "500" },
 
