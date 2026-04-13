@@ -477,12 +477,12 @@ export default function QueueScreen() {
   const [busyId, setBusy]   = useState<string|null>(null);
   const docId = doctor?.id ?? '';
 
-  const { data: qData, isLoading, refetch, isRefetching } = useQuery({
+  const { data: qData, refetch: refetchQ, isRefetching: isRefetchingQ } = useQuery({
     queryKey: ['dq', docId, shift],
     queryFn: () => apiFetchQueue(docId, shift),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
   });
-  const { data: aData } = useQuery({
+  const { data: aData, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['da', docId],
     queryFn: () => apiFetchAll(docId),
     enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
