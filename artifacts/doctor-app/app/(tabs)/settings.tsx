@@ -403,11 +403,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.formCard}>
-              <View style={[styles.field, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-                <Text style={styles.fieldLabel}>ACTIVE</Text>
-                <Toggle on={clinic.active} onChange={() => updateClinic(activeClinic, { active: !clinic.active })} />
-              </View>
-              <Field label="Clinic Name" value={clinic.name} onChange={v => updateClinic(activeClinic, { name: v })} />
+              <Field label="Clinic Name" value={clinic.name} onChange={v => updateClinic(activeClinic, { name: v, active: !!v })} />
               <Field label="Address" value={clinic.address} onChange={v => updateClinic(activeClinic, { address: v })} />
               <Field label="City" value={clinic.city} onChange={v => updateClinic(activeClinic, { city: v })} />
               <Field label="Clinic Phone" value={clinic.phone} onChange={v => updateClinic(activeClinic, { phone: v })} keyboardType="phone-pad" />
