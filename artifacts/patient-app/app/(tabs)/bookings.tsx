@@ -339,7 +339,7 @@ export default function BookingsScreen() {
           <Text style={styles.headerSub}>{allBookings.length} appointments · family</Text>
         </View>
         <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
-          <Feather name="bell" size={20} color="#FFF" />
+          <Text style={styles.bellIcon}>🔔</Text>
           {unreadCount > 0 && <View style={styles.bellDot} />}
         </Pressable>
       </View>
@@ -403,6 +403,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: "900", color: "#FFF", letterSpacing: -0.5 },
   headerSub: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 },
   bellBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(79,70,229,0.18)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
+  bellIcon: { fontSize: 18 },
   bellDot: { position: "absolute", top: 7, right: 7, width: 9, height: 9, borderRadius: 4.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
 
   filterSection: { paddingHorizontal: 20, gap: 12, marginBottom: 8 },

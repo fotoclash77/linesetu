@@ -272,7 +272,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
-            <Feather name="bell" size={20} color="#FFF" />
+            <Text style={styles.bellIcon}>🔔</Text>
             {unreadCount > 0 && <View style={styles.notifDot} />}
           </Pressable>
         </View>
@@ -385,6 +385,7 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: "row", gap: 10, alignItems: "center" },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
   bellBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(79,70,229,0.18)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
+  bellIcon: { fontSize: 18 },
   notifDot: { position: "absolute", top: 7, right: 7, width: 9, height: 9, borderRadius: 4.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
   quickLinksRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingBottom: 20 },
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
