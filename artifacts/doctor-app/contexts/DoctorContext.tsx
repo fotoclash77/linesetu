@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 const STORAGE_KEY = "linesetu_doctor";
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
+export type DayStatus = 'holiday' | 'morning_only' | 'evening_only' | 'both';
+
 export interface DoctorUser {
   id: string;
   name: string;
@@ -16,6 +18,7 @@ export interface DoctorUser {
     morning: boolean; morningStart: string; morningEnd: string;
     evening: boolean; eveningStart: string; eveningEnd: string;
   };
+  calendar?: Record<string, DayStatus>;
 }
 
 interface DoctorCtx {
@@ -65,6 +68,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinicAddress: data.clinicAddress || "",
       profilePhoto: data.profilePhoto || "",
       shifts: data.shifts,
+      calendar: data.calendar,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);

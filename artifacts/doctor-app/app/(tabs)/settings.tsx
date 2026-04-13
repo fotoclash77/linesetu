@@ -117,6 +117,11 @@ export default function SettingsScreen() {
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
+  // Calendar overrides: { [isoDate]: 'holiday'|'morning_only'|'evening_only'|'both'|null }
+  const [calendarOverrides, setCalendarOverrides] = useState<Record<string, string | null>>(() => (doctor as any)?.calendar ?? {});
+  const [calSaving, setCalSaving] = useState(false);
+  const [calSaved, setCalSaved] = useState(false);
+
   // Re-seed when doctor loads (covers cold start)
   useEffect(() => {
     if (!doctor?.shifts) return;
@@ -126,6 +131,7 @@ export default function SettingsScreen() {
     setMorningEnd(doctor.shifts.morningEnd ?? '13:00');
     setEveningStart(doctor.shifts.eveningStart ?? '17:00');
     setEveningEnd(doctor.shifts.eveningEnd ?? '20:00');
+    if ((doctor as any).calendar) setCalendarOverrides((doctor as any).calendar);
   }, [doctor?.id]);
 
   // Fee state
@@ -320,6 +326,168 @@ export default function SettingsScreen() {
                 ? <ActivityIndicator color="#FFF" size="small" />
                 : <Text style={styles.saveBtnText}>{schedSaved ? '✓ Saved!' : '✓ Save Schedule'}</Text>}
             </TouchableOpacity>
+
+            {/* ── 30-DAY AVAILABILITY CALENDAR ────────────── */}
+            {(() => {
+              const today = new Date(); today.setHours(0,0,0,0);
+              // Build array of 30 dates
+              const dates30: Date[] = [];
+              for (let i = 0; i < 30; i++) {
+                const d = new Date(today); d.setDate(today.getDate() + i);
+                dates30.push(d);
+              }
+              // Pad front to align with start day-of-week of today
+              const startDow = today.getDay(); // 0=Sun
+              const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
+              while (cells.length % 7 !== 0) cells.push(null);
+              const rows: (Date | null)[][] = [];
+              for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+
+              const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+              function isoOf(d: Date) {
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              }
+
+              const STATUSES = ['holiday', 'morning_only', 'evening_only', 'both'] as const;
+              const cycleFor = (cur: string | null | undefined): string | null => {
+                if (!cur) return 'holiday';
+                const i = STATUSES.indexOf(cur as any);
+                if (i === -1 || i === STATUSES.length - 1) return null;
+                return STATUSES[i + 1];
+              };
+
+              const STATUS_BG: Record<string, string> = {
+                holiday:     'rgba(239,68,68,0.22)',
+                morning_only:'rgba(245,158,11,0.22)',
+                evening_only:'rgba(139,92,246,0.22)',
+                both:        'rgba(13,148,136,0.3)',
+              };
+              const STATUS_BORDER: Record<string, string> = {
+                holiday:     'rgba(239,68,68,0.55)',
+                morning_only:'rgba(245,158,11,0.55)',
+                evening_only:'rgba(139,92,246,0.55)',
+                both:        'rgba(45,212,191,0.55)',
+              };
+              const STATUS_LABEL: Record<string, string> = {
+                holiday:     '✕',
+                morning_only:'☀',
+                evening_only:'☾',
+                both:        '✓',
+              };
+
+              // Group consecutive month labels for header
+              let prevMonth = -1;
+              const monthLabels: { label: string; rowIdx: number }[] = [];
+              rows.forEach((row, ri) => {
+                const firstDate = row.find(c => c !== null);
+                if (firstDate && firstDate.getMonth() !== prevMonth) {
+                  prevMonth = firstDate.getMonth();
+                  monthLabels.push({
+                    label: firstDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+                    rowIdx: ri,
+                  });
+                }
+              });
+
+              return (
+                <View style={{ marginTop: 24 }}>
+                  <View style={styles.calHeader}>
+                    <Text style={styles.calTitle}>📅  30-DAY AVAILABILITY</Text>
+                  </View>
+                  <Text style={styles.calSub}>Tap a date to mark it — holiday, morning only, evening only, or both open</Text>
+
+                  {/* DOW row */}
+                  <View style={styles.calDowRow}>
+                    {DOW.map(d => <Text key={d} style={styles.calDow}>{d}</Text>)}
+                  </View>
+
+                  {rows.map((row, ri) => {
+                    const ml = monthLabels.find(m => m.rowIdx === ri);
+                    return (
+                      <View key={ri}>
+                        {ml && <Text style={styles.calMonthLabel}>{ml.label}</Text>}
+                        <View style={styles.calRow}>
+                          {row.map((cell, ci) => {
+                            if (!cell) return <View key={ci} style={styles.calCell} />;
+                            const iso = isoOf(cell);
+                            const status = calendarOverrides[iso] ?? null;
+                            const isPast = cell < today;
+                            const isToday = cell.getTime() === today.getTime();
+                            return (
+                              <TouchableOpacity
+                                key={ci}
+                                disabled={isPast}
+                                onPress={() => {
+                                  const next = cycleFor(status);
+                                  setCalendarOverrides(prev => {
+                                    const updated = { ...prev };
+                                    if (next === null) delete updated[iso];
+                                    else updated[iso] = next;
+                                    return updated;
+                                  });
+                                }}
+                                style={[
+                                  styles.calCell,
+                                  status && { backgroundColor: STATUS_BG[status], borderColor: STATUS_BORDER[status], borderWidth: 1.5 },
+                                  isToday && !status && { borderColor: 'rgba(45,212,191,0.7)', borderWidth: 1.5 },
+                                  isPast && { opacity: 0.25 },
+                                ]}
+                              >
+                                <Text style={[
+                                  styles.calCellDate,
+                                  isToday && { color: '#2DD4BF', fontWeight: '900' },
+                                  status === 'holiday' && { color: '#F87171', textDecorationLine: 'line-through' },
+                                ]}>{cell.getDate()}</Text>
+                                {status && (
+                                  <Text style={{ fontSize: 9, lineHeight: 10, color: status === 'holiday' ? '#F87171' : status === 'morning_only' ? '#FCD34D' : status === 'evening_only' ? '#A5B4FC' : '#2DD4BF' }}>
+                                    {STATUS_LABEL[status]}
+                                  </Text>
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {/* Legend */}
+                  <View style={styles.calLegend}>
+                    {[
+                      { key: 'holiday',     color: '#F87171',  label: '✕ Holiday' },
+                      { key: 'morning_only',color: '#FCD34D',  label: '☀ Morning' },
+                      { key: 'evening_only',color: '#A5B4FC',  label: '☾ Evening' },
+                      { key: 'both',        color: '#2DD4BF',  label: '✓ Both' },
+                    ].map(item => (
+                      <View key={item.key} style={styles.calLegendItem}>
+                        <View style={[styles.calLegendDot, { backgroundColor: item.color }]} />
+                        <Text style={styles.calLegendTxt}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.calHint}>No marking = default shift times apply</Text>
+
+                  <TouchableOpacity
+                    style={[styles.saveBtn, calSaving && { opacity: 0.7 }]}
+                    disabled={calSaving}
+                    onPress={async () => {
+                      setCalSaving(true); setCalSaved(false);
+                      try {
+                        await updateDoctor({ calendar: calendarOverrides as any });
+                        setCalSaved(true);
+                        setTimeout(() => setCalSaved(false), 1800);
+                      } catch {}
+                      setCalSaving(false);
+                    }}
+                  >
+                    {calSaving
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Calendar Saved!' : '💾 Save Availability Calendar'}</Text>}
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -668,4 +836,20 @@ const styles = StyleSheet.create({
   logoutConfirmBtnText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
   logoutCancelBtn: { height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   logoutCancelBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+
+  // 30-day calendar
+  calHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  calTitle:        { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 },
+  calSub:          { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 12, lineHeight: 15 },
+  calDowRow:       { flexDirection: 'row', marginBottom: 4 },
+  calDow:          { flex: 1, textAlign: 'center', fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  calMonthLabel:   { fontSize: 10, fontWeight: '800', color: TEAL_LT, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 8, marginBottom: 2 },
+  calRow:          { flexDirection: 'row', marginBottom: 4 },
+  calCell:         { flex: 1, height: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', margin: 1.5 },
+  calCellDate:     { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', lineHeight: 16 },
+  calLegend:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10, marginBottom: 4 },
+  calLegendItem:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  calLegendDot:    { width: 8, height: 8, borderRadius: 4 },
+  calLegendTxt:    { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.45)' },
+  calHint:         { fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: '500', marginBottom: 14, fontStyle: 'italic' },
 });

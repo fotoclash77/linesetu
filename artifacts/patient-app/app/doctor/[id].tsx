@@ -218,6 +218,115 @@ export default function DoctorDetailScreen() {
           </View>
         </View>
 
+        {/* 30-Day Availability Calendar */}
+        {(() => {
+          const cal: Record<string, string> = (doctorData as any)?.calendar ?? {};
+          const shifts: any = (doctorData as any)?.shifts ?? {};
+          const morningDefault = shifts.morning !== false;
+          const eveningDefault = shifts.evening !== false;
+
+          const today = new Date(); today.setHours(0,0,0,0);
+          const dates30: Date[] = [];
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(today); d.setDate(today.getDate() + i);
+            dates30.push(d);
+          }
+          const startDow = today.getDay();
+          const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
+          while (cells.length % 7 !== 0) cells.push(null);
+          const rows: (Date | null)[][] = [];
+          for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+          const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+          function isoOf(d: Date) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          }
+          type DayInfo = { bg: string; border: string; label: string; textColor: string };
+          function infoFor(status: string | null): DayInfo {
+            if (status === 'holiday')      return { bg: 'rgba(239,68,68,0.18)',    border: 'rgba(239,68,68,0.45)',    label: '✕',  textColor: '#F87171' };
+            if (status === 'morning_only') return { bg: 'rgba(245,158,11,0.18)',   border: 'rgba(245,158,11,0.45)',   label: '☀', textColor: '#FCD34D' };
+            if (status === 'evening_only') return { bg: 'rgba(139,92,246,0.18)',   border: 'rgba(139,92,246,0.45)',   label: '☾', textColor: '#A5B4FC' };
+            if (status === 'both')         return { bg: 'rgba(13,148,136,0.22)',   border: 'rgba(45,212,191,0.45)',   label: '✓', textColor: '#2DD4BF' };
+            // Default
+            if (morningDefault && eveningDefault) return { bg: 'rgba(13,148,136,0.08)', border: 'rgba(45,212,191,0.15)', label: '', textColor: 'rgba(255,255,255,0.6)' };
+            if (morningDefault) return { bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)', label: '', textColor: 'rgba(255,255,255,0.5)' };
+            if (eveningDefault) return { bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.2)', label: '', textColor: 'rgba(255,255,255,0.5)' };
+            return { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.07)', label: '', textColor: 'rgba(255,255,255,0.3)' };
+          }
+
+          let prevMonth = -1;
+          const monthLabels: {label: string; rowIdx: number}[] = [];
+          rows.forEach((row, ri) => {
+            const fd = row.find(c => c !== null);
+            if (fd && fd.getMonth() !== prevMonth) {
+              prevMonth = fd.getMonth();
+              monthLabels.push({ label: fd.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }), rowIdx: ri });
+            }
+          });
+
+          return (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Feather name="calendar" size={13} color="#2DD4BF" />
+                <Text style={styles.sectionTitle}>30-Day Availability</Text>
+              </View>
+              <Text style={pStyles.calSub}>Tap any date below to book a token for that day</Text>
+              <View style={pStyles.calDowRow}>
+                {DOW.map(d => <Text key={d} style={pStyles.calDow}>{d}</Text>)}
+              </View>
+              {rows.map((row, ri) => {
+                const ml = monthLabels.find(m => m.rowIdx === ri);
+                return (
+                  <View key={ri}>
+                    {ml && <Text style={pStyles.calMonthLabel}>{ml.label}</Text>}
+                    <View style={pStyles.calRow}>
+                      {row.map((cell, ci) => {
+                        if (!cell) return <View key={ci} style={pStyles.calCell} />;
+                        const iso = isoOf(cell);
+                        const status = cal[iso] ?? null;
+                        const info = infoFor(status);
+                        const isPast = cell < today;
+                        const isToday = cell.getTime() === today.getTime();
+                        const isHoliday = status === 'holiday';
+                        return (
+                          <Pressable
+                            key={ci}
+                            disabled={isPast || isHoliday}
+                            onPress={() => router.push(`/booking/${id ?? 'demo1'}?date=${iso}` as any)}
+                            style={[
+                              pStyles.calCell,
+                              { backgroundColor: info.bg, borderColor: info.border },
+                              isToday && { borderWidth: 2, borderColor: '#2DD4BF' },
+                              isPast && { opacity: 0.25 },
+                            ]}
+                          >
+                            <Text style={[pStyles.calDate, { color: info.textColor }, isToday && { color: '#2DD4BF', fontWeight: '900' }, isHoliday && { textDecorationLine: 'line-through' }]}>
+                              {cell.getDate()}
+                            </Text>
+                            {info.label ? <Text style={{ fontSize: 8, color: info.textColor, lineHeight: 10 }}>{info.label}</Text> : null}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
+              <View style={pStyles.calLegend}>
+                {[
+                  { color: '#2DD4BF', label: 'Available' },
+                  { color: '#F87171', label: 'Holiday' },
+                  { color: '#FCD34D', label: 'Morning' },
+                  { color: '#A5B4FC', label: 'Evening' },
+                ].map(item => (
+                  <View key={item.label} style={pStyles.calLegendItem}>
+                    <View style={[pStyles.calLegendDot, { backgroundColor: item.color }]} />
+                    <Text style={pStyles.calLegendTxt}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Weekly Schedule */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
@@ -400,4 +509,18 @@ const styles = StyleSheet.create({
   bookBtnTxt: { fontSize: 15, fontWeight: "700", color: "#FFF" },
   bookBtnDisabled: { height: 52, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" },
   bookBtnDisabledTxt: { fontSize: 15, fontWeight: "700", color: "rgba(255,255,255,0.28)" },
+});
+
+const pStyles = StyleSheet.create({
+  calSub:         { fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: "500", marginBottom: 10, lineHeight: 15 },
+  calDowRow:      { flexDirection: "row", marginBottom: 4 },
+  calDow:         { flex: 1, textAlign: "center", fontSize: 9, fontWeight: "800", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" },
+  calMonthLabel:  { fontSize: 10, fontWeight: "800", color: "#2DD4BF", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 6, marginBottom: 2 },
+  calRow:         { flexDirection: "row", marginBottom: 3 },
+  calCell:        { flex: 1, height: 42, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, margin: 1.5 },
+  calDate:        { fontSize: 13, fontWeight: "700", lineHeight: 16 },
+  calLegend:      { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 },
+  calLegendItem:  { flexDirection: "row", alignItems: "center", gap: 5 },
+  calLegendDot:   { width: 8, height: 8, borderRadius: 4 },
+  calLegendTxt:   { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.4)" },
 });
