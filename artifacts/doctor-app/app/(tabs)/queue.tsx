@@ -1,12 +1,15 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  FlatList, ActivityIndicator, RefreshControl,
+  FlatList, ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
+
+const isWeb = Platform.OS === 'web';
 
 // ─── API helpers ──────────────────────────────────────────────
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -376,7 +379,7 @@ export default function QueueScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safe:      { flex: 1, backgroundColor: BG },
+  safe:      { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
   container: { flex: 1, backgroundColor: BG },
   glowTeal:  { position: 'absolute', top: -80, left: -80, width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(45,212,191,0.12)' },
   glowRed:   { position: 'absolute', bottom: 40, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(248,113,113,0.08)' },

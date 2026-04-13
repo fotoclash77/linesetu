@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput,
-  ViewStyle,
+  ViewStyle, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+
+const isWeb = Platform.OS === 'web';
 
 type ShiftType = 'Morning' | 'Evening' | 'Both' | 'Off';
 type ClinicKey = 'sharma' | 'city';
@@ -407,7 +409,7 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
   container: { flex: 1, backgroundColor: BG },
   glowTop: { position: 'absolute', top: -60, left: -60, width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(13,148,136,0.2)', opacity: 0.5 },
   glowRight: { position: 'absolute', top: 350, right: -80, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(99,102,241,0.12)', opacity: 0.45 },

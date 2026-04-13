@@ -275,7 +275,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
   container: { flex: 1, backgroundColor: BG },
   glowTop: {
     position: 'absolute', top: -80, left: -60, width: 280, height: 280, borderRadius: 140,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 18, paddingVertical: 10,
+    paddingHorizontal: 18, paddingTop: 18, paddingBottom: 10,
   },
   headerDate: { fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600' },
   headerTitle: { fontSize: 19, fontWeight: '900', color: '#FFF', letterSpacing: -0.4 },

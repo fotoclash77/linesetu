@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+const isWeb = Platform.OS === 'web';
 
 type Period = 'Today' | 'Week' | 'Month' | 'LastMonth' | 'AllTime';
 
@@ -318,7 +321,7 @@ export default function EarningsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
   container: { flex: 1, backgroundColor: BG },
   glowTop: { position: 'absolute', top: -80, left: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(13,148,136,0.2)', opacity: 0.5 },
   glowRight: { position: 'absolute', top: 360, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(99,102,241,0.12)', opacity: 0.5 },

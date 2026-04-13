@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+
 import { useDoctor } from '../../contexts/DoctorContext';
+
+const isWeb = Platform.OS === 'web';
 
 type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp';
 
@@ -527,7 +530,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG },
+  safe: { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
   container: { flex: 1, backgroundColor: BG },
   glowTop: { position: 'absolute', top: -60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(13,148,136,0.18)', opacity: 0.5 },
   glowBottom: { position: 'absolute', bottom: 100, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(99,102,241,0.1)', opacity: 0.5 },
