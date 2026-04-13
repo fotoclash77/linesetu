@@ -467,7 +467,7 @@ export default function ProfileScreen() {
                       if (activeToken?.id) {
                         router.push(`/queue/${activeToken.id}` as Href);
                       } else {
-                        Alert.alert("No Active Token", "You don't have any active token in the queue right now. Book a token first.");
+                        router.push("/(tabs)/bookings" as Href);
                       }
                       return;
                     }
