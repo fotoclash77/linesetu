@@ -170,6 +170,7 @@ export default function ProfileScreen() {
   const phone    = patient?.phone     ?? "+91 98765 43210";
   const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
   const [avatarError, setAvatarError] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
 
 
   // ── Family members ──────────────────────────────────────
@@ -452,14 +453,7 @@ export default function ProfileScreen() {
                       return;
                     }
                     if (item.label === "Sign Out") {
-                      Alert.alert(
-                        "Sign Out",
-                        "Are you sure you want to sign out of your account?",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          { text: "Sign Out", style: "destructive", onPress: () => logout() },
-                        ]
-                      );
+                      setShowSignOut(true);
                       return;
                     }
                     if (item.label === "Live Queue") {
@@ -672,6 +666,31 @@ export default function ProfileScreen() {
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Sign Out Confirmation Modal ─────────────────────── */}
+      <Modal visible={showSignOut} transparent animationType="fade" onRequestClose={() => setShowSignOut(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "center", alignItems: "center", padding: 32 }} onPress={() => setShowSignOut(false)}>
+          <Pressable style={{ width: "100%", backgroundColor: "#111827", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }} onPress={() => {}}>
+            <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: "rgba(239,68,68,0.15)", borderWidth: 1, borderColor: "rgba(239,68,68,0.35)", alignItems: "center", justifyContent: "center", marginBottom: 16, alignSelf: "center" }}>
+              <Feather name="log-out" size={22} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: "#FFF", textAlign: "center", marginBottom: 8 }}>Sign Out?</Text>
+            <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", textAlign: "center", lineHeight: 20, marginBottom: 24 }}>You'll need to sign in again to access your account.</Text>
+            <Pressable
+              style={{ height: 48, borderRadius: 14, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center", marginBottom: 10 }}
+              onPress={() => { setShowSignOut(false); logout(); }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFF" }}>Yes, Sign Out</Text>
+            </Pressable>
+            <Pressable
+              style={{ height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}
+              onPress={() => setShowSignOut(false)}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.6)" }}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
