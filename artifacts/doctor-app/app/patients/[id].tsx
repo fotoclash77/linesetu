@@ -256,18 +256,6 @@ export default function PatientDetailScreen() {
               )}
             </Section>
 
-            {/* ── PAYMENT DETAILS ── */}
-            <Section title="Payment & Fees" icon="💳" accent="#4ADE80">
-              <Row icon="💰" label="Patient Paid"   value={`₹${tok.patientPaid ?? 0}`}   valueColor="#4ADE80"/>
-              <Row icon="👨‍⚕️" label="Doctor Earns"  value={`₹${tok.doctorEarns ?? 0}`}   valueColor={TEAL_LT}/>
-              <Row icon="🏦" label="Platform Fee"   value={`₹${tok.platformFee ?? 0}`}    valueColor="rgba(255,255,255,0.4)"/>
-              <Row icon="📋" label="Payment Status" value={capitalize(tok.paymentStatus ?? 'pending')}
-                   valueColor={tok.paymentStatus === 'paid' ? '#4ADE80' : '#FCD34D'}/>
-              {tok.paymentId && (
-                <Row icon="🔑" label="Payment ID" value={tok.paymentId}/>
-              )}
-            </Section>
-
             {/* ── NOTES ── */}
             {tok.notes && (
               <Section title="Notes" icon="📝" accent="#FCD34D">
