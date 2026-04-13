@@ -37,7 +37,13 @@ async function apiFetchAll(doctorId: string) {
   return r.json();
 }
 async function apiCall(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/call`,   { method: 'PATCH' }); }
-async function apiDone(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/done`,   { method: 'PATCH' }); }
+async function apiDone(id: string, callNextId?: string) {
+  await fetch(`${BASE()}/api/tokens/${id}/done`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callNextId: callNextId ?? null }),
+  });
+}
 async function apiSkip(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/skip`,   { method: 'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method: 'PATCH' }); }
 
@@ -443,15 +449,13 @@ export default function QueueScreen() {
     setBusy(id); try { await apiCall(id); inv(); } catch {} setBusy(null);
   };
   const doDone = async (id: string) => {
-    const nextId = upNextRef.current; // read synchronously — always matches displayed Up Next
+    const nextId = upNextRef.current; // locked at click-time, exact match for Up Next card
     setBusy(id);
     try {
-      await apiDone(id); inv();
-      if (nextId) {
-        await new Promise(r => setTimeout(r, 500));
-        await apiCall(nextId); inv();
-        setManualNext(null);
-      }
+      // Single atomic API call: marks done + calls next in ONE Firebase batch → ONE SSE event
+      await apiDone(id, nextId);
+      if (nextId) setManualNext(null);
+      inv(); // single invalidation after everything is committed
     } catch {}
     setBusy(null);
   };

@@ -211,8 +211,11 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
 });
 
 // PATCH /api/tokens/:tokenId/done — complete + update daily earnings
+// Optional body: { callNextId: string } — atomically calls next patient in same batch
 router.patch("/tokens/:tokenId/done", async (req, res) => {
   try {
+    const { callNextId } = req.body || {};
+
     const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
@@ -220,10 +223,22 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     const token       = tokenSnap.data();
     const queueRef    = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
+
+    // Fetch next token if callNextId provided
+    let nextToken: any = null;
+    let nextRef: any  = null;
+    if (callNextId && callNextId !== req.params.tokenId) {
+      nextRef = doc(db, Collections.TOKENS, callNextId);
+      const nextSnap = await getDoc(nextRef);
+      if (nextSnap.exists()) nextToken = nextSnap.data();
+    }
+
     const earningsSnap = await getDoc(earningsRef);
     const isE = token.type === "emergency";
 
     const batch = writeBatch(db);
+
+    // ── Mark current token done ──────────────────────────────────
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
 
@@ -245,10 +260,25 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       });
     }
 
+    // ── Atomically call next patient ─────────────────────────────
+    if (nextToken && nextRef) {
+      const nextQueueRef = doc(db, Collections.QUEUES, queueDocId(nextToken.doctorId, nextToken.date, nextToken.shift));
+      batch.update(nextRef, { status: "in_consult", calledAt: Timestamp.now() });
+      batch.update(nextQueueRef, {
+        currentToken:    nextToken.tokenNumber,
+        waitingTokenIds: arrayRemove(callNextId),
+        updatedAt:       Timestamp.now(),
+      });
+    }
+
+    // Single commit → single SSE event → no flash, no race condition
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
 
-    res.json({ id: req.params.tokenId, status: "done" });
+    res.json({
+      id: req.params.tokenId, status: "done",
+      calledNext: nextToken ? { id: callNextId, status: "in_consult" } : null,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
