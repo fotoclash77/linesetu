@@ -125,6 +125,45 @@ function PulseDot({ color, size = 7 }: { color: string; size?: number }) {
   return <Animated.View style={{ width: size, height: size, borderRadius: size/2, backgroundColor: color, transform: [{ scale: s }] }} />;
 }
 
+// ─── Animated pulse rings (sonar / radar effect) ──────────────────
+function PulseRings({ color, borderRadius = 16 }: { color: string; borderRadius?: number }) {
+  const a1 = useRef(new Animated.Value(0)).current;
+  const a2 = useRef(new Animated.Value(0)).current;
+  const a3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const wave = (val: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(val, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.delay(delay),
+          Animated.timing(val, { toValue: 1, duration: 1600, useNativeDriver: true }),
+        ])
+      );
+    const a = Animated.parallel([wave(a1, 0), wave(a2, 533), wave(a3, 1066)]);
+    a.start();
+    return () => a.stop();
+  }, []);
+
+  const ring = (val: Animated.Value) => ({
+    position: 'absolute' as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius,
+    borderWidth: 1.5,
+    borderColor: color,
+    transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 1.85] }) }],
+    opacity: val.interpolate({ inputRange: [0, 0.15, 0.7, 1], outputRange: [0, 0.75, 0.3, 0] }),
+  });
+
+  return (
+    <>
+      <Animated.View style={ring(a1)} />
+      <Animated.View style={ring(a2)} />
+      <Animated.View style={ring(a3)} />
+    </>
+  );
+}
+
 // ─── Token Chip ──────────────────────────────────────────────────
 function TokenChip({ token, type, large = false }: { token: number; type: string; large?: boolean }) {
   const isE = type === 'emergency';
@@ -211,6 +250,7 @@ function StatsBar({ all }: { all: Token[] }) {
 function InConsultationCard({ tok, onSkip, onDone, busy }: {
   tok: Token; onSkip: () => void; onDone: () => void; busy: boolean;
 }) {
+  const ringColor = tok.type === 'emergency' ? 'rgba(239,68,68,0.8)' : 'rgba(45,212,191,0.8)';
   return (
     <View style={S.consCard}>
       <View style={S.consHeader}>
@@ -218,7 +258,11 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
         <Text style={S.consLabel}>IN CONSULTATION</Text>
       </View>
       <View style={S.consRow}>
-        <TokenChip token={tok.tokenNumber} type={tok.type} large />
+        {/* Token chip wrapped in animated pulse rings */}
+        <View style={S.ringWrap}>
+          <PulseRings color={ringColor} borderRadius={14} />
+          <TokenChip token={tok.tokenNumber} type={tok.type} large />
+        </View>
         <PatientInfo tok={tok} large />
       </View>
       <View style={S.consBtnRow}>
@@ -599,6 +643,7 @@ const S = StyleSheet.create({
   consHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   consLabel:  { fontSize: 11, fontWeight: '800', color: TEAL_LT, letterSpacing: 1.5, textTransform: 'uppercase' },
   consRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  ringWrap:   { position: 'relative', padding: 10, alignSelf: 'flex-start' },
   consBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   skipBtn:    { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' },
   skipBtnTxt: { fontSize: 13, fontWeight: '800', color: '#FCA5A5' },
