@@ -33,7 +33,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true,
-      "baseUrl": "/patient-app/"
+      "baseUrl": "/patient-app"
     }
   }
 }
