@@ -131,15 +131,15 @@ function InConsultationCard({ p, onSkip, onDone }: { p: Patient; onSkip: () => v
 
 function UpNextCard({ p }: { p: Patient }) {
   return (
-    <div style={{ ...glassGlow(AMBER_LT), padding: "12px 16px", margin: "0 16px 4px" }}>
+    <div style={{ ...glassGlow(TEAL_LT), padding: "12px 16px", margin: "0 16px 4px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <div style={{ width: 7, height: 7, borderRadius: "50%", background: AMBER_LT, boxShadow: `0 0 6px ${AMBER}` }} />
-        <span style={{ color: AMBER_LT, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Up Next</span>
+        <div style={{ width: 7, height: 7, borderRadius: "50%", background: TEAL_LT, boxShadow: `0 0 6px ${TEAL}` }} />
+        <span style={{ color: TEAL_LT, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Up Next</span>
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <TokenChip token={p.token} type={p.type} size="sm" />
         <PatientInfo p={p} />
-        <span style={{ color: AMBER_LT, fontSize: 22, fontWeight: 300 }}>›</span>
+        <span style={{ color: TEAL_LT, fontSize: 22, fontWeight: 300 }}>›</span>
       </div>
     </div>
   );
@@ -298,13 +298,11 @@ export function QueueRedesign() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — sticky, always visible */}
       <StatsBar patients={patients} />
 
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 8px", scrollbarWidth: "none" }}>
-
-        {/* In Consultation */}
+      {/* ── STICKY TOP: In Consultation ────────────────────────── */}
+      <div style={{ flexShrink: 0, paddingTop: 8, background: BG, zIndex: 10 }}>
         {consulting
           ? <InConsultationCard p={consulting} onSkip={handleSkip} onDone={handleDone} />
           : (
@@ -314,29 +312,32 @@ export function QueueRedesign() {
             </div>
           )
         }
+      </div>
 
-        {/* Up Next */}
+      {/* ── STICKY: Up Next ────────────────────────────────────── */}
+      <div style={{ flexShrink: 0, paddingTop: 8, background: BG, zIndex: 10 }}>
         {upNext
           ? <UpNextCard p={upNext} />
           : (
             <div style={{ ...glass, margin: "0 16px", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(245,158,11,0.3)" }} />
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(45,212,191,0.3)" }} />
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>No patients waiting</span>
             </div>
           )
         }
+      </div>
 
-        {/* Divider */}
-        <div style={{ margin: "4px 16px", borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+      {/* ── SCROLLABLE: Waiting List ────────────────────────────── */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: 8, scrollbarWidth: "none" }}>
 
-        {/* Waiting section header */}
-        <div style={{ padding: "0 16px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Divider + header */}
+        <div style={{ margin: "0 16px 6px", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>Waiting List</span>
           <span style={{ color: TEAL_LT, fontSize: 11, fontWeight: 700 }}>{waiting.length} patients</span>
         </div>
 
         {/* Toggle Tabs */}
-        <div style={{ display: "flex", gap: 6, padding: "0 16px 4px", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 6, padding: "0 16px 8px", flexShrink: 0 }}>
           {TABS.map(t => {
             const active = tab === t.key;
             return (
@@ -351,7 +352,6 @@ export function QueueRedesign() {
                   color: active ? t.color : "rgba(255,255,255,0.35)",
                   fontSize: 10, fontWeight: 700, cursor: "pointer",
                   position: "relative",
-                  transition: "all 0.15s",
                 }}
               >
                 <div>{t.label}</div>
@@ -366,7 +366,7 @@ export function QueueRedesign() {
         </div>
 
         {/* Waiting Cards */}
-        <div style={{ padding: "0 16px", flex: 1 }}>
+        <div style={{ padding: "0 16px 8px" }}>
           {tabPatients.length === 0 ? (
             <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.2)", fontSize: 13 }}>
               No patients in this category
