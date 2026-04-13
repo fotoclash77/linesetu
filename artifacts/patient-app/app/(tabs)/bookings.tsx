@@ -339,7 +339,7 @@ export default function BookingsScreen() {
           <Text style={styles.headerSub}>{allBookings.length} appointments · family</Text>
         </View>
         <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
-          <Feather name="bell" size={18} color="rgba(255,255,255,0.65)" />
+          <Feather name="bell" size={20} color="#FFF" />
           {unreadCount > 0 && <View style={styles.bellDot} />}
         </Pressable>
       </View>
@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
   headerTitle: { fontSize: 22, fontWeight: "900", color: "#FFF", letterSpacing: -0.5 },
   headerSub: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 },
-  bellBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
-  bellDot: { position: "absolute", top: 7, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
+  bellBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(79,70,229,0.18)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
+  bellDot: { position: "absolute", top: 7, right: 7, width: 9, height: 9, borderRadius: 4.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
 
   filterSection: { paddingHorizontal: 20, gap: 12, marginBottom: 8 },
 

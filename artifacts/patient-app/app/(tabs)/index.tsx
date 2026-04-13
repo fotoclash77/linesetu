@@ -271,8 +271,8 @@ export default function HomeScreen() {
           <Text style={styles.name}>Hello, {firstName} 👋</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
-            <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
+          <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
+            <Feather name="bell" size={20} color="#FFF" />
             {unreadCount > 0 && <View style={styles.notifDot} />}
           </Pressable>
         </View>
@@ -384,7 +384,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: "800", color: "#FFF", letterSpacing: -0.3 },
   headerRight: { flexDirection: "row", gap: 10, alignItems: "center" },
   iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
-  notifDot: { position: "absolute", top: 8, right: 9, width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
+  bellBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(79,70,229,0.18)", borderWidth: 1, borderColor: "rgba(99,102,241,0.35)", alignItems: "center", justifyContent: "center" },
+  notifDot: { position: "absolute", top: 7, right: 7, width: 9, height: 9, borderRadius: 4.5, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#0A0E1A" },
   quickLinksRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingBottom: 20 },
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
