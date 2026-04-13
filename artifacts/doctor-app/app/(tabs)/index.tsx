@@ -10,12 +10,12 @@ import Svg, { Polyline, Polygon } from 'react-native-svg';
 
 const isWeb = Platform.OS === 'web';
 
-type EarningPeriod = 'Today' | 'Weekly' | 'Monthly';
-type PatientPeriod = 'Today' | 'Weekly' | 'Monthly';
+type EarningPeriod = 'Today' | 'Last week' | 'Monthly';
+type PatientPeriod = 'Today' | 'Last week' | 'Monthly';
 
 const EARNINGS = {
   Today:   { n1:  540,  n2:  300,  total:   840,  spark: [620,740,580,920,760,840] },
-  Weekly:  { n1: 3400,  n2: 1900,  total:  5300,  spark: [4100,5000,4500,5700,4900,5300] },
+  'Last week':  { n1: 3400,  n2: 1900,  total:  5300,  spark: [4100,5000,4500,5700,4900,5300] },
   Monthly: { n1:13400,  n2: 7500,  total: 20900,  spark: [17200,19000,18400,21600,20100,20900] },
 };
 
@@ -24,7 +24,7 @@ const PATIENT_DATA = {
              onlineBooked: 21, followUp: 11, newPatient: 8,
     consultedSpark: [12,16,14,19,15,18], noShowSpark: [2,4,3,5,3,4], waitSpark: [8,6,9,5,7,7],
     onlineSpark: [14,18,16,22,19,21], followUpSpark: [7,10,9,12,10,11], newSpark: [4,7,5,9,6,8] },
-  Weekly:  { total: 184, consulted: 121, noShow: 24, waitlisted: 39,  emergency: 18, walkIn: 46,
+  'Last week':  { total: 184, consulted: 121, noShow: 24, waitlisted: 39,  emergency: 18, walkIn: 46,
              onlineBooked: 138, followUp: 73, newPatient: 48,
     consultedSpark: [95,112,108,125,115,121], noShowSpark: [18,22,20,26,21,24], waitSpark: [42,36,44,30,38,39],
     onlineSpark: [108,125,118,142,130,138], followUpSpark: [55,68,62,78,68,73], newSpark: [35,44,40,52,44,48] },
@@ -175,7 +175,7 @@ export default function DashboardScreen() {
                 <Text style={styles.sectionTitle}>Earnings Overview</Text>
               </View>
               <View style={styles.periodTabs}>
-                {(['Today','Weekly','Monthly'] as EarningPeriod[]).map(p => (
+                {(['Today','Last week','Monthly'] as EarningPeriod[]).map(p => (
                   <TouchableOpacity key={p} onPress={() => setPeriod(p)} style={[styles.periodTab, period === p && styles.periodTabActive]}>
                     <Text style={[styles.periodTabText, period === p && styles.periodTabTextActive]}>{p}</Text>
                   </TouchableOpacity>
@@ -217,7 +217,7 @@ export default function DashboardScreen() {
                 <Text style={styles.sectionTitle}>Patient Data</Text>
               </View>
               <View style={styles.periodTabs}>
-                {(['Today','Weekly','Monthly'] as PatientPeriod[]).map(p => (
+                {(['Today','Last week','Monthly'] as PatientPeriod[]).map(p => (
                   <TouchableOpacity key={p} onPress={() => setPatientPeriod(p)} style={[styles.periodTab, patientPeriod === p && styles.periodTabActive]}>
                     <Text style={[styles.periodTabText, patientPeriod === p && styles.periodTabTextActive]}>{p}</Text>
                   </TouchableOpacity>
