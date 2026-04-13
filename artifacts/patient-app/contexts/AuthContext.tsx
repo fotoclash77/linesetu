@@ -1,11 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { doc, setDoc } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
 
-interface PatientUser {
+export interface PatientUser {
   id: string;
   name: string;
   phone: string;
   profilePhoto?: string;
+  age?: string;
+  blood?: string;
+  gender?: string;
+  email?: string;
 }
 
 interface AuthContextType {
@@ -58,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updated = { ...patient, ...updates };
     setPatient(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, "patients", patient.id), updates, { merge: true });
+    } catch {
+      // Firebase not reachable, local update still saved
+    }
   };
 
   return (
