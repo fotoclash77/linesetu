@@ -1177,7 +1177,7 @@ export default function SettingsScreen() {
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>WALK-IN FEE (₹ 0 – 1000)</Text>
+                <Text style={styles.fieldLabel}>WALK-IN FEE</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={walkinFee}
