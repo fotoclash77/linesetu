@@ -468,38 +468,82 @@ const STATUS_BADGE: Record<DisplayStatus, { label: string; color: string; bg: st
 function AllSerialCard({ row }: { row: SerialRow }) {
   if ('gap' in row) {
     return (
-      <View style={[S.allRow, { opacity: 0.42 }]}>
-        <View style={[S.chip, { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }]}>
+      <View style={[S.allRow, { opacity: 0.38, paddingVertical: 9 }]}>
+        <View style={[S.chip, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
           <Text style={S.chipLabel}>TOKEN</Text>
-          <Text style={[S.chipNum, { color: 'rgba(255,255,255,0.25)' }]}>{`#${String(row.tokenNumber).padStart(2, '0')}`}</Text>
+          <Text style={[S.chipNum, { color: 'rgba(255,255,255,0.2)' }]}>{`#${String(row.tokenNumber).padStart(2, '0')}`}</Text>
         </View>
-        <Text style={{ flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.25)', marginLeft: 10, fontStyle: 'italic' }}>
+        <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.2)', marginLeft: 10, fontStyle: 'italic' }}>
           — Expired reservation
         </Text>
-        <View style={[S.allBadge, { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '700' }}>GAP</Text>
+        <View style={[S.allBadge, { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.09)' }]}>
+          <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: '700' }}>GAP</Text>
         </View>
       </View>
     );
   }
-  const badge = STATUS_BADGE[row.displayStatus];
+  const badge  = STATUS_BADGE[row.displayStatus];
+  const isEmrg = row.type === 'emergency';
+
+  // Source: how they booked
+  const srcLabel = row.source === 'walkin' ? 'Walk-in' : 'E-Token';
+  const srcBg    = row.source === 'walkin' ? 'rgba(13,148,136,0.18)' : 'rgba(99,102,241,0.18)';
+  const srcBd    = row.source === 'walkin' ? 'rgba(45,212,191,0.35)' : 'rgba(129,140,248,0.35)';
+  const srcClr   = row.source === 'walkin' ? TEAL_LT : '#A5B4FC';
+
+  // Priority: emergency vs normal
+  const priBg  = isEmrg ? 'rgba(239,68,68,0.14)' : 'rgba(21,128,61,0.14)';
+  const priBd  = isEmrg ? 'rgba(239,68,68,0.32)' : 'rgba(74,222,128,0.28)';
+  const priClr = isEmrg ? '#F87171' : GREEN;
+  const priLbl = isEmrg ? 'Emergency' : 'Normal';
+
+  // Demographics
+  const genderStr =
+    row.gender === 'M' || row.gender === 'male'   ? 'Male'   :
+    row.gender === 'F' || row.gender === 'female' ? 'Female' :
+    row.gender ?? '';
+  const demo = [row.age ? `${row.age} yr` : '', genderStr].filter(Boolean).join(' · ');
+
   return (
     <TouchableOpacity
-      style={S.allRow}
+      style={[S.allRow, { paddingVertical: 11, alignItems: 'flex-start' }]}
       onPress={() => router.push(`/patients/${row.id}` as any)}
       activeOpacity={0.72}
     >
-      <TokenChip token={row.tokenNumber} type={row.type} />
-      <View style={{ flex: 1, minWidth: 0, marginLeft: 10 }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }} numberOfLines={1}>{row.patientName}</Text>
-        {(row.age || row.gender) ? (
-          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
-            {[row.age ? `${row.age} yr` : '', row.gender === 'M' || row.gender === 'male' ? 'Male' : row.gender === 'F' || row.gender === 'female' ? 'Female' : row.gender ?? ''].filter(Boolean).join(' · ')}
-          </Text>
-        ) : null}
+      {/* Token chip — aligned to first line */}
+      <View style={{ marginTop: 1 }}>
+        <TokenChip token={row.tokenNumber} type={row.type} />
       </View>
-      <View style={[S.allBadge, { backgroundColor: badge.bg, borderColor: `${badge.color}55` }]}>
-        <Text style={{ fontSize: 10, color: badge.color, fontWeight: '700' }}>{badge.label}</Text>
+
+      {/* Main content */}
+      <View style={{ flex: 1, minWidth: 0, marginLeft: 10, gap: 5 }}>
+
+        {/* Row 1: name + status badge */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF', flex: 1 }} numberOfLines={1}>
+            {row.patientName}
+          </Text>
+          <View style={[S.allBadge, { backgroundColor: badge.bg, borderColor: `${badge.color}55` }]}>
+            <Text style={{ fontSize: 9, color: badge.color, fontWeight: '800' }}>{badge.label}</Text>
+          </View>
+        </View>
+
+        {/* Row 2: pills + demographics */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5 }}>
+          {/* Source pill */}
+          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: srcBg, borderWidth: 1, borderColor: srcBd }}>
+            <Text style={{ fontSize: 9, fontWeight: '800', color: srcClr }}>{srcLabel}</Text>
+          </View>
+          {/* Priority pill */}
+          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: priBg, borderWidth: 1, borderColor: priBd }}>
+            <Text style={{ fontSize: 9, fontWeight: '800', color: priClr }}>{priLbl}</Text>
+          </View>
+          {/* Demographics */}
+          {demo ? (
+            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: '600' }}>{demo}</Text>
+          ) : null}
+        </View>
+
       </View>
     </TouchableOpacity>
   );
