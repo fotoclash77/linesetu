@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
   },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
   avatarWrap: { position: 'relative', flexShrink: 0 },
-  avatarPlaceholder: { width: 82, height: 82, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
+  avatarPlaceholder: { width: 82, height: 82, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, overflow: 'hidden' },
   avatarEmoji: { fontSize: 30, color: 'rgba(255,255,255,0.4)' },
   changePhotoBar: { backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 5, alignItems: 'center' },
   changePhotoBarText: { fontSize: 9, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 },
