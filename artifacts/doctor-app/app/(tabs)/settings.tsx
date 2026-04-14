@@ -156,6 +156,13 @@ function Field({ label, value, onChange, multiline, keyboardType, required, erro
   multiline?: boolean; keyboardType?: 'default' | 'phone-pad' | 'numeric' | 'url';
   required?: boolean; error?: boolean;
 }) {
+  const handleChange = (v: string) => {
+    if (keyboardType === 'phone-pad') {
+      onChange(v.replace(/\D/g, '').slice(0, 10));
+      return;
+    }
+    onChange(v);
+  };
   return (
     <View style={styles.field}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
@@ -165,9 +172,10 @@ function Field({ label, value, onChange, multiline, keyboardType, required, erro
       <TextInput
         style={[styles.fieldInput, multiline && { height: 72, paddingTop: 10 }, error && { borderColor: 'rgba(239,68,68,0.6)' }]}
         value={value}
-        onChangeText={onChange}
+        onChangeText={handleChange}
         multiline={multiline}
         keyboardType={keyboardType ?? 'default'}
+        maxLength={keyboardType === 'phone-pad' ? 10 : undefined}
         placeholderTextColor="rgba(255,255,255,0.2)"
         placeholder={`Enter ${label.toLowerCase()}`}
       />
