@@ -761,10 +761,10 @@ export default function QueueScreen() {
                         <Text style={[S.dateMonth,    active && { color: TEAL_LT }]}>
                           {d.toLocaleDateString('en-IN', { month: 'short' })}
                         </Text>
-                        {/* Shift dots — only show on configured days */}
+                        {/* Shift dots — only show on properly configured days */}
                         <View style={{ flexDirection: 'row', gap: 3, marginTop: 2 }}>
-                          {hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FCD34D' }} />}
-                          {hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
+                          {!isOff && hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FCD34D' }} />}
+                          {!isOff && hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
                           {isOff && <Text style={{ fontSize: 9, color: '#F87171' }}>Off</Text>}
                         </View>
                       </TouchableOpacity>
@@ -794,8 +794,7 @@ export default function QueueScreen() {
                   <View style={S.shiftRow}>
                     {(['morning', 'evening'] as const).map(s => {
                       const shiftCfg = dayCfg?.[s];
-                      // Enabled if explicitly set; fall back to "no calendar = show both"
-                      const enabled = dayCfg ? shiftCfg?.enabled === true : true;
+                      const enabled = shiftCfg?.enabled === true;
                       const active = pickShift === s;
                       const timeRange = shiftCfg ? `${shiftCfg.startTime ?? ''} – ${shiftCfg.endTime ?? ''}` : '';
                       const clinicName = shiftCfg?.clinicName ?? '';

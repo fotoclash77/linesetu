@@ -439,8 +439,8 @@ export default function AddWalkinScreen() {
                           {d.toLocaleDateString('en-IN', { month: 'short' })}
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 3, marginTop: 2 }}>
-                          {hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: AMBER_LT }} />}
-                          {hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
+                          {!isOff && hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: AMBER_LT }} />}
+                          {!isOff && hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
                           {isOff && <Text style={{ fontSize: 9, color: '#F87171' }}>Off</Text>}
                         </View>
                       </TouchableOpacity>
