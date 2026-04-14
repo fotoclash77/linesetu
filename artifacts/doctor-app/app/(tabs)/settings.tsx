@@ -497,6 +497,7 @@ export default function SettingsScreen() {
   const [resultPhotos, setResultPhotos] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
   const resultsSynced = React.useRef(false);
   React.useEffect(() => {
@@ -510,17 +511,20 @@ export default function SettingsScreen() {
   const pickAndUploadPhoto = async () => {
     if (!doctor) return;
     setUploadingPhoto(true);
+    setUploadError(null);
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       setUploadingPhoto(false);
+      setUploadError('Permission denied — please allow photo access in your device settings.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.6,
+      quality: 0.5,
       base64: true,
       allowsEditing: true,
-      aspect: [16, 9],
+      aspect: [4, 3],
+      exif: false,
     });
     if (result.canceled || !result.assets[0]) {
       setUploadingPhoto(false);
@@ -529,6 +533,7 @@ export default function SettingsScreen() {
     const asset = result.assets[0];
     if (!asset.base64) {
       setUploadingPhoto(false);
+      setUploadError('Could not read image data. Please try a different photo.');
       return;
     }
     try {
@@ -540,11 +545,13 @@ export default function SettingsScreen() {
       });
       const data = await res.json();
       if (res.ok && data.url) {
-        const updated = [...resultPhotos, data.url];
-        setResultPhotos(updated);
-        await updateDoctor({ results: updated } as any);
+        setResultPhotos(prev => [...prev, data.url]);
+      } else {
+        setUploadError(data.error || 'Upload failed. Please try again.');
       }
-    } catch {}
+    } catch (err: any) {
+      setUploadError('Upload failed — check your internet connection and try again.');
+    }
     setUploadingPhoto(false);
   };
 
@@ -1765,11 +1772,20 @@ export default function SettingsScreen() {
             {uploadingPhoto && (
               <View style={styles.galleryLoadingOverlay}>
                 <ActivityIndicator color={TEAL_LT} size="small" />
-                <Text style={styles.galleryLoadingText}>Opening photo picker...</Text>
+                <Text style={styles.galleryLoadingText}>Uploading photo…</Text>
               </View>
             )}
 
-            {resultPhotos.length === 0 && !uploadingPhoto && (
+            {uploadError && (
+              <View style={styles.galleryErrorBanner}>
+                <Text style={styles.galleryErrorText}>{uploadError}</Text>
+                <TouchableOpacity onPress={() => setUploadError(null)}>
+                  <Text style={styles.galleryErrorDismiss}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {resultPhotos.length === 0 && !uploadingPhoto && !uploadError && (
               <Text style={styles.galleryEmpty}>No photos yet — tap Add Photo to upload</Text>
             )}
           </View>
@@ -2096,6 +2112,9 @@ const styles = StyleSheet.create({
   galleryLoadingOverlay: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' },
   galleryLoadingText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
   galleryEmpty: { fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', textAlign: 'center', paddingTop: 4, paddingBottom: 2 },
+  galleryErrorBanner: { marginTop: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
+  galleryErrorText: { flex: 1, fontSize: 11, fontWeight: '600', color: '#FCA5A5' },
+  galleryErrorDismiss: { fontSize: 14, color: '#FCA5A5', fontWeight: '700' },
   versionText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.15)' },
   buildText: { fontSize: 9, color: 'rgba(255,255,255,0.1)', marginTop: 3 },
   logoutOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end', zIndex: 50 } as ViewStyle,
