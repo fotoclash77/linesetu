@@ -152,7 +152,7 @@ export default function PaymentScreen() {
       try {
         const res = await fetch(`${BASE}/api/queues/${params.doctorId}?date=${date}&shift=${shift}`);
         const data = await res.json();
-        if (active && nextToken === null) {
+        if (active) {
           const nt = (data.nextTokenNumber ?? 0) + 1;
           setNextToken(nt);
           nextTokenRef.current = nt;

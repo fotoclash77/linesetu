@@ -1,4 +1,5 @@
 import { Router } from "express";
+import Razorpay from "razorpay";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc,
@@ -7,6 +8,20 @@ import {
   queueDocId, todayDate,
 } from "../lib/firebase.js";
 import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+});
+
+async function issueRefund(paymentId: string) {
+  try {
+    await (razorpay.payments as any).refund(paymentId, {});
+    console.log(`[Tokens] Auto-refund issued for paymentId=${paymentId}`);
+  } catch (e: any) {
+    console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
+  }
+}
 
 const router = Router();
 
@@ -133,6 +148,7 @@ router.post("/tokens", async (req, res) => {
 
     const resKey = reservationKey(doctorId, tokenDate, shift);
     const consumed = patientId ? consumeReservation(resKey, patientId) : null;
+    const reservedToken = consumed?.tokenNumber ?? expectedTokenNumber ?? null;
 
     const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
     const doctorSnap = await getDoc(doctorRef);
@@ -163,7 +179,7 @@ router.post("/tokens", async (req, res) => {
 
       const nextTokenNumber = currentNextToken + 1;
 
-      if (expectedTokenNumber && expectedTokenNumber !== nextTokenNumber) {
+      if (reservedToken && reservedToken !== nextTokenNumber) {
         autoAdjusted = true;
       }
 
@@ -256,10 +272,13 @@ router.post("/tokens", async (req, res) => {
     res.status(201).json(response);
   } catch (err: any) {
     if (err.message === "CAPACITY_FULL") {
+      if (paymentId) {
+        issueRefund(paymentId);
+      }
       return res.status(409).json({
         capacityFull: true,
         error: "Booking failed: Slots are full.",
-        message: "Booking failed: Slots are full. Refund initiated.",
+        message: "Booking failed: Slots are full. Refund has been initiated automatically.",
       });
     }
     res.status(500).json({ error: err.message });
