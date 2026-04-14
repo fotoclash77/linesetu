@@ -190,8 +190,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    setDoctor(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
+    setDoctor(null);
   };
 
   return (

@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+
 import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
@@ -1920,7 +1920,6 @@ export default function SettingsScreen() {
               <TouchableOpacity style={styles.logoutConfirmBtn} onPress={async () => {
                 setShowLogout(false);
                 await logout();
-                router.replace('/');
               }}>
                 <Text style={styles.logoutConfirmBtnText}>Yes, Log Out</Text>
               </TouchableOpacity>
@@ -1995,7 +1994,6 @@ export default function SettingsScreen() {
                   setDeleteLoading(false);
                   setShowDeleteAccount(false);
                   await logout();
-                  router.replace('/');
                 }}
               >
                 {deleteLoading
