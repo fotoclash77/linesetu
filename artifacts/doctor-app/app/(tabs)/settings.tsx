@@ -556,12 +556,33 @@ export default function SettingsScreen() {
   };
 
   const pickProfilePhoto = async () => {
+    if (!doctor) return;
     setProfilePhotoLoading(true);
     try {
-      await pickAndUploadPhoto();
-    } finally {
-      setProfilePhotoLoading(false);
-    }
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+        base64: true,
+        allowsEditing: true,
+        aspect: [1, 1],
+        exif: false,
+      });
+      if (result.canceled || !result.assets[0]?.base64) return;
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: asset.base64, mimeType }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        await updateDoctor({ profilePhoto: data.url } as any);
+      }
+    } catch {}
+    setProfilePhotoLoading(false);
   };
 
   const deletePhoto = async (url: string) => {
@@ -694,15 +715,17 @@ export default function SettingsScreen() {
         <View style={styles.container}>
           <BackHeader title="Doctor Profile" onBack={() => setSection('main')} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
-            {/* Avatar placeholder */}
+            {/* Avatar */}
             <View style={styles.avatarSection}>
               <View style={styles.avatarLarge}>
-                <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>
+                {doctor?.profilePhoto
+                  ? <Image source={{ uri: doctor.profilePhoto }} style={{ width: '100%', height: '100%', borderRadius: 48 }} />
+                  : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
                 {profilePhotoLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={styles.photoBtnText}>Upload Photo</Text>}
+                  : <Text style={styles.photoBtnText}>{doctor?.profilePhoto ? 'Change Photo' : 'Upload Photo'}</Text>}
               </TouchableOpacity>
             </View>
 

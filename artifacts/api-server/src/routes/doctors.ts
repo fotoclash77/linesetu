@@ -92,6 +92,25 @@ router.patch("/doctors/:doctorId", async (req, res) => {
   }
 });
 
+// POST /api/doctors/:doctorId/profile-photo — upload / replace profile photo
+router.post("/doctors/:doctorId/profile-photo", async (req, res) => {
+  try {
+    const { base64, mimeType } = req.body as { base64?: string; mimeType?: string };
+    if (!base64) return res.status(400).json({ error: "base64 image data required" });
+    const mime = mimeType || "image/jpeg";
+    const ext = mime.split("/")[1] || "jpg";
+    const fileName = `doctor-profiles/${req.params.doctorId}/profile.${ext}`;
+    const fileRef = storageRef(storage, fileName);
+    await uploadString(fileRef, base64, "base64", { contentType: mime });
+    const url = await getDownloadURL(fileRef);
+    const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
+    await updateDoc(docRef, { profilePhoto: url });
+    res.json({ url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/doctors/:doctorId/results — upload a result photo
 router.post("/doctors/:doctorId/results", async (req, res) => {
   try {
