@@ -457,7 +457,7 @@ export default function SettingsScreen() {
       quality: 0.6,
       base64: true,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [1, 1],
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
