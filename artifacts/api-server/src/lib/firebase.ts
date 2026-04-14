@@ -19,6 +19,7 @@ import {
   increment,
   arrayUnion,
   arrayRemove,
+  deleteField,
   type Firestore,
 } from "firebase/firestore";
 
@@ -41,7 +42,7 @@ export const db: Firestore = getFirestore(app);
 export {
   collection, doc, getDocs, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, writeBatch, runTransaction,
-  Timestamp, increment, arrayUnion, arrayRemove,
+  Timestamp, increment, arrayUnion, arrayRemove, deleteField,
 };
 
 export const Collections = {

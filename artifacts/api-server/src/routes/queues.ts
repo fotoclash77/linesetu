@@ -6,6 +6,7 @@ import {
   queueDocId, todayDate,
 } from "../lib/firebase.js";
 import { tokenEmitter } from "../lib/tokenEmitter.js";
+import { countActiveReservations } from "./tokens.js";
 
 const router = Router();
 
@@ -111,23 +112,27 @@ router.get("/queues/:doctorId/next-token/stream", async (req, res) => {
       const shiftCfg   = doctorData?.calendar?.[date]?.[shift];
       const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
-      const nextTokenNumber = queueSnap.exists()
-        ? ((queueSnap.data().nextTokenNumber as number) ?? 0) + 1
-        : 1;
-      const totalBooked = queueSnap.exists()
-        ? ((queueSnap.data().totalBooked as number) ?? 0)
-        : 0;
-      const remaining = maxTokens !== null ? Math.max(0, maxTokens - totalBooked) : null;
-      const isFull    = maxTokens !== null && totalBooked >= maxTokens;
+      const queueData     = queueSnap.exists() ? queueSnap.data() : {} as any;
+      const totalBooked   = (queueData.totalBooked as number) ?? 0;
+      const pending       = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
+      const activeReservations = countActiveReservations(pending);
+      const effectiveBooked    = totalBooked + activeReservations;
+
+      const nextTokenNumber = effectiveBooked + 1;
+      const remaining = maxTokens !== null ? Math.max(0, maxTokens - effectiveBooked) : null;
+      const isFull    = maxTokens !== null && effectiveBooked >= maxTokens;
 
       res.write(`data: ${JSON.stringify({
         nextTokenNumber,
         totalBooked,
+        activeReservations,
         maxTokens,
         remaining,
         isFull,
       })}\n\n`);
-    } catch (_) {}
+    } catch (e: any) {
+      console.error("[next-token SSE] error:", e?.message);
+    }
   };
 
   await sendNextToken();
