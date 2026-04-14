@@ -47,14 +47,14 @@ function RootLayoutNav() {
           router.replace("/complete-profile");
         }
       } else {
-        router.replace("/");
+        router.replace("/login");
       }
     }
   }, [doctorId, doctor?.profileCompleted, isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
-      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
       <Stack.Screen name="complete-profile" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="walkin/index" />

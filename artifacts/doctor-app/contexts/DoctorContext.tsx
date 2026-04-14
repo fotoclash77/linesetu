@@ -196,7 +196,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS === 'web') {
       // On web, Expo Router resolves '/' to the tabs Home tab (same URL due to transparent group).
       // A full page reload guarantees the login screen renders with cleared storage.
-      (window as any).location.replace('/');
+      (window as any).location.replace('/login');
     }
   };
 
