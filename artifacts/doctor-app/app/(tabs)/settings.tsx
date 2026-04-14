@@ -1771,16 +1771,21 @@ export default function SettingsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
               {resultPhotos.map((uri, i) => (
                 <View key={i} style={styles.galleryThumbWrap}>
-                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
-                  <TouchableOpacity
-                    style={styles.galleryDeleteBtn}
-                    onPress={() => deletePhoto(uri)}
-                    disabled={deletingPhotoUrl === uri}
-                  >
-                    {deletingPhotoUrl === uri
-                      ? <ActivityIndicator size={10} color="#FFF" />
-                      : <Text style={styles.galleryDeleteX}>✕</Text>}
-                  </TouchableOpacity>
+                  <View style={styles.galleryThumbDeleteRow}>
+                    <TouchableOpacity
+                      style={styles.galleryDeleteBtn}
+                      onPress={() => deletePhoto(uri)}
+                      disabled={deletingPhotoUrl === uri}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      {deletingPhotoUrl === uri
+                        ? <ActivityIndicator size={10} color="#FF6B6B" />
+                        : <Text style={styles.galleryDeleteX}>🗑</Text>}
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.galleryThumbImg}>
+                    <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+                  </View>
                 </View>
               ))}
               <TouchableOpacity style={styles.galleryAddBtn} onPress={pickAndUploadPhoto} disabled={uploadingPhoto}>
@@ -2125,10 +2130,12 @@ const styles = StyleSheet.create({
   galleryToggleThumbOn: { left: undefined, right: 2, backgroundColor: TEAL_LT },
   galleryToggleTxt: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)' },
   galleryScroll: { gap: 10, paddingVertical: 2 },
-  galleryThumbWrap: { width: 100, height: 80, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', position: 'relative' },
+  galleryThumbWrap: { width: 100, flexDirection: 'column', gap: 4 },
+  galleryThumbDeleteRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 2 },
+  galleryThumbImg: { width: 100, height: 80, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)' },
   galleryThumb: { width: '100%', height: '100%' },
-  galleryDeleteBtn: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
-  galleryDeleteX: { fontSize: 9, color: '#FFF', fontWeight: '900' },
+  galleryDeleteBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', alignItems: 'center', justifyContent: 'center' },
+  galleryDeleteX: { fontSize: 11 },
   galleryAddBtn: { width: 100, height: 80, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: 'rgba(45,212,191,0.04)' },
   galleryAddIcon: { fontSize: 22, color: TEAL_LT, fontWeight: '300' },
   galleryAddTxt: { fontSize: 10, fontWeight: '700', color: TEAL_LT },
