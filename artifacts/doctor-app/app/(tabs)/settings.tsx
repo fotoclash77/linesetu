@@ -1028,7 +1028,6 @@ export default function SettingsScreen() {
                 { label: 'Emergency Tokens', sub: 'Allow emergency token requests', val: emergencyTokens, set: setEmergencyTokens },
                 { label: 'Show Wait Time', sub: 'Display estimated wait time', val: showWaitTime, set: setShowWaitTime },
                 { label: 'Show Queue Position', sub: 'Show patient\'s current position', val: showPosition, set: setShowPosition },
-                { label: 'Show Doctor Name', sub: 'Display your name in the app', val: showDoctorName, set: setShowDoctorName },
                 { label: 'Show Fee', sub: 'Display consultation fee', val: showFee, set: setShowFee },
               ].map((item, i) => (
                 <View key={item.label} style={[styles.toggleRow, i > 0 && { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }]}>
