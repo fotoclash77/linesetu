@@ -450,8 +450,12 @@ export default function SettingsScreen() {
 
   const pickAndUploadPhoto = async () => {
     if (!doctor) return;
+    setUploadingPhoto(true);
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
+    if (!perm.granted) {
+      setUploadingPhoto(false);
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.6,
@@ -459,10 +463,15 @@ export default function SettingsScreen() {
       allowsEditing: true,
       aspect: [1, 1],
     });
-    if (result.canceled || !result.assets[0]) return;
+    if (result.canceled || !result.assets[0]) {
+      setUploadingPhoto(false);
+      return;
+    }
     const asset = result.assets[0];
-    if (!asset.base64) return;
-    setUploadingPhoto(true);
+    if (!asset.base64) {
+      setUploadingPhoto(false);
+      return;
+    }
     try {
       const mimeType = asset.mimeType || 'image/jpeg';
       const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/results`, {
