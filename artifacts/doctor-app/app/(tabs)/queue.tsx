@@ -248,15 +248,16 @@ function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
   const genderLabel = tok.gender === 'M' || tok.gender === 'male'   ? 'Male'
     : tok.gender === 'F' || tok.gender === 'female' ? 'Female'
     : tok.gender ?? '';
+  const metaParts = [tok.age ? `${tok.age} yr` : '', genderLabel].filter(Boolean);
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
       <Text style={[S.patName, large && S.patNameLg]} numberOfLines={1}>{tok.patientName}</Text>
-      {(tok.age || genderLabel) ? (
-        <Text style={S.patMeta}>
-          {[tok.age ? `${tok.age} yr` : '', genderLabel].filter(Boolean).join(' • ')}
-        </Text>
-      ) : null}
-      <View style={{ flexDirection: 'row', marginTop: 5, flexWrap: 'wrap', gap: 5 }}>
+      {/* single horizontal meta row: age · gender · badge */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 3 }}>
+        {metaParts.length > 0 && (
+          <Text style={S.patMeta}>{metaParts.join(' · ')}</Text>
+        )}
+        {metaParts.length > 0 && <Text style={[S.patMeta, { opacity: 0.35 }]}>·</Text>}
         <TypeBadge type={tok.type} source={tok.source} />
       </View>
     </View>
@@ -516,7 +517,7 @@ function AllSerialCard({ row }: { row: SerialRow }) {
       </View>
 
       {/* Main content */}
-      <View style={{ flex: 1, minWidth: 0, marginLeft: 10, gap: 5 }}>
+      <View style={{ flex: 1, minWidth: 0, marginLeft: 10, gap: 4 }}>
 
         {/* Row 1: name + status badge */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
@@ -528,20 +529,17 @@ function AllSerialCard({ row }: { row: SerialRow }) {
           </View>
         </View>
 
-        {/* Row 2: pills + demographics */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5 }}>
-          {/* Source pill */}
+        {/* Row 2: age · gender · source pill · priority pill — all horizontal */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+          {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>{demo}</Text> : null}
+          {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text> : null}
           <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: srcBg, borderWidth: 1, borderColor: srcBd }}>
             <Text style={{ fontSize: 9, fontWeight: '800', color: srcClr }}>{srcLabel}</Text>
           </View>
-          {/* Priority pill */}
+          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text>
           <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: priBg, borderWidth: 1, borderColor: priBd }}>
             <Text style={{ fontSize: 9, fontWeight: '800', color: priClr }}>{priLbl}</Text>
           </View>
-          {/* Demographics */}
-          {demo ? (
-            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', fontWeight: '600' }}>{demo}</Text>
-          ) : null}
         </View>
 
       </View>
