@@ -172,6 +172,61 @@ function Field({ label, value, onChange, multiline, keyboardType, required, erro
   );
 }
 
+const SPECIALIZATIONS = [
+  'General Physician', 'Cardiologist', 'Dermatologist', 'Orthopedic Surgeon',
+  'Gynecologist', 'Pediatrician', 'ENT Specialist', 'Neurologist',
+  'Ophthalmologist', 'Dentist',
+];
+
+function SpecPicker({ value, onChange, error }: {
+  value: string; onChange: (v: string) => void; error?: boolean;
+}) {
+  const [showInput, setShowInput] = useState(() => !SPECIALIZATIONS.includes(value));
+
+  const pick = (spec: string) => { onChange(spec); setShowInput(false); };
+  const pickOther = () => { setShowInput(true); if (SPECIALIZATIONS.includes(value)) onChange(''); };
+
+  return (
+    <View style={styles.field}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 8 }}>
+        <Text style={styles.fieldLabel}>SPECIALISATION</Text>
+        <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+        {SPECIALIZATIONS.map(spec => {
+          const active = value === spec && !showInput;
+          return (
+            <TouchableOpacity
+              key={spec}
+              onPress={() => pick(spec)}
+              style={[styles.specChip, active && styles.specChipActive]}
+            >
+              <Text style={[styles.specChipText, active && styles.specChipTextActive]}>{spec}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          onPress={pickOther}
+          style={[styles.specChip, showInput && styles.specChipOther]}
+        >
+          <Text style={[styles.specChipText, showInput && { color: '#FCD34D' }]}>Other ✏</Text>
+        </TouchableOpacity>
+      </View>
+      {showInput && (
+        <TextInput
+          style={[styles.fieldInput, { marginTop: 10 }, error && !value.trim() && { borderColor: 'rgba(239,68,68,0.6)' }]}
+          value={value}
+          onChangeText={onChange}
+          placeholder="Type your specialisation..."
+          placeholderTextColor="rgba(255,255,255,0.2)"
+          autoFocus
+        />
+      )}
+      {error && !value.trim() && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 4 }}>Required</Text>}
+    </View>
+  );
+}
+
 function SectionLabel({ label }: { label: string }) {
   return <Text style={styles.sectionLabel}>{label}</Text>;
 }
@@ -433,7 +488,7 @@ export default function SettingsScreen() {
             <View style={styles.formCard}>
               <Field label="Full Name" value={name} onChange={setName} required error={profileFieldErrors.name} />
               <Field label="Qualifications" value={qualifications} onChange={setQualifications} required error={profileFieldErrors.qualifications} />
-              <Field label="Specialisation" value={specialisation} onChange={setSpecialisation} required error={profileFieldErrors.specialisation} />
+              <SpecPicker value={specialisation} onChange={setSpecialisation} error={profileFieldErrors.specialisation} />
               <Field label="Years of Experience" value={experience} onChange={setExperience} keyboardType="numeric" required error={profileFieldErrors.experience} />
               <Field label="Total Patients Consulted" value={patientsTotal} onChange={setPatientsTotal} keyboardType="numeric" required error={profileFieldErrors.patientsTotal} />
               <View style={styles.field}>
@@ -1074,6 +1129,11 @@ const styles = StyleSheet.create({
   },
   photoChangeBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(13,148,136,0.2)', borderWidth: 1.5, borderColor: 'rgba(13,148,136,0.4)' },
   photoBtnText: { fontSize: 12, fontWeight: '700', color: TEAL_LT },
+  specChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)' },
+  specChipActive: { backgroundColor: 'rgba(45,212,191,0.18)', borderColor: TEAL },
+  specChipOther: { backgroundColor: 'rgba(251,191,36,0.1)', borderColor: 'rgba(251,191,36,0.4)' },
+  specChipText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  specChipTextActive: { color: TEAL_LT },
   photoNoteRow: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', backgroundColor: 'rgba(251,191,36,0.07)', maxWidth: 300 },
   photoNoteText: { fontSize: 11, color: 'rgba(251,191,36,0.85)', fontWeight: '600', textAlign: 'center', lineHeight: 16 },
   field: { marginBottom: 10 },
