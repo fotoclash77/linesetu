@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  query, where, orderBy, limit,
+  query, where, orderBy, limit, increment,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -54,6 +54,10 @@ router.post("/doctors", async (req, res) => {
         morning: true, morningStart: "09:00", morningEnd: "13:00",
         evening: false, eveningStart: "17:00", eveningEnd: "21:00",
       },
+      consultFee: 10,
+      emergencyFee: 20,
+      walkinFee: 0,
+      pendingPayout: 0,
       bankAccount: null,
       createdAt: Timestamp.now(),
     };

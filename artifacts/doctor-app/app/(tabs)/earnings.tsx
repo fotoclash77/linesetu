@@ -364,10 +364,11 @@ export default function EarningsScreen() {
                       <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
                     </View>
                     {[
-                      { label: 'Online Normal Token',    value: d.tokensNormal    * 10, count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: '₹10/token' },
-                      { label: 'Online Emergency Token', value: d.tokensEmergency * 20, count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: '₹20/token' },
+                      { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   || 10), count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   || 10}/token` },
+                      { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee || 20), count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee || 20}/token` },
                     ].map((row) => {
-                      const pct = d.earned > 0 ? Math.round((row.value / d.earned) * 100) : 0;
+                      const total = (d.tokensNormal * (inClinicFee || 10)) + (d.tokensEmergency * (inClinicEmFee || 20));
+                      const pct = total > 0 ? Math.round((row.value / total) * 100) : 0;
                       return (
                         <View key={row.label} style={styles.breakdownRow}>
                           <View style={styles.breakdownTop}>
@@ -405,8 +406,8 @@ export default function EarningsScreen() {
                   <Text style={styles.platformSetText}>Platform-set</Text>
                 </View>
                 {[
-                  { type: 'Normal E-Token',    earn: '₹10', platform: '₹10', patient: '₹20' },
-                  { type: 'Emergency E-Token', earn: '₹20', platform: '₹10', patient: '₹30' },
+                  { type: 'Normal E-Token',    earn: `₹${inClinicFee   || 10}`, platform: '₹10', patient: `₹${(inClinicFee   || 10) + 10}` },
+                  { type: 'Emergency E-Token', earn: `₹${inClinicEmFee || 20}`, platform: '₹10', patient: `₹${(inClinicEmFee || 20) + 10}` },
                 ].map(r => (
                   <View key={r.type} style={styles.rateRow}>
                     <Text style={styles.rateType} numberOfLines={1}>{r.type}</Text>
@@ -422,19 +423,19 @@ export default function EarningsScreen() {
                 ))}
               </View>
 
-              {/* In-clinic fees (doctor-set, display only) */}
+              {/* Doctor's configured fee rates */}
               <View style={[styles.glassCard, { marginTop: 10 }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionDot}>🏥</Text>
-                    <Text style={styles.sectionTitle}>In-Clinic Fees</Text>
+                    <Text style={styles.sectionDot}>💰</Text>
+                    <Text style={styles.sectionTitle}>Your Fee Rates</Text>
                   </View>
-                  <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Display only</Text>
+                  <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Doctor-set</Text>
                 </View>
                 {[
-                  { type: 'Consultation',          val: inClinicFee    ? `₹${inClinicFee}`    : 'Not set', color: '#A5B4FC' },
-                  { type: 'Emergency Consultation', val: inClinicEmFee  ? `₹${inClinicEmFee}`  : 'Not set', color: '#FCD34D' },
-                  { type: 'Walk-in Fee',            val: inClinicWalkin ? `₹${inClinicWalkin}` : 'Not set', color: '#86EFAC' },
+                  { type: 'Online E-Token',    val: inClinicFee    ? `₹${inClinicFee}`    : 'Not set', color: '#A5B4FC' },
+                  { type: 'Emergency Token',   val: inClinicEmFee  ? `₹${inClinicEmFee}`  : 'Not set', color: '#FCD34D' },
+                  { type: 'Walk-in / In-clinic', val: inClinicWalkin ? `₹${inClinicWalkin}` : 'Not set', color: '#86EFAC' },
                 ].map(r => (
                   <View key={r.type} style={[styles.rateRow, { justifyContent: 'space-between' }]}>
                     <Text style={styles.rateType}>{r.type}</Text>
@@ -442,7 +443,7 @@ export default function EarningsScreen() {
                   </View>
                 ))}
                 <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 8, fontStyle: 'italic' }}>
-                  Shown to patients on booking screens. Not charged via app. Set in Settings → Fee Structure.
+                  Update these in Settings → Fee Structure. Online payments add ₹10 platform fee on top.
                 </Text>
               </View>
             </>

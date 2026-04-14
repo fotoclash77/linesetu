@@ -695,42 +695,42 @@ export default function SettingsScreen() {
           <BackHeader title="Fee Structure" onBack={() => setSection('main')} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.formCard}>
-              <Text style={styles.formCardTitle}>IN-CLINIC CONSULTATION FEES</Text>
+              <Text style={styles.formCardTitle}>FEE STRUCTURE</Text>
               <View style={styles.feeNote}>
                 <Text style={styles.feeNoteText}>
-                  ℹ These fees are for display and reference only. They appear on your public profile and booking screens so patients know what to bring to the clinic. No payment is collected via the app for in-clinic visits.
+                  ℹ Set your consultation rates. These drive your earnings rate card. Online payments use your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment is processed.
                 </Text>
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>IN-CLINIC CONSULTATION FEE (₹ 0 – 3000)</Text>
+                <Text style={styles.fieldLabel}>ONLINE E-TOKEN FEE (₹ 0 – 2000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={consultFee}
                   onChangeText={v => {
                     const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
-                    setConsultFee(String(Math.min(3000, n)));
+                    setConsultFee(String(Math.min(2000, n)));
                   }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
-                  placeholder="500"
+                  placeholder="10"
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>IN-CLINIC EMERGENCY CONSULTATION FEE (₹ 0 – 3000)</Text>
+                <Text style={styles.fieldLabel}>EMERGENCY TOKEN FEE (₹ 0 – 1000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={emergencyFee}
                   onChangeText={v => {
                     const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
-                    setEmergencyFee(String(Math.min(3000, n)));
+                    setEmergencyFee(String(Math.min(1000, n)));
                   }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
-                  placeholder="1000"
+                  placeholder="20"
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>IN-CLINIC WALK-IN FEE (₹ 0 – 1000)</Text>
+                <Text style={styles.fieldLabel}>WALK-IN FEE (₹ 0 – 1000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={walkinFee}
