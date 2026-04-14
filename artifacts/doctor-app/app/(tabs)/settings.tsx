@@ -1995,7 +1995,7 @@ export default function SettingsScreen() {
 
         {showDeleteAccount && (
           <View style={styles.logoutOverlay}>
-            <View style={[styles.logoutSheet, { paddingBottom: 36 }]}>
+            <View style={[styles.logoutSheet, { paddingBottom: 24 + 49 + insets.bottom }]}>
               <View style={styles.logoutHandle} />
 
               {/* Header */}
