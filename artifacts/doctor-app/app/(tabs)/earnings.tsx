@@ -140,7 +140,7 @@ function buildMarkedDates(start: string, end: string) {
 // ─── Main Screen ──────────────────────────────────────────────
 export default function EarningsScreen() {
   const { doctor } = useDoctor();
-  const [tab, setTab]       = useState<'earnings' | 'payouts'>('earnings');
+  const [tab, setTab]       = useState<'earnings' | 'transactions' | 'payouts'>('earnings');
   const [period, setPeriod] = useState<Period>('Month');
 
   // Calendar range picker state
@@ -200,6 +200,39 @@ export default function EarningsScreen() {
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
+
+  // Transactions tab state
+  const [txFilter, setTxFilter] = useState<'all' | 'earnings' | 'refunds'>('all');
+
+  const { data: txData, refetch: refetchTx } = useQuery<any>({
+    queryKey: ['doctor-transactions', doctor?.id],
+    queryFn:  async () => {
+      const res = await fetch(`${BASE()}/api/doctors/${doctor!.id}/transactions`);
+      return res.json();
+    },
+    enabled:  !!doctor?.id && tab === 'transactions',
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
+  const allTx: any[] = txData?.transactions ?? [];
+  const filteredTx = txFilter === 'earnings'
+    ? allTx.filter(t => t.status === 'earned')
+    : txFilter === 'refunds'
+      ? allTx.filter(t => t.status === 'refunded')
+      : allTx;
+
+  const todayISO = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }, []);
+
+  const txSummary = useMemo(() => {
+    const todayEarned = allTx.filter(t => t.date === todayISO && t.status === 'earned').reduce((s, t) => s + (t.amount ?? 0), 0);
+    const totalEarnedTx = allTx.filter(t => t.status === 'earned').reduce((s, t) => s + (t.amount ?? 0), 0);
+    const totalRefunded = allTx.filter(t => t.status === 'refunded').reduce((s, t) => s + (t.amount ?? 0), 0);
+    return { todayEarned, totalEarnedTx, totalRefunded };
+  }, [allTx, todayISO]);
 
   // Withdraw modal state
   const [withdrawModal, setWithdrawModal] = useState(false);
@@ -357,8 +390,8 @@ export default function EarningsScreen() {
 
         {/* Tab bar */}
         <View style={styles.mainTabs}>
-          {([['earnings','Earnings'],['payouts','Payouts']] as const).map(([k, l]) => (
-            <TouchableOpacity key={k} onPress={() => setTab(k)} style={[styles.mainTab, tab === k && styles.mainTabActive]}>
+          {([['earnings','Earnings'],['transactions','Transactions'],['payouts','Payouts']] as const).map(([k, l]) => (
+            <TouchableOpacity key={k} onPress={() => setTab(k as any)} style={[styles.mainTab, tab === k && styles.mainTabActive]}>
               <Text style={[styles.mainTabText, tab === k && styles.mainTabTextActive]}>{l}</Text>
             </TouchableOpacity>
           ))}
@@ -523,6 +556,109 @@ export default function EarningsScreen() {
                 <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 8, fontStyle: 'italic' }}>
                   Update these in Settings → Fee Structure. Online payments add ₹10 platform fee on top.
                 </Text>
+              </View>
+            </>
+          )}
+
+          {tab === 'transactions' && (
+            <>
+              {/* Summary cards */}
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: 'Today',         value: fmtFull(txSummary.todayEarned),   color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',  icon: '⚡' },
+                  { label: 'Total Earned',  value: fmtFull(txSummary.totalEarnedTx), color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '✓' },
+                  { label: 'Total Refunds', value: fmtFull(txSummary.totalRefunded), color: '#F87171', bg: 'rgba(248,113,113,0.08)', icon: '↩' },
+                ].map(s => (
+                  <View key={s.label} style={[styles.summaryCard, { backgroundColor: s.bg, borderColor: `${s.color}33` }]}>
+                    <Text style={{ fontSize: 16, color: s.color, marginBottom: 5 }}>{s.icon}</Text>
+                    <Text style={[styles.summaryValue, { color: s.color }]}>{s.value}</Text>
+                    <Text style={styles.summaryLabel}>{s.label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Filter chips */}
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+                {(['all', 'earnings', 'refunds'] as const).map(f => (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setTxFilter(f)}
+                    style={[
+                      styles.periodChip,
+                      txFilter === f && styles.periodChipActive,
+                    ]}
+                  >
+                    <Text style={[styles.periodChipText, txFilter === f && styles.periodChipTextActive]}>
+                      {f === 'all' ? 'All' : f === 'earnings' ? '✓ Earnings' : '↩ Refunds'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Transaction list */}
+              <View style={styles.glassCard}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionDot}>📋</Text>
+                  <Text style={styles.sectionTitle}>
+                    {txFilter === 'all' ? 'All Transactions' : txFilter === 'earnings' ? 'Earnings' : 'Refunds'}
+                  </Text>
+                </View>
+                {!txData ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 28 }}>
+                    <ActivityIndicator color={TEAL} />
+                    <Text style={{ color: 'rgba(255,255,255,0.3)', marginTop: 10, fontSize: 12 }}>Loading transactions…</Text>
+                  </View>
+                ) : filteredTx.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 28 }}>
+                    <Text style={{ fontSize: 32, marginBottom: 10 }}>🧾</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No transactions yet</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>
+                      {txFilter === 'refunds' ? 'No refunds issued' : 'Bookings will appear here'}
+                    </Text>
+                  </View>
+                ) : (
+                  filteredTx.map((tx: any) => {
+                    const isRefund  = tx.status === 'refunded';
+                    const color     = isRefund ? '#F87171' : '#4ADE80';
+                    const bg        = isRefund ? 'rgba(248,113,113,0.12)' : 'rgba(74,222,128,0.12)';
+                    const border    = isRefund ? 'rgba(248,113,113,0.3)'  : 'rgba(74,222,128,0.3)';
+                    const icon      = isRefund ? '↩' : tx.type === 'emergency' ? '🚨' : '✓';
+                    const tokenLabel = tx.tokenNumber ? `#${String(tx.tokenNumber).padStart(2, '0')}` : '—';
+                    const dateStr   = tx.date
+                      ? new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                      : '—';
+                    const shiftLabel = tx.shift === 'evening' ? '☾ Eve' : '☀ Morn';
+                    return (
+                      <View key={tx.id} style={[styles.payoutRow, { paddingVertical: 12 }]}>
+                        <View style={[styles.payoutIcon, { backgroundColor: bg, borderRadius: 12 }]}>
+                          <Text style={{ fontSize: 15, color }}>{icon}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View style={styles.payoutTopRow}>
+                            <Text style={[styles.payoutDate, { fontSize: 13 }]} numberOfLines={1}>
+                              {tx.patientName ?? 'Unknown'}
+                            </Text>
+                            <Text style={[styles.payoutAmount, { color, fontSize: 14 }]}>
+                              {isRefund ? '-' : '+'}{fmtFull(tx.amount ?? 0)}
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                            <Text style={[styles.payoutNote]}>Token {tokenLabel}</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.18)', fontSize: 10 }}>·</Text>
+                            <Text style={styles.payoutNote}>{dateStr}</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.18)', fontSize: 10 }}>·</Text>
+                            <Text style={styles.payoutNote}>{shiftLabel}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.payoutStatusBadge, { backgroundColor: bg, borderColor: border }]}>
+                          <Text style={[styles.payoutStatusText, { color }]}>
+                            {isRefund ? 'Refunded' : 'Earned'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
               </View>
             </>
           )}

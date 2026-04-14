@@ -77,6 +77,11 @@ async function apiDone(id: string, callNextId?: string) {
 }
 async function apiSkip(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/skip`,   { method: 'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method: 'PATCH' }); }
+async function apiRefund(id: string) {
+  const r = await fetch(`${BASE()}/api/tokens/${id}/refund`, { method: 'PATCH' });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Refund failed'); }
+  return r.json();
+}
 
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
@@ -93,6 +98,7 @@ interface Token {
   type: 'normal' | 'emergency'; source: string; status: string;
   displayStatus: DisplayStatus; shift: string; calledAt?: any;
   age?: string; gender?: string; area?: string; visitType?: string;
+  paymentStatus?: string; paymentId?: string;
 }
 
 function sortRows(tokens: MasterRow[]) {
@@ -117,6 +123,8 @@ function mapToken(t: any): Token {
     gender: t.gender ?? undefined,
     area: t.area ?? undefined,
     visitType: t.visitType ?? undefined,
+    paymentStatus: t.paymentStatus ?? undefined,
+    paymentId: t.paymentId ?? undefined,
   };
 }
 
@@ -392,8 +400,9 @@ function NoConsultation({ nextTok }: { nextTok?: Token }) {
 }
 
 // ─── Waiting Card ────────────────────────────────────────────────
-function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isManualNext }: {
-  tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void; busy: boolean; isManualNext?: boolean;
+function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isManualNext, isRefundable }: {
+  tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void;
+  busy: boolean; isManualNext?: boolean; isRefundable?: boolean;
 }) {
   return (
     <View style={[S.waitCard, isManualNext && { borderColor: 'rgba(252,211,77,0.45)', backgroundColor: 'rgba(180,83,9,0.1)' }]}>
@@ -426,10 +435,18 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[S.refundBtn, { flex: 1, marginTop: 0 }, busy && { opacity: 0.5 }]}
+            style={[
+              S.refundBtn, { flex: 1, marginTop: 0 },
+              busy && { opacity: 0.5 },
+              isRefundable && { backgroundColor: 'rgba(248,113,113,0.15)', borderColor: 'rgba(248,113,113,0.35)' },
+            ]}
             onPress={onRefund} disabled={busy}
           >
-            <Text style={S.refundTxt}>↩  Cancel</Text>
+            {busy
+              ? <ActivityIndicator color="#FCA5A5" size="small" />
+              : <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
+                  {isRefundable ? '↩  Cancel & Refund' : '↩  Cancel'}
+                </Text>}
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -625,6 +642,16 @@ export default function QueueScreen() {
   };
   const doCancel = async (id: string) => {
     setBusy(id); try { await apiCancel(id); await inv(); } catch {} setBusy(null);
+  };
+  const doRefund = async (id: string) => {
+    setBusy(id);
+    try {
+      await apiRefund(id);
+      await inv();
+    } catch (e: any) {
+      console.warn('[Queue] Refund failed:', e?.message);
+    }
+    setBusy(null);
   };
 
   // ── Data (REST is primary; SSE is fallback before REST loads) ──────────────
@@ -824,15 +851,19 @@ export default function QueueScreen() {
                   if (tab === 'consulted') {
                     return <PastCard key={tok.id} tok={tok} />;
                   }
+                  const isRefundable = tok.source !== 'walkin'
+                    && tok.paymentStatus === 'paid'
+                    && !!tok.paymentId;
                   return (
                     <WaitingCard
                       key={tok.id} tok={tok}
                       busy={busyId === tok.id}
                       isManualNext={tok.id === manualNextId}
+                      isRefundable={isRefundable}
                       onSendNext={() => { setManualNext(tok.id); doCall(tok.id); }}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
-                      onRefund={() => doCancel(tok.id)}
+                      onRefund={() => isRefundable ? doRefund(tok.id) : doCancel(tok.id)}
                     />
                   );
                 })

@@ -109,6 +109,31 @@ router.get("/doctors/:doctorId/earnings", async (req, res) => {
   }
 });
 
+// GET /api/doctors/:doctorId/transactions
+router.get("/doctors/:doctorId/transactions", async (req, res) => {
+  try {
+    const snap = await getDocs(query(
+      collection(db, Collections.TRANSACTIONS),
+      where("doctorId", "==", req.params.doctorId),
+      limit(500),
+    ));
+    const transactions = snap.docs
+      .map(d => {
+        const data = d.data() as any;
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?.toMillis?.() ?? null,
+          updatedAt: data.updatedAt?.toMillis?.() ?? null,
+        };
+      })
+      .sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    res.json({ transactions });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/doctors/:doctorId/payouts — request a payout withdrawal
 router.post("/doctors/:doctorId/payouts", async (req, res) => {
   try {

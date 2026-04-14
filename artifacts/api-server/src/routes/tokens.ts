@@ -386,6 +386,29 @@ router.post("/tokens", async (req, res) => {
 
     const nextTokenNumber = resultTokenData.tokenNumber;
 
+    // Create transaction record for online paid bookings (not walk-in)
+    if (!isWalkinSource && paymentId && resultTokenData) {
+      try {
+        await addDoc(collection(db, Collections.TRANSACTIONS), {
+          doctorId,
+          patientId: patientId || null,
+          patientName,
+          tokenId:     tokenRef.id,
+          tokenNumber: nextTokenNumber,
+          amount:      doctorEarns,
+          type:        "earning",
+          status:      "earned",
+          source:      "online",
+          shift,
+          date:        tokenDate,
+          paymentId:   paymentId || "",
+          paymentStatus: "paid",
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      } catch (_) {}
+    }
+
     try {
       await addDoc(collection(db, Collections.NOTIFICATIONS), {
         doctorId, type: "token_booked",
@@ -651,6 +674,71 @@ router.patch("/tokens/:tokenId/skip", async (req, res) => {
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
     res.json({ id: req.params.tokenId, status: "skipped" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/tokens/:tokenId/refund — doctor-initiated refund for a skipped online token
+router.patch("/tokens/:tokenId/refund", async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+    const tokenRef  = doc(db, Collections.TOKENS, tokenId);
+    const tokenSnap = await getDoc(tokenRef);
+    if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
+    const token = tokenSnap.data();
+
+    if (token.source === "walkin") {
+      return res.status(400).json({ error: "Walk-in tokens cannot be refunded online" });
+    }
+    if (token.status !== "skipped") {
+      return res.status(400).json({ error: "Only skipped tokens can be refunded by the doctor" });
+    }
+    // Idempotent — already refunded
+    if (token.paymentStatus === "refunded") {
+      return res.json({ id: tokenId, alreadyRefunded: true, message: "Already refunded" });
+    }
+    if (!token.paymentId) {
+      return res.status(400).json({ error: "No online payment found for this token" });
+    }
+
+    // Issue Razorpay refund
+    let refundId: string | null = null;
+    try {
+      const refund = await razorpay.payments.refund(token.paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
+      refundId = refund.id;
+      console.log(`[Tokens] Doctor refund issued: refundId=${refundId} tokenId=${tokenId}`);
+    } catch (e: any) {
+      console.error(`[Tokens] Doctor refund failed for tokenId=${tokenId}:`, e?.message);
+      return res.status(502).json({ error: "Refund via payment gateway failed. Please try again." });
+    }
+
+    // Find transaction record(s) for this token
+    const txSnap = await getDocs(query(
+      collection(db, Collections.TRANSACTIONS),
+      where("tokenId", "==", tokenId),
+    ));
+
+    // Update token + transaction records in one batch
+    const batch = writeBatch(db);
+    batch.update(tokenRef, {
+      paymentStatus: "refunded",
+      refundId: refundId ?? "",
+      refundedAt: Timestamp.now(),
+    });
+    txSnap.docs.forEach(d => {
+      batch.update(d.ref, {
+        type:   "refund",
+        status: "refunded",
+        refundId: refundId ?? "",
+        paymentStatus: "refunded",
+        updatedAt: Timestamp.now(),
+      });
+    });
+    await batch.commit();
+    emitDoctorTokenChange(token.doctorId);
+
+    res.json({ id: tokenId, refunded: true, refundId });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
