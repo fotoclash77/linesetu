@@ -14,6 +14,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
+import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
+import { useForceUpdate } from "../hooks/useForceUpdate";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -57,6 +59,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const forceUpdate = useForceUpdate();
 
   useEffect(() => {
     SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -76,6 +79,12 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <DoctorProvider>
             <RootLayoutNav />
+            {forceUpdate.required && Platform.OS !== "web" && (
+              <ForceUpdateScreen
+                message={forceUpdate.message}
+                storeUrl={forceUpdate.storeUrl}
+              />
+            )}
           </DoctorProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>

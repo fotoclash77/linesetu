@@ -17,6 +17,8 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
+import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
+import { useForceUpdate } from "@/hooks/useForceUpdate";
 
 // Set API base URL synchronously at module load time so queries always have it
 if (process.env.EXPO_PUBLIC_DOMAIN) {
@@ -74,6 +76,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const forceUpdate = useForceUpdate();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -91,6 +94,12 @@ export default function RootLayout() {
             <AuthProvider>
               <PatientNotifsProvider>
                 <RootLayoutNav />
+                {forceUpdate.required && Platform.OS !== "web" && (
+                  <ForceUpdateScreen
+                    message={forceUpdate.message}
+                    storeUrl={forceUpdate.storeUrl}
+                  />
+                )}
               </PatientNotifsProvider>
             </AuthProvider>
           </GestureHandlerRootView>

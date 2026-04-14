@@ -7,6 +7,7 @@ import patientsRouter from "./patients.js";
 import authRouter from "./auth.js";
 import razorpayRouter from "./razorpay.js";
 import notificationsRouter from "./notifications.js";
+import appConfigRouter from "./appConfig.js";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(queuesRouter);
 router.use(patientsRouter);
 router.use("/razorpay", razorpayRouter);
 router.use(notificationsRouter);
+router.use(appConfigRouter);
 
 export default router;
