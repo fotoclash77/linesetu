@@ -849,9 +849,6 @@ export default function SettingsScreen() {
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarEmoji}>⚕</Text>
                 </View>
-                <TouchableOpacity style={styles.cameraBtn} onPress={() => setSection('profile')}>
-                  <Text style={{ fontSize: 11 }}>📷</Text>
-                </TouchableOpacity>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
