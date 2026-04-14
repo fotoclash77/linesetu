@@ -14,12 +14,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-async function issueRefund(paymentId: string) {
+async function issueRefund(paymentId: string): Promise<{ refundId: string | null; ok: boolean }> {
   try {
     const refund = await razorpay.payments.refund(paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
     console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId}`);
+    return { refundId: refund.id, ok: true };
   } catch (e: any) {
     console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
+    return { refundId: null, ok: false };
   }
 }
 
@@ -279,11 +281,21 @@ router.post("/tokens", async (req, res) => {
     res.status(201).json(response);
   } catch (err: any) {
     if (err.message === "CAPACITY_FULL") {
-      if (paymentId) issueRefund(paymentId);
+      let refundInitiated = false;
+      let refundId: string | null = null;
+      if (paymentId) {
+        const result = await issueRefund(paymentId);
+        refundInitiated = result.ok;
+        refundId = result.refundId;
+      }
       return res.status(409).json({
         capacityFull: true,
+        refundInitiated,
+        refundId,
         error: "Booking failed: Slots are full.",
-        message: "Booking failed: Slots are full. Refund has been initiated automatically.",
+        message: refundInitiated
+          ? "Slots are full. Your payment has been refunded automatically."
+          : "Slots are full. Please contact support for a refund.",
       });
     }
     res.status(500).json({ error: err.message });

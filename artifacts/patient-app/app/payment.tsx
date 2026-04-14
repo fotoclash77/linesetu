@@ -288,10 +288,15 @@ export default function PaymentScreen() {
 
       if (bookRes.status === 409) {
         const errData = await bookRes.json().catch(() => ({}));
+        const refundMsg = errData.refundInitiated
+          ? errData.refundId
+            ? `Slots are full. Your payment has been refunded (Ref: ${errData.refundId}).`
+            : "Slots are full. Your payment has been refunded automatically."
+          : errData.message ?? "Slots are full. Please contact support for a refund.";
         setResultModal({
           visible: true,
           type: "full",
-          message: errData.message ?? "Slots are full. Refund has been initiated automatically.",
+          message: refundMsg,
         });
         return;
       }

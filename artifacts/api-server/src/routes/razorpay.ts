@@ -49,9 +49,9 @@ router.post("/verify", (req, res) => {
 });
 
 function requireRefundSecret(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  const provided = req.headers["x-refund-secret"];
-  if (!secret || !provided || provided !== secret) {
+  const token = process.env.INTERNAL_REFUND_TOKEN;
+  const provided = req.headers["x-internal-token"];
+  if (!token || !provided || provided !== token) {
     return res.status(403).json({ error: "Forbidden" });
   }
   next();
