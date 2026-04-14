@@ -434,7 +434,7 @@ export default function EarningsScreen() {
                     <Text style={styles.sectionDot}>💰</Text>
                     <Text style={styles.sectionTitle}>Your Fee Rates</Text>
                   </View>
-                  <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Doctor-set</Text>
+                  <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Set by Doctor</Text>
                 </View>
                 {[
                   { type: 'Normal E-Token',  val: `₹${inClinicFee   ?? 10}`, color: '#A5B4FC' },
