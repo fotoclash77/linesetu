@@ -117,13 +117,16 @@ router.post("/tokens/reserve", async (req, res) => {
 
   const tokenDate  = date || todayDate();
 
-  // Duplicate check — must be before the queue transaction (transactions can't do collection queries)
+  // Duplicate check — must be before the queue transaction (transactions can't do collection queries).
+  // Fail closed: if the check itself errors, return 503 rather than letting a duplicate slip through.
   try {
     const isDuplicate = await hasDuplicateActiveToken(patientId, doctorId, tokenDate, shift, forMemberId);
     if (isDuplicate) {
       return res.status(409).json({ reserved: false, duplicateBooking: true, error: "Already booked for this slot" });
     }
-  } catch { /* non-fatal — proceed to transaction */ }
+  } catch (err) {
+    return res.status(503).json({ reserved: false, error: "Duplicate check failed. Please try again." });
+  }
 
   const queueId    = queueDocId(doctorId, tokenDate, shift);
   const queueRef   = doc(db, Collections.QUEUES, queueId);

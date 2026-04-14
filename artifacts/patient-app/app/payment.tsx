@@ -297,7 +297,26 @@ export default function PaymentScreen() {
       if (bookRes.status === 409) {
         const errData = await bookRes.json().catch(() => ({}));
         if (errData.duplicateBooking) {
-          setResultModal({ visible: true, type: "duplicate", message: "You already have an active token for this slot. Check My Bookings to view it." });
+          // Payment was already taken — attempt refund before showing modal
+          let dupRefundInitiated = false;
+          let dupRefundId: string | null = null;
+          if (paymentId && orderId && signature) {
+            try {
+              const rfRes = await fetch(`${apiBase}/razorpay/refund`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentId, orderId, razorpay_signature: signature }),
+              });
+              const rfData = await rfRes.json().catch(() => ({}));
+              if (rfData.success) { dupRefundInitiated = true; dupRefundId = rfData.refundId ?? null; }
+            } catch (_) {}
+          }
+          const dupMsg = dupRefundInitiated
+            ? dupRefundId
+              ? `You already have an active token for this slot. Your payment has been refunded (Ref: ${dupRefundId}).`
+              : "You already have an active token for this slot. Your payment has been refunded automatically."
+            : "You already have an active token for this slot. If payment was deducted, please contact support.";
+          setResultModal({ visible: true, type: "duplicate", message: dupMsg });
           return;
         }
         // Server auto-refunds on CAPACITY_FULL and writes a failedBookings record.
