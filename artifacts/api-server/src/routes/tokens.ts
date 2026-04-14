@@ -10,6 +10,107 @@ import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
 
 const router = Router();
 
+const RESERVATION_TTL_MS = 5 * 60 * 1000;
+interface Reservation {
+  tokenNumber: number;
+  patientId: string;
+  expiresAt: number;
+}
+const reservations = new Map<string, Reservation[]>();
+
+function reservationKey(doctorId: string, date: string, shift: string) {
+  return `${doctorId}_${date}_${shift}`;
+}
+
+function cleanExpiredReservations(key: string) {
+  const now = Date.now();
+  const list = reservations.get(key);
+  if (!list) return;
+  const active = list.filter(r => r.expiresAt > now);
+  if (active.length === 0) reservations.delete(key);
+  else reservations.set(key, active);
+}
+
+function countActiveReservations(key: string): number {
+  cleanExpiredReservations(key);
+  return reservations.get(key)?.length ?? 0;
+}
+
+function consumeReservation(key: string, patientId: string): Reservation | null {
+  cleanExpiredReservations(key);
+  const list = reservations.get(key);
+  if (!list) return null;
+  const idx = list.findIndex(r => r.patientId === patientId);
+  if (idx === -1) return null;
+  const [res] = list.splice(idx, 1);
+  if (list.length === 0) reservations.delete(key);
+  return res;
+}
+
+router.post("/tokens/reserve", async (req, res) => {
+  try {
+    const { doctorId, patientId, date, shift = "morning" } = req.body;
+    if (!doctorId || !patientId) {
+      return res.status(400).json({ error: "doctorId and patientId are required" });
+    }
+
+    const tokenDate = date || todayDate();
+    const key = reservationKey(doctorId, tokenDate, shift);
+    cleanExpiredReservations(key);
+
+    const existing = reservations.get(key);
+    if (existing?.find(r => r.patientId === patientId)) {
+      const r = existing.find(r => r.patientId === patientId)!;
+      return res.json({
+        reserved: true,
+        tokenNumber: r.tokenNumber,
+        expiresAt: r.expiresAt,
+        ttlMs: r.expiresAt - Date.now(),
+      });
+    }
+
+    const queueId   = queueDocId(doctorId, tokenDate, shift);
+    const queueRef  = doc(db, Collections.QUEUES, queueId);
+    const queueSnap = await getDoc(queueRef);
+
+    const currentNextToken = queueSnap.exists()
+      ? ((queueSnap.data().nextTokenNumber as number) ?? 0)
+      : 0;
+    const currentBooked = queueSnap.exists()
+      ? ((queueSnap.data().totalBooked as number) ?? 0)
+      : 0;
+
+    const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
+    const doctorSnap = await getDoc(doctorRef);
+    const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
+    const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
+    const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
+
+    const activeReservations = countActiveReservations(key);
+    const effectiveBooked = currentBooked + activeReservations;
+
+    if (maxTokens !== null && effectiveBooked >= maxTokens) {
+      return res.status(409).json({ reserved: false, capacityFull: true, error: "No slots available" });
+    }
+
+    const reservedTokenNumber = currentNextToken + activeReservations + 1;
+    const expiresAt = Date.now() + RESERVATION_TTL_MS;
+    const reservation: Reservation = { tokenNumber: reservedTokenNumber, patientId, expiresAt };
+    const list = reservations.get(key) ?? [];
+    list.push(reservation);
+    reservations.set(key, list);
+
+    res.json({
+      reserved: true,
+      tokenNumber: reservedTokenNumber,
+      expiresAt,
+      ttlMs: RESERVATION_TTL_MS,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/tokens — atomic token booking with capacity check
 router.post("/tokens", async (req, res) => {
   try {
@@ -29,6 +130,9 @@ router.post("/tokens", async (req, res) => {
     const queueId   = queueDocId(doctorId, tokenDate, shift);
     const queueRef  = doc(db, Collections.QUEUES, queueId);
     const tokenRef  = doc(collection(db, Collections.TOKENS));
+
+    const resKey = reservationKey(doctorId, tokenDate, shift);
+    const consumed = patientId ? consumeReservation(resKey, patientId) : null;
 
     const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
     const doctorSnap = await getDoc(doctorRef);

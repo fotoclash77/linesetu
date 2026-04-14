@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useBookToken } from "@workspace/api-client-react";
+import { EventSourcePolyfill } from "event-source-polyfill";
 import React, { useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -20,6 +21,7 @@ import RazorpayCheckout from "@/components/RazorpayCheckout";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
+const RNEventSource = typeof EventSource !== "undefined" ? EventSource : EventSourcePolyfill;
 const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
 
 const isWeb = Platform.OS === "web";
