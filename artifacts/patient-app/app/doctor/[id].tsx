@@ -53,6 +53,9 @@ export default function DoctorDetailScreen() {
   const { data: doctorData } = useQuery({
     ...getGetDoctorQueryOptions(id ?? ""),
     enabled: !isDemoId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: 15_000,
   });
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
