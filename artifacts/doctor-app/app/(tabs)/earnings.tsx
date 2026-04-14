@@ -145,7 +145,8 @@ export default function EarningsScreen() {
       return res.json();
     },
     enabled:  !!doctor?.id && tab === 'payouts',
-    staleTime: 30_000,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 
   // Withdraw modal state
@@ -364,10 +365,10 @@ export default function EarningsScreen() {
                       <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
                     </View>
                     {[
-                      { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   || 10), count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   || 10}/token` },
-                      { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee || 20), count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee || 20}/token` },
+                      { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   ?? 10), count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   ?? 10}/token` },
+                      { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee ?? 20), count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee ?? 20}/token` },
                     ].map((row) => {
-                      const total = (d.tokensNormal * (inClinicFee || 10)) + (d.tokensEmergency * (inClinicEmFee || 20));
+                      const total = (d.tokensNormal * (inClinicFee ?? 10)) + (d.tokensEmergency * (inClinicEmFee ?? 20));
                       const pct = total > 0 ? Math.round((row.value / total) * 100) : 0;
                       return (
                         <View key={row.label} style={styles.breakdownRow}>
@@ -406,8 +407,8 @@ export default function EarningsScreen() {
                   <Text style={styles.platformSetText}>Platform-set</Text>
                 </View>
                 {[
-                  { type: 'Normal E-Token',    earn: `₹${inClinicFee   || 10}`, platform: '₹10', patient: `₹${(inClinicFee   || 10) + 10}` },
-                  { type: 'Emergency E-Token', earn: `₹${inClinicEmFee || 20}`, platform: '₹10', patient: `₹${(inClinicEmFee || 20) + 10}` },
+                  { type: 'Normal E-Token',    earn: `₹${inClinicFee   ?? 10}`, platform: '₹10', patient: `₹${(inClinicFee   ?? 10) + 10}` },
+                  { type: 'Emergency E-Token', earn: `₹${inClinicEmFee ?? 20}`, platform: '₹10', patient: `₹${(inClinicEmFee ?? 20) + 10}` },
                 ].map(r => (
                   <View key={r.type} style={styles.rateRow}>
                     <Text style={styles.rateType} numberOfLines={1}>{r.type}</Text>
@@ -433,9 +434,9 @@ export default function EarningsScreen() {
                   <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Doctor-set</Text>
                 </View>
                 {[
-                  { type: 'Online E-Token',    val: inClinicFee    ? `₹${inClinicFee}`    : 'Not set', color: '#A5B4FC' },
-                  { type: 'Emergency Token',   val: inClinicEmFee  ? `₹${inClinicEmFee}`  : 'Not set', color: '#FCD34D' },
-                  { type: 'Walk-in / In-clinic', val: inClinicWalkin ? `₹${inClinicWalkin}` : 'Not set', color: '#86EFAC' },
+                  { type: 'Online E-Token',      val: `₹${inClinicFee    ?? 10}`, color: '#A5B4FC' },
+                  { type: 'Emergency Token',     val: `₹${inClinicEmFee  ?? 20}`, color: '#FCD34D' },
+                  { type: 'Walk-in / In-clinic', val: `₹${inClinicWalkin ?? 0}`,  color: '#86EFAC' },
                 ].map(r => (
                   <View key={r.type} style={[styles.rateRow, { justifyContent: 'space-between' }]}>
                     <Text style={styles.rateType}>{r.type}</Text>
