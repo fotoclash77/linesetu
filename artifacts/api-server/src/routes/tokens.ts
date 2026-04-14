@@ -16,8 +16,8 @@ const razorpay = new Razorpay({
 
 async function issueRefund(paymentId: string) {
   try {
-    await (razorpay.payments as any).refund(paymentId, {});
-    console.log(`[Tokens] Auto-refund issued for paymentId=${paymentId}`);
+    const refund = await razorpay.payments.refund(paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
+    console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId}`);
   } catch (e: any) {
     console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
   }
@@ -115,6 +115,7 @@ router.post("/tokens/reserve", async (req, res) => {
       };
     });
 
+    emitDoctorTokenChange(doctorId);
     res.json(reservedResponse);
   } catch (err: any) {
     if (err.message === "CAPACITY_FULL") {
@@ -133,6 +134,7 @@ router.post("/tokens", async (req, res) => {
       type = "normal", date, shift = "morning",
       source = "online",
       age, gender, address, area, notes,
+      expectedTokenNumber,
     } = req.body;
 
     if (!doctorId || !patientName) {
@@ -177,7 +179,9 @@ router.post("/tokens", async (req, res) => {
 
       const nextTokenNumber = currentNextToken + 1;
 
-      if (hasReservation) {
+      if (expectedTokenNumber !== undefined && expectedTokenNumber !== null && nextTokenNumber !== Number(expectedTokenNumber)) {
+        autoAdjusted = true;
+      } else if (hasReservation) {
         const reservedEstimate = currentBooked + otherActiveCount + 1;
         if (reservedEstimate !== nextTokenNumber) autoAdjusted = true;
       }

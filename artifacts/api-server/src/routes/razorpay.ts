@@ -48,4 +48,21 @@ router.post("/verify", (req, res) => {
   }
 });
 
+router.post("/refund", async (req, res) => {
+  try {
+    const { paymentId, amount } = req.body;
+    if (!paymentId || typeof paymentId !== "string") {
+      return res.status(400).json({ error: "paymentId (string) is required" });
+    }
+    const params: Record<string, unknown> = {};
+    if (amount && typeof amount === "number" && amount > 0) params.amount = amount;
+    const refund = await razorpay.payments.refund(paymentId, params as Parameters<typeof razorpay.payments.refund>[1]);
+    console.log(`[Razorpay] Refund initiated: ${refund.id} for payment ${paymentId}`);
+    res.json({ success: true, refundId: refund.id, status: refund.status, amount: refund.amount });
+  } catch (err: any) {
+    console.error("[Razorpay] refund error:", err);
+    res.status(500).json({ error: err.message ?? "Refund failed" });
+  }
+});
+
 export default router;
