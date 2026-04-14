@@ -202,8 +202,10 @@ router.post("/tokens", async (req, res) => {
         throw new Error("CAPACITY_FULL");
       }
 
-      // Token number derived from totalBooked so SSE estimate and assignment always agree
-      const nextTokenNumber = currentBooked + 1;
+      // Token number uses nextTokenNumber (monotonic counter — never decremented by cancellations)
+      // This prevents token number reuse even when totalBooked shrinks after cancellations.
+      const currentNextToken = (queueData.nextTokenNumber as number) ?? 0;
+      const nextTokenNumber = currentNextToken + 1;
 
       if (expectedTokenNumber !== undefined && expectedTokenNumber !== null && nextTokenNumber !== Number(expectedTokenNumber)) {
         autoAdjusted = true;

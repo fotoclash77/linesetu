@@ -112,13 +112,16 @@ router.get("/queues/:doctorId/next-token/stream", async (req, res) => {
       const shiftCfg   = doctorData?.calendar?.[date]?.[shift];
       const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
-      const queueData     = queueSnap.exists() ? queueSnap.data() : {} as any;
-      const totalBooked   = (queueData.totalBooked as number) ?? 0;
-      const pending       = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
+      const queueData          = queueSnap.exists() ? queueSnap.data() : {} as any;
+      const totalBooked        = (queueData.totalBooked as number) ?? 0;
+      const lastAssigned       = (queueData.nextTokenNumber as number) ?? 0; // monotonic counter
+      const pending            = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
       const activeReservations = countActiveReservations(pending);
-      const effectiveBooked    = totalBooked + activeReservations;
 
-      const nextTokenNumber = effectiveBooked + 1;
+      // Next token uses the monotonic counter (never decremented by cancellations)
+      const nextTokenNumber = lastAssigned + activeReservations + 1;
+      // Remaining capacity uses totalBooked (active, non-cancelled) + reservations
+      const effectiveBooked = totalBooked + activeReservations;
       const remaining = maxTokens !== null ? Math.max(0, maxTokens - effectiveBooked) : null;
       const isFull    = maxTokens !== null && effectiveBooked >= maxTokens;
 
