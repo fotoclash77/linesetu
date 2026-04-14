@@ -861,7 +861,7 @@ export default function SettingsScreen() {
                 <Text style={styles.profileSpec}>{specialisation} · {qualifications}</Text>
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                   {doctor?.isAvailable !== false ? (
-                    <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Online</Text></View>
+                    <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Available</Text></View>
                   ) : (
                     <View style={styles.unavailBadge}><Text style={styles.unavailBadgeText}>● Unavailable</Text></View>
                   )}
