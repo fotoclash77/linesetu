@@ -362,10 +362,11 @@ export default function PaymentScreen() {
     ? ["#DC2626", "#EF4444"]
     : ["#4F46E5", "#0EA5E9"];
 
+  const fmtToken = (n: number) => isEmergency ? `E${n}` : `#${n}`;
   const displayTokenNum = bookedTokenNum
-    ? `#${bookedTokenNum}`
+    ? fmtToken(bookedTokenNum)
     : nextToken
-      ? `#${nextToken}`
+      ? fmtToken(nextToken)
       : "…";
 
   const tokenLabel = bookedTokenNum
@@ -588,7 +589,7 @@ export default function PaymentScreen() {
                   : "Booking Confirmed!"}
             </Text>
             {resultModal.tokenNumber && resultModal.type !== "full" && (
-              <Text style={modalStyles.tokenNum}>#{resultModal.tokenNumber}</Text>
+              <Text style={modalStyles.tokenNum}>{isEmergency ? `E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
             )}
             <Text style={modalStyles.message}>{resultModal.message}</Text>
             <Pressable style={[modalStyles.btn, {

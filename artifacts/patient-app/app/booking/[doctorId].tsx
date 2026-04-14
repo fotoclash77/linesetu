@@ -454,6 +454,11 @@ export default function BookingScreen() {
                           {isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
                           {isFull && <Text style={styles.fullTag}>Full</Text>}
                           {!isSelected && !isFull && <View style={styles.radioEmpty} />}
+                          {!isFull && (
+                            <Text style={{ fontSize: 11, fontWeight: "900", color: isEmergency ? "#F87171" : "#A5B4FC", letterSpacing: 0.3 }}>
+                              {isEmergency ? `E${booked + 1}` : `#${booked + 1}`}
+                            </Text>
+                          )}
                         </View>
                       </View>
                       <View style={{ gap: 4 }}>
