@@ -1143,6 +1143,12 @@ export default function SettingsScreen() {
                     </>}
               </TouchableOpacity>
             </ScrollView>
+            {uploadingPhoto && (
+              <View style={styles.galleryLoadingOverlay}>
+                <ActivityIndicator color={TEAL_LT} size="small" />
+                <Text style={styles.galleryLoadingText}>Opening photo picker...</Text>
+              </View>
+            )}
 
             {resultPhotos.length === 0 && !uploadingPhoto && (
               <Text style={styles.galleryEmpty}>No photos yet — tap Add Photo to upload</Text>
@@ -1356,6 +1362,8 @@ const styles = StyleSheet.create({
   galleryAddBtn: { width: 100, height: 80, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: 'rgba(45,212,191,0.04)' },
   galleryAddIcon: { fontSize: 22, color: TEAL_LT, fontWeight: '300' },
   galleryAddTxt: { fontSize: 10, fontWeight: '700', color: TEAL_LT },
+  galleryLoadingOverlay: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' },
+  galleryLoadingText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
   galleryEmpty: { fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', textAlign: 'center', paddingTop: 4, paddingBottom: 2 },
   versionText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.15)' },
   buildText: { fontSize: 9, color: 'rgba(255,255,255,0.1)', marginTop: 3 },
