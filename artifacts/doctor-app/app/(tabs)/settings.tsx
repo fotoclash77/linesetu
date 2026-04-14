@@ -975,13 +975,11 @@ export default function SettingsScreen() {
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
               <View style={styles.avatarWrap}>
-                <TouchableOpacity onPress={() => setSection('profile')} activeOpacity={0.85} style={{ borderRadius: 16, overflow: 'hidden' }}>
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarEmoji}>⚕</Text>
-                  </View>
-                  <View style={styles.changePhotoBar}>
-                    <Text style={styles.changePhotoBarText}>□ Change Photo</Text>
-                  </View>
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarEmoji}>⚕</Text>
+                </View>
+                <TouchableOpacity style={styles.cameraBtn} onPress={() => setSection('profile')}>
+                  <Text style={{ fontSize: 11 }}>📷</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -1010,9 +1008,6 @@ export default function SettingsScreen() {
                   <Text style={styles.profileStatLabel}>{s.label}</Text>
                 </View>
               ))}
-            </View>
-            <View style={styles.photoHintRow}>
-              <Text style={styles.photoHintText}>□  Please upload a square (1:1) photo for best results</Text>
             </View>
           </View>
 
