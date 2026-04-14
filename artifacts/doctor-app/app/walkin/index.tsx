@@ -143,12 +143,16 @@ export default function AddWalkinScreen() {
   const maxTokenInQueue = queue.reduce((m, t) => Math.max(m, t.tokenNumber ?? 0), 0);
   const nextTokenPreview = maxTokenInQueue + 1;
 
-  // Max tokens from calendar for this date+shift
-  const calendarDay = (doctor as any)?.calendar?.[selectedDate];
-  const shiftCfg = calendarDay?.[selectedShift];
-  const maxTokens = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
+  // Calendar checks — holiday by default if no entry exists
+  const calendarDay    = (doctor as any)?.calendar?.[selectedDate];
+  const shiftCfg       = calendarDay?.[selectedShift];
+  const isHoliday      = !calendarDay || calendarDay.off === true;
+  const isShiftEnabled = !isHoliday && shiftCfg?.enabled === true;
+  const isBlocked      = isHoliday || !isShiftEnabled;
+
+  const maxTokens   = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
   const activeTokens = queue.filter(t => t.status !== 'cancelled').length;
-  const isShiftFull = maxTokens !== null && activeTokens >= maxTokens;
+  const isShiftFull  = !isBlocked && maxTokens !== null && activeTokens >= maxTokens;
 
   const handleBook = async () => {
     const trimmedName    = name.trim();
@@ -167,6 +171,8 @@ export default function AddWalkinScreen() {
     if (!trimmedAddress) { setBookingError('Address is required'); return; }
     if (!trimmedArea)    { setBookingError('Area / city is required'); return; }
     if (!doctor?.id)     { setBookingError('Doctor not loaded'); return; }
+    if (isHoliday)       { setBookingError('Cannot book — this date is marked as a holiday'); return; }
+    if (!isShiftEnabled) { setBookingError(`Cannot book — ${selectedShift} shift is not scheduled for this date`); return; }
     if (isShiftFull)     { setBookingError(`Shift is full (${maxTokens}/${maxTokens} tokens)`); return; }
 
     setBooking(true); setBookingError('');
@@ -238,25 +244,52 @@ export default function AddWalkinScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Holiday / shift-blocked banner */}
+          {isBlocked && (
+            <View style={{
+              marginBottom: 12, paddingVertical: 14, paddingHorizontal: 16,
+              borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.12)',
+              borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
+              flexDirection: 'row', alignItems: 'center', gap: 10,
+            }}>
+              <Text style={{ fontSize: 22 }}>🚫</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FCA5A5', fontSize: 14, fontWeight: '700' }}>
+                  {isHoliday ? 'Holiday — Booking Not Allowed' : `${selectedShift === 'morning' ? 'Morning' : 'Evening'} Shift Not Scheduled`}
+                </Text>
+                <Text style={{ color: 'rgba(252,161,161,0.7)', fontSize: 12, marginTop: 3 }}>
+                  {isHoliday
+                    ? 'This date has no active shifts. Please pick a working day from the Schedule picker.'
+                    : 'This shift is not enabled for the selected date. Please choose a different date or shift.'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Next token info */}
           <View style={[styles.nextTokenCard, {
-            backgroundColor: isShiftFull ? 'rgba(239,68,68,0.13)' : isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(13,148,136,0.13)',
-            borderColor:     isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.3)'  : 'rgba(13,148,136,0.3)',
+            backgroundColor: isBlocked ? 'rgba(239,68,68,0.08)' : isShiftFull ? 'rgba(239,68,68,0.13)' : isEmerg ? 'rgba(239,68,68,0.13)' : 'rgba(13,148,136,0.13)',
+            borderColor:     isBlocked ? 'rgba(239,68,68,0.25)' : isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.3)'  : 'rgba(13,148,136,0.3)',
           }]}>
             <View style={styles.nextTokenLeft}>
               <View style={[styles.nextTokenBox, {
-                backgroundColor: isShiftFull ? 'rgba(239,68,68,0.25)' : isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(13,148,136,0.25)',
-                borderColor:     isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.4)'  : 'rgba(45,212,191,0.4)',
+                backgroundColor: isBlocked ? 'rgba(239,68,68,0.18)' : isShiftFull ? 'rgba(239,68,68,0.25)' : isEmerg ? 'rgba(239,68,68,0.25)' : 'rgba(13,148,136,0.25)',
+                borderColor:     isBlocked ? 'rgba(239,68,68,0.35)' : isShiftFull ? 'rgba(239,68,68,0.4)'  : isEmerg ? 'rgba(239,68,68,0.4)'  : 'rgba(45,212,191,0.4)',
               }]}>
-                <Text style={[styles.nextTokenLabel, { color: isShiftFull ? '#FCA5A5' : isEmerg ? '#FCA5A5' : TEAL_LT }]}>{isShiftFull ? 'Full' : 'Next'}</Text>
-                <Text style={styles.nextTokenNum}>{queueLoading ? '…' : isShiftFull ? '🚫' : `#${nextTokenPreview}`}</Text>
+                <Text style={[styles.nextTokenLabel, { color: (isBlocked || isShiftFull) ? '#FCA5A5' : isEmerg ? '#FCA5A5' : TEAL_LT }]}>
+                  {isBlocked ? 'Off' : isShiftFull ? 'Full' : 'Next'}
+                </Text>
+                <Text style={styles.nextTokenNum}>{isBlocked ? '🏖' : queueLoading ? '…' : isShiftFull ? '🚫' : `#${nextTokenPreview}`}</Text>
               </View>
               <View>
-                <Text style={styles.nextTokenTitle}>{isShiftFull ? 'Shift Full' : 'Next Token'}</Text>
+                <Text style={styles.nextTokenTitle}>{isBlocked ? (isHoliday ? 'Holiday' : 'Shift Off') : isShiftFull ? 'Shift Full' : 'Next Token'}</Text>
                 <Text style={styles.nextTokenValue}>
-                  {isShiftFull ? `All ${maxTokens} slots taken` : `${isEmerg ? 'Emergency' : 'Normal'} ${queueLoading ? '' : `#${nextTokenPreview}`}`}
+                  {isBlocked
+                    ? (isHoliday ? 'No working shifts today' : `${selectedShift} not enabled`)
+                    : isShiftFull ? `All ${maxTokens} slots taken`
+                    : `${isEmerg ? 'Emergency' : 'Normal'} ${queueLoading ? '' : `#${nextTokenPreview}`}`}
                 </Text>
-                {maxTokens !== null && !isShiftFull && (
+                {!isBlocked && maxTokens !== null && !isShiftFull && (
                   <Text style={[styles.nextTokenTitle, { color: activeTokens / maxTokens >= 0.8 ? '#FCA5A5' : TEAL_LT, marginTop: 2 }]}>
                     {activeTokens}/{maxTokens} slots used
                   </Text>
@@ -356,12 +389,26 @@ export default function AddWalkinScreen() {
           )}
 
           <TouchableOpacity
-            onPress={handleBook} disabled={booking || isShiftFull}
-            style={[styles.bookBtn, isShiftFull ? styles.bookBtnFull : isEmerg ? styles.bookBtnEmergency : styles.bookBtnNormal, (booking || isShiftFull) && { opacity: 0.6 }]}
+            onPress={handleBook}
+            disabled={booking || isShiftFull || isBlocked}
+            style={[
+              styles.bookBtn,
+              isBlocked   ? styles.bookBtnFull :
+              isShiftFull ? styles.bookBtnFull :
+              isEmerg     ? styles.bookBtnEmergency :
+                            styles.bookBtnNormal,
+              (booking || isShiftFull || isBlocked) && { opacity: 0.55 },
+            ]}
           >
             {booking
               ? <ActivityIndicator color="#FFF" size="small" />
-              : <Text style={styles.bookBtnText}>{isShiftFull ? '🚫 Shift Full — No More Tokens' : `✚ Book ${tokenType} Token — FREE`}</Text>}
+              : <Text style={styles.bookBtnText}>
+                  {isBlocked
+                    ? (isHoliday ? '🏖 Holiday — Cannot Book' : '🚫 Shift Not Scheduled')
+                    : isShiftFull
+                    ? '🚫 Shift Full — No More Tokens'
+                    : `✚ Book ${tokenType} Token — FREE`}
+                </Text>}
           </TouchableOpacity>
 
           {/* Live queue for selected date+shift */}
