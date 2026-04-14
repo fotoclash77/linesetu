@@ -14,12 +14,13 @@ import {
   orderBy,
   limit,
   writeBatch,
+  runTransaction,
   Timestamp,
   increment,
   arrayUnion,
   arrayRemove,
   type Firestore,
-} from "firebase/firestore/lite";
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey:            process.env.FIREBASE_API_KEY,
@@ -39,7 +40,7 @@ export const db: Firestore = getFirestore(app);
 
 export {
   collection, doc, getDocs, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, orderBy, limit, writeBatch,
+  query, where, orderBy, limit, writeBatch, runTransaction,
   Timestamp, increment, arrayUnion, arrayRemove,
 };
 

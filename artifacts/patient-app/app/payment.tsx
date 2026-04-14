@@ -3,10 +3,10 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useBookToken } from "@workspace/api-client-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -64,7 +64,6 @@ export default function PaymentScreen() {
   const date        = params.date        ?? "";
   const shift       = (params.shift      ?? "morning").toLowerCase();
   const clinic      = params.clinic      ?? "Clinic";
-  const clinicLoc   = params.clinicLoc   ?? "";
   const time        = params.time        ?? "";
   const patientName = params.patientName ?? patient?.name ?? "Patient";
   const tokenType   = (params.tokenType  ?? "normal") as "normal" | "emergency";
@@ -84,33 +83,88 @@ export default function PaymentScreen() {
   const [liveTime, setLiveTime] = useState(time);
   const [livePhone, setLivePhone] = useState("");
 
+  // Real-time next token via SSE
+  const [nextToken, setNextToken] = useState<number | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [maxTokens, setMaxTokens] = useState<number | null>(null);
+  const [isFull, setIsFull] = useState(false);
+  const nextTokenRef = useRef<number | null>(null);
+
+  // Result modal state
+  const [resultModal, setResultModal] = useState<{
+    visible: boolean;
+    type: "success" | "adjusted" | "full";
+    message: string;
+    tokenNumber?: number;
+    tokenId?: string;
+  }>({ visible: false, type: "success", message: "" });
+
   useEffect(() => {
     if (!params.doctorId) return;
     const ref = doc(db, "doctors", params.doctorId);
     const unsub = onSnapshot(ref, (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as any;
-      // Doctor-level phone (clinic contact)
       if (data.phone) setLivePhone(data.phone);
-      // Shift-specific data from calendar
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
       if (shiftCfg) {
         if (shiftCfg.clinicName) setLiveClinic(shiftCfg.clinicName);
         if (shiftCfg.startTime && shiftCfg.endTime)
           setLiveTime(`${shiftCfg.startTime} – ${shiftCfg.endTime}`);
-        // clinicPhone at shift level overrides doctor-level
         if (shiftCfg.clinicPhone) setLivePhone(shiftCfg.clinicPhone);
       }
-    }, () => {/* ignore errors — fallback to param values already set */});
+    }, () => {});
     return () => unsub();
   }, [params.doctorId, date, shift]);
 
-  const bookToken = useBookToken();
+  // SSE: subscribe to next-token stream
+  useEffect(() => {
+    if (!params.doctorId) return;
+    const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+    const url = `${BASE}/api/queues/${params.doctorId}/next-token/stream?date=${date}&shift=${shift}`;
 
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(url);
+      es.onmessage = (ev) => {
+        try {
+          const d = JSON.parse(ev.data);
+          setNextToken(d.nextTokenNumber ?? null);
+          setRemaining(d.remaining ?? null);
+          setMaxTokens(d.maxTokens ?? null);
+          setIsFull(d.isFull === true);
+          nextTokenRef.current = d.nextTokenNumber ?? null;
+        } catch (_) {}
+      };
+      return () => es.close();
+    }
+
+    // Polling fallback
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${BASE}/api/queues/${params.doctorId}?date=${date}&shift=${shift}`);
+        const data = await res.json();
+        if (active) {
+          const nt = (data.nextTokenNumber ?? 0) + 1;
+          setNextToken(nt);
+          nextTokenRef.current = nt;
+          setRemaining(data.maxTokens != null ? Math.max(0, data.maxTokens - (data.totalBooked ?? 0)) : null);
+          setMaxTokens(data.maxTokens ?? null);
+          setIsFull(data.maxTokens != null && (data.totalBooked ?? 0) >= data.maxTokens);
+        }
+      } catch (_) {}
+    };
+    poll();
+    const iv = setInterval(poll, 5_000);
+    return () => { active = false; clearInterval(iv); };
+  }, [params.doctorId, date, shift]);
+
+  const bookToken = useBookToken();
   const apiBase = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
   async function handlePay() {
+    if (isFull) return;
     setLoading(true);
     try {
       const amountPaise = payableNow * 100;
@@ -133,7 +187,10 @@ export default function PaymentScreen() {
         setRzpVisible(true);
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message ?? "Could not initiate payment.");
+      setResultModal({
+        visible: true, type: "full",
+        message: err.message ?? "Could not initiate payment.",
+      });
     } finally {
       setLoading(false);
     }
@@ -166,13 +223,26 @@ export default function PaymentScreen() {
     setRzpVisible(false);
     setLoading(true);
     try {
-      await fetch(`${apiBase}/razorpay/verify`, {
+      const verifyRes = await fetch(`${apiBase}/razorpay/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature }),
       });
-      const booked = await bookToken.mutateAsync({
-        data: {
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        setResultModal({
+          visible: true, type: "full",
+          message: "Payment verification failed. Please contact support if money was deducted.",
+        });
+        return;
+      }
+
+      const expectedToken = nextTokenRef.current;
+
+      const bookRes = await fetch(`${apiBase}/tokens`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           doctorId: params.doctorId!,
           patientId: patient?.id ?? params.patientId ?? undefined,
           patientName: patientName,
@@ -181,20 +251,91 @@ export default function PaymentScreen() {
           shift,
           type: tokenType,
           paymentId,
-        } as any,
+          expectedTokenNumber: expectedToken,
+        }),
       });
-      if (booked?.tokenNumber) setBookedTokenNum(booked.tokenNumber);
-      router.replace(`/queue/${booked.id}` as any);
+
+      if (bookRes.status === 409) {
+        // Capacity full — trigger auto-refund
+        try {
+          await fetch(`${apiBase}/razorpay/refund`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId }),
+          });
+        } catch (_) {}
+
+        setResultModal({
+          visible: true,
+          type: "full",
+          message: "Booking failed: Slots are full. Refund initiated.",
+        });
+        return;
+      }
+
+      if (!bookRes.ok) {
+        throw new Error("Booking failed");
+      }
+
+      const booked = await bookRes.json();
+      const tokenNum = booked.tokenNumber;
+      setBookedTokenNum(tokenNum);
+
+      if (booked.autoAdjusted) {
+        setResultModal({
+          visible: true,
+          type: "adjusted",
+          message: booked.message || `Selected token unavailable. Assigned next available token: ${tokenNum}.`,
+          tokenNumber: tokenNum,
+          tokenId: booked.id,
+        });
+      } else {
+        setResultModal({
+          visible: true,
+          type: "success",
+          message: booked.message || `Token booked successfully. Your token number is ${tokenNum}.`,
+          tokenNumber: tokenNum,
+          tokenId: booked.id,
+        });
+      }
     } catch {
-      Alert.alert("Booking Failed", "Payment received but booking failed. Contact support.");
+      try {
+        await fetch(`${apiBase}/razorpay/refund`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId }),
+        });
+      } catch (_) {}
+      setResultModal({
+        visible: true, type: "full",
+        message: "Booking failed after payment. Refund has been initiated.",
+      });
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleModalDismiss() {
+    const { type, tokenId } = resultModal;
+    setResultModal({ ...resultModal, visible: false });
+    if ((type === "success" || type === "adjusted") && tokenId) {
+      router.replace(`/queue/${tokenId}` as any);
     }
   }
 
   const btnGradient: [string, string] = isEmergency
     ? ["#DC2626", "#EF4444"]
     : ["#4F46E5", "#0EA5E9"];
+
+  const displayTokenNum = bookedTokenNum
+    ? `#${bookedTokenNum}`
+    : nextToken
+      ? `#${nextToken}`
+      : "…";
+
+  const tokenLabel = bookedTokenNum
+    ? "Token No."
+    : "Next Available";
 
   return (
     <View style={styles.container}>
@@ -238,13 +379,13 @@ export default function PaymentScreen() {
               )}
             </View>
 
-            {/* Info Grid — real-time from Firebase */}
+            {/* Info Grid — real-time from Firebase + SSE */}
             <View style={styles.infoGrid}>
               {([
                 { icon: "calendar",                          label: "Date",         val: fmtDate(date) },
                 { icon: shift === "morning" ? "sun" : "moon", label: "Shift",       val: `${shift.charAt(0).toUpperCase() + shift.slice(1)} Shift` },
                 { icon: "clock",                             label: "Time",         val: liveTime || "—" },
-                { icon: "hash",                              label: "Token No.",    val: bookedTokenNum ? `#${bookedTokenNum}` : "—" },
+                { icon: "hash",                              label: tokenLabel,     val: displayTokenNum },
                 { icon: "home",                              label: "Clinic",       val: liveClinic || "—" },
                 { icon: "phone",                             label: "Clinic Phone", val: livePhone || "—" },
               ] as Array<{ icon: React.ComponentProps<typeof Feather>["name"]; label: string; val: string }>).map(({ icon, label, val }) => (
@@ -258,11 +399,26 @@ export default function PaymentScreen() {
               ))}
             </View>
 
+            {/* Slots remaining indicator */}
+            {remaining !== null && maxTokens !== null && (
+              <View style={[styles.slotsBar, isFull && { borderColor: "rgba(239,68,68,0.4)", backgroundColor: "rgba(239,68,68,0.1)" }]}>
+                <View style={styles.slotsBarTrack}>
+                  <View style={[styles.slotsBarFill, {
+                    width: `${Math.min(100, Math.round(((maxTokens - remaining) / maxTokens) * 100))}%`,
+                    backgroundColor: isFull ? "#EF4444" : remaining <= 3 ? "#F59E0B" : "#22C55E",
+                  }]} />
+                </View>
+                <Text style={[styles.slotsText, isFull && { color: "#F87171" }]}>
+                  {isFull ? "All slots booked" : `${remaining} of ${maxTokens} slots remaining`}
+                </Text>
+              </View>
+            )}
+
             {/* Token + Patient Row */}
             <View style={styles.tokenPatientRow}>
               <View style={[styles.tokenBox, isEmergency && { borderColor: "rgba(239,68,68,0.5)", backgroundColor: "rgba(239,68,68,0.15)" }]}>
                 <Feather name="tag" size={12} color={isEmergency ? "#EF4444" : "#A5B4FC"} />
-                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#A5B4FC" }]}>{bookedTokenNum ? `#${bookedTokenNum}` : "—"}</Text>
+                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#A5B4FC" }]}>{displayTokenNum}</Text>
               </View>
               <View style={styles.patientBox}>
                 <Feather name="user" size={12} color="rgba(255,255,255,0.4)" />
@@ -320,10 +476,23 @@ export default function PaymentScreen() {
           <Text style={styles.totalLabel}>Total to pay now</Text>
           <Text style={[styles.totalAmt, isEmergency && { color: "#F87171" }]}>₹{payableNow}</Text>
         </View>
-        <Pressable style={[styles.payBtn, loading && { opacity: 0.7 }]} onPress={handlePay} disabled={loading}>
-          <LinearGradient colors={btnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+        <Pressable
+          style={[styles.payBtn, (loading || isFull) && { opacity: 0.7 }]}
+          onPress={handlePay}
+          disabled={loading || isFull}
+        >
+          <LinearGradient
+            colors={isFull ? ["#6B7280", "#4B5563"] : btnGradient}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
           {loading ? (
             <ActivityIndicator color="#FFF" size="small" />
+          ) : isFull ? (
+            <>
+              <Feather name="x-circle" size={16} color="#FFF" />
+              <Text style={styles.payBtnTxt}>Slots Full</Text>
+            </>
           ) : (
             <>
               <Feather name="lock" size={16} color="#FFF" />
@@ -333,7 +502,7 @@ export default function PaymentScreen() {
         </Pressable>
         <View style={styles.footer}>
           <Feather name="shield" size={11} color="rgba(255,255,255,0.2)" />
-          <Text style={styles.footerTxt}>Powered by LINESETU 🔒 Secure Payment</Text>
+          <Text style={styles.footerTxt}>Powered by LINESETU · Secure Payment</Text>
         </View>
       </View>
 
@@ -353,14 +522,64 @@ export default function PaymentScreen() {
           onSuccess={handlePaymentSuccess}
           onFailure={(err) => {
             setRzpVisible(false);
-            Alert.alert("Payment Failed", err);
+            setResultModal({ visible: true, type: "full", message: err });
           }}
           onDismiss={() => setRzpVisible(false)}
         />
       )}
+
+      {/* Result Modal */}
+      <Modal visible={resultModal.visible} transparent animationType="fade">
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.card}>
+            <View style={[modalStyles.iconCircle, {
+              backgroundColor: resultModal.type === "full"
+                ? "rgba(239,68,68,0.15)"
+                : resultModal.type === "adjusted"
+                  ? "rgba(245,158,11,0.15)"
+                  : "rgba(34,197,94,0.15)",
+            }]}>
+              <Feather
+                name={resultModal.type === "full" ? "x-circle" : resultModal.type === "adjusted" ? "alert-circle" : "check-circle"}
+                size={36}
+                color={resultModal.type === "full" ? "#EF4444" : resultModal.type === "adjusted" ? "#F59E0B" : "#22C55E"}
+              />
+            </View>
+            <Text style={modalStyles.title}>
+              {resultModal.type === "full"
+                ? "Booking Failed"
+                : resultModal.type === "adjusted"
+                  ? "Token Adjusted"
+                  : "Booking Confirmed!"}
+            </Text>
+            {resultModal.tokenNumber && resultModal.type !== "full" && (
+              <Text style={modalStyles.tokenNum}>#{resultModal.tokenNumber}</Text>
+            )}
+            <Text style={modalStyles.message}>{resultModal.message}</Text>
+            <Pressable style={[modalStyles.btn, {
+              backgroundColor: resultModal.type === "full" ? "#EF4444" : "#4F46E5",
+            }]} onPress={handleModalDismiss}>
+              <Text style={modalStyles.btnTxt}>
+                {resultModal.type === "full" ? "Go Back" : "View Queue"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const modalStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center", padding: 30 },
+  card: { width: "100%", maxWidth: 340, backgroundColor: "#111827", borderRadius: 24, padding: 28, alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: "800", color: "#FFF", marginBottom: 8, textAlign: "center" },
+  tokenNum: { fontSize: 40, fontWeight: "900", color: "#A5B4FC", marginBottom: 8 },
+  message: { fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center", lineHeight: 19, marginBottom: 24 },
+  btn: { width: "100%", height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  btnTxt: { fontSize: 14, fontWeight: "800", color: "#FFF" },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0A0E1A" },
@@ -390,6 +609,11 @@ const styles = StyleSheet.create({
   infoCellLbl: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 0.6 },
   infoCellVal: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.8)", lineHeight: 15 },
 
+  slotsBar: { borderRadius: 12, padding: 10, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  slotsBarTrack: { height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.08)", overflow: "hidden", marginBottom: 6 },
+  slotsBarFill: { height: "100%", borderRadius: 3 },
+  slotsText: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.5)", textAlign: "center" },
+
   tokenPatientRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   tokenBox: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: "rgba(99,102,241,0.18)", borderWidth: 1, borderColor: "rgba(99,102,241,0.4)" },
   tokenNum: { fontSize: 16, fontWeight: "900" },
@@ -408,18 +632,6 @@ const styles = StyleSheet.create({
   feeTotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13 },
   feeTotalLbl: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF" },
   feeTotalVal: { fontSize: 22, fontWeight: "900", color: "#A5B4FC" },
-
-  payMethodCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
-  payMethodSelected: { backgroundColor: "rgba(79,70,229,0.18)", borderColor: "rgba(99,102,241,0.5)" },
-  payMethodIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  payMethodLabel: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.75)" },
-  payMethodSub: { fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 },
-  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
-  radioOuterSelected: { borderColor: "#4F46E5" },
-  radioInner: { width: 10, height: 10, borderRadius: 5 },
-
-  upiInputWrap: { flexDirection: "row", alignItems: "center", marginTop: 10, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(129,140,248,0.4)", height: 48, overflow: "hidden" },
-  upiInput: { flex: 1, fontSize: 14, color: "#FFF", paddingHorizontal: 10, height: "100%" },
 
   securityCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 14, backgroundColor: "rgba(34,197,94,0.07)", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)" },
   securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 16, flex: 1 },

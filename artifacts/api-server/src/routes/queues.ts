@@ -26,8 +26,12 @@ router.get("/queues/:doctorId", async (req, res) => {
 
     const queue = queueSnap.data();
 
-    // Fetch tokens — no orderBy to avoid composite index requirement; sort in memory
-    // Accept both full date "2026-04-13" and short day "13" to handle legacy data
+    const doctorRef  = doc(db, Collections.DOCTORS, req.params.doctorId);
+    const doctorSnap = await getDoc(doctorRef);
+    const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
+    const shiftCfg   = doctorData?.calendar?.[date]?.[shift];
+    const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
+
     const dayNum = String(parseInt(date.split("-")[2] ?? date, 10));
     const tokenSnap = await getDocs(query(
       collection(db, Collections.TOKENS),
@@ -44,7 +48,7 @@ router.get("/queues/:doctorId", async (req, res) => {
       })
       .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
 
-    res.json({ id: queueSnap.id, ...queue, tokens });
+    res.json({ id: queueSnap.id, ...queue, maxTokens, tokens });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -80,6 +84,67 @@ router.get("/queues/:doctorId/position/:tokenId", async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get("/queues/:doctorId/next-token/stream", async (req, res) => {
+  const { doctorId } = req.params;
+  const date  = (req.query.date  as string) || todayDate();
+  const shift = (req.query.shift as string) || "morning";
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  let closed = false;
+
+  const sendNextToken = async () => {
+    if (closed) return;
+    try {
+      const queueRef  = doc(db, Collections.QUEUES, queueDocId(doctorId, date, shift as "morning" | "evening"));
+      const queueSnap = await getDoc(queueRef);
+
+      const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
+      const doctorSnap = await getDoc(doctorRef);
+      const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
+      const shiftCfg   = doctorData?.calendar?.[date]?.[shift];
+      const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
+
+      const nextTokenNumber = queueSnap.exists()
+        ? ((queueSnap.data().nextTokenNumber as number) ?? 0) + 1
+        : 1;
+      const totalBooked = queueSnap.exists()
+        ? ((queueSnap.data().totalBooked as number) ?? 0)
+        : 0;
+      const remaining = maxTokens !== null ? Math.max(0, maxTokens - totalBooked) : null;
+      const isFull    = maxTokens !== null && totalBooked >= maxTokens;
+
+      res.write(`data: ${JSON.stringify({
+        nextTokenNumber,
+        totalBooked,
+        maxTokens,
+        remaining,
+        isFull,
+      })}\n\n`);
+    } catch (_) {}
+  };
+
+  await sendNextToken();
+
+  const emitterKey = `tokens:${doctorId}`;
+  const handler = () => sendNextToken();
+  tokenEmitter.on(emitterKey, handler);
+
+  const heartbeat = setInterval(() => {
+    try { res.write(": ping\n\n"); } catch (_) {}
+  }, 30_000);
+
+  req.on("close", () => {
+    closed = true;
+    clearInterval(heartbeat);
+    tokenEmitter.off(emitterKey, handler);
+  });
 });
 
 router.get("/queues/:doctorId/position/:tokenId/stream", async (req, res) => {

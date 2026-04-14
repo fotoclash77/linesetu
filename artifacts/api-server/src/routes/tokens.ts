@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc,
-  query, where, orderBy, writeBatch,
+  query, where, orderBy, writeBatch, runTransaction,
   arrayUnion, arrayRemove, increment,
   queueDocId, todayDate,
 } from "../lib/firebase.js";
@@ -10,82 +10,108 @@ import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
 
 const router = Router();
 
-// POST /api/tokens — book a new token
+// POST /api/tokens — atomic token booking with capacity check
 router.post("/tokens", async (req, res) => {
   try {
     const {
       doctorId, patientId, patientName, patientPhone,
       type = "normal", date, shift = "morning", paymentId,
-      source = "online", // 'online' | 'walkin'
+      source = "online",
       age, gender, address, area, notes,
+      expectedTokenNumber,
     } = req.body;
 
     if (!doctorId || !patientName) {
       return res.status(400).json({ error: "doctorId and patientName are required" });
     }
 
-    const tokenDate  = date || todayDate();
-    const queueId    = queueDocId(doctorId, tokenDate, shift);
-    const queueRef   = doc(db, Collections.QUEUES, queueId);
-    const queueSnap  = await getDoc(queueRef);
+    const tokenDate = date || todayDate();
+    const queueId   = queueDocId(doctorId, tokenDate, shift);
+    const queueRef  = doc(db, Collections.QUEUES, queueId);
+    const tokenRef  = doc(collection(db, Collections.TOKENS));
 
-    const nextTokenNumber = queueSnap.exists()
-      ? (queueSnap.data().nextTokenNumber as number) + 1
-      : 1;
+    const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
+    const doctorSnap = await getDoc(doctorRef);
+    const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
+    const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
+    const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
     const patientPaid = type === "emergency" ? 30 : 20;
     const doctorEarns = type === "emergency" ? 20 : 10;
     const platformFee = 10;
 
-    const tokenRef = doc(collection(db, Collections.TOKENS));
-    const tokenData = {
-      tokenNumber: nextTokenNumber,
-      doctorId, patientId: patientId || null, patientName,
-      patientPhone: patientPhone || "",
-      type,
-      source, // 'online' | 'walkin'
-      status: "waiting",
-      date: tokenDate, shift,
-      patientPaid, doctorEarns, platformFee,
-      paymentId: paymentId || "",
-      paymentStatus: paymentId ? "paid" : "pending",
-      bookedAt: Timestamp.now(),
-      calledAt: null, doneAt: null,
-      // extended patient profile fields
-      age: age || null,
-      gender: gender || null,
-      address: address || null,
-      area: area || null,
-      notes: notes || null,
-    };
+    let resultTokenData: any = null;
+    let autoAdjusted = false;
 
-    const batch = writeBatch(db);
-    batch.set(tokenRef, tokenData);
+    await runTransaction(db, async (txn) => {
+      const queueSnap = await txn.get(queueRef);
 
-    if (queueSnap.exists()) {
-      batch.update(queueRef, {
-        nextTokenNumber,
-        totalBooked: increment(1),
-        waitingTokenIds: arrayUnion(tokenRef.id),
-        updatedAt: Timestamp.now(),
-      });
-    } else {
-      batch.set(queueRef, {
-        doctorId, date: tokenDate, shift,
-        isActive: true,
-        currentToken: 0,
-        nextTokenNumber,
-        totalBooked: 1,
-        doneCount: 0,
-        waitingTokenIds: [tokenRef.id],
-        updatedAt: Timestamp.now(),
-      });
-    }
+      const currentNextToken = queueSnap.exists()
+        ? ((queueSnap.data().nextTokenNumber as number) ?? 0)
+        : 0;
+      const currentBooked = queueSnap.exists()
+        ? ((queueSnap.data().totalBooked as number) ?? 0)
+        : 0;
 
-    await batch.commit();
+      if (maxTokens !== null && currentBooked >= maxTokens) {
+        throw new Error("CAPACITY_FULL");
+      }
+
+      const nextTokenNumber = currentNextToken + 1;
+
+      if (expectedTokenNumber && expectedTokenNumber !== nextTokenNumber) {
+        autoAdjusted = true;
+      }
+
+      const tokenData = {
+        tokenNumber: nextTokenNumber,
+        doctorId, patientId: patientId || null, patientName,
+        patientPhone: patientPhone || "",
+        type,
+        source,
+        status: "waiting",
+        date: tokenDate, shift,
+        patientPaid, doctorEarns, platformFee,
+        paymentId: paymentId || "",
+        paymentStatus: paymentId ? "paid" : "pending",
+        bookedAt: Timestamp.now(),
+        calledAt: null, doneAt: null,
+        age: age || null,
+        gender: gender || null,
+        address: address || null,
+        area: area || null,
+        notes: notes || null,
+      };
+
+      txn.set(tokenRef, tokenData);
+
+      if (queueSnap.exists()) {
+        txn.update(queueRef, {
+          nextTokenNumber,
+          totalBooked: increment(1),
+          waitingTokenIds: arrayUnion(tokenRef.id),
+          updatedAt: Timestamp.now(),
+        });
+      } else {
+        txn.set(queueRef, {
+          doctorId, date: tokenDate, shift,
+          isActive: true,
+          currentToken: 0,
+          nextTokenNumber,
+          totalBooked: 1,
+          doneCount: 0,
+          waitingTokenIds: [tokenRef.id],
+          updatedAt: Timestamp.now(),
+        });
+      }
+
+      resultTokenData = tokenData;
+    });
+
     emitDoctorTokenChange(doctorId);
 
-    // Write a real-time notification for the doctor
+    const nextTokenNumber = resultTokenData.tokenNumber;
+
     try {
       await addDoc(collection(db, Collections.NOTIFICATIONS), {
         doctorId,
@@ -100,7 +126,6 @@ router.post("/tokens", async (req, res) => {
       });
     } catch (_) {}
 
-    // Write a notification for the patient confirming booking (online bookings only)
     if (patientId && source !== "walkin") {
       try {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
@@ -116,8 +141,23 @@ router.post("/tokens", async (req, res) => {
       } catch (_) {}
     }
 
-    res.status(201).json({ id: tokenRef.id, ...tokenData });
+    const response: any = { id: tokenRef.id, ...resultTokenData };
+    if (autoAdjusted) {
+      response.autoAdjusted = true;
+      response.message = `Selected token unavailable. Assigned next available token: ${nextTokenNumber}.`;
+    } else {
+      response.message = `Token booked successfully. Your token number is ${nextTokenNumber}.`;
+    }
+
+    res.status(201).json(response);
   } catch (err: any) {
+    if (err.message === "CAPACITY_FULL") {
+      return res.status(409).json({
+        capacityFull: true,
+        error: "Booking failed: Slots are full.",
+        message: "Booking failed: Slots are full. Refund initiated.",
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });

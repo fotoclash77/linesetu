@@ -48,4 +48,23 @@ router.post("/verify", (req, res) => {
   }
 });
 
+router.post("/refund", async (req, res) => {
+  try {
+    const { paymentId, amount } = req.body;
+    if (!paymentId) {
+      return res.status(400).json({ error: "paymentId is required" });
+    }
+    const refundParams: any = {};
+    if (amount && typeof amount === "number") {
+      refundParams.amount = amount;
+    }
+    const refund = await (razorpay.payments as any).refund(paymentId, refundParams);
+    console.log(`[Razorpay] Refund initiated: ${refund.id} for payment ${paymentId}`);
+    res.json({ success: true, refundId: refund.id, status: refund.status, amount: refund.amount });
+  } catch (err: any) {
+    console.error("[Razorpay] refund error:", err);
+    res.status(500).json({ error: err.message ?? "Refund failed" });
+  }
+});
+
 export default router;
