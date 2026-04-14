@@ -28,7 +28,13 @@ router.get("/doctors/:doctorId", async (req, res) => {
     const ref = doc(db, Collections.DOCTORS, req.params.doctorId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return res.status(404).json({ error: "Doctor not found" });
-    res.json({ id: snap.id, ...snap.data() });
+    const data = snap.data() as any;
+    // Lazy backfill: ensure legacy doctor documents have pendingPayout field
+    if (data.pendingPayout === undefined) {
+      await updateDoc(ref, { pendingPayout: 0 });
+      data.pendingPayout = 0;
+    }
+    res.json({ id: snap.id, ...data });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -108,6 +114,9 @@ router.post("/doctors/:doctorId/payouts", async (req, res) => {
   try {
     const { upiId, amount } = req.body;
     if (!upiId || !amount) return res.status(400).json({ error: "upiId and amount are required" });
+    // Basic UPI ID format validation: localpart@bank (e.g., name@okaxis, 9876543210@paytm)
+    const upiPattern = /^[a-zA-Z0-9._+\-]+@[a-zA-Z0-9]+$/;
+    if (!upiPattern.test(String(upiId).trim())) return res.status(400).json({ error: "Invalid UPI ID format. Expected format: name@bank" });
 
     const doctorRef  = doc(db, Collections.DOCTORS, req.params.doctorId);
     const doctorSnap = await getDoc(doctorRef);
