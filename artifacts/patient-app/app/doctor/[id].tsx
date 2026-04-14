@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getGetLiveQueueQueryOptions } from "@workspace/api-client-react";
 import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -95,6 +96,15 @@ export default function DoctorDetailScreen() {
 
   const currentToken = queueData?.currentToken ?? 47;
   const queueCount = queueData?.totalBooked ?? 14;
+
+  // Prevent demo data flash — wait for real Firebase data
+  if (!isDemoId && !doctorData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#67E8F9" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
