@@ -120,34 +120,39 @@ export default function PaymentScreen() {
     return () => unsub();
   }, [params.doctorId, date, shift]);
 
-  // SSE: subscribe to next-token stream
+  // SSE: subscribe to next-token stream (polyfill works on both web + React Native)
   useEffect(() => {
     if (!params.doctorId) return;
     const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
     const url = `${BASE}/api/queues/${params.doctorId}/next-token/stream?date=${date}&shift=${shift}`;
 
-    if (typeof EventSource !== "undefined") {
-      const es = new EventSource(url);
-      es.onmessage = (ev) => {
-        try {
-          const d = JSON.parse(ev.data);
-          setNextToken(d.nextTokenNumber ?? null);
-          setRemaining(d.remaining ?? null);
-          setMaxTokens(d.maxTokens ?? null);
-          setIsFull(d.isFull === true);
-          nextTokenRef.current = d.nextTokenNumber ?? null;
-        } catch (_) {}
-      };
-      return () => es.close();
-    }
+    const es = new RNEventSource(url);
+    es.onmessage = (ev: MessageEvent) => {
+      try {
+        const d = JSON.parse(ev.data);
+        setNextToken(d.nextTokenNumber ?? null);
+        setRemaining(d.remaining ?? null);
+        setMaxTokens(d.maxTokens ?? null);
+        setIsFull(d.isFull === true);
+        nextTokenRef.current = d.nextTokenNumber ?? null;
+      } catch (_) {}
+    };
+    es.onerror = () => {
+      // SSE error — will auto-reconnect via polyfill
+    };
+    return () => es.close();
+  }, [params.doctorId, date, shift]);
 
-    // Polling fallback
+  // Polling fallback for environments where SSE cannot connect
+  useEffect(() => {
+    if (!params.doctorId) return;
+    const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
     let active = true;
     const poll = async () => {
       try {
         const res = await fetch(`${BASE}/api/queues/${params.doctorId}?date=${date}&shift=${shift}`);
         const data = await res.json();
-        if (active) {
+        if (active && nextToken === null) {
           const nt = (data.nextTokenNumber ?? 0) + 1;
           setNextToken(nt);
           nextTokenRef.current = nt;
@@ -169,6 +174,30 @@ export default function PaymentScreen() {
     if (isFull) return;
     setLoading(true);
     try {
+      // Step 1: soft-lock a token number before touching payment
+      if (patient?.id && params.doctorId) {
+        const resRes = await fetch(`${apiBase}/tokens/reserve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            doctorId: params.doctorId,
+            patientId: patient.id,
+            date,
+            shift,
+          }),
+        });
+        const resData = await resRes.json();
+        if (resRes.status === 409 || resData.capacityFull) {
+          setIsFull(true);
+          setResultModal({ visible: true, type: "full", message: "No slots available. All tokens are booked." });
+          return;
+        }
+        if (resData.tokenNumber) {
+          nextTokenRef.current = resData.tokenNumber;
+          setNextToken(resData.tokenNumber);
+        }
+      }
+
       const amountPaise = payableNow * 100;
       const res = await fetch(`${apiBase}/razorpay/create-order`, {
         method: "POST",
