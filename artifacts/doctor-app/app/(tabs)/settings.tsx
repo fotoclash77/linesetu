@@ -862,7 +862,6 @@ export default function SettingsScreen() {
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                   <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Online</Text></View>
                   <View style={styles.expBadge}><Text style={styles.expBadgeText}>{experience} yrs exp</Text></View>
-                  <View style={styles.ratingBadge}><Text style={styles.ratingBadgeText}>★ 4.9</Text></View>
                 </View>
               </View>
             </View>
@@ -870,9 +869,8 @@ export default function SettingsScreen() {
               {[
                 { label: 'Patients', value: `${(parseInt(patientsTotal) / 1000).toFixed(1)}k` },
                 { label: 'Clinics',  value: `${clinics.filter(c => c.active && c.name).length} Active` },
-                { label: 'Rating',   value: '4.9 / 5' },
               ].map((s, i) => (
-                <View key={i} style={[styles.profileStatItem, i < 2 && styles.profileStatBorder]}>
+                <View key={i} style={[styles.profileStatItem, i < 1 && styles.profileStatBorder]}>
                   <Text style={styles.profileStatValue}>{s.value}</Text>
                   <Text style={styles.profileStatLabel}>{s.label}</Text>
                 </View>
