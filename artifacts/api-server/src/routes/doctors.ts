@@ -238,16 +238,70 @@ router.get("/doctors/:doctorId/payouts", async (req, res) => {
   }
 });
 
-// DELETE /api/doctors/:doctorId — soft-delete the account
+// DELETE /api/doctors/:doctorId — fully execute all 4 stated consequences
 router.delete("/doctors/:doctorId", async (req, res) => {
   try {
     const { doctorId } = req.params;
+
+    // ① Profile removed from Patient App — mark inactive, erase practice data
     await updateDoc(doc(db, Collections.DOCTORS, doctorId), {
-      isActive: false,
-      isDeleted: true,
-      deletedAt: Timestamp.now(),
+      isActive:        false,
+      isDeleted:       true,
+      deletedAt:       Timestamp.now(),
+      // Erase clinic, schedule, fee, and payout data
+      clinics:         [],
+      calendar:        {},
+      onlineBooking:   false,
+      emergencyTokens: false,
+      shifts:          deleteField(),
+      consultFee:      deleteField(),
+      emergencyFee:    deleteField(),
+      walkinFee:       deleteField(),
+      bankAccount:     deleteField(),
+      alertMessage:    deleteField(),
     });
-    res.json({ success: true, message: "Account deleted successfully" });
+
+    // ② Cancel all active/waiting tokens for this doctor
+    const tokensSnap = await getDocs(
+      query(
+        collection(db, Collections.TOKENS),
+        where("doctorId", "==", doctorId),
+        where("status", "in", ["waiting", "in_consult"]),
+      )
+    );
+
+    // ③ Cancel all pending payout requests
+    const payoutsSnap = await getDocs(
+      query(
+        collection(db, Collections.PAYOUTS),
+        where("doctorId", "==", doctorId),
+        where("status",   "==", "pending"),
+      )
+    );
+
+    // Batch-write cancellations (Firestore max 500 per batch)
+    const writes = [
+      ...tokensSnap.docs.map(d => ({
+        ref: d.ref,
+        data: { status: "cancelled", cancelReason: "Doctor account deleted", cancelledAt: Timestamp.now() },
+      })),
+      ...payoutsSnap.docs.map(d => ({
+        ref: d.ref,
+        data: { status: "cancelled", cancelReason: "Doctor account deleted", cancelledAt: Timestamp.now() },
+      })),
+    ];
+
+    for (let i = 0; i < writes.length; i += 450) {
+      const batch = writeBatch(db);
+      writes.slice(i, i + 450).forEach(({ ref, data }) => batch.update(ref, data));
+      await batch.commit();
+    }
+
+    res.json({
+      success: true,
+      cancelledTokens:  tokensSnap.docs.length,
+      cancelledPayouts: payoutsSnap.docs.length,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
