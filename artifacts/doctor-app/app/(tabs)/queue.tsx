@@ -731,7 +731,7 @@ export default function QueueScreen() {
           <View>
             <Text style={S.hdrSub}>MASTER QUEUE</Text>
             <Text style={S.hdrTitle}>
-              {doctor ? `Dr. ${doctor.name}` : 'Dr. Sharma'}
+              {doctor ? (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`) : 'Dr. Sharma'}
               {isRefetching ? '  ·' : ''}
             </Text>
           </View>
