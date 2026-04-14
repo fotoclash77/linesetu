@@ -1159,7 +1159,7 @@ export default function SettingsScreen() {
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>EMERGENCY TOKEN FEE (₹ 0 – 1000)</Text>
+                <Text style={styles.fieldLabel}>EMERGENCY E-TOKEN FEE (₹ 0 – 1000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={emergencyFee}
