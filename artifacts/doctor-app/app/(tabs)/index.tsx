@@ -164,19 +164,16 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
-  const { doctor } = useDoctor();
+  const { doctor, setAvailability: setCtxAvailability } = useDoctor();
   const [period,    setPeriod]    = useState<EarningPeriod>('Today');
   const [available, setAvailable] = useState(() => (doctor as any)?.isAvailable !== false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [stats, setStats]         = useState<DashStats>(EMPTY);
 
-  const availSynced = React.useRef(false);
+  // Keep toggle in sync with real-time Firestore value from context
   useEffect(() => {
-    if (!availSynced.current && doctor) {
-      availSynced.current = true;
-      setAvailable((doctor as any).isAvailable !== false);
-    }
-  }, [doctor]);
+    if (doctor) setAvailable(doctor.isAvailable !== false);
+  }, [doctor?.isAvailable]);
 
   // ── Real-time patient stats fetch ─────────────────────────────────────────
   const periodDays = period === 'Today' ? 1 : period === 'Last 7 days' ? 7 : 30;
@@ -269,6 +266,7 @@ export default function DashboardScreen() {
   const toggleAvailability = useCallback(async () => {
     const newVal = !available;
     setAvailable(newVal);
+    setCtxAvailability(newVal);
     if (!doctor?.id) return;
     try {
       await fetch(`${BASE()}/api/doctors/${doctor.id}`, {
@@ -278,8 +276,9 @@ export default function DashboardScreen() {
       });
     } catch {
       setAvailable(!newVal);
+      setCtxAvailability(!newVal);
     }
-  }, [available, doctor?.id]);
+  }, [available, doctor?.id, setCtxAvailability]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const pd   = stats;

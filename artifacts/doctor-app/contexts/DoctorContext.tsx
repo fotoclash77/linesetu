@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "linesetu_doctor";
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -18,6 +18,7 @@ export interface DoctorUser {
   clinicName: string;
   clinicAddress: string;
   profilePhoto?: string;
+  isAvailable?: boolean;
   shifts?: {
     morning: boolean; morningStart: string; morningEnd: string;
     evening: boolean; eveningStart: string; eveningEnd: string;
@@ -35,6 +36,7 @@ interface DoctorCtx {
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   updateDoctor: (patch: Partial<DoctorUser>) => Promise<void>;
+  setAvailability: (val: boolean) => void;
 }
 
 const DoctorContext = createContext<DoctorCtx>({
@@ -42,6 +44,7 @@ const DoctorContext = createContext<DoctorCtx>({
   loginWithOtp: async () => {},
   logout: async () => {},
   updateDoctor: async () => {},
+  setAvailability: () => {},
 });
 
 export const useDoctor = () => useContext(DoctorContext);
@@ -49,6 +52,7 @@ export const useDoctor = () => useContext(DoctorContext);
 export function DoctorProvider({ children }: { children: React.ReactNode }) {
   const [doctor, setDoctor] = useState<DoctorUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
@@ -58,6 +62,33 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
   }, []);
+
+  // Real-time availability polling — refreshes isAvailable from Firestore every 15s
+  useEffect(() => {
+    if (!doctor?.id) return;
+
+    const fetchAvailability = async () => {
+      try {
+        const res = await fetch(`${BASE()}/api/doctors/${doctor.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const fresh = data.isAvailable !== false;
+        setDoctor(prev => {
+          if (!prev) return prev;
+          if (prev.isAvailable === fresh) return prev;
+          const updated = { ...prev, isAvailable: fresh };
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+          return updated;
+        });
+      } catch {}
+    };
+
+    fetchAvailability();
+    pollRef.current = setInterval(fetchAvailability, 15_000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [doctor?.id]);
 
   const loginWithOtp = async (phone: string, otp: string) => {
     const res = await fetch(`${BASE()}/api/auth/doctor/verify-otp`, {
@@ -75,6 +106,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinicName: data.clinicName || "",
       clinicAddress: data.clinicAddress || "",
       profilePhoto: data.profilePhoto || "",
+      isAvailable: data.isAvailable !== false,
       shifts: data.shifts,
       calendar: data.calendar,
       clinics: data.clinics ?? undefined,
@@ -99,13 +131,23 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
+  // Instant local update for the availability toggle (no API call — caller handles that)
+  const setAvailability = (val: boolean) => {
+    setDoctor(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, isAvailable: val };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  };
+
   const logout = async () => {
     setDoctor(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
   };
 
   return (
-    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout, updateDoctor }}>
+    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout, updateDoctor, setAvailability }}>
       {children}
     </DoctorContext.Provider>
   );
