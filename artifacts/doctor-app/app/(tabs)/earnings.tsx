@@ -155,9 +155,10 @@ export default function EarningsScreen() {
   const [withdrawing, setWithdrawing]   = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
 
-  const pendingPayout = doctorLive?.pendingPayout ?? 0;
-  const inClinicFee   = doctorLive?.consultFee ?? (doctor as any)?.consultFee ?? 0;
-  const inClinicEmFee = doctorLive?.emergencyFee ?? (doctor as any)?.emergencyFee ?? 0;
+  const pendingPayout  = doctorLive?.pendingPayout ?? 0;
+  const inClinicFee    = doctorLive?.consultFee    ?? (doctor as any)?.consultFee    ?? 0;
+  const inClinicEmFee  = doctorLive?.emergencyFee  ?? (doctor as any)?.emergencyFee  ?? 0;
+  const inClinicWalkin = doctorLive?.walkinFee     ?? (doctor as any)?.walkinFee     ?? 0;
   const payouts: any[] = payoutsData?.payouts ?? [];
 
   async function submitWithdraw() {
@@ -431,8 +432,9 @@ export default function EarningsScreen() {
                   <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Display only</Text>
                 </View>
                 {[
-                  { type: 'Consultation',          val: inClinicFee   ? `₹${inClinicFee}`   : 'Not set', color: '#A5B4FC' },
-                  { type: 'Emergency Consultation', val: inClinicEmFee ? `₹${inClinicEmFee}` : 'Not set', color: '#FCD34D' },
+                  { type: 'Consultation',          val: inClinicFee    ? `₹${inClinicFee}`    : 'Not set', color: '#A5B4FC' },
+                  { type: 'Emergency Consultation', val: inClinicEmFee  ? `₹${inClinicEmFee}`  : 'Not set', color: '#FCD34D' },
+                  { type: 'Walk-in Fee',            val: inClinicWalkin ? `₹${inClinicWalkin}` : 'Not set', color: '#86EFAC' },
                 ].map(r => (
                   <View key={r.type} style={[styles.rateRow, { justifyContent: 'space-between' }]}>
                     <Text style={styles.rateType}>{r.type}</Text>

@@ -321,12 +321,14 @@ export default function SettingsScreen() {
   // Fee state — seeded from Firebase via doctor context
   const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 500));
   const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 1000));
+  const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
       feeSynced.current = true;
       setConsultFee(String((doctor as any).consultFee ?? 500));
       setEmergencyFee(String((doctor as any).emergencyFee ?? 1000));
+      setWalkinFee(String((doctor as any).walkinFee ?? 0));
     }
   }, [doctor]);
 
@@ -727,9 +729,23 @@ export default function SettingsScreen() {
                   placeholder="1000"
                 />
               </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>IN-CLINIC WALK-IN FEE (₹ 0 – 1000)</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={walkinFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setWalkinFee(String(Math.min(1000, n)));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="200"
+                />
+              </View>
               <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
                 <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)' }]}>
-                  ✓ Walk-in token bookings are always free — no online fee is charged for walk-in or offline patients.
+                  ✓ These fees are for display and reference only. Online E-token payments are platform-set. No fee is collected via the app for in-clinic or walk-in visits.
                 </Text>
               </View>
             </View>
@@ -739,7 +755,7 @@ export default function SettingsScreen() {
               onPress={async () => {
                 setFeeSaving(true); setFeeSaved(false);
                 try {
-                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0 } as any);
+                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0 } as any);
                   setFeeSaved(true);
                   setTimeout(() => { setFeeSaved(false); setSection('main'); }, 1200);
                 } catch {}
