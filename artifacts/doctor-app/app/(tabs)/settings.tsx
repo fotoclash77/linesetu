@@ -555,11 +555,15 @@ export default function SettingsScreen() {
         bio: bio.trim(),
       });
       setProfileSaved(true);
-      setTimeout(() => { setProfileSaved(false); setSection('main'); }, 1200);
+      setTimeout(() => {
+        setProfileSaved(false);
+        setSection('main');
+      }, 1200);
     } catch {
       setProfileError('Failed to save. Please try again.');
+    } finally {
+      setProfileSaving(false);
     }
-    setProfileSaving(false);
   };
 
   if (section === 'profile') {
@@ -624,7 +628,7 @@ export default function SettingsScreen() {
             >
               {profileSaving && !profileError
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{profileSaved ? '✓ Profile Saved to Firebase!' : '💾 Save Profile'}</Text>}
+                : <Text style={styles.saveBtnText}>{profileSaved ? '✓ Saved' : '💾 Save Profile'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
