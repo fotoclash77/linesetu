@@ -626,7 +626,13 @@ export default function QueueScreen() {
   useEffect(() => { setManualNext(null); }, [shift, schedDate]);
 
   const doCall = async (id: string) => {
-    setBusy(id); try { await apiCall(id); await inv(); } catch {} setBusy(null);
+    setBusy(id);
+    try {
+      await apiCall(id);
+      setManualNext(prev => prev === id ? null : prev);
+      await inv();
+    } catch {}
+    setBusy(null);
   };
   const doDone = async (id: string) => {
     const nextId = upNextRef.current; // locked at click-time — matches what Up Next card shows
@@ -664,7 +670,7 @@ export default function QueueScreen() {
   const manualNext = manualNextId
     ? [...waitSorted, ...skippedList].find(t => t.id === manualNextId) ?? null
     : null;
-  const upNext = manualNext ?? waitSorted[0];
+  const upNext = manualNext ?? waitSorted[0] ?? skippedList[0] ?? null;
   upNextRef.current = upNext?.id; // always tracks what the Up Next card shows
 
   // ── Tab config ────────────────────────────────────────────────
