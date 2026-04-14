@@ -1168,23 +1168,76 @@ export default function SettingsScreen() {
   }
 
   if (section === 'payout') {
+    const cycles = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'];
+    const linkedAccount = accountNumber
+      ? `${bankName || 'Bank'} ••${accountNumber.slice(-4)}`
+      : upiId
+        ? `UPI · ${upiId}`
+        : null;
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
           <BackHeader title="Payout Settings" onBack={() => setSection('main')} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {/* Linked account summary */}
+            {linkedAccount ? (
+              <View style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(45,212,191,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 18 }}>{accountNumber ? '🏦' : '💳'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>{linkedAccount}</Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Linked payout account</Text>
+                </View>
+                <TouchableOpacity onPress={() => setSection('bank')} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(45,212,191,0.3)', backgroundColor: 'rgba(45,212,191,0.08)' }}>
+                  <Text style={{ fontSize: 11, color: TEAL_LT, fontWeight: '700' }}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: 'rgba(251,191,36,0.25)', backgroundColor: 'rgba(251,191,36,0.05)' }]} onPress={() => setSection('bank')}>
+                <Text style={{ fontSize: 20 }}>⚠️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FCD34D' }}>No account linked</Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Tap to add bank account or UPI</Text>
+                </View>
+                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>›</Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.formCard}>
               <Text style={styles.formCardTitle}>SETTLEMENT</Text>
-              <View style={styles.toggleRow}>
+              <View style={[styles.toggleRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12, marginBottom: 12 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.toggleRowLabel}>Enable Payouts</Text>
                   <Text style={styles.toggleRowSub}>Allow settlement transfers to your account</Text>
                 </View>
                 <Toggle on={payoutEnabled} onChange={() => setPayoutEnabled(p => !p)} />
               </View>
+
+              <Text style={styles.fieldLabel}>PAYOUT CYCLE</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
+                {cycles.map(cycle => (
+                  <TouchableOpacity
+                    key={cycle}
+                    onPress={() => setPayoutCycle(cycle)}
+                    style={{
+                      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5,
+                      borderColor: payoutCycle === cycle ? TEAL : 'rgba(255,255,255,0.12)',
+                      backgroundColor: payoutCycle === cycle ? 'rgba(45,212,191,0.18)' : 'rgba(255,255,255,0.04)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: payoutCycle === cycle ? TEAL_LT : 'rgba(255,255,255,0.5)' }}>{cycle}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Field label="Payout Display Name" value={payoutDisplayName} onChange={setPayoutDisplayName} />
-              <Field label="Payout Cycle" value={payoutCycle} onChange={setPayoutCycle} />
+              <View style={styles.feeNote}>
+                <Text style={styles.feeNoteText}>Payout display name appears on your settlement receipts and payout notifications.</Text>
+              </View>
             </View>
+
             <TouchableOpacity
               style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
               disabled={bankSaving}
@@ -1342,8 +1395,25 @@ export default function SettingsScreen() {
           {/* Bank */}
           <SectionLabel label="Bank & Payments" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="🏦" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="Bank Account" sub="HDFC ••4782 — Settlement every Tuesday" />
-            <SettingRow icon="💳" iconBg="rgba(129,140,248,0.12)" iconColor="#A5B4FC" label="Payout Settings" sub="Auto-settlement · Weekly cycle" last />
+            <SettingRow
+              icon="🏦" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT}
+              label="Bank Account"
+              sub={
+                accountNumber
+                  ? `${bankName || 'Bank'} ••${accountNumber.slice(-4)}`
+                  : upiId
+                    ? `UPI · ${upiId}`
+                    : 'Add bank account or UPI'
+              }
+              onPress={() => setSection('bank')}
+            />
+            <SettingRow
+              icon="💳" iconBg="rgba(129,140,248,0.12)" iconColor="#A5B4FC"
+              label="Payout Settings"
+              sub={payoutEnabled ? `${payoutCycle} settlement · Active` : 'Payouts paused'}
+              onPress={() => setSection('payout')}
+              last
+            />
           </View>
 
           {/* Notifications */}
