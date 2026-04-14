@@ -33,6 +33,13 @@ router.get("/queues/:doctorId", async (req, res) => {
     const shiftCfg   = doctorData?.calendar?.[date]?.[shift];
     const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
+    const totalBooked        = (queue.totalBooked as number) ?? 0;
+    const pending            = (queue.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
+    const activeReservations = countActiveReservations(pending);
+    const effectiveBooked    = totalBooked + activeReservations;
+    const remaining          = maxTokens !== null ? Math.max(0, maxTokens - effectiveBooked) : null;
+    const isFull             = maxTokens !== null && effectiveBooked >= maxTokens;
+
     const dayNum = String(parseInt(date.split("-")[2] ?? date, 10));
     const tokenSnap = await getDocs(query(
       collection(db, Collections.TOKENS),
@@ -49,7 +56,7 @@ router.get("/queues/:doctorId", async (req, res) => {
       })
       .sort((a: any, b: any) => (a.tokenNumber ?? 0) - (b.tokenNumber ?? 0));
 
-    res.json({ id: queueSnap.id, ...queue, maxTokens, tokens });
+    res.json({ id: queueSnap.id, ...queue, maxTokens, activeReservations, remaining, isFull, tokens });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

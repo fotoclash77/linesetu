@@ -339,6 +339,133 @@ paths:
               schema:
                 $ref: "#/components/schemas/QueuePosition"
 
+  /razorpay/create-order:
+    post:
+      operationId: createRazorpayOrder
+      tags: [payments]
+      summary: Create a Razorpay payment order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: integer
+                  description: Amount in paise (e.g. 1000 = ₹10)
+                currency:
+                  type: string
+                  default: INR
+                receipt:
+                  type: string
+                notes:
+                  type: object
+              required: [amount]
+      responses:
+        "200":
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  amount:
+                    type: integer
+                  currency:
+                    type: string
+                  receipt:
+                    type: string
+
+  /razorpay/verify:
+    post:
+      operationId: verifyRazorpayPayment
+      tags: [payments]
+      summary: Verify Razorpay payment signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                razorpay_order_id:
+                  type: string
+                razorpay_payment_id:
+                  type: string
+                razorpay_signature:
+                  type: string
+              required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      responses:
+        "200":
+          description: Signature verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  /razorpay/refund:
+    post:
+      operationId: refundRazorpayPayment
+      tags: [payments]
+      summary: Refund a captured Razorpay payment for a capacity-full booking failure
+      description: |
+        Refunds a captured payment that failed due to a full queue.
+        Two-factor security:
+        1. HMAC-SHA256 signature (proves caller witnessed the original Razorpay payment).
+        2. A server-created `failedBookings/{paymentId}` Firestore record must exist —
+           written exclusively by `POST /api/tokens` on capacity-full; no client path creates it.
+        This ensures refunds are only issued for verified failed bookings, never for
+        successfully booked tokens. The operation is idempotent — repeated calls return
+        the same refundId if the refund was already issued.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentId:
+                  type: string
+                  description: Razorpay payment ID (pay_...)
+                orderId:
+                  type: string
+                  description: Razorpay order ID (order_...)
+                razorpay_signature:
+                  type: string
+                  description: HMAC-SHA256 of "{orderId}|{paymentId}" using Razorpay key secret
+              required: [paymentId, orderId, razorpay_signature]
+      responses:
+        "200":
+          description: Refund issued (or already completed — idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  refundId:
+                    type: string
+                    description: Razorpay refund ID (rfnd_...)
+                  status:
+                    type: string
+                  amount:
+                    type: integer
+                required: [success, refundId]
+        "400":
+          description: Missing required fields
+        "403":
+          description: Signature mismatch or no server-recorded failure for this payment
+        "409":
+          description: Payment not in capturable state
+
 components:
   schemas:
     HealthStatus:

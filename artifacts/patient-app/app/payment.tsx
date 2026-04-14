@@ -155,9 +155,10 @@ export default function PaymentScreen() {
           const nt = (data.nextTokenNumber ?? 0) + 1;
           setNextToken(nt);
           nextTokenRef.current = nt;
-          setRemaining(data.maxTokens != null ? Math.max(0, data.maxTokens - (data.totalBooked ?? 0)) : null);
+          // Use server-computed remaining/isFull (includes active reservations, not just totalBooked)
+          setRemaining(data.remaining ?? (data.maxTokens != null ? Math.max(0, data.maxTokens - (data.totalBooked ?? 0)) : null));
           setMaxTokens(data.maxTokens ?? null);
-          setIsFull(data.maxTokens != null && (data.totalBooked ?? 0) >= data.maxTokens);
+          setIsFull(data.isFull ?? (data.maxTokens != null && (data.totalBooked ?? 0) >= data.maxTokens));
         }
       } catch (_) {}
     };
