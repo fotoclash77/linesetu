@@ -462,7 +462,7 @@ export default function SettingsScreen() {
       quality: 0.6,
       base64: true,
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [16, 9],
     });
     if (result.canceled || !result.assets[0]) {
       setUploadingPhoto(false);
