@@ -1145,7 +1145,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>normal E-TOKEN FEE (₹ 0 – 2000)</Text>
+                <Text style={styles.fieldLabel}>normal E-TOKEN FEE</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={consultFee}
