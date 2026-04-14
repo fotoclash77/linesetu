@@ -1172,20 +1172,6 @@ export default function SettingsScreen() {
                   placeholder="20"
                 />
               </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>WALK-IN FEE (₹ 0 – 1000)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={walkinFee}
-                  onChangeText={v => {
-                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
-                    setWalkinFee(String(Math.min(1000, n)));
-                  }}
-                  keyboardType="numeric"
-                  placeholderTextColor="rgba(255,255,255,0.2)"
-                  placeholder="200"
-                />
-              </View>
               <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
                 <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)' }]}>
                   ✓ Fees saved. Online tokens charge patients your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment required.
