@@ -1977,15 +1977,17 @@ export default function SettingsScreen() {
                   <Text style={styles.logoutSub}>You'll need to sign in again to access your account.</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.logoutConfirmBtn} onPress={async () => {
-                setShowLogout(false);
-                await logout();
-              }}>
-                <Text style={styles.logoutConfirmBtnText}>Yes, Log Out</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowLogout(false)} style={styles.logoutCancelBtn}>
-                <Text style={styles.logoutCancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => setShowLogout(false)} style={[styles.logoutCancelBtn, { flex: 1, marginBottom: 0 }]}>
+                  <Text style={[styles.logoutCancelBtnText, { fontSize: 14, fontWeight: '800', color: '#FFF' }]}>No</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.logoutConfirmBtn, { flex: 1, marginBottom: 0 }]} onPress={async () => {
+                  setShowLogout(false);
+                  await logout();
+                }}>
+                  <Text style={styles.logoutConfirmBtnText}>Yes, Log Out</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
