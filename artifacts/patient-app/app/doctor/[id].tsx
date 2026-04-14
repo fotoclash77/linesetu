@@ -41,12 +41,6 @@ const SAMPLE_DOCTOR = {
 };
 
 
-const FEES = [
-  { icon: "check-circle" as const, label: "Walk-in Token",         sub: "Come early at clinic by 9 AM to get your token",                     amount: "₹0",   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",  border: "rgba(34,197,94,0.3)"   },
-  { icon: "monitor" as const,      label: "Clinic E-Token",        sub: "Take token online via LINESETU — skip standing in line, from home",  amount: "₹20",  color: "#67E8F9", bg: "rgba(6,182,212,0.1)",  border: "rgba(6,182,212,0.25)"  },
-  { icon: "home" as const,         label: "Consultation at Clinic",           sub: "Pay directly at the clinic",                                        amount: "₹500",  color: "#22C55E", bg: "rgba(34,197,94,0.08)",  border: "rgba(34,197,94,0.2)"    },
-  { icon: "alert-circle" as const, label: "Emergency Consultation at Clinic", sub: "Priority access — no waiting in queue",                              amount: "₹1200", color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)"  },
-];
 
 export default function DoctorDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -64,11 +58,22 @@ export default function DoctorDetailScreen() {
 
   const doctor = isDemoId ? SAMPLE_DOCTOR : (doctorData ? {
     ...SAMPLE_DOCTOR,
+    id: doctorData.id ?? id ?? "demo1",
     name: doctorData.name ?? SAMPLE_DOCTOR.name,
     specialization: doctorData.specialization ?? SAMPLE_DOCTOR.specialization,
     clinicName: doctorData.clinicName ?? SAMPLE_DOCTOR.clinicName,
     location: SAMPLE_DOCTOR.location,
     available: (doctorData as any).isAvailable !== false,
+    experience: (doctorData as any).experience ?? SAMPLE_DOCTOR.experience,
+    about: (doctorData as any).bio || (doctorData as any).about || SAMPLE_DOCTOR.about,
+    patients: (doctorData as any).totalPatients || SAMPLE_DOCTOR.patients,
+    qualifications: (doctorData as any).qualifications || "",
+    consultFee: (doctorData as any).consultFee,
+    emergencyFee: (doctorData as any).emergencyFee,
+    walkinFee: (doctorData as any).walkinFee,
+    onlineBooking: (doctorData as any).onlineBooking !== false,
+    showFee: (doctorData as any).showFee === true,
+    alertMessage: (doctorData as any).alertMessage || "",
   } : SAMPLE_DOCTOR);
 
   const isAvailable = doctor.available;
@@ -124,6 +129,15 @@ export default function DoctorDetailScreen() {
               <Text style={styles.expBadgeTxt}>{doctor.experience} yrs exp</Text>
             </View>
           </View>
+          {!!(doctor as any).qualifications && (
+            <Text style={styles.qualTxt}>{(doctor as any).qualifications}</Text>
+          )}
+          {!!(doctor as any).alertMessage && (
+            <View style={styles.alertBanner}>
+              <Feather name="info" size={11} color="#F59E0B" />
+              <Text style={styles.alertBannerTxt}>{(doctor as any).alertMessage}</Text>
+            </View>
+          )}
         </View>
 
         {/* Stats */}
@@ -176,7 +190,36 @@ export default function DoctorDetailScreen() {
             <Text style={styles.sectionTitle}>Fee Structure</Text>
           </View>
           <View style={{ gap: 8 }}>
-            {FEES.map(({ icon, label, sub, amount, color, bg, border }) => (
+            {[
+              {
+                icon: "check-circle" as const,
+                label: "Walk-in Token",
+                sub: "Come early at clinic to get your token",
+                amount: (doctor as any).walkinFee != null ? `₹${(doctor as any).walkinFee}` : "₹0",
+                color: "#4ADE80", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)",
+              },
+              {
+                icon: "monitor" as const,
+                label: "Clinic E-Token",
+                sub: "Take token online via LINESETU — skip the queue",
+                amount: (doctor as any).consultFee != null ? `₹${(doctor as any).consultFee}` : "₹10",
+                color: "#67E8F9", bg: "rgba(6,182,212,0.1)", border: "rgba(6,182,212,0.25)",
+              },
+              {
+                icon: "home" as const,
+                label: "Consultation at Clinic",
+                sub: "Pay directly at the clinic",
+                amount: (doctor as any).consultFee != null ? `₹${(doctor as any).consultFee}` : "₹500",
+                color: "#22C55E", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)",
+              },
+              {
+                icon: "alert-circle" as const,
+                label: "Emergency Consultation",
+                sub: "Priority access — no waiting in queue",
+                amount: (doctor as any).emergencyFee != null ? `₹${(doctor as any).emergencyFee}` : "₹1200",
+                color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)",
+              },
+            ].map(({ icon, label, sub, amount, color, bg, border }) => (
               <View key={label} style={[styles.feeRow, { backgroundColor: bg, borderColor: border }]}>
                 <View style={[styles.feeIcon, { backgroundColor: color + "22" }]}>
                   <Feather name={icon} size={15} color={color} />
@@ -195,7 +238,7 @@ export default function DoctorDetailScreen() {
 
       {/* Bottom CTA */}
       <View style={[styles.bottomCta, { paddingBottom: bottomPad }]}>
-        {isAvailable ? (
+        {isAvailable && (doctor as any).onlineBooking !== false ? (
           <Pressable
             style={styles.bookBtn}
             onPress={() => router.push(`/booking/${id ?? "demo1"}`)}
@@ -207,7 +250,9 @@ export default function DoctorDetailScreen() {
         ) : (
           <View style={styles.bookBtnDisabled}>
             <Feather name="slash" size={18} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.bookBtnDisabledTxt}>E-Token Booking Unavailable</Text>
+            <Text style={styles.bookBtnDisabledTxt}>
+              {!isAvailable ? "E-Token Booking Unavailable" : "Online Booking Disabled"}
+            </Text>
           </View>
         )}
       </View>
@@ -237,11 +282,14 @@ const styles = StyleSheet.create({
 
   identityCard: { marginHorizontal: 18, marginTop: 14, padding: 14, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", marginBottom: 24 },
   docName: { fontSize: 20, fontWeight: "900", color: "#FFF", letterSpacing: -0.3, marginBottom: 5 },
-  identityRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 },
+  identityRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 6 },
   specBadge: { backgroundColor: "rgba(239,68,68,0.15)", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 },
   specBadgeTxt: { fontSize: 11, fontWeight: "600", color: "#EF4444" },
   expBadge: { backgroundColor: "rgba(255,255,255,0.07)", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 },
   expBadgeTxt: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.45)" },
+  qualTxt: { fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: "500", marginTop: 4, marginBottom: 2 },
+  alertBanner: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 8, backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", borderRadius: 10, padding: 8 },
+  alertBannerTxt: { fontSize: 11, color: "#FCD34D", fontWeight: "500", flex: 1, lineHeight: 16 },
   clinicRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   clinicTxt: { fontSize: 11, color: "rgba(255,255,255,0.4)" },
   clinicDot: { color: "rgba(255,255,255,0.2)" },

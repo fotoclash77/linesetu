@@ -32,6 +32,13 @@ export interface DoctorUser {
   consultFee?: number;
   emergencyFee?: number;
   walkinFee?: number;
+  onlineBooking?: boolean;
+  emergencyTokens?: boolean;
+  showWaitTime?: boolean;
+  showPosition?: boolean;
+  showDoctorName?: boolean;
+  showFee?: boolean;
+  alertMessage?: string;
 }
 
 interface DoctorCtx {
@@ -120,6 +127,13 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinics: data.clinics ?? undefined,
       consultFee: data.consultFee != null ? Number(data.consultFee) : undefined,
       emergencyFee: data.emergencyFee != null ? Number(data.emergencyFee) : undefined,
+      onlineBooking: data.onlineBooking !== false,
+      emergencyTokens: data.emergencyTokens !== false,
+      showWaitTime: data.showWaitTime !== false,
+      showPosition: data.showPosition !== false,
+      showDoctorName: data.showDoctorName !== false,
+      showFee: data.showFee === true,
+      alertMessage: data.alertMessage ?? 'Your turn is coming soon. Please be ready at the clinic.',
       walkinFee: data.walkinFee != null ? Number(data.walkinFee) : undefined,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));

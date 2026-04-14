@@ -409,8 +409,21 @@ export default function SettingsScreen() {
   const [showDoctorName, setShowDoctorName] = useState(true);
   const [showFee, setShowFee] = useState(false);
   const [alertMessage, setAlertMessage] = useState('Your turn is coming soon. Please be ready at the clinic.');
-  const [notifSound, setNotifSound] = useState(true);
-  const [notifVibrate, setNotifVibrate] = useState(true);
+  const [patientAppSaving, setPatientAppSaving] = useState(false);
+  const [patientAppSaved, setPatientAppSaved] = useState(false);
+  const patientAppSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!patientAppSynced.current && doctor) {
+      patientAppSynced.current = true;
+      if ((doctor as any).onlineBooking !== undefined) setOnlineBooking((doctor as any).onlineBooking);
+      if ((doctor as any).emergencyTokens !== undefined) setEmergencyTokens((doctor as any).emergencyTokens);
+      if ((doctor as any).showWaitTime !== undefined) setShowWaitTime((doctor as any).showWaitTime);
+      if ((doctor as any).showPosition !== undefined) setShowPosition((doctor as any).showPosition);
+      if ((doctor as any).showDoctorName !== undefined) setShowDoctorName((doctor as any).showDoctorName);
+      if ((doctor as any).showFee !== undefined) setShowFee((doctor as any).showFee);
+      if ((doctor as any).alertMessage) setAlertMessage((doctor as any).alertMessage);
+    }
+  }, [doctor]);
 
   // Notification state
   const [notifBooking, setNotifBooking] = useState(true);
@@ -937,8 +950,22 @@ export default function SettingsScreen() {
                 placeholder="Enter the alert message sent to patients..."
               />
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
-              <Text style={styles.saveBtnText}>✓ Save Patient App Settings</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, patientAppSaving && { opacity: 0.7 }]}
+              disabled={patientAppSaving}
+              onPress={async () => {
+                setPatientAppSaving(true); setPatientAppSaved(false);
+                try {
+                  await updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showDoctorName, showFee, alertMessage } as any);
+                  setPatientAppSaved(true);
+                  setTimeout(() => { setPatientAppSaved(false); setSection('main'); }, 1200);
+                } catch {}
+                setPatientAppSaving(false);
+              }}
+            >
+              {patientAppSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{patientAppSaved ? '✓ Settings Saved!' : '💾 Save Patient App Settings'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
