@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
   ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
@@ -277,6 +277,7 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { doctor, logout, updateDoctor } = useDoctor();
   const [section, setSection] = useState<SettingsSection>('main');
   // Reset to main whenever the Settings tab button is tapped (even while already on settings)
@@ -1968,7 +1969,7 @@ export default function SettingsScreen() {
 
         {showLogout && (
           <View style={styles.logoutOverlay}>
-            <View style={styles.logoutSheet}>
+            <View style={[styles.logoutSheet, { paddingBottom: 24 + 49 + insets.bottom }]}>
               <View style={styles.logoutHandle} />
               <View style={styles.logoutIconRow}>
                 <View style={styles.logoutIcon}><Text style={{ fontSize: 20, color: '#F87171' }}>→</Text></View>
