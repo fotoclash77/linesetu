@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -28,24 +28,28 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const isWeb = Platform.OS === "web";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-const AVG_MIN_PER_TOKEN = 7; // matches server (position * 7)
+const AVG_MIN_PER_TOKEN = 7;
 
-async function fetchToken(tokenId: string) {
-  const res = await fetch(`${BASE_URL}/api/tokens/${tokenId}`);
-  if (!res.ok) throw new Error("Token not found");
-  return res.json() as Promise<{
-    id: string; tokenNumber: number; doctorId: string;
-    patientName: string; date: string; shift: string; status: string; type: string;
-  }>;
+interface TokenData {
+  id: string; tokenNumber: number; doctorId: string;
+  patientName: string; date: string; shift: string; status: string; type: string;
 }
 
-async function fetchPosition(doctorId: string, tokenId: string) {
+interface PositionData {
+  tokenNumber: number; currentToken: number; position: number;
+  estimatedWaitMins: number; status: string; totalWaiting: number;
+}
+
+async function fetchToken(tokenId: string): Promise<TokenData> {
+  const res = await fetch(`${BASE_URL}/api/tokens/${tokenId}`);
+  if (!res.ok) throw new Error("Token not found");
+  return res.json();
+}
+
+async function fetchPosition(doctorId: string, tokenId: string): Promise<PositionData> {
   const res = await fetch(`${BASE_URL}/api/queues/${doctorId}/position/${tokenId}`);
   if (!res.ok) throw new Error("Position fetch failed");
-  return res.json() as Promise<{
-    tokenNumber: number; currentToken: number; position: number;
-    estimatedWaitMins: number; status: string; totalWaiting: number;
-  }>;
+  return res.json();
 }
 
 async function fetchDoctor(doctorId: string) {
@@ -57,13 +61,50 @@ async function fetchDoctor(doctorId: string) {
   }>;
 }
 
+function useRealtimePosition(doctorId: string | undefined, tokenId: string | undefined) {
+  const [pos, setPos] = useState<PositionData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!doctorId || !tokenId) return;
+    let active = true;
+    const sseUrl = `${BASE_URL}/api/queues/${doctorId}/position/${tokenId}/stream`;
+
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource(sseUrl);
+      es.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.error) return;
+          if (active) { setPos(data); setLoading(false); }
+        } catch (_) {}
+      };
+      es.onerror = () => {
+        if (active) setLoading(false);
+      };
+      return () => { active = false; es.close(); };
+    }
+
+    const poll = async () => {
+      try {
+        const data = await fetchPosition(doctorId, tokenId);
+        if (active) { setPos(data); setLoading(false); }
+      } catch (_) { if (active) setLoading(false); }
+    };
+    poll();
+    const iv = setInterval(poll, 5_000);
+    return () => { active = false; clearInterval(iv); };
+  }, [doctorId, tokenId]);
+
+  return { pos, loading };
+}
+
 export default function LiveQueueScreen() {
   const insets = useSafeAreaInsets();
   const { tokenId } = useLocalSearchParams<{ tokenId: string }>();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
 
-  // ── Fetch token details ───────────────────────────────────────
   const { data: token, isLoading: tokenLoading } = useQuery({
     queryKey: ["token", tokenId],
     queryFn: () => fetchToken(tokenId!),
@@ -71,16 +112,8 @@ export default function LiveQueueScreen() {
     staleTime: 60_000,
   });
 
-  // ── Fetch live position (polls every 10s) ────────────────────
-  const { data: pos, isLoading: posLoading } = useQuery({
-    queryKey: ["queue-position", token?.doctorId, tokenId],
-    queryFn: () => fetchPosition(token!.doctorId, tokenId!),
-    enabled: !!token?.doctorId && !!tokenId,
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
+  const { pos, loading: posLoading } = useRealtimePosition(token?.doctorId, tokenId);
 
-  // ── Fetch doctor info ─────────────────────────────────────────
   const { data: doctor } = useQuery({
     queryKey: ["doctor", token?.doctorId],
     queryFn: () => fetchDoctor(token!.doctorId),
@@ -395,7 +428,7 @@ export default function LiveQueueScreen() {
               <Feather name="info" size={15} color="#67E8F9" />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.alertTitle, { color: "#67E8F9" }]}>Wait at home or nearby</Text>
-                <Text style={styles.alertBody}>Queue updates every 10 seconds. Arrive a few minutes before your turn.</Text>
+                <Text style={styles.alertBody}>Queue updates in real-time. Arrive a few minutes before your turn.</Text>
               </View>
             </View>
           </View>

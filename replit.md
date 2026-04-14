@@ -37,6 +37,17 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 | api-server | API (Express) | 8080 | — |
 | mockup-sandbox | Design (Vite) | 8081 | /__mockup |
 
+### Real-time Data Flow
+- **Queue Position (Patient App)**: SSE via `GET /api/queues/:doctorId/position/:tokenId/stream` — pushes instant position updates when doctor calls/completes tokens. Fallback: 5s polling.
+- **Token Counts (Booking Page)**: SSE via `GET /api/tokens/stream/:doctorId` — real-time booking count per shift.
+- **Token Status**: SSE via `GET /api/tokens/stream/single/:tokenId` — real-time single token updates.
+- **Doctor Calendar**: Polls `GET /api/doctors/:id` every 10s with 5s stale time.
+- **Bookings List**: Polls patient tokens every 10s with 5s stale time.
+- All SSE endpoints use `tokenEmitter` (EventEmitter) to broadcast changes whenever tokens are booked/called/completed.
+
+### expo-router Base URL Patch
+The patient app requires a patch to expo-router's `getPathFromState-forks.js`, `getPathFromState.js`, and `getStateFromPath-forks.js` to enable base URL handling in dev mode. The `postinstall` script (`scripts/patch-expo-router.js`) auto-applies these patches. After patching, Metro cache must be cleared (`rm -rf /tmp/metro-cache /tmp/metro-file-map-*`) and the workflow restarted.
+
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.
 - 7 screens: Login, Dashboard, Master Queue, Earnings, Schedule (within Queue), Settings, Add Walk-in

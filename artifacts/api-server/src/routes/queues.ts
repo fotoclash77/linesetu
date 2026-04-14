@@ -5,6 +5,7 @@ import {
   query, where,
   queueDocId, todayDate,
 } from "../lib/firebase.js";
+import { tokenEmitter } from "../lib/tokenEmitter.js";
 
 const router = Router();
 
@@ -79,6 +80,64 @@ router.get("/queues/:doctorId/position/:tokenId", async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get("/queues/:doctorId/position/:tokenId/stream", async (req, res) => {
+  const { doctorId, tokenId } = req.params;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  let closed = false;
+
+  const sendPosition = async () => {
+    if (closed) return;
+    try {
+      const tokenSnap = await getDoc(doc(db, Collections.TOKENS, tokenId));
+      if (!tokenSnap.exists()) {
+        res.write(`data: ${JSON.stringify({ error: "Token not found" })}\n\n`);
+        return;
+      }
+      const token = tokenSnap.data();
+      const queueSnap = await getDoc(doc(db, Collections.QUEUES,
+        queueDocId(token.doctorId, token.date, token.shift)));
+
+      if (!queueSnap.exists()) {
+        res.write(`data: ${JSON.stringify({ error: "Queue not found" })}\n\n`);
+        return;
+      }
+
+      const queue = queueSnap.data();
+      const currentToken = queue.currentToken as number;
+      const myToken = token.tokenNumber as number;
+      const position = Math.max(0, myToken - currentToken);
+      const estimatedWaitMins = position * 7;
+
+      res.write(`data: ${JSON.stringify({
+        tokenId,
+        tokenNumber: myToken,
+        currentToken,
+        position,
+        estimatedWaitMins,
+        status: token.status,
+        totalWaiting: queue.waitingTokenIds?.length ?? 0,
+      })}\n\n`);
+    } catch (_) {}
+  };
+
+  await sendPosition();
+
+  const emitterKey = `tokens:${doctorId}`;
+  const handler = () => sendPosition();
+  tokenEmitter.on(emitterKey, handler);
+
+  req.on("close", () => {
+    closed = true;
+    tokenEmitter.off(emitterKey, handler);
+  });
 });
 
 export default router;
