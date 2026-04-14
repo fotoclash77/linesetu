@@ -433,6 +433,7 @@ export default function SettingsScreen() {
   const [notifPayout, setNotifPayout] = useState(true);
 
   const [showLogout, setShowLogout] = useState(false);
+  const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
 
   // Results / photo gallery state
   const [resultPhotos, setResultPhotos] = useState<string[]>([]);
@@ -487,6 +488,15 @@ export default function SettingsScreen() {
       }
     } catch {}
     setUploadingPhoto(false);
+  };
+
+  const pickProfilePhoto = async () => {
+    setProfilePhotoLoading(true);
+    try {
+      await pickAndUploadPhoto();
+    } finally {
+      setProfilePhotoLoading(false);
+    }
   };
 
   const deletePhoto = async (url: string) => {
@@ -563,8 +573,10 @@ export default function SettingsScreen() {
               <View style={styles.avatarLarge}>
                 <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>
               </View>
-              <TouchableOpacity style={styles.photoChangeBtn}>
-                <Text style={styles.photoBtnText}>📷 Change Photo</Text>
+              <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
+                {profilePhotoLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.photoBtnText}>📷 Change Photo</Text>}
               </TouchableOpacity>
               <View style={styles.photoNoteRow}>
                 <Text style={styles.photoNoteText}>⚠ For best results, upload a square (1:1) photo. Rectangular images will be cropped to fit.</Text>
