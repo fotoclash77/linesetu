@@ -273,9 +273,11 @@ router.post("/tokens", async (req, res) => {
     const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
     const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
-    const patientPaid = type === "emergency" ? 30 : 20;
-    const doctorEarns = type === "emergency" ? 20 : 10;
-    const platformFee = 10;
+    // Walk-in/offline tokens: no online payment, no platform fee, no doctor online earnings
+    const isWalkinSource = source === "walkin";
+    const patientPaid = isWalkinSource ? 0 : (type === "emergency" ? 30 : 20);
+    const doctorEarns = isWalkinSource ? 0 : (type === "emergency" ? 20 : 10);
+    const platformFee = isWalkinSource ? 0 : 10;
 
     let resultTokenData: any = null;
     let autoAdjusted = false;
@@ -549,24 +551,31 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
 
     const earningsSnap = await getDoc(earningsRef);
     const isE = token.type === "emergency";
+    const isOnlineToken = token.source !== "walkin" && (token.doctorEarns ?? 0) > 0;
+    const doctorRef = doc(db, Collections.DOCTORS, token.doctorId);
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
 
-    if (earningsSnap.exists()) {
-      batch.update(earningsRef, {
-        totalTokens: increment(1),
-        tokensNormal: increment(isE ? 0 : 1),
-        tokensEmergency: increment(isE ? 1 : 0),
-        earned: increment(token.doctorEarns),
-      });
-    } else {
-      batch.set(earningsRef, {
-        date: token.date, totalTokens: 1,
-        tokensNormal: isE ? 0 : 1, tokensEmergency: isE ? 1 : 0,
-        earned: token.doctorEarns, shift: token.shift,
-      });
+    // Only track earnings and pendingPayout for paid online tokens
+    if (isOnlineToken) {
+      if (earningsSnap.exists()) {
+        batch.update(earningsRef, {
+          totalTokens: increment(1),
+          tokensNormal: increment(isE ? 0 : 1),
+          tokensEmergency: increment(isE ? 1 : 0),
+          earned: increment(token.doctorEarns),
+        });
+      } else {
+        batch.set(earningsRef, {
+          date: token.date, totalTokens: 1,
+          tokensNormal: isE ? 0 : 1, tokensEmergency: isE ? 1 : 0,
+          earned: token.doctorEarns, shift: token.shift,
+        });
+      }
+      // Accumulate in doctor's pending payout balance
+      batch.update(doctorRef, { pendingPayout: increment(token.doctorEarns) });
     }
 
     if (nextToken && nextRef) {

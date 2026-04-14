@@ -99,4 +99,61 @@ router.get("/doctors/:doctorId/earnings", async (req, res) => {
   }
 });
 
+// POST /api/doctors/:doctorId/payouts — request a payout withdrawal
+router.post("/doctors/:doctorId/payouts", async (req, res) => {
+  try {
+    const { upiId, amount } = req.body;
+    if (!upiId || !amount) return res.status(400).json({ error: "upiId and amount are required" });
+
+    const doctorRef  = doc(db, Collections.DOCTORS, req.params.doctorId);
+    const doctorSnap = await getDoc(doctorRef);
+    if (!doctorSnap.exists()) return res.status(404).json({ error: "Doctor not found" });
+    const doctorData = doctorSnap.data() as any;
+
+    const pendingPayout = doctorData.pendingPayout ?? 0;
+    const requestedAmount = Number(amount);
+    if (requestedAmount <= 0) return res.status(400).json({ error: "Amount must be greater than 0" });
+    if (requestedAmount > pendingPayout) return res.status(400).json({ error: "Requested amount exceeds available balance" });
+
+    const payoutData = {
+      doctorId:    req.params.doctorId,
+      doctorName:  doctorData.name || "",
+      amount:      requestedAmount,
+      upiId,
+      requestedAt: Timestamp.now(),
+      status:      "pending",
+    };
+
+    const payoutRef = await addDoc(collection(db, "payoutRequests"), payoutData);
+    // Deduct from pending balance atomically
+    await updateDoc(doctorRef, { pendingPayout: increment(-requestedAmount) });
+
+    res.status(201).json({ id: payoutRef.id, ...payoutData });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/doctors/:doctorId/payouts — list payout requests (admin-ready structure)
+router.get("/doctors/:doctorId/payouts", async (req, res) => {
+  try {
+    const snap = await getDocs(query(
+      collection(db, "payoutRequests"),
+      where("doctorId", "==", req.params.doctorId),
+      orderBy("requestedAt", "desc"),
+    ));
+    const payouts = snap.docs.map(d => {
+      const data = d.data() as any;
+      return {
+        id: d.id,
+        ...data,
+        requestedAt: data.requestedAt?.toDate?.()?.toISOString?.() ?? null,
+      };
+    });
+    res.json({ payouts });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

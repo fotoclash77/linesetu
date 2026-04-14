@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform, ActivityIndicator,
+  Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -124,6 +125,65 @@ export default function EarningsScreen() {
     refetchInterval: 60_000,
   });
 
+  // Fresh doctor data for pendingPayout + in-clinic fees
+  const { data: doctorLive, refetch: refetchDoctorLive } = useQuery<any>({
+    queryKey: ['doctor-live', doctor?.id],
+    queryFn:  async () => {
+      const res = await fetch(`${BASE()}/api/doctors/${doctor!.id}`);
+      return res.json();
+    },
+    enabled:  !!doctor?.id,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
+  // Payout requests from Firebase
+  const { data: payoutsData, refetch: refetchPayouts } = useQuery<any>({
+    queryKey: ['doctor-payouts', doctor?.id],
+    queryFn:  async () => {
+      const res = await fetch(`${BASE()}/api/doctors/${doctor!.id}/payouts`);
+      return res.json();
+    },
+    enabled:  !!doctor?.id && tab === 'payouts',
+    staleTime: 30_000,
+  });
+
+  // Withdraw modal state
+  const [withdrawModal, setWithdrawModal] = useState(false);
+  const [upiId, setUpiId]               = useState('');
+  const [withdrawAmt, setWithdrawAmt]   = useState('');
+  const [withdrawing, setWithdrawing]   = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+
+  const pendingPayout = doctorLive?.pendingPayout ?? 0;
+  const inClinicFee   = doctorLive?.consultFee ?? (doctor as any)?.consultFee ?? 0;
+  const inClinicEmFee = doctorLive?.emergencyFee ?? (doctor as any)?.emergencyFee ?? 0;
+  const payouts: any[] = payoutsData?.payouts ?? [];
+
+  async function submitWithdraw() {
+    const amt = Number(withdrawAmt);
+    if (!upiId.trim()) { setWithdrawError('Enter a valid UPI ID'); return; }
+    if (!amt || amt <= 0) { setWithdrawError('Enter a valid amount'); return; }
+    if (amt > pendingPayout) { setWithdrawError(`Amount exceeds available balance of ${fmtFull(pendingPayout)}`); return; }
+    setWithdrawing(true); setWithdrawError('');
+    try {
+      const res = await fetch(`${BASE()}/api/doctors/${doctor!.id}/payouts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upiId: upiId.trim(), amount: amt }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Request failed');
+      setWithdrawModal(false);
+      setUpiId(''); setWithdrawAmt('');
+      refetchDoctorLive();
+      refetchPayouts();
+    } catch (e: any) {
+      setWithdrawError(e.message || 'Something went wrong');
+    }
+    setWithdrawing(false);
+  }
+
   // Aggregate per period
   const periods = useMemo<Record<Period, PeriodSummary>>(() => {
     const todayRecs     = rawEarnings.filter(r => r.date === ranges.today);
@@ -193,7 +253,7 @@ export default function EarningsScreen() {
             <>
               <View style={styles.heroTop}>
                 <View>
-                  <Text style={styles.heroBalanceLabel}>Lifetime Earned</Text>
+                  <Text style={styles.heroBalanceLabel}>Lifetime Earned (Online)</Text>
                   <Text style={styles.heroBalance}>{fmtFull(totalEarned)}</Text>
                   <Text style={styles.heroReady}>
                     {periods.Today.earned > 0
@@ -201,9 +261,19 @@ export default function EarningsScreen() {
                       : '✓ Live from your token data'}
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.withdrawBtn}>
-                  <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
-                </TouchableOpacity>
+                <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[styles.withdrawBtn, pendingPayout === 0 && { opacity: 0.5 }]}
+                    onPress={() => { setWithdrawAmt(String(pendingPayout)); setWithdrawModal(true); }}
+                    disabled={pendingPayout === 0}
+                  >
+                    <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
+                  </TouchableOpacity>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeLabel}>Available</Text>
+                    <Text style={styles.pendingBadgeValue}>{fmtFull(pendingPayout)}</Text>
+                  </View>
+                </View>
               </View>
               <View style={styles.heroStats}>
                 {[
@@ -324,23 +394,23 @@ export default function EarningsScreen() {
                 </>
               )}
 
-              {/* Rate Card — always visible */}
+              {/* Rate Card — online E-token rates (platform-set) */}
               <View style={[styles.glassCard, { marginTop: 10 }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionDot}>🛡</Text>
-                    <Text style={styles.sectionTitle}>Your Rate Card</Text>
+                    <Text style={styles.sectionTitle}>Online E-Token Rates</Text>
                   </View>
                   <Text style={styles.platformSetText}>Platform-set</Text>
                 </View>
                 {[
-                  { type: 'Online Normal Token',    earn: '₹10', platform: '₹10', patient: '₹20' },
-                  { type: 'Online Emergency Token', earn: '₹20', platform: '₹10', patient: '₹30' },
+                  { type: 'Normal E-Token',    earn: '₹10', platform: '₹10', patient: '₹20' },
+                  { type: 'Emergency E-Token', earn: '₹20', platform: '₹10', patient: '₹30' },
                 ].map(r => (
                   <View key={r.type} style={styles.rateRow}>
                     <Text style={styles.rateType} numberOfLines={1}>{r.type}</Text>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
-                      {[{ v: r.earn, c: '#4ADE80', l: 'You earn' }, { v: r.platform, c: '#F87171', l: 'Platform' }, { v: r.patient, c: 'rgba(255,255,255,0.6)', l: 'Patient' }].map(s => (
+                      {[{ v: r.earn, c: '#4ADE80', l: 'You earn' }, { v: r.platform, c: '#F87171', l: 'Platform' }, { v: r.patient, c: 'rgba(255,255,255,0.6)', l: 'Patient pays' }].map(s => (
                         <View key={s.l} style={{ alignItems: 'center' }}>
                           <Text style={[styles.rateVal, { color: s.c }]}>{s.v}</Text>
                           <Text style={styles.rateSub}>{s.l}</Text>
@@ -350,17 +420,58 @@ export default function EarningsScreen() {
                   </View>
                 ))}
               </View>
+
+              {/* In-clinic fees (doctor-set, display only) */}
+              <View style={[styles.glassCard, { marginTop: 10 }]}>
+                <View style={styles.sectionHeaderRow}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionDot}>🏥</Text>
+                    <Text style={styles.sectionTitle}>In-Clinic Fees</Text>
+                  </View>
+                  <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Display only</Text>
+                </View>
+                {[
+                  { type: 'Consultation',          val: inClinicFee   ? `₹${inClinicFee}`   : 'Not set', color: '#A5B4FC' },
+                  { type: 'Emergency Consultation', val: inClinicEmFee ? `₹${inClinicEmFee}` : 'Not set', color: '#FCD34D' },
+                ].map(r => (
+                  <View key={r.type} style={[styles.rateRow, { justifyContent: 'space-between' }]}>
+                    <Text style={styles.rateType}>{r.type}</Text>
+                    <Text style={[styles.rateVal, { color: r.color }]}>{r.val}</Text>
+                  </View>
+                ))}
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 8, fontStyle: 'italic' }}>
+                  Shown to patients on booking screens. Not charged via app. Set in Settings → Fee Structure.
+                </Text>
+              </View>
             </>
           )}
 
           {tab === 'payouts' && (
             <>
-              {/* Payout summary from real earnings */}
+              {/* Available balance + quick action */}
+              <View style={styles.payoutBalanceCard}>
+                <View>
+                  <Text style={styles.payoutBalanceLabel}>Available for Payout</Text>
+                  <Text style={styles.payoutBalanceValue}>{fmtFull(pendingPayout)}</Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>
+                    Accumulated from completed online tokens
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.withdrawBtn, pendingPayout === 0 && { opacity: 0.5 }]}
+                  onPress={() => { setWithdrawAmt(String(pendingPayout)); setWithdrawModal(true); }}
+                  disabled={pendingPayout === 0}
+                >
+                  <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Earnings summary */}
               <View style={styles.payoutSummary}>
                 {[
-                  { label: 'Lifetime',    value: fmtFull(totalEarned),                   color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
-                  { label: 'This Month',  value: fmtFull(periods.Month.earned),           color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '📅' },
-                  { label: 'Today',       value: fmtFull(periods.Today.earned),           color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⚡' },
+                  { label: 'Lifetime',   value: fmtFull(totalEarned),          color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
+                  { label: 'This Month', value: fmtFull(periods.Month.earned),  color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '📅' },
+                  { label: 'Today',      value: fmtFull(periods.Today.earned),  color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⚡' },
                 ].map(s => (
                   <View key={s.label} style={[styles.summaryCard, { backgroundColor: s.bg, borderColor: `${s.color}33` }]}>
                     <Text style={{ fontSize: 16, color: s.color, marginBottom: 6 }}>{s.icon}</Text>
@@ -370,58 +481,45 @@ export default function EarningsScreen() {
                 ))}
               </View>
 
-              {/* Bank info placeholder */}
-              <View style={styles.bankCard}>
-                <View style={styles.bankIcon}>
-                  <Text style={{ fontSize: 16, color: TEAL_LT }}>🏦</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.bankName}>Bank Account</Text>
-                  <Text style={styles.bankSub}>Link your bank for weekly auto-settlement</Text>
-                </View>
-                <TouchableOpacity style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedBadgeText}>+ Add</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Settlement note */}
-              <View style={styles.settlementNote}>
-                <Text style={{ fontSize: 13, color: '#FCD34D' }}>ℹ</Text>
-                <Text style={styles.settlementNoteText}>
-                  Payouts are settled weekly every Tuesday. Link your bank account to enable automatic transfers.
-                </Text>
-              </View>
-
-              {/* Payout history — real per-day breakdown */}
+              {/* Real payout request history from Firebase */}
               <View style={[styles.glassCard, { marginTop: 0 }]}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionDot}>📋</Text>
-                  <Text style={styles.sectionTitle}>Earnings Per Day</Text>
+                  <Text style={styles.sectionTitle}>Payout Requests</Text>
                 </View>
-                {rawEarnings.length === 0 ? (
+                {payouts.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 24 }}>
                     <Text style={{ fontSize: 28, marginBottom: 8 }}>💸</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No earnings records yet</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No payout requests yet</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>
+                      Tap Withdraw above to request your first payout
+                    </Text>
                   </View>
                 ) : (
-                  rawEarnings.slice(0, 30).map((rec) => {
-                    const isToday = rec.date === ranges.today;
+                  payouts.map((p: any) => {
+                    const statusMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                      pending:  { label: 'Pending',  color: '#FCD34D', bg: 'rgba(252,211,77,0.1)',   border: 'rgba(252,211,77,0.3)' },
+                      approved: { label: 'Approved', color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   border: 'rgba(74,222,128,0.3)' },
+                      rejected: { label: 'Rejected', color: '#F87171', bg: 'rgba(248,113,113,0.1)',  border: 'rgba(248,113,113,0.3)' },
+                    };
+                    const st = statusMap[p.status] ?? statusMap.pending;
+                    const dateStr = p.requestedAt ? new Date(p.requestedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
                     return (
-                      <View key={`${rec.date}-${rec.shift}`} style={styles.payoutRow}>
-                        <View style={[styles.payoutIcon, { backgroundColor: 'rgba(45,212,191,0.12)' }]}>
-                          <Text style={{ color: TEAL_LT, fontSize: 13 }}>{rec.shift === 'morning' ? '☀️' : '🌙'}</Text>
+                      <View key={p.id} style={styles.payoutRow}>
+                        <View style={[styles.payoutIcon, { backgroundColor: `${st.color}15` }]}>
+                          <Text style={{ fontSize: 14 }}>
+                            {p.status === 'approved' ? '✅' : p.status === 'rejected' ? '❌' : '⏳'}
+                          </Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <View style={styles.payoutTopRow}>
-                            <Text style={styles.payoutDate}>{isToday ? 'Today' : rec.date} · {rec.shift}</Text>
-                            <Text style={styles.payoutAmount}>{fmtFull(rec.earned ?? 0)}</Text>
+                            <Text style={styles.payoutDate}>{dateStr}</Text>
+                            <Text style={styles.payoutAmount}>{fmtFull(p.amount ?? 0)}</Text>
                           </View>
-                          <Text style={styles.payoutNote}>
-                            {rec.totalTokens ?? 0} tokens · {rec.tokensNormal ?? 0} normal · {rec.tokensEmergency ?? 0} emergency
-                          </Text>
+                          <Text style={styles.payoutNote}>UPI: {p.upiId}</Text>
                         </View>
-                        <View style={[styles.payoutStatusBadge, { backgroundColor: 'rgba(74,222,128,0.1)', borderColor: 'rgba(74,222,128,0.3)' }]}>
-                          <Text style={[styles.payoutStatusText, { color: '#4ADE80' }]}>Done</Text>
+                        <View style={[styles.payoutStatusBadge, { backgroundColor: st.bg, borderColor: st.border }]}>
+                          <Text style={[styles.payoutStatusText, { color: st.color }]}>{st.label}</Text>
                         </View>
                       </View>
                     );
@@ -432,6 +530,61 @@ export default function EarningsScreen() {
           )}
         </ScrollView>
       </View>
+
+      {/* ── Withdraw Modal ── */}
+      <Modal visible={withdrawModal} transparent animationType="slide" onRequestClose={() => setWithdrawModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setWithdrawModal(false)}>
+          <View style={styles.withdrawCard} onStartShouldSetResponder={() => true}>
+            <Text style={styles.withdrawCardTitle}>Request Payout</Text>
+            <View style={styles.withdrawAvailRow}>
+              <Text style={styles.withdrawAvailLabel}>Available Balance</Text>
+              <Text style={styles.withdrawAvailValue}>{fmtFull(pendingPayout)}</Text>
+            </View>
+
+            <Text style={styles.withdrawFieldLabel}>UPI ID</Text>
+            <TextInput
+              style={styles.withdrawInput}
+              value={upiId}
+              onChangeText={setUpiId}
+              placeholder="yourname@upi"
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoCorrect={false}
+            />
+
+            <Text style={styles.withdrawFieldLabel}>Amount (₹)</Text>
+            <TextInput
+              style={styles.withdrawInput}
+              value={withdrawAmt}
+              onChangeText={setWithdrawAmt}
+              placeholder={String(pendingPayout)}
+              placeholderTextColor="rgba(255,255,255,0.2)"
+              keyboardType="numeric"
+            />
+
+            {withdrawError ? (
+              <View style={styles.withdrawError}>
+                <Text style={styles.withdrawErrorText}>{withdrawError}</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.withdrawConfirmBtn, (!upiId.trim() || !withdrawAmt || withdrawing) && { opacity: 0.5 }]}
+              disabled={!upiId.trim() || !withdrawAmt || withdrawing}
+              onPress={submitWithdraw}
+            >
+              {withdrawing
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.withdrawConfirmBtnText}>Submit Payout Request</Text>}
+            </TouchableOpacity>
+
+            <Text style={styles.withdrawNote}>
+              Payouts are reviewed and approved by the admin team. Funds are transferred to your UPI ID after approval.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -514,4 +667,23 @@ const styles = StyleSheet.create({
   payoutNote: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
   payoutStatusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   payoutStatusText: { fontSize: 9, fontWeight: '800' },
+  pendingBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: 'rgba(45,212,191,0.12)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)', alignItems: 'center' },
+  pendingBadgeLabel: { fontSize: 8, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 1 },
+  pendingBadgeValue: { fontSize: 11, fontWeight: '900', color: TEAL_LT },
+  payoutBalanceCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 18, marginBottom: 12, backgroundColor: 'rgba(13,148,136,0.18)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.25)' },
+  payoutBalanceLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 4 },
+  payoutBalanceValue: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+  withdrawCard: { backgroundColor: '#0D1B2A', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  withdrawCardTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', marginBottom: 14 },
+  withdrawAvailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderRadius: 14, backgroundColor: 'rgba(45,212,191,0.08)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.2)', marginBottom: 16 },
+  withdrawAvailLabel: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+  withdrawAvailValue: { fontSize: 20, fontWeight: '900', color: TEAL_LT },
+  withdrawFieldLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 6 },
+  withdrawInput: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: 12, fontSize: 14, color: '#FFF', backgroundColor: 'rgba(255,255,255,0.05)', marginBottom: 12 },
+  withdrawError: { padding: 9, borderRadius: 12, backgroundColor: 'rgba(248,113,113,0.1)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.25)', marginBottom: 12 },
+  withdrawErrorText: { fontSize: 11, color: '#F87171', fontWeight: '600' },
+  withdrawConfirmBtn: { height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, marginBottom: 12 },
+  withdrawConfirmBtnText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
+  withdrawNote: { fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', lineHeight: 14 },
 });

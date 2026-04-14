@@ -685,45 +685,70 @@ export default function SettingsScreen() {
   }
 
   if (section === 'fees') {
+    const [feeSaving, setFeeSaving] = React.useState(false);
+    const [feeSaved, setFeeSaved] = React.useState(false);
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
           <BackHeader title="Fee Structure" onBack={() => setSection('main')} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>IN-CLINIC CONSULTATION FEES</Text>
+              <View style={styles.feeNote}>
+                <Text style={styles.feeNoteText}>
+                  ℹ These fees are for display and reference only. They appear on your public profile and booking screens so patients know what to bring to the clinic. No payment is collected via the app for in-clinic visits.
+                </Text>
+              </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>CONSULTATION FEE (₹)</Text>
+                <Text style={styles.fieldLabel}>IN-CLINIC CONSULTATION FEE (₹ 0 – 3000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={consultFee}
-                  onChangeText={setConsultFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setConsultFee(String(Math.min(3000, n)));
+                  }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   placeholder="500"
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>EMERGENCY / PRIORITY FEE (₹)</Text>
+                <Text style={styles.fieldLabel}>IN-CLINIC EMERGENCY CONSULTATION FEE (₹ 0 – 3000)</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={emergencyFee}
-                  onChangeText={setEmergencyFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setEmergencyFee(String(Math.min(3000, n)));
+                  }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   placeholder="1000"
                 />
               </View>
-              <View style={styles.feeNote}>
-                <Text style={styles.feeNoteText}>
-                  ℹ Platform fee (₹10 Normal / ₹20 Emergency) is deducted from each token before settlement.
+              <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
+                <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)' }]}>
+                  ✓ Walk-in token bookings are always free — no online fee is charged for walk-in or offline patients.
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={async () => {
-              await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0 } as any);
-              setSection('main');
-            }}>
-              <Text style={styles.saveBtnText}>✓ Save Fee Structure</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, feeSaving && { opacity: 0.7 }]}
+              disabled={feeSaving}
+              onPress={async () => {
+                setFeeSaving(true); setFeeSaved(false);
+                try {
+                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0 } as any);
+                  setFeeSaved(true);
+                  setTimeout(() => { setFeeSaved(false); setSection('main'); }, 1200);
+                } catch {}
+                setFeeSaving(false);
+              }}
+            >
+              {feeSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{feeSaved ? '✓ Fee Structure Saved!' : '💾 Save Fee Structure'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
