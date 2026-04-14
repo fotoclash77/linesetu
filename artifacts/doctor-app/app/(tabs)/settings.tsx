@@ -407,6 +407,8 @@ export default function SettingsScreen() {
   const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 10));
   const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 20));
   const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
+  const [clinicConsultFee, setClinicConsultFee] = useState(() => String((doctor as any)?.clinicConsultFee ?? 0));
+  const [clinicEmergencyFee, setClinicEmergencyFee] = useState(() => String((doctor as any)?.clinicEmergencyFee ?? 0));
   const [feeSaving, setFeeSaving] = useState(false);
   const [feeSaved, setFeeSaved] = useState(false);
   const feeSynced = React.useRef(false);
@@ -416,6 +418,8 @@ export default function SettingsScreen() {
       setConsultFee(String((doctor as any).consultFee ?? 10));
       setEmergencyFee(String((doctor as any).emergencyFee ?? 20));
       setWalkinFee(String((doctor as any).walkinFee ?? 0));
+      setClinicConsultFee(String((doctor as any).clinicConsultFee ?? 0));
+      setClinicEmergencyFee(String((doctor as any).clinicEmergencyFee ?? 0));
     }
   }, [doctor]);
 
@@ -696,7 +700,7 @@ export default function SettingsScreen() {
     } else if (section === 'schedule') {
       updateDoctor({ calendar: calendarOverrides as any }).catch(() => {});
     } else if (section === 'fees') {
-      updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0 } as any).catch(() => {});
+      updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0, clinicConsultFee: Number(clinicConsultFee) || 0, clinicEmergencyFee: Number(clinicEmergencyFee) || 0 } as any).catch(() => {});
     } else if (section === 'patientApp') {
       updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showFee, alertMessage } as any).catch(() => {});
     } else if (section === 'bank') {
@@ -1184,6 +1188,34 @@ export default function SettingsScreen() {
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   placeholder="200"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>CONSULTATION AT CLINIC (₹)</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={clinicConsultFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setClinicConsultFee(String(n));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="300"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>EMERGENCY CONSULTATION AT CLINIC (₹)</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={clinicEmergencyFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setClinicEmergencyFee(String(n));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="500"
                 />
               </View>
               <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
