@@ -325,6 +325,7 @@ export default function SettingsScreen() {
   });
   const [clinicSaving, setClinicSaving] = useState(false);
   const [clinicSaved, setClinicSaved] = useState(false);
+  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; city?: boolean; phone?: boolean; maps?: boolean }>({});
 
   // Schedule state — seeded from doctor.shifts
   const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
@@ -818,7 +819,7 @@ export default function SettingsScreen() {
               {clinics.map((c, i) => (
                 <TouchableOpacity
                   key={i}
-                  onPress={() => setActiveClinic(i)}
+                  onPress={() => { setActiveClinic(i); setClinicFieldErrors({}); }}
                   style={[styles.clinicTab, activeClinic === i && styles.clinicTabActive]}
                 >
                   <Text style={[styles.clinicTabText, activeClinic === i && styles.clinicTabTextActive]}>
@@ -833,30 +834,47 @@ export default function SettingsScreen() {
                 <Text style={styles.fieldLabel}>ACTIVE</Text>
                 <Toggle on={clinic.active} onChange={() => updateClinic(activeClinic, { active: !clinic.active })} />
               </View>
-              <Field label="Clinic Name" value={clinic.name} onChange={v => updateClinic(activeClinic, { name: v })} />
-              <Field label="Address" value={clinic.address} onChange={v => updateClinic(activeClinic, { address: v })} />
-              <Field label="City" value={clinic.city} onChange={v => updateClinic(activeClinic, { city: v })} />
+              <Field label="Clinic Name" value={clinic.name} onChange={v => { updateClinic(activeClinic, { name: v }); setClinicFieldErrors(e => ({ ...e, name: false })); }} required error={clinicFieldErrors.name} />
+              <Field label="Address" value={clinic.address} onChange={v => { updateClinic(activeClinic, { address: v }); setClinicFieldErrors(e => ({ ...e, address: false })); }} required error={clinicFieldErrors.address} />
+              <Field label="City" value={clinic.city} onChange={v => { updateClinic(activeClinic, { city: v }); setClinicFieldErrors(e => ({ ...e, city: false })); }} required error={clinicFieldErrors.city} />
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>CLINIC PHONE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+                  <Text style={styles.fieldLabel}>CLINIC PHONE</Text>
+                  <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+                </View>
                 <View style={styles.phoneRow}>
                   <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
                   <TextInput
-                    style={[styles.fieldInput, { flex: 1 }]}
+                    style={[styles.fieldInput, { flex: 1 }, clinicFieldErrors.phone && { borderColor: 'rgba(239,68,68,0.6)' }]}
                     value={(clinic.phone ?? '').replace(/\D/g, '').slice(0, 10)}
-                    onChangeText={v => updateClinic(activeClinic, { phone: v.replace(/\D/g, '').slice(0, 10) })}
+                    onChangeText={v => { updateClinic(activeClinic, { phone: v.replace(/\D/g, '').slice(0, 10) }); setClinicFieldErrors(e => ({ ...e, phone: false })); }}
                     keyboardType="phone-pad"
                     maxLength={10}
                     placeholderTextColor="rgba(255,255,255,0.2)"
                     placeholder="98765 00001"
                   />
                 </View>
+                {clinicFieldErrors.phone && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
               </View>
-              <Field label="Google Maps Link" value={clinic.maps} onChange={v => updateClinic(activeClinic, { maps: v })} keyboardType="url" />
+              <Field label="Google Maps Link" value={clinic.maps} onChange={v => { updateClinic(activeClinic, { maps: v }); setClinicFieldErrors(e => ({ ...e, maps: false })); }} keyboardType="url" required error={clinicFieldErrors.maps} />
             </View>
             <TouchableOpacity
               style={[styles.saveBtn, clinicSaving && { opacity: 0.7 }]}
               disabled={clinicSaving}
               onPress={async () => {
+                const phone = (clinic.phone ?? '').replace(/\D/g, '');
+                const errors = {
+                  name: !clinic.name?.trim(),
+                  address: !clinic.address?.trim(),
+                  city: !clinic.city?.trim(),
+                  phone: phone.length < 10,
+                  maps: !clinic.maps?.trim(),
+                };
+                if (Object.values(errors).some(Boolean)) {
+                  setClinicFieldErrors(errors);
+                  return;
+                }
+                setClinicFieldErrors({});
                 setClinicSaving(true); setClinicSaved(false);
                 try {
                   await updateDoctor({ clinics: clinics as any });
