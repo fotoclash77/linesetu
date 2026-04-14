@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { Calendar } from 'react-native-calendars';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { useDoctor } from '../../contexts/DoctorContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -12,7 +13,7 @@ import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-sv
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type Period = 'Today' | 'Week' | 'Month' | 'LastMonth' | 'AllTime';
+type Period = 'Today' | 'Week' | 'Month' | 'LastMonth' | 'AllTime' | 'Custom';
 
 // ─── Date Helpers ─────────────────────────────────────────────
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -106,14 +107,65 @@ const fmt     = (n: number) => n >= 100000 ? `₹${(n/100000).toFixed(2)}L` : n 
 const fmtFull = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 const PERIOD_LABELS: Record<Period, string> = {
-  Today: 'Today', Week: 'This Week', Month: 'This Month', LastMonth: 'Last Month', AllTime: 'Lifetime',
+  Today: 'Today', Week: 'This Week', Month: 'This Month', LastMonth: 'Last Month', AllTime: 'Lifetime', Custom: 'Custom Range',
 };
+
+function fmtDate(iso: string) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+// Build period-marked dates for calendar
+function buildMarkedDates(start: string, end: string) {
+  if (!start) return {};
+  const marks: Record<string, any> = {};
+  const color = TEAL;
+  if (!end || start === end) {
+    marks[start] = { startingDay: true, endingDay: true, color, textColor: '#000' };
+    return marks;
+  }
+  marks[start] = { startingDay: true, color, textColor: '#000' };
+  marks[end]   = { endingDay: true, color, textColor: '#000' };
+  let cur = new Date(start + 'T00:00:00');
+  cur.setDate(cur.getDate() + 1);
+  const endD = new Date(end + 'T00:00:00');
+  while (cur < endD) {
+    marks[dateFmt(cur)] = { color: `${color}55`, textColor: '#fff' };
+    cur.setDate(cur.getDate() + 1);
+  }
+  return marks;
+}
 
 // ─── Main Screen ──────────────────────────────────────────────
 export default function EarningsScreen() {
   const { doctor } = useDoctor();
   const [tab, setTab]       = useState<'earnings' | 'payouts'>('earnings');
   const [period, setPeriod] = useState<Period>('Month');
+
+  // Calendar range picker state
+  const [calOpen, setCalOpen]           = useState(false);
+  const [customStart, setCustomStart]   = useState('');
+  const [customEnd, setCustomEnd]       = useState('');
+  const [pickingEnd, setPickingEnd]     = useState(false);
+
+  const markedDates = useMemo(() => buildMarkedDates(customStart, customEnd), [customStart, customEnd]);
+
+  function onCalDayPress(day: any) {
+    const d = day.dateString;
+    if (!pickingEnd) {
+      setCustomStart(d);
+      setCustomEnd('');
+      setPickingEnd(true);
+    } else {
+      const [s, e] = d < customStart ? [d, customStart] : [customStart, d];
+      setCustomStart(s);
+      setCustomEnd(e);
+      setPickingEnd(false);
+      setCalOpen(false);
+      setPeriod('Custom');
+    }
+  }
 
   const ranges = useMemo(() => dateRanges(), []);
 
@@ -192,14 +244,20 @@ export default function EarningsScreen() {
     const weekRecs      = rawEarnings.filter(r => r.date >= ranges.weekFrom);
     const monthRecs     = rawEarnings.filter(r => r.date >= ranges.monthFrom && r.date <= ranges.today);
     const lastMonthRecs = rawEarnings.filter(r => r.date >= ranges.lastMonthFrom && r.date <= ranges.lastMonthTo);
+    const customRecs    = customStart && customEnd
+      ? rawEarnings.filter(r => r.date >= customStart && r.date <= customEnd)
+      : customStart
+        ? rawEarnings.filter(r => r.date === customStart)
+        : [];
     return {
       Today:     sum(todayRecs),
       Week:      sum(weekRecs),
       Month:     sum(monthRecs),
       LastMonth: sum(lastMonthRecs),
       AllTime:   sum(rawEarnings),
+      Custom:    sum(customRecs),
     };
-  }, [rawEarnings, ranges]);
+  }, [rawEarnings, ranges, customStart, customEnd]);
 
   // Last 7 days sparkline data
   const sparkData = useMemo(() => {
@@ -317,6 +375,18 @@ export default function EarningsScreen() {
                       <Text style={[styles.periodChipText, period === p && styles.periodChipTextActive]}>{PERIOD_LABELS[p]}</Text>
                     </TouchableOpacity>
                   ))}
+                  {/* Custom date range chip */}
+                  <TouchableOpacity
+                    onPress={() => { setPickingEnd(false); setCalOpen(true); }}
+                    style={[styles.periodChip, period === 'Custom' && styles.periodChipActive, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
+                  >
+                    <Text style={{ fontSize: 13 }}>📅</Text>
+                    <Text style={[styles.periodChipText, period === 'Custom' && styles.periodChipTextActive]}>
+                      {period === 'Custom' && customStart
+                        ? `${fmtDate(customStart)}${customEnd && customEnd !== customStart ? ` – ${fmtDate(customEnd)}` : ''}`
+                        : 'Pick Range'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </ScrollView>
 
@@ -328,7 +398,11 @@ export default function EarningsScreen() {
                 <View style={[styles.glassCard, { alignItems: 'center', paddingVertical: 36 }]}>
                   <Text style={{ fontSize: 36, marginBottom: 12 }}>📊</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '700' }}>No earnings yet</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 4 }}>for {PERIOD_LABELS[period]}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 4 }}>
+                    for {period === 'Custom' && customStart
+                      ? `${fmtDate(customStart)}${customEnd && customEnd !== customStart ? ` – ${fmtDate(customEnd)}` : ''}`
+                      : PERIOD_LABELS[period]}
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -336,7 +410,9 @@ export default function EarningsScreen() {
                   <View style={styles.glassCard}>
                     <View style={styles.totalRow}>
                       <View>
-                        <Text style={styles.totalLabel}>Total — {PERIOD_LABELS[period]}</Text>
+                        <Text style={styles.totalLabel}>Total — {period === 'Custom' && customStart
+                          ? `${fmtDate(customStart)}${customEnd && customEnd !== customStart ? ` – ${fmtDate(customEnd)}` : ''}`
+                          : PERIOD_LABELS[period]}</Text>
                         <Text style={styles.totalValue}>{fmtFull(d.earned)}</Text>
                         {trend !== null && (
                           <Text style={[styles.trendText, { color: trend >= 0 ? '#4ADE80' : '#F87171' }]}>
@@ -590,6 +666,78 @@ export default function EarningsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Calendar Range Picker Modal */}
+      <Modal visible={calOpen} transparent animationType="slide" onRequestClose={() => setCalOpen(false)}>
+        <TouchableOpacity style={styles.calOverlay} activeOpacity={1} onPress={() => setCalOpen(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={e => e.stopPropagation()}>
+            <View style={styles.calSheet}>
+              <View style={styles.calHeader}>
+                <Text style={styles.calTitle}>Select Date Range</Text>
+                <Text style={styles.calHint}>
+                  {!pickingEnd
+                    ? 'Tap a start date'
+                    : customStart
+                      ? `Start: ${fmtDate(customStart)} — tap end date`
+                      : 'Tap a start date'}
+                </Text>
+              </View>
+              {customStart && customEnd && (
+                <View style={styles.calRangeRow}>
+                  <View style={styles.calRangeChip}>
+                    <Text style={styles.calRangeLabel}>From</Text>
+                    <Text style={styles.calRangeDate}>{fmtDate(customStart)}</Text>
+                  </View>
+                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>→</Text>
+                  <View style={styles.calRangeChip}>
+                    <Text style={styles.calRangeLabel}>To</Text>
+                    <Text style={styles.calRangeDate}>{fmtDate(customEnd)}</Text>
+                  </View>
+                </View>
+              )}
+              <Calendar
+                markingType="period"
+                markedDates={markedDates}
+                onDayPress={onCalDayPress}
+                maxDate={dateFmt(new Date())}
+                theme={{
+                  backgroundColor: 'transparent',
+                  calendarBackground: 'transparent',
+                  textSectionTitleColor: 'rgba(255,255,255,0.5)',
+                  selectedDayBackgroundColor: TEAL,
+                  selectedDayTextColor: '#000',
+                  todayTextColor: TEAL_LT,
+                  dayTextColor: '#FFF',
+                  textDisabledColor: 'rgba(255,255,255,0.2)',
+                  dotColor: TEAL,
+                  arrowColor: TEAL_LT,
+                  monthTextColor: '#FFF',
+                  textMonthFontWeight: '700',
+                  textDayFontSize: 14,
+                  textMonthFontSize: 15,
+                  textDayHeaderFontSize: 11,
+                }}
+              />
+              <View style={{ flexDirection: 'row', gap: 10, paddingTop: 12 }}>
+                <TouchableOpacity
+                  style={styles.calResetBtn}
+                  onPress={() => { setCustomStart(''); setCustomEnd(''); setPickingEnd(false); setPeriod('Month'); setCalOpen(false); }}
+                >
+                  <Text style={styles.calResetBtnText}>Reset</Text>
+                </TouchableOpacity>
+                {customStart && customEnd && (
+                  <TouchableOpacity
+                    style={styles.calApplyBtn}
+                    onPress={() => { setPeriod('Custom'); setCalOpen(false); }}
+                  >
+                    <Text style={styles.calApplyBtnText}>Apply Range</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -691,4 +839,18 @@ const styles = StyleSheet.create({
   withdrawConfirmBtn: { height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL, marginBottom: 12 },
   withdrawConfirmBtnText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
   withdrawNote: { fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', lineHeight: 14 },
+  // Calendar range picker
+  calOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+  calSheet: { backgroundColor: '#0D1B2A', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  calHeader: { marginBottom: 12 },
+  calTitle: { fontSize: 17, fontWeight: '900', color: '#FFF', marginBottom: 4 },
+  calHint: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600' },
+  calRangeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 },
+  calRangeChip: { alignItems: 'center', padding: 8, borderRadius: 14, backgroundColor: 'rgba(45,212,191,0.1)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)', minWidth: 80 },
+  calRangeLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 2 },
+  calRangeDate: { fontSize: 14, fontWeight: '900', color: TEAL_LT },
+  calResetBtn: { flex: 1, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  calResetBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+  calApplyBtn: { flex: 2, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL },
+  calApplyBtnText: { fontSize: 13, fontWeight: '800', color: '#FFF' },
 });
