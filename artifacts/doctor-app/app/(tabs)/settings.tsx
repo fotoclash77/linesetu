@@ -576,7 +576,7 @@ export default function SettingsScreen() {
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
                 {profilePhotoLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={styles.photoBtnText}>📷 Change Photo</Text>}
+                  : <Text style={styles.photoBtnText}>Upload Photo</Text>}
               </TouchableOpacity>
               <View style={styles.photoNoteRow}>
                 <Text style={styles.photoNoteText}>⚠ For best results, upload a square (1:1) photo. Rectangular images will be cropped to fit.</Text>
