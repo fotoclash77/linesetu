@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  query, where, orderBy, limit, increment,
+  query, where, orderBy, limit, increment, runTransaction,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -113,37 +113,43 @@ router.get("/doctors/:doctorId/earnings", async (req, res) => {
 router.post("/doctors/:doctorId/payouts", async (req, res) => {
   try {
     const { upiId, amount } = req.body;
-    if (!upiId || !amount) return res.status(400).json({ error: "upiId and amount are required" });
+    if (!upiId || amount === undefined || amount === null) return res.status(400).json({ error: "upiId and amount are required" });
     // Basic UPI ID format validation: localpart@bank (e.g., name@okaxis, 9876543210@paytm)
     const upiPattern = /^[a-zA-Z0-9._+\-]+@[a-zA-Z0-9]+$/;
     if (!upiPattern.test(String(upiId).trim())) return res.status(400).json({ error: "Invalid UPI ID format. Expected format: name@bank" });
 
-    const doctorRef  = doc(db, Collections.DOCTORS, req.params.doctorId);
-    const doctorSnap = await getDoc(doctorRef);
-    if (!doctorSnap.exists()) return res.status(404).json({ error: "Doctor not found" });
-    const doctorData = doctorSnap.data() as any;
-
-    const pendingPayout = doctorData.pendingPayout ?? 0;
     const requestedAmount = Number(amount);
-    if (requestedAmount <= 0) return res.status(400).json({ error: "Amount must be greater than 0" });
-    if (requestedAmount > pendingPayout) return res.status(400).json({ error: "Requested amount exceeds available balance" });
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0 || !Number.isInteger(requestedAmount)) {
+      return res.status(400).json({ error: "Amount must be a positive whole number in rupees" });
+    }
 
-    const payoutData = {
-      doctorId:    req.params.doctorId,
-      doctorName:  doctorData.name || "",
-      amount:      requestedAmount,
-      upiId,
-      requestedAt: Timestamp.now(),
-      status:      "pending",
-    };
+    const doctorRef    = doc(db, Collections.DOCTORS, req.params.doctorId);
+    const newPayoutRef = doc(collection(db, "payoutRequests"));
+    let payoutData: any;
 
-    const payoutRef = await addDoc(collection(db, "payoutRequests"), payoutData);
-    // Deduct from pending balance atomically
-    await updateDoc(doctorRef, { pendingPayout: increment(-requestedAmount) });
+    // Atomic transaction: check balance, create payout doc, decrement pendingPayout
+    await runTransaction(db, async (transaction) => {
+      const doctorSnap = await transaction.get(doctorRef);
+      if (!doctorSnap.exists()) throw Object.assign(new Error("Doctor not found"), { status: 404 });
+      const doctorData = doctorSnap.data() as any;
+      const pendingPayout = doctorData.pendingPayout ?? 0;
+      if (requestedAmount > pendingPayout) throw Object.assign(new Error("Requested amount exceeds available balance"), { status: 400 });
+      payoutData = {
+        doctorId:    req.params.doctorId,
+        doctorName:  doctorData.name || "",
+        amount:      requestedAmount,
+        upiId:       String(upiId).trim(),
+        requestedAt: Timestamp.now(),
+        status:      "pending",
+      };
+      transaction.set(newPayoutRef, payoutData);
+      transaction.update(doctorRef, { pendingPayout: increment(-requestedAmount) });
+    });
 
-    res.status(201).json({ id: payoutRef.id, ...payoutData });
+    res.status(201).json({ id: newPayoutRef.id, ...payoutData });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    const status = err.status && Number.isInteger(err.status) ? err.status : 500;
+    res.status(status).json({ error: err.message });
   }
 });
 
