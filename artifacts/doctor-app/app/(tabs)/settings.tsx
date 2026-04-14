@@ -437,6 +437,7 @@ export default function SettingsScreen() {
   const [payoutEnabled, setPayoutEnabled] = useState(true);
   const [bankSaving, setBankSaving] = useState(false);
   const [bankSaved, setBankSaved] = useState(false);
+  const [bankAttempted, setBankAttempted] = useState(false);
   const bankSynced = React.useRef(false);
   React.useEffect(() => {
     if (!bankSynced.current && doctor) {
@@ -1102,40 +1103,51 @@ export default function SettingsScreen() {
   }
 
   if (section === 'bank') {
+    const bankValid = payoutType === 'bank'
+      ? accountHolderName.trim() && bankName.trim() && accountNumber.trim() && ifscCode.trim() && branch.trim()
+      : upiId.trim() && payoutDisplayName.trim();
+
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
-          <BackHeader title="Bank Account" onBack={() => setSection('main')} />
+          <BackHeader title="Bank Account" onBack={() => { setBankAttempted(false); setSection('main'); }} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.formCard}>
               <Text style={styles.formCardTitle}>PAYMENT METHOD</Text>
               <View style={styles.clinicTabs}>
-                <TouchableOpacity style={[styles.clinicTab, payoutType === 'bank' && styles.clinicTabActive]} onPress={() => setPayoutType('bank')}>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'bank' && styles.clinicTabActive]} onPress={() => { setPayoutType('bank'); setBankAttempted(false); }}>
                   <Text style={[styles.clinicTabText, payoutType === 'bank' && styles.clinicTabTextActive]}>Bank Transfer</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.clinicTab, payoutType === 'upi' && styles.clinicTabActive]} onPress={() => setPayoutType('upi')}>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'upi' && styles.clinicTabActive]} onPress={() => { setPayoutType('upi'); setBankAttempted(false); }}>
                   <Text style={[styles.clinicTabText, payoutType === 'upi' && styles.clinicTabTextActive]}>UPI</Text>
                 </TouchableOpacity>
               </View>
               {payoutType === 'bank' ? (
                 <>
-                  <Field label="Account Holder Name" value={accountHolderName} onChange={setAccountHolderName} required />
-                  <Field label="Bank Name" value={bankName} onChange={setBankName} required />
-                  <Field label="Account Number" value={accountNumber} onChange={setAccountNumber} keyboardType="numeric" required />
-                  <Field label="IFSC Code" value={ifscCode} onChange={setIfscCode} required />
-                  <Field label="Branch" value={branch} onChange={setBranch} />
+                  <Field label="Account Holder Name" value={accountHolderName} onChange={setAccountHolderName} required error={bankAttempted && !accountHolderName.trim()} />
+                  <Field label="Bank Name" value={bankName} onChange={setBankName} required error={bankAttempted && !bankName.trim()} />
+                  <Field label="Account Number" value={accountNumber} onChange={setAccountNumber} keyboardType="numeric" required error={bankAttempted && !accountNumber.trim()} />
+                  <Field label="IFSC Code" value={ifscCode} onChange={setIfscCode} required error={bankAttempted && !ifscCode.trim()} />
+                  <Field label="Branch" value={branch} onChange={setBranch} required error={bankAttempted && !branch.trim()} />
                 </>
               ) : (
                 <>
-                  <Field label="UPI ID" value={upiId} onChange={setUpiId} required />
-                  <Field label="Receiver Name" value={payoutDisplayName} onChange={setPayoutDisplayName} />
+                  <Field label="UPI ID" value={upiId} onChange={setUpiId} required error={bankAttempted && !upiId.trim()} />
+                  <Field label="Receiver Name" value={payoutDisplayName} onChange={setPayoutDisplayName} required error={bankAttempted && !payoutDisplayName.trim()} />
                 </>
+              )}
+              {bankAttempted && !bankValid && (
+                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '600' }}>Please fill in all required fields before saving.</Text>
+                </View>
               )}
             </View>
             <TouchableOpacity
               style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
               disabled={bankSaving}
               onPress={async () => {
+                setBankAttempted(true);
+                if (!bankValid) return;
                 setBankSaving(true); setBankSaved(false);
                 try {
                   await updateDoctor({
@@ -1153,13 +1165,16 @@ export default function SettingsScreen() {
                     },
                   } as any);
                   setBankSaved(true);
+                  setBankAttempted(false);
                   setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
                 } finally {
                   setBankSaving(false);
                 }
               }}
             >
-              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Bank Details'}</Text>}
+              {bankSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Bank Details'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
