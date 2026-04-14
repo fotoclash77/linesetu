@@ -68,6 +68,7 @@ export default function DoctorDetailScreen() {
     about: (doctorData as any).bio || (doctorData as any).about || SAMPLE_DOCTOR.about,
     patients: (doctorData as any).totalPatients || SAMPLE_DOCTOR.patients,
     qualifications: (doctorData as any).qualifications || "",
+    photo: (doctorData as any).profilePhoto || SAMPLE_DOCTOR.photo,
     consultFee: (doctorData as any).consultFee,
     emergencyFee: (doctorData as any).emergencyFee,
     walkinFee: (doctorData as any).walkinFee,
