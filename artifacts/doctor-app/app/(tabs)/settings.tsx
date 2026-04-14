@@ -1191,7 +1191,7 @@ export default function SettingsScreen() {
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>CONSULTATION AT CLINIC (₹)</Text>
+                <Text style={styles.fieldLabel}>CONSULTATION AT CLINIC</Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={clinicConsultFee}
