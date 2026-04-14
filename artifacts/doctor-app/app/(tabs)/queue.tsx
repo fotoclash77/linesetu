@@ -385,41 +385,8 @@ function NoConsultation({ nextTok }: { nextTok?: Token }) {
     <View style={S.emptyCard}>
       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 8 }} />
       <Text style={S.emptyCardTxt}>
-        {nextTok ? 'Tap "Send Next" below to call a patient in' : 'No patient in consultation'}
+        {nextTok ? 'Tap Send Next on a patient below' : 'No patient in consultation'}
       </Text>
-    </View>
-  );
-}
-
-// ─── Up Next Card ────────────────────────────────────────────────
-function UpNextCard({ tok, onCall, busy, isManual }: { tok: Token; onCall: () => void; busy: boolean; isManual?: boolean }) {
-  return (
-    <View style={[S.upNextCard, isManual && { borderColor: 'rgba(252,211,77,0.5)', backgroundColor: 'rgba(180,83,9,0.12)' }]}>
-      <View style={S.upNextHeader}>
-        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: isManual ? AMBER_LT : TEAL_LT, marginRight: 6 }} />
-        <Text style={[S.upNextLabel, isManual && { color: AMBER_LT }]}>{isManual ? '⭐  MANUALLY CHOSEN' : 'UP NEXT'}</Text>
-      </View>
-      <View style={S.upNextRow}>
-        <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
-          onPress={() => router.push(`/patients/${tok.id}` as any)}
-          activeOpacity={0.75}
-        >
-          <TokenChip token={tok.tokenNumber} type={tok.type} />
-          <PatientInfo tok={tok} />
-        </TouchableOpacity>
-        {busy && <ActivityIndicator color={TEAL_LT} size="small" style={{ marginLeft: 4 }} />}
-      </View>
-    </View>
-  );
-}
-
-// ─── Up Next Empty ───────────────────────────────────────────────
-function UpNextEmpty() {
-  return (
-    <View style={S.emptyCard}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(45,212,191,0.3)', marginRight: 8 }} />
-      <Text style={S.emptyCardTxt}>No patients waiting</Text>
     </View>
   );
 }
@@ -787,14 +754,6 @@ export default function QueueScreen() {
               }
             </View>
 
-            {/* ── UP NEXT (sticky) ───────────────────── */}
-            <View style={{ paddingHorizontal: 14, paddingBottom: 6 }}>
-              {upNext
-                ? <UpNextCard tok={upNext} onCall={() => doCall(upNext.id)} busy={busyId === upNext.id} isManual={!!manualNext} />
-                : <UpNextEmpty />
-              }
-            </View>
-
             {/* ── WAITING LIST HEADER + TABS ─────────── */}
             <View style={{ paddingHorizontal: 14 }}>
               <View style={S.waitingHeader}>
@@ -870,7 +829,7 @@ export default function QueueScreen() {
                       key={tok.id} tok={tok}
                       busy={busyId === tok.id}
                       isManualNext={tok.id === manualNextId}
-                      onSendNext={() => { setManualNext(tok.id); if (!consulting) doCall(tok.id); }}
+                      onSendNext={() => { setManualNext(tok.id); doCall(tok.id); }}
                       onSendAlert={() => doCall(tok.id)}
                       onSkip={() => doSkipToken(tok.id)}
                       onRefund={() => doCancel(tok.id)}
