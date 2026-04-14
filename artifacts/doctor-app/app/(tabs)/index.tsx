@@ -429,30 +429,6 @@ export default function DashboardScreen() {
               sub="Seen by doctor"
             />
 
-            {/* ── FIRST VISIT ── */}
-            <ProgressCard
-              label="First Visit"
-              pct={firstVisitPct}
-              value={pd.firstVisit}
-              total={pd.total}
-              color="#818CF8"
-              bg="rgba(99,102,241,0.1)"
-              border="rgba(99,102,241,0.25)"
-              sub="New patients visiting for the first time"
-            />
-
-            {/* ── FOLLOW-UP ── */}
-            <ProgressCard
-              label="Follow-up"
-              pct={followUpPct}
-              value={pd.followUp}
-              total={pd.total}
-              color="#34D399"
-              bg="rgba(16,185,129,0.1)"
-              border="rgba(16,185,129,0.25)"
-              sub="Return visits"
-            />
-
             {/* ── STAT ROWS ── */}
             {patientRows.map((row, i) => {
               const pct = Math.min(100, Math.round((row.value / Math.max(pd.total,1)) * 100));
