@@ -485,8 +485,8 @@ export default function PaymentScreen() {
             <View style={styles.feeDivider} />
             <View style={styles.feeRow}>
               <Feather name="home" size={12} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.feeLblSub}>Consultation (at clinic)</Text>
-              <Text style={styles.feeValSub}>₹{consultFee}</Text>
+              <Text style={styles.feeLblSub}>{isEmergency ? "Emergency Consult (at clinic)" : "Consultation (at clinic)"}</Text>
+              <Text style={[styles.feeValSub, isEmergency && { color: "#FCA5A5" }]}>₹{consultFee}</Text>
             </View>
             <View style={[styles.feeDivider, { borderColor: "rgba(255,255,255,0.12)" }]} />
             <View style={styles.feeTotalRow}>

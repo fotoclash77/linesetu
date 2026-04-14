@@ -216,7 +216,9 @@ export default function BookingScreen() {
   const eAppFee = isEmergency ? 20 : 10;
   const platformFee = 10;
   const payableNow = eAppFee + platformFee;
-  const consultFee = 500;
+  const normalConsultFee  = Number((doctorData as any)?.consultFee  ?? 500);
+  const emergencyConsultFee = Number((doctorData as any)?.emergencyFee ?? 1000);
+  const consultFee = isEmergency ? emergencyConsultFee : normalConsultFee;
 
   // Calendar cell style — no entry = holiday by default (matches doctor app)
   function cellStyle(cfg: any) {

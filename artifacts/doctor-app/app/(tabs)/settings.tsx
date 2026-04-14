@@ -318,9 +318,17 @@ export default function SettingsScreen() {
     if ((doctor as any).clinics?.length) setClinics((doctor as any).clinics);
   }, [doctor?.id]);
 
-  // Fee state
-  const [consultFee, setConsultFee] = useState('500');
-  const [emergencyFee, setEmergencyFee] = useState('1000');
+  // Fee state — seeded from Firebase via doctor context
+  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 500));
+  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 1000));
+  const feeSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!feeSynced.current && doctor) {
+      feeSynced.current = true;
+      setConsultFee(String((doctor as any).consultFee ?? 500));
+      setEmergencyFee(String((doctor as any).emergencyFee ?? 1000));
+    }
+  }, [doctor]);
 
   // Patient app state
   const [onlineBooking, setOnlineBooking] = useState(true);
@@ -711,7 +719,10 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
+            <TouchableOpacity style={styles.saveBtn} onPress={async () => {
+              await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0 } as any);
+              setSection('main');
+            }}>
               <Text style={styles.saveBtnText}>✓ Save Fee Structure</Text>
             </TouchableOpacity>
           </ScrollView>

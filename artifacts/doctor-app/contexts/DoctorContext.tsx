@@ -24,6 +24,8 @@ export interface DoctorUser {
   };
   calendar?: Record<string, any>;
   clinics?: ClinicEntry[];
+  consultFee?: number;
+  emergencyFee?: number;
 }
 
 interface DoctorCtx {
@@ -75,6 +77,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       shifts: data.shifts,
       calendar: data.calendar,
       clinics: data.clinics ?? undefined,
+      consultFee: data.consultFee != null ? Number(data.consultFee) : undefined,
+      emergencyFee: data.emergencyFee != null ? Number(data.emergencyFee) : undefined,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);
