@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  query, where, limit,
+  query, where, limit, withRetry,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -13,11 +13,11 @@ router.post("/patients", async (req, res) => {
     const { name, phone } = req.body;
     if (!phone) return res.status(400).json({ error: "phone is required" });
 
-    const existing = await getDocs(query(
+    const existing = await withRetry(() => getDocs(query(
       collection(db, Collections.PATIENTS),
       where("phone", "==", phone),
       limit(1)
-    ));
+    )));
 
     if (!existing.empty) {
       const d = existing.docs[0];
@@ -53,11 +53,11 @@ router.get("/patients/:patientId", async (req, res) => {
 router.get("/patients/:patientId/tokens", async (req, res) => {
   try {
     // No orderBy — avoids composite index requirement; sort in memory instead
-    const snap = await getDocs(query(
+    const snap = await withRetry(() => getDocs(query(
       collection(db, Collections.TOKENS),
       where("patientId", "==", req.params.patientId),
       limit(50)
-    ));
+    )));
     const tokens = snap.docs
       .map(d => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
       .sort((a: any, b: any) => {

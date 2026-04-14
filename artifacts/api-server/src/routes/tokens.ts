@@ -5,7 +5,7 @@ import {
   collection, doc, getDocs, getDoc, addDoc, setDoc,
   query, where, orderBy, writeBatch, runTransaction,
   arrayUnion, arrayRemove, increment, deleteField,
-  queueDocId, todayDate,
+  queueDocId, todayDate, withRetry,
 } from "../lib/firebase.js";
 import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
 
@@ -92,11 +92,11 @@ export function countActiveReservations(pending: Record<string, { expiresAt: any
 async function hasDuplicateActiveToken(
   patientId: string, doctorId: string, tokenDate: string, shift: string, forMemberId: string,
 ): Promise<boolean> {
-  const snap = await getDocs(query(
+  const snap = await withRetry(() => getDocs(query(
     collection(db, Collections.TOKENS),
     where("patientId", "==", patientId),
     where("doctorId", "==", doctorId),
-  ));
+  )));
   return snap.docs.some(d => {
     const tok = d.data() as any;
     if (tok.date !== tokenDate || tok.shift !== shift) return false;
@@ -483,7 +483,7 @@ router.get("/tokens", async (req, res) => {
       if (from) constraints.push(where("date", ">=", from));
       if (to)   constraints.push(where("date", "<=", to));
     }
-    const snap = await getDocs(query(collection(db, Collections.TOKENS), ...constraints));
+    const snap = await withRetry(() => getDocs(query(collection(db, Collections.TOKENS), ...constraints)));
     let tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (date && !isISODate) {
       const dayNum = parseInt(date, 10);
@@ -503,12 +503,12 @@ router.get("/tokens/visit-count", async (req, res) => {
     const phone     = req.query.phone as string;
     const excludeId = req.query.excludeId as string | undefined;
     if (!doctorId || !phone) return res.status(400).json({ error: "doctorId and phone required" });
-    const snap = await getDocs(
+    const snap = await withRetry(() => getDocs(
       query(collection(db, Collections.TOKENS),
         where("doctorId", "==", doctorId),
         where("patientPhone", "==", phone),
       ),
-    );
+    ));
     const count = snap.docs.filter(d => {
       if (excludeId && d.id === excludeId) return false;
       return d.data().status === "done";
@@ -646,7 +646,7 @@ router.patch("/tokens/:tokenId/upnext", async (req, res) => {
       where("shift",    "==", token.shift),
       where("status",   "==", "up_next"),
     );
-    const existingSnap = await getDocs(existingQ);
+    const existingSnap = await withRetry(() => getDocs(existingQ));
     const batch = writeBatch(db);
     existingSnap.docs.forEach(d => {
       if (d.id !== req.params.tokenId) batch.update(d.ref, { status: "waiting" });

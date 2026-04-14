@@ -3,7 +3,7 @@ import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
   query, where, orderBy, limit, increment, runTransaction,
-  arrayUnion, arrayRemove,
+  arrayUnion, arrayRemove, withRetry,
 } from "../lib/firebase.js";
 import { uploadBase64ToStorage, deleteFromStorage } from "../lib/storage.js";
 
@@ -16,7 +16,7 @@ router.get("/doctors", async (req, res) => {
       collection(db, Collections.DOCTORS),
       where("isActive", "==", true)
     );
-    const snap = await getDocs(q);
+    const snap = await withRetry(() => getDocs(q));
     const doctors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     res.json({ doctors });
   } catch (err: any) {
@@ -152,7 +152,7 @@ router.get("/doctors/:doctorId/earnings", async (req, res) => {
     if (to)   constraints.push(where("date", "<=", to));
     constraints.push(orderBy("date", "desc"));
     constraints.push(limit(maxRecords));
-    const snap = await getDocs(query(colRef, ...constraints));
+    const snap = await withRetry(() => getDocs(query(colRef, ...constraints)));
     const earnings = snap.docs.map(d => ({ date: d.id, ...d.data() }));
     res.json({ earnings });
   } catch (err: any) {
@@ -163,11 +163,11 @@ router.get("/doctors/:doctorId/earnings", async (req, res) => {
 // GET /api/doctors/:doctorId/transactions
 router.get("/doctors/:doctorId/transactions", async (req, res) => {
   try {
-    const snap = await getDocs(query(
+    const snap = await withRetry(() => getDocs(query(
       collection(db, Collections.TRANSACTIONS),
       where("doctorId", "==", req.params.doctorId),
       limit(500),
-    ));
+    )));
     const transactions = snap.docs
       .map(d => {
         const data = d.data() as any;
@@ -232,11 +232,11 @@ router.post("/doctors/:doctorId/payouts", async (req, res) => {
 // GET /api/doctors/:doctorId/payouts — list payout requests (admin-ready structure)
 router.get("/doctors/:doctorId/payouts", async (req, res) => {
   try {
-    const snap = await getDocs(query(
+    const snap = await withRetry(() => getDocs(query(
       collection(db, "payoutRequests"),
       where("doctorId", "==", req.params.doctorId),
       orderBy("requestedAt", "desc"),
-    ));
+    )));
     const payouts = snap.docs.map(d => {
       const data = d.data() as any;
       return {
@@ -275,22 +275,22 @@ router.delete("/doctors/:doctorId", async (req, res) => {
     });
 
     // ② Cancel all active/waiting tokens for this doctor
-    const tokensSnap = await getDocs(
+    const tokensSnap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.TOKENS),
         where("doctorId", "==", doctorId),
         where("status", "in", ["waiting", "in_consult"]),
       )
-    );
+    ));
 
     // ③ Cancel all pending payout requests
-    const payoutsSnap = await getDocs(
+    const payoutsSnap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.PAYOUTS),
         where("doctorId", "==", doctorId),
         where("status",   "==", "pending"),
       )
-    );
+    ));
 
     // Batch-write cancellations (Firestore max 500 per batch)
     const writes = [

@@ -3,7 +3,7 @@ import {
   db, Collections,
   collection, doc, getDocs, getDoc,
   query, where,
-  queueDocId, todayDate,
+  queueDocId, todayDate, withRetry,
 } from "../lib/firebase.js";
 import { tokenEmitter } from "../lib/tokenEmitter.js";
 import { countActiveReservations } from "./tokens.js";
@@ -41,11 +41,11 @@ router.get("/queues/:doctorId", async (req, res) => {
     const isFull             = maxTokens !== null && effectiveBooked >= maxTokens;
 
     const dayNum = String(parseInt(date.split("-")[2] ?? date, 10));
-    const tokenSnap = await getDocs(query(
+    const tokenSnap = await withRetry(() => getDocs(query(
       collection(db, Collections.TOKENS),
       where("doctorId", "==", req.params.doctorId),
       where("shift", "==", shift),
-    ));
+    )));
 
     const tokens = tokenSnap.docs
       .map(d => ({ id: d.id, ...d.data() }))

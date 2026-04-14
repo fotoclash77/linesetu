@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, updateDoc, addDoc,
-  query, where, orderBy, limit, writeBatch,
+  query, where, orderBy, limit, writeBatch, withRetry,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -11,13 +11,13 @@ const router = Router();
 router.get("/notifications/patient/:patientId", async (req, res) => {
   try {
     const { patientId } = req.params;
-    const snap = await getDocs(
+    const snap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("patientId", "==", patientId),
         limit(50),
       ),
-    );
+    ));
     const notifications = snap.docs
       .map(d => ({
         id: d.id,
@@ -36,12 +36,12 @@ router.post("/notifications/patient-read-all", async (req, res) => {
   try {
     const { patientId } = req.body;
     if (!patientId) return res.status(400).json({ error: "patientId required" });
-    const snap = await getDocs(
+    const snap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("patientId", "==", patientId),
       ),
-    );
+    ));
     const unread = snap.docs.filter(d => d.data().read === false);
     if (unread.length === 0) return res.json({ updated: 0 });
     const batch = writeBatch(db);
@@ -58,13 +58,13 @@ router.get("/notifications/:doctorId", async (req, res) => {
   try {
     const { doctorId } = req.params;
     // No orderBy to avoid composite index requirement — sort in memory
-    const snap = await getDocs(
+    const snap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("doctorId", "==", doctorId),
         limit(50),
       ),
-    );
+    ));
     const notifications = snap.docs
       .map(d => ({
         id: d.id,
@@ -96,12 +96,12 @@ router.post("/notifications/read-all", async (req, res) => {
     if (!doctorId) return res.status(400).json({ error: "doctorId required" });
 
     // Fetch all for this doctor, filter unread in memory to avoid composite index
-    const snap = await getDocs(
+    const snap = await withRetry(() => getDocs(
       query(
         collection(db, Collections.NOTIFICATIONS),
         where("doctorId", "==", doctorId),
       ),
-    );
+    ));
 
     const unread = snap.docs.filter(d => d.data().read === false);
     if (unread.length === 0) return res.json({ updated: 0 });
