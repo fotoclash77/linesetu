@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
 import { useDoctor } from '../../contexts/DoctorContext';
-import { useNavigation } from 'expo-router';
+import { registerSettingsResetHandler } from './_settingsResetBridge';
 
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -270,24 +270,10 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
 export default function SettingsScreen() {
   const { doctor, logout, updateDoctor } = useDoctor();
   const [section, setSection] = useState<SettingsSection>('main');
-  const navigation = useNavigation();
-
-  // Reset to main settings whenever the Settings tab button is tapped
-  // (works both when re-tapping the active tab and when switching back to it)
+  // Reset to main whenever the Settings tab button is tapped (even while already on settings)
   useEffect(() => {
-    const parent = navigation.getParent();
-    if (!parent) return;
-    const unsub = (parent as any).addListener('tabPress', (e: any) => {
-      const state = (parent as any).getState?.();
-      if (!state) return;
-      const activeRoute = state.routes[state.index];
-      // Only reset if the tab being pressed is this one (settings) and it's already active
-      if (activeRoute?.key === e.target) {
-        setSection('main');
-      }
-    });
-    return unsub;
-  }, [navigation]);
+    return registerSettingsResetHandler(() => setSection('main'));
+  }, []);
 
   // Profile state — seeded from Firebase via doctor context
   const [name, setName] = useState(() => doctor?.name ?? '');

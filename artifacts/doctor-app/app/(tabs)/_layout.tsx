@@ -3,6 +3,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { TEAL_LT } from "../../constants/theme";
 import { Text } from "react-native";
+import { fireSettingsReset } from "./_settingsResetBridge";
 
 const INACTIVE = "rgba(255,255,255,0.3)";
 const isWeb = Platform.OS === "web";
@@ -81,6 +82,9 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
+        }}
+        listeners={{
+          tabPress: () => fireSettingsReset(),
         }}
       />
     </Tabs>
