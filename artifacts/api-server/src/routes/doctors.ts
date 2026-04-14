@@ -238,6 +238,21 @@ router.get("/doctors/:doctorId/payouts", async (req, res) => {
   }
 });
 
+// DELETE /api/doctors/:doctorId — soft-delete the account
+router.delete("/doctors/:doctorId", async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    await updateDoc(doc(db, Collections.DOCTORS, doctorId), {
+      isActive: false,
+      isDeleted: true,
+      deletedAt: Timestamp.now(),
+    });
+    res.json({ success: true, message: "Account deleted successfully" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/feedback
 router.post("/feedback", async (req, res) => {
   try {

@@ -480,6 +480,11 @@ export default function SettingsScreen() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
+  // Delete account state
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
 
@@ -1846,7 +1851,8 @@ export default function SettingsScreen() {
             <SettingRow icon="→" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Log Out" danger
               right={<Text style={{ color: '#F87171', fontSize: 18 }}>›</Text>} onPress={() => setShowLogout(true)} />
             <SettingRow icon="🗑" iconBg="rgba(239,68,68,0.08)" iconColor="rgba(239,68,68,0.55)" label="Delete Account" sub="Permanently remove your LINESETU account" danger
-              right={<Text style={{ color: 'rgba(239,68,68,0.45)', fontSize: 18 }}>›</Text>} last />
+              right={<Text style={{ color: 'rgba(239,68,68,0.45)', fontSize: 18 }}>›</Text>} last
+              onPress={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }} />
           </View>
 
           <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -1871,6 +1877,84 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowLogout(false)} style={styles.logoutCancelBtn}>
                 <Text style={styles.logoutCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {showDeleteAccount && (
+          <View style={styles.logoutOverlay}>
+            <View style={[styles.logoutSheet, { paddingBottom: 36 }]}>
+              <View style={styles.logoutHandle} />
+
+              {/* Header */}
+              <View style={styles.logoutIconRow}>
+                <View style={[styles.logoutIcon, { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }]}>
+                  <Text style={{ fontSize: 20 }}>🗑</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.logoutTitle, { color: '#F87171' }]}>Delete Account</Text>
+                  <Text style={styles.logoutSub}>This action cannot be undone.</Text>
+                </View>
+              </View>
+
+              {/* Warning bullets */}
+              <View style={{ backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 14, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(239,68,68,0.18)' }}>
+                {[
+                  'Your doctor profile will be removed from the LINESETU Patient App immediately.',
+                  'All scheduled tokens and pending payouts will be cancelled.',
+                  'Your clinic, schedule, and fee data will be permanently erased.',
+                  'This cannot be reversed. You will need to re-register to use LINESETU again.',
+                ].map((line, i) => (
+                  <View key={i} style={{ flexDirection: 'row', marginBottom: i < 3 ? 8 : 0 }}>
+                    <Text style={{ color: '#F87171', fontWeight: '900', fontSize: 12, marginRight: 8, marginTop: 1 }}>✕</Text>
+                    <Text style={{ flex: 1, fontSize: 11, color: 'rgba(239,68,68,0.75)', lineHeight: 17, fontWeight: '500' }}>{line}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Typed confirmation */}
+              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 0.5 }}>
+                TYPE <Text style={{ color: '#F87171', fontWeight: '900' }}>DELETE</Text> TO CONFIRM
+              </Text>
+              <TextInput
+                style={[
+                  styles.fieldInput,
+                  { marginBottom: 16, borderColor: deleteConfirmText === 'DELETE' ? 'rgba(239,68,68,0.7)' : 'rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: '800', color: '#F87171' },
+                ]}
+                value={deleteConfirmText}
+                onChangeText={v => setDeleteConfirmText(v.toUpperCase())}
+                placeholder="Type DELETE here"
+                placeholderTextColor="rgba(255,255,255,0.15)"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+
+              {/* Confirm button */}
+              <TouchableOpacity
+                style={[
+                  styles.logoutConfirmBtn,
+                  { marginBottom: 10, opacity: deleteConfirmText === 'DELETE' && !deleteLoading ? 1 : 0.35 },
+                ]}
+                disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                onPress={async () => {
+                  if (!doctor) return;
+                  setDeleteLoading(true);
+                  try {
+                    await fetch(`${BASE()}/api/doctors/${doctor.id}`, { method: 'DELETE' });
+                  } catch {}
+                  setDeleteLoading(false);
+                  setShowDeleteAccount(false);
+                  logout();
+                }}
+              >
+                {deleteLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.logoutConfirmBtnText}>Delete My Account Permanently</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { setShowDeleteAccount(false); setDeleteConfirmText(''); }} style={styles.logoutCancelBtn}>
+                <Text style={styles.logoutCancelBtnText}>Cancel — Keep My Account</Text>
               </TouchableOpacity>
             </View>
           </View>
