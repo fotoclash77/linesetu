@@ -202,6 +202,25 @@ router.post("/tokens", async (req, res) => {
       return res.status(400).json({ error: "doctorId and patientName are required" });
     }
 
+    // For online bookings, enrich token with patient profile data (age, gender, etc.)
+    // if the caller did not supply them in the body.
+    let resolvedAge     = age     ?? null;
+    let resolvedGender  = gender  ?? null;
+    let resolvedAddress = address ?? null;
+    let resolvedArea    = area    ?? null;
+    if (patientId && (!resolvedAge || !resolvedGender)) {
+      try {
+        const patientSnap = await getDoc(doc(db, Collections.PATIENTS, patientId));
+        if (patientSnap.exists()) {
+          const pd = patientSnap.data() as any;
+          if (!resolvedAge)     resolvedAge     = pd.age     ?? null;
+          if (!resolvedGender)  resolvedGender  = pd.gender  ?? null;
+          if (!resolvedAddress) resolvedAddress = pd.address ?? null;
+          if (!resolvedArea)    resolvedArea    = pd.area    ?? null;
+        }
+      } catch { /* non-fatal — token still books without demographics */ }
+    }
+
     const tokenDate  = date || todayDate();
     const queueId    = queueDocId(doctorId, tokenDate, shift);
     const queueRef   = doc(db, Collections.QUEUES, queueId);
@@ -280,8 +299,8 @@ router.post("/tokens", async (req, res) => {
         paymentStatus: paymentId ? "paid" : "pending",
         bookedAt: nowTs,
         calledAt: null, doneAt: null,
-        age: age || null, gender: gender || null,
-        address: address || null, area: area || null,
+        age: resolvedAge, gender: resolvedGender,
+        address: resolvedAddress, area: resolvedArea,
         notes: notes || null,
       };
 
