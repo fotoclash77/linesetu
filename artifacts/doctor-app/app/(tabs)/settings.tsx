@@ -319,15 +319,15 @@ export default function SettingsScreen() {
   }, [doctor?.id]);
 
   // Fee state — seeded from Firebase via doctor context
-  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 500));
-  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 1000));
+  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 10));
+  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 20));
   const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
       feeSynced.current = true;
-      setConsultFee(String((doctor as any).consultFee ?? 500));
-      setEmergencyFee(String((doctor as any).emergencyFee ?? 1000));
+      setConsultFee(String((doctor as any).consultFee ?? 10));
+      setEmergencyFee(String((doctor as any).emergencyFee ?? 20));
       setWalkinFee(String((doctor as any).walkinFee ?? 0));
     }
   }, [doctor]);
@@ -745,7 +745,7 @@ export default function SettingsScreen() {
               </View>
               <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
                 <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)' }]}>
-                  ✓ These fees are for display and reference only. Online E-token payments are platform-set. No fee is collected via the app for in-clinic or walk-in visits.
+                  ✓ Fees saved. Online tokens charge patients your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment required.
                 </Text>
               </View>
             </View>
