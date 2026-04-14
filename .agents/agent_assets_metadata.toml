@@ -35,3 +35,15 @@ id = "RS8nonJchkaxJy9wlII2T"
 uri = "file://.local/outputs/LINESETU.pptx"
 type = "slides"
 title = "LINESETU.pptx"
+
+[[outputs]]
+id = "W_FbG1RnSznHIYpZXZBpW"
+uri = "file://attached_assets/screenshots/doctor-qr.png"
+type = "image"
+title = "Doctor App — Scan in Expo Go"
+
+[[outputs]]
+id = "_iFRNQ6K6aKSnaGIpWhpq"
+uri = "file://attached_assets/screenshots/patient-qr.png"
+type = "image"
+title = "Patient App — Scan in Expo Go"
