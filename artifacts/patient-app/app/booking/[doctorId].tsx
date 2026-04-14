@@ -26,11 +26,6 @@ type FamilyMember = { id: string; name: string; relation: string; age: number; b
 const ACCENT_FAMILY = ["#6366F1","#EC4899","#F59E0B","#10B981","#06B6D4","#8B5CF6"];
 const SELF_DEFAULT: FamilyMember = { id: "self", name: "Self", relation: "Self", age: 0, blood: "", gender: "", phone: "", avatar: "", color: "#6366F1" };
 
-const TYPE_COLOR: Record<string, string> = {
-  emergency: "#F87171",
-  online: "#67E8F9",
-  walkin: "#4ADE80",
-};
 
 const DOW = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
@@ -138,7 +133,6 @@ export default function BookingScreen() {
 
   // Real token counts for selected date (re-fetched via SSE/polling)
   const [tokenCounts, setTokenCounts] = useState<Record<string, number>>({ morning: 0, evening: 0 });
-  const [liveQueue, setLiveQueue] = useState<TokenRow[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
 
   // Doctor data from Firebase
@@ -177,7 +171,6 @@ export default function BookingScreen() {
           const ec = valid.filter(t => t.shift === "evening").length;
           if (active) {
             setTokenCounts({ morning: mc, evening: ec });
-            setLiveQueue(valid.slice(0, 5));
             setQueueLoading(false);
           }
         } catch (_) {}
@@ -196,7 +189,6 @@ export default function BookingScreen() {
           const mc = valid.filter(t => t.shift === "morning").length;
           const ec = valid.filter(t => t.shift === "evening").length;
           setTokenCounts({ morning: mc, evening: ec });
-          setLiveQueue(valid.slice(0, 5));
         }
       } catch (_) {}
       if (active) setQueueLoading(false);
@@ -546,34 +538,6 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {/* Live Queue Preview — real from Firebase */}
-        <View style={styles.sectionPad}>
-          <View style={styles.queuePreviewCard}>
-            <View style={styles.queuePreviewHeader}>
-              <View style={styles.livePip} />
-              <Text style={styles.queuePreviewTitle}>Live Queue Preview</Text>
-              {queueLoading
-                ? <ActivityIndicator size="small" color="#22C55E" style={{ marginLeft: "auto" }} />
-                : <Text style={styles.queuePreviewSub}>{liveQueue.length} in queue</Text>}
-            </View>
-            {liveQueue.length === 0 && !queueLoading ? (
-              <Text style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, textAlign: "center", paddingVertical: 12 }}>No tokens booked yet for this date</Text>
-            ) : (
-              liveQueue.map(q => (
-                <View key={q.id} style={styles.queueRow}>
-                  <Text style={styles.queueRowNum}>#{q.tokenNumber}</Text>
-                  <Text style={styles.queueRowName} numberOfLines={1}>{q.patientName}</Text>
-                  <View style={[styles.queueTypeBadge, { backgroundColor: (TYPE_COLOR[q.type] ?? "#FFF") + "18", borderColor: (TYPE_COLOR[q.type] ?? "#FFF") + "35" }]}>
-                    <Text style={[styles.queueTypeTxt, { color: TYPE_COLOR[q.type] ?? "#FFF" }]}>{q.type}</Text>
-                  </View>
-                  <Text style={[styles.queueStatus, q.status === "in_consult" ? { color: "#4ADE80" } : { color: "rgba(255,255,255,0.3)" }]}>
-                    {q.status === "in_consult" ? "Active" : "Waiting"}
-                  </Text>
-                </View>
-              ))
-            )}
-          </View>
-        </View>
       </ScrollView>
 
       {/* Bottom Bar */}
@@ -678,17 +642,6 @@ const styles = StyleSheet.create({
   memberExpandedLbl: { fontSize: 11, color: "rgba(255,255,255,0.35)", width: 80, fontWeight: "600" },
   memberExpandedVal: { fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: "600" },
 
-  queuePreviewCard: { borderRadius: 18, padding: 14, backgroundColor: "rgba(79,70,229,0.1)", borderWidth: 1, borderColor: "rgba(99,102,241,0.25)" },
-  queuePreviewHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 },
-  livePip: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#22C55E", shadowColor: "#22C55E", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 4 },
-  queuePreviewTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  queuePreviewSub: { fontSize: 10, color: "rgba(255,255,255,0.35)", marginLeft: "auto" },
-  queueRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)" },
-  queueRowNum: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.45)", width: 28 },
-  queueRowName: { fontSize: 11, color: "rgba(255,255,255,0.7)", flex: 1 },
-  queueTypeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
-  queueTypeTxt: { fontSize: 9, fontWeight: "700" },
-  queueStatus: { fontSize: 10, fontWeight: "700", width: 48, textAlign: "right" },
 
   bottomBar: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: "rgba(10,14,26,0.97)", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", flexDirection: "row", alignItems: "center", gap: 16 },
   bottomPriceLbl: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "600", marginBottom: 2 },
