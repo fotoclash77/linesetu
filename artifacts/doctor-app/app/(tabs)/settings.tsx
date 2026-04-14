@@ -1741,7 +1741,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.profileStats}>
               {[
-                { label: 'Patients', value: `${(parseInt(patientsTotal) / 1000).toFixed(1)}k` },
+                { label: 'Patients', value: (() => { const n = parseInt(patientsTotal) || 0; return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`; })() },
                 { label: 'Clinics',  value: `${clinics.filter(c => c.active && c.name).length} Active` },
               ].map((s, i) => (
                 <View key={i} style={[styles.profileStatItem, i < 1 && styles.profileStatBorder]}>
