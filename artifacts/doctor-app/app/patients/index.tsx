@@ -76,46 +76,69 @@ function fmtTime(t: any) {
 
 // ─── Patient card ──────────────────────────────────────────────────────
 function PatientCard({ tok }: { tok: any }) {
-  const st = statusLabel(tok.status);
-  const src = sourceInfo(tok);
+  const st     = statusLabel(tok.status);
+  const isEmrg = tok.type === 'emergency';
+
+  // Token display — "E03" for emergency, "#03" for normal
+  const tokenDisp = isEmrg
+    ? `E${String(tok.tokenNumber).padStart(2, '0')}`
+    : `#${String(tok.tokenNumber).padStart(2, '0')}`;
+
+  // Source pill
+  const srcLabel = tok.source === 'walkin' ? 'Walk-in' : 'E-Token';
+  const srcClr   = tok.source === 'walkin' ? '#2DD4BF' : '#A5B4FC';
+  const srcBg    = tok.source === 'walkin' ? 'rgba(45,212,191,0.12)'  : 'rgba(165,180,252,0.12)';
+  const srcBd    = tok.source === 'walkin' ? 'rgba(45,212,191,0.28)'  : 'rgba(165,180,252,0.28)';
+
+  // Priority pill
+  const priLabel = isEmrg ? 'Emergency' : 'Normal';
+  const priClr   = isEmrg ? '#F87171' : '#4ADE80';
+  const priBg    = isEmrg ? 'rgba(239,68,68,0.12)'  : 'rgba(74,222,128,0.12)';
+  const priBd    = isEmrg ? 'rgba(239,68,68,0.28)'  : 'rgba(74,222,128,0.28)';
+
+  // Demographics
+  const genderStr =
+    tok.gender === 'M' || tok.gender === 'male'   ? 'Male'   :
+    tok.gender === 'F' || tok.gender === 'female' ? 'Female' :
+    tok.gender ?? '';
+  const demo = [tok.age ? `${tok.age} yr` : '', genderStr].filter(Boolean).join(' · ');
+
   return (
     <TouchableOpacity
-      style={[S.card, tok.type==='emergency'&&S.cardEmerg]}
+      style={[S.card, isEmrg && S.cardEmerg]}
       onPress={() => router.push(`/patients/${tok.id}`)}
       activeOpacity={0.75}
     >
-      {/* Left: token block */}
-      <View style={[S.tokenBlock, tok.type==='emergency'&&S.tokenBlockEmerg]}>
-        <Text style={S.tokenHash}>#</Text>
-        <Text style={S.tokenNum}>{tok.tokenNumber}</Text>
-        <Text style={S.tokenShift}>{(tok.shift??'').toUpperCase().slice(0,3)}</Text>
+      {/* Token chip */}
+      <View style={[S.tokenBlock, isEmrg && S.tokenBlockEmerg]}>
+        <Text style={[S.tokenNum, isEmrg && { color: '#FCA5A5' }]}>{tokenDisp}</Text>
       </View>
 
-      {/* Right: info */}
+      {/* Info */}
       <View style={S.cardInfo}>
-        {/* Name + status */}
+        {/* Row 1: name + status badge */}
         <View style={S.cardRow}>
           <Text style={S.cardName} numberOfLines={1}>{tok.patientName ?? 'Unknown'}</Text>
-          <View style={[S.badge,{backgroundColor:st.bg}]}>
-            <Text style={[S.badgeTxt,{color:st.color}]}>{st.label}</Text>
+          <View style={[S.badge, { backgroundColor: st.bg, borderWidth: 0.5, borderColor: `${st.color}55` }]}>
+            <Text style={[S.badgeTxt, { color: st.color }]}>{st.label}</Text>
           </View>
         </View>
 
-        {/* Phone */}
-        {!!tok.patientPhone && (
-          <Text style={S.cardPhone}>📞 {tok.patientPhone}</Text>
-        )}
-
-        {/* Badges row */}
+        {/* Row 2: age · gender · [Walk-in/E-Token] · [Normal/Emergency] */}
         <View style={S.badgeRow}>
-          <View style={[S.badge,{backgroundColor:src.bg}]}>
-            <Text style={[S.badgeTxt,{color:src.color}]}>{src.label}</Text>
+          {demo ? <Text style={S.cardMeta}>{demo}</Text> : null}
+          {demo ? <Text style={S.cardMetaDot}>·</Text> : null}
+          <View style={[S.pill, { backgroundColor: srcBg, borderColor: srcBd }]}>
+            <Text style={[S.pillTxt, { color: srcClr }]}>{srcLabel}</Text>
           </View>
-          <Text style={S.cardDate}>{fmtDate(tok)}{fmtTime(tok) ? `  ·  ${fmtTime(tok)}` : ''}</Text>
+          <Text style={S.cardMetaDot}>·</Text>
+          <View style={[S.pill, { backgroundColor: priBg, borderColor: priBd }]}>
+            <Text style={[S.pillTxt, { color: priClr }]}>{priLabel}</Text>
+          </View>
         </View>
       </View>
 
-      {/* Tap chevron */}
+      {/* Chevron */}
       <Text style={S.cardChevron}>›</Text>
     </TouchableOpacity>
   );
@@ -380,20 +403,20 @@ const S = StyleSheet.create({
   list:{ gap:8 },
 
   // Card
-  card:{ flexDirection:'row', gap:12, padding:12, borderRadius:18, backgroundColor:'rgba(255,255,255,0.04)', borderWidth:1.5, borderColor:'rgba(255,255,255,0.08)' },
-  cardEmerg:{ backgroundColor:'rgba(239,68,68,0.07)', borderColor:'rgba(239,68,68,0.28)', shadowColor:'#EF4444', shadowOffset:{width:0,height:4}, shadowOpacity:0.12, shadowRadius:12 },
-  tokenBlock:{ width:48, alignItems:'center', justifyContent:'center', borderRadius:13, paddingVertical:8, backgroundColor:'rgba(255,255,255,0.06)', borderWidth:1.5, borderColor:'rgba(255,255,255,0.1)', flexShrink:0 },
+  card:{ flexDirection:'row', alignItems:'center', gap:10, paddingHorizontal:12, paddingVertical:11, borderRadius:16, backgroundColor:'rgba(255,255,255,0.04)', borderWidth:1.5, borderColor:'rgba(255,255,255,0.08)' },
+  cardEmerg:{ backgroundColor:'rgba(239,68,68,0.07)', borderColor:'rgba(239,68,68,0.28)' },
+  tokenBlock:{ width:52, height:52, alignItems:'center', justifyContent:'center', borderRadius:13, backgroundColor:'rgba(13,148,136,0.2)', borderWidth:1.5, borderColor:'rgba(45,212,191,0.35)', flexShrink:0 },
   tokenBlockEmerg:{ backgroundColor:'rgba(239,68,68,0.22)', borderColor:'rgba(239,68,68,0.45)' },
-  tokenHash:{ fontSize:9, color:'rgba(255,255,255,0.4)', fontWeight:'700' },
-  tokenNum:{ fontSize:18, fontWeight:'900', color:'#FFF', letterSpacing:-0.8, lineHeight:22 },
-  tokenShift:{ fontSize:8, fontWeight:'700', color:'rgba(255,255,255,0.3)', marginTop:2 },
-  cardInfo:{ flex:1, gap:5, minWidth:0 },
+  tokenNum:{ fontSize:14, fontWeight:'900', color:'#FFF', letterSpacing:-0.3 },
+  cardInfo:{ flex:1, gap:4, minWidth:0 },
   cardRow:{ flexDirection:'row', alignItems:'center', gap:8, justifyContent:'space-between' },
   cardName:{ fontSize:13, fontWeight:'800', color:'#FFF', flex:1, minWidth:0 },
-  cardPhone:{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'500' },
-  badgeRow:{ flexDirection:'row', alignItems:'center', gap:6, flexWrap:'wrap' },
+  badgeRow:{ flexDirection:'row', alignItems:'center', gap:4, flexWrap:'wrap' },
   badge:{ paddingHorizontal:8, paddingVertical:3, borderRadius:20 },
   badgeTxt:{ fontSize:9, fontWeight:'800' },
-  cardDate:{ fontSize:9, color:'rgba(255,255,255,0.28)', fontWeight:'600' },
-  cardChevron:{ fontSize:20, color:'rgba(255,255,255,0.18)', fontWeight:'300', alignSelf:'center', marginLeft:4 },
+  cardMeta:{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:'600' },
+  cardMetaDot:{ fontSize:10, color:'rgba(255,255,255,0.2)', fontWeight:'600' },
+  pill:{ paddingHorizontal:6, paddingVertical:2, borderRadius:6, borderWidth:1 },
+  pillTxt:{ fontSize:9, fontWeight:'800' },
+  cardChevron:{ fontSize:20, color:'rgba(255,255,255,0.18)', fontWeight:'300', alignSelf:'center' },
 });
