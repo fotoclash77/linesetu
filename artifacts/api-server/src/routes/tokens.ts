@@ -549,33 +549,42 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       if (nextSnap.exists()) nextToken = nextSnap.data();
     }
 
-    const earningsSnap = await getDoc(earningsRef);
-    const isE = token.type === "emergency";
-    const isOnlineToken = token.source !== "walkin" && (token.doctorEarns ?? 0) > 0;
     const doctorRef = doc(db, Collections.DOCTORS, token.doctorId);
+    const [earningsSnap, doctorSnap] = await Promise.all([
+      getDoc(earningsRef),
+      getDoc(doctorRef),
+    ]);
+    const doctorData = doctorSnap.exists() ? doctorSnap.data() : {};
+    const isE = token.type === "emergency";
+    // Online paid token: patient actually paid and it's not a walk-in
+    const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
+    // Use doctor's live configured rates at completion time (not booking-time hardcoded values)
+    const earnedNow = isOnlineToken
+      ? (isE ? (doctorData.emergencyFee ?? 20) : (doctorData.consultFee ?? 10))
+      : 0;
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
 
     // Only track earnings and pendingPayout for paid online tokens
-    if (isOnlineToken) {
+    if (isOnlineToken && earnedNow > 0) {
       if (earningsSnap.exists()) {
         batch.update(earningsRef, {
           totalTokens: increment(1),
           tokensNormal: increment(isE ? 0 : 1),
           tokensEmergency: increment(isE ? 1 : 0),
-          earned: increment(token.doctorEarns),
+          earned: increment(earnedNow),
         });
       } else {
         batch.set(earningsRef, {
           date: token.date, totalTokens: 1,
           tokensNormal: isE ? 0 : 1, tokensEmergency: isE ? 1 : 0,
-          earned: token.doctorEarns, shift: token.shift,
+          earned: earnedNow, shift: token.shift,
         });
       }
-      // Accumulate in doctor's pending payout balance
-      batch.update(doctorRef, { pendingPayout: increment(token.doctorEarns) });
+      // Accumulate in doctor's pending payout balance using live rate
+      batch.update(doctorRef, { pendingPayout: increment(earnedNow) });
     }
 
     if (nextToken && nextRef) {
