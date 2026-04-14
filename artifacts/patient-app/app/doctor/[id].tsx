@@ -4,10 +4,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getGetDoctorQueryOptions, getGetLiveQueueQueryOptions } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React from "react";
 import {
-  Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -56,7 +54,6 @@ export default function DoctorDetailScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
 
-  const [selectedDay, setSelectedDay] = useState<{ iso: string; cfg: any } | null>(null);
 
   const isDemoId = !id || id.startsWith("demo");
   const { data: doctorData } = useQuery({
@@ -193,197 +190,6 @@ export default function DoctorDetailScreen() {
             ))}
           </View>
         </View>
-
-        {/* 30-Day Availability Calendar */}
-        {(() => {
-          const cal: Record<string, any> = (doctorData as any)?.calendar ?? {};
-          const defaultShifts: any = (doctorData as any)?.shifts ?? {};
-
-          const today = new Date(); today.setHours(0,0,0,0);
-          const dates30: Date[] = [];
-          for (let i = 0; i < 30; i++) {
-            const d = new Date(today); d.setDate(today.getDate() + i);
-            dates30.push(d);
-          }
-          const startDow = today.getDay();
-          const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
-          while (cells.length % 7 !== 0) cells.push(null);
-          const rows: (Date | null)[][] = [];
-          for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-          const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-          function isoOf(d: Date) {
-            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          }
-
-          // Determine cell color for new DayCfg or legacy string format
-          function cellStyle(cfg: any): { bg: string; border: string; dotColor: string } {
-            if (!cfg) return { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', dotColor: '#F87171' };
-            // New format: { off, morning, evening }
-            if (typeof cfg === 'object' && 'off' in cfg) {
-              if (cfg.off) return { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)', dotColor: '#F87171' };
-              const m = cfg.morning?.enabled, e = cfg.evening?.enabled;
-              if (m && e)  return { bg: 'rgba(13,148,136,0.15)',  border: 'rgba(45,212,191,0.4)',  dotColor: '#2DD4BF' };
-              if (m)       return { bg: 'rgba(245,158,11,0.13)', border: 'rgba(245,158,11,0.35)', dotColor: '#FCD34D' };
-              if (e)       return { bg: 'rgba(139,92,246,0.13)', border: 'rgba(139,92,246,0.35)', dotColor: '#A5B4FC' };
-              return { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.25)', dotColor: '#F87171' };
-            }
-            return { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.09)', dotColor: '' };
-          }
-
-          let prevMonth = -1;
-          const monthLabels: {label: string; rowIdx: number}[] = [];
-          rows.forEach((row, ri) => {
-            const fd = row.find(c => c !== null);
-            if (fd && fd.getMonth() !== prevMonth) {
-              prevMonth = fd.getMonth();
-              monthLabels.push({ label: fd.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }), rowIdx: ri });
-            }
-          });
-
-          return (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <Feather name="calendar" size={13} color="#2DD4BF" />
-                <Text style={styles.sectionTitle}>30-Day Schedule</Text>
-              </View>
-              <Text style={pStyles.calSub}>Tap a date to see shift times, clinic & location</Text>
-              <View style={pStyles.calDowRow}>
-                {DOW.map(d => <Text key={d} style={pStyles.calDow}>{d}</Text>)}
-              </View>
-              {rows.map((row, ri) => {
-                const ml = monthLabels.find(m => m.rowIdx === ri);
-                return (
-                  <View key={ri}>
-                    {ml && <Text style={pStyles.calMonthLabel}>{ml.label}</Text>}
-                    <View style={pStyles.calRow}>
-                      {row.map((cell, ci) => {
-                        if (!cell) return <View key={ci} style={pStyles.calCell} />;
-                        const iso = isoOf(cell);
-                        const cfg = cal[iso];
-                        const cs = cellStyle(cfg);
-                        const isPast = cell < today;
-                        const isToday = cell.getTime() === today.getTime();
-                        const isOff = !cfg || cfg.off === true || (typeof cfg === 'string' && cfg === 'holiday') || (!cfg?.morning?.enabled && !cfg?.evening?.enabled);
-                        return (
-                          <Pressable
-                            key={ci}
-                            disabled={isPast || isOff}
-                            onPress={() => setSelectedDay({ iso, cfg: cfg ?? null })}
-                            style={[
-                              pStyles.calCell,
-                              { backgroundColor: cs.bg, borderColor: cs.border },
-                              isToday && { borderWidth: 2, borderColor: '#2DD4BF' },
-                              isPast && { opacity: 0.22 },
-                            ]}
-                          >
-                            <Text style={[pStyles.calDate, isToday && { color: '#2DD4BF', fontWeight: '900' }, isOff && { textDecorationLine: 'line-through', color: '#F87171' }]}>
-                              {cell.getDate()}
-                            </Text>
-                            {cs.dotColor ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: cs.dotColor, marginTop: 1 }} /> : null}
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              })}
-              <View style={pStyles.calLegend}>
-                {[
-                  { color: '#2DD4BF', label: 'Both shifts' },
-                  { color: '#F87171', label: 'Holiday' },
-                  { color: '#FCD34D', label: 'Morning' },
-                  { color: '#A5B4FC', label: 'Evening' },
-                ].map(item => (
-                  <View key={item.label} style={pStyles.calLegendItem}>
-                    <View style={[pStyles.calLegendDot, { backgroundColor: item.color }]} />
-                    <Text style={pStyles.calLegendTxt}>{item.label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          );
-        })()}
-
-        {/* Day detail modal */}
-        <Modal visible={!!selectedDay} transparent animationType="slide" onRequestClose={() => setSelectedDay(null)}>
-          <Pressable style={pStyles.modalOverlay} onPress={() => setSelectedDay(null)}>
-            <Pressable style={pStyles.modalSheet} onPress={() => {}}>
-              <View style={pStyles.modalHandle} />
-              {selectedDay && (() => {
-                const { iso, cfg } = selectedDay;
-                const d = new Date(iso + 'T00:00:00');
-                const dateStr = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-                const defaultShifts: any = (doctorData as any)?.shifts ?? {};
-                const morning = cfg?.morning ?? (defaultShifts.morning !== false ? {
-                  enabled: true, startTime: defaultShifts.morningStart ?? '09:00', endTime: defaultShifts.morningEnd ?? '13:00',
-                  clinicName: (doctorData as any)?.clinicName ?? '', address: (doctorData as any)?.clinicAddress ?? '', locationLink: '',
-                } : null);
-                const evening = cfg?.evening ?? (defaultShifts.evening !== false ? {
-                  enabled: true, startTime: defaultShifts.eveningStart ?? '17:00', endTime: defaultShifts.eveningEnd ?? '20:00',
-                  clinicName: (doctorData as any)?.clinicName ?? '', address: (doctorData as any)?.clinicAddress ?? '', locationLink: '',
-                } : null);
-
-                return (
-                  <>
-                    <Text style={pStyles.modalTitle}>{dateStr}</Text>
-                    <Text style={pStyles.modalDoc}>{(doctorData as any)?.name ?? 'Doctor'}</Text>
-
-                    {morning?.enabled && (
-                      <View style={pStyles.shiftBlock}>
-                        <View style={pStyles.shiftBlockHeader}>
-                          <View style={[pStyles.shiftBadge, { backgroundColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.35)' }]}>
-                            <Text style={{ fontSize: 13 }}>☀</Text>
-                            <Text style={[pStyles.shiftBadgeTxt, { color: '#FCD34D' }]}>Morning</Text>
-                          </View>
-                          <Text style={pStyles.shiftTime}>{morning.startTime} – {morning.endTime}</Text>
-                        </View>
-                        {morning.clinicName ? <Text style={pStyles.shiftClinic}>🏥 {morning.clinicName}</Text> : null}
-                        {morning.address ? <Text style={pStyles.shiftAddr}>📍 {morning.address}</Text> : null}
-                        {morning.locationLink ? (
-                          <Pressable onPress={() => Linking.openURL(morning.locationLink)} style={pStyles.mapsRow}>
-                            <Text style={pStyles.mapsLink}>🗺 Open in Maps</Text>
-                          </Pressable>
-                        ) : null}
-                        <Pressable style={pStyles.bookShiftBtn} onPress={() => { setSelectedDay(null); router.push(`/booking/${id ?? 'demo1'}?date=${iso}&shift=morning` as any); }}>
-                          <Text style={pStyles.bookShiftBtnTxt}>Book Morning Token</Text>
-                        </Pressable>
-                      </View>
-                    )}
-
-                    {evening?.enabled && (
-                      <View style={[pStyles.shiftBlock, { marginTop: morning?.enabled ? 10 : 0 }]}>
-                        <View style={pStyles.shiftBlockHeader}>
-                          <View style={[pStyles.shiftBadge, { backgroundColor: 'rgba(139,92,246,0.15)', borderColor: 'rgba(139,92,246,0.35)' }]}>
-                            <Text style={{ fontSize: 13 }}>☾</Text>
-                            <Text style={[pStyles.shiftBadgeTxt, { color: '#A5B4FC' }]}>Evening</Text>
-                          </View>
-                          <Text style={pStyles.shiftTime}>{evening.startTime} – {evening.endTime}</Text>
-                        </View>
-                        {evening.clinicName ? <Text style={pStyles.shiftClinic}>🏥 {evening.clinicName}</Text> : null}
-                        {evening.address ? <Text style={pStyles.shiftAddr}>📍 {evening.address}</Text> : null}
-                        {evening.locationLink ? (
-                          <Pressable onPress={() => Linking.openURL(evening.locationLink)} style={pStyles.mapsRow}>
-                            <Text style={pStyles.mapsLink}>🗺 Open in Maps</Text>
-                          </Pressable>
-                        ) : null}
-                        <Pressable style={[pStyles.bookShiftBtn, { backgroundColor: 'rgba(139,92,246,0.2)', borderColor: 'rgba(139,92,246,0.45)' }]} onPress={() => { setSelectedDay(null); router.push(`/booking/${id ?? 'demo1'}?date=${iso}&shift=evening` as any); }}>
-                          <Text style={[pStyles.bookShiftBtnTxt, { color: '#A5B4FC' }]}>Book Evening Token</Text>
-                        </Pressable>
-                      </View>
-                    )}
-
-                    {!morning?.enabled && !evening?.enabled && (
-                      <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                        <Text style={{ fontSize: 32, marginBottom: 10 }}>🚫</Text>
-                        <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 14 }}>No sessions on this day</Text>
-                      </View>
-                    )}
-                  </>
-                );
-              })()}
-            </Pressable>
-          </Pressable>
-        </Modal>
 
       </ScrollView>
 
