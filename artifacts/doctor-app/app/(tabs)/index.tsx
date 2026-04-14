@@ -68,9 +68,18 @@ function Toggle({ value, onToggle, onColor }: { value: boolean; onToggle: () => 
 export default function DashboardScreen() {
   const { doctor } = useDoctor();
   const [period, setPeriod] = useState<EarningPeriod>('Today');
-  const [available, setAvailable] = useState(true);
+  const [available, setAvailable] = useState(() => (doctor as any)?.isAvailable !== false);
   const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Today');
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Keep toggle in sync when doctor context hydrates from AsyncStorage
+  const availSynced = React.useRef(false);
+  useEffect(() => {
+    if (!availSynced.current && doctor) {
+      availSynced.current = true;
+      setAvailable((doctor as any).isAvailable !== false);
+    }
+  }, [doctor]);
 
   useEffect(() => {
     if (!doctor?.id) return;

@@ -208,14 +208,29 @@ export default function SettingsScreen() {
   const { doctor, logout, updateDoctor } = useDoctor();
   const [section, setSection] = useState<SettingsSection>('main');
 
-  // Profile state
-  const [name, setName] = useState('Dr. Ananya Sharma');
-  const [qualifications, setQualifications] = useState('MBBS, MD, DM – Cardiology');
-  const [specialisation, setSpecialisation] = useState('Cardiologist');
+  // Profile state — seeded from Firebase via doctor context
+  const [name, setName] = useState(() => (doctor as any)?.name ?? '');
+  const [qualifications, setQualifications] = useState('MBBS, MD');
+  const [specialisation, setSpecialisation] = useState(() => (doctor as any)?.specialization ?? '');
   const [experience, setExperience] = useState('10');
   const [patientsTotal, setPatientsTotal] = useState('12400');
-  const [mobile, setMobile] = useState('98765 00001');
-  const [bio, setBio] = useState('Experienced cardiologist with over 10 years of practice in cardiac care, preventive cardiology and electrophysiology.');
+  const [mobile, setMobile] = useState(() => {
+    const p: string = (doctor as any)?.phone ?? '';
+    return p.startsWith('+91') ? p.slice(3).trim() : p;
+  });
+  const [bio, setBio] = useState('');
+
+  // Sync profile fields when doctor context loads (e.g. after async hydration)
+  const profileSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!profileSynced.current && doctor) {
+      profileSynced.current = true;
+      setName((doctor as any).name ?? '');
+      setSpecialisation((doctor as any).specialization ?? '');
+      const p: string = (doctor as any).phone ?? '';
+      setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
+    }
+  }, [doctor]);
 
   // Clinics state — seeded from Firebase via doctor.clinics
   const EMPTY_CLINIC: ClinicData = { name: '', address: '', city: '', phone: '', maps: '', active: false };
