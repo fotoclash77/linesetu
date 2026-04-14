@@ -291,6 +291,15 @@ export default function BookingScreen() {
     }
   });
 
+  // Block render until real doctor data is available — prevents demo data flash
+  if (!doctorId || (!isDemoId && !doctorData)) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#67E8F9" />
+      </View>
+    );
+  }
+
   function handleBook() {
     if (!canBook) return;
     router.push({
