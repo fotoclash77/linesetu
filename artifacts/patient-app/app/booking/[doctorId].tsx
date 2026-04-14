@@ -18,6 +18,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 const isWeb = Platform.OS === "web";
 const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -106,28 +108,55 @@ export default function BookingScreen() {
   const [selectedMember, setSelectedMember] = useState<FamilyMember>(SELF_DEFAULT);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
-  // Load family members from AsyncStorage
+  // Load family members — Firestore is authoritative (profile persists there); AsyncStorage is fallback
   useEffect(() => {
-    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
-      AS.getItem("linesetu_family").then(raw => {
-        try {
-          const stored: any[] = raw ? JSON.parse(raw) : [];
-          const selfM: FamilyMember = {
-            id: "self", name: (patient as any)?.name ?? "Self",
-            relation: "Self", age: (patient as any)?.age ?? 0,
-            blood: (patient as any)?.blood ?? "", gender: (patient as any)?.gender ?? "",
-            phone: (patient as any)?.phone ?? "", avatar: (patient as any)?.photo ?? "", color: "#6366F1",
-          };
-          const extras: FamilyMember[] = stored.map((f: any, i: number) => ({
-            id: f.id ?? `member_${i}`, name: f.name ?? "Member", relation: f.relation ?? "Family",
-            age: f.age ?? 0, blood: f.blood ?? "", gender: f.gender ?? "",
-            phone: f.phone ?? "", avatar: f.photo ?? "", color: ACCENT_FAMILY[i % ACCENT_FAMILY.length],
-          }));
-          const all = [selfM, ...extras];
-          setFamily(all);
-          setSelectedMember(selfM);
-        } catch { /* ignore */ }
-      }).catch(() => {});
+    if (!patient?.id) return;
+    const selfM: FamilyMember = {
+      id: "self", name: (patient as any)?.name ?? "Self",
+      relation: "Self", age: (patient as any)?.age ?? 0,
+      blood: (patient as any)?.blood ?? "", gender: (patient as any)?.gender ?? "",
+      phone: (patient as any)?.phone ?? "", avatar: (patient as any)?.profilePhoto ?? "", color: "#6366F1",
+    };
+    const buildExtras = (arr: any[]): FamilyMember[] =>
+      arr.map((f: any, i: number) => ({
+        id: f.id ?? `member_${i}`, name: f.name ?? "Member", relation: f.relation ?? "Family",
+        age: Number(f.age) || 0, blood: f.blood ?? "", gender: f.gender ?? "",
+        phone: f.phone ?? "", avatar: f.avatar ?? f.photo ?? "", color: ACCENT_FAMILY[i % ACCENT_FAMILY.length],
+      }));
+
+    // Try Firestore first
+    getDoc(doc(db, "patients", patient.id)).then(snap => {
+      const data = snap.exists() ? snap.data() : null;
+      const fromFirestore: any[] = data?.familyMembers ?? [];
+      if (fromFirestore.length > 0) {
+        const all = [selfM, ...buildExtras(fromFirestore)];
+        setFamily(all);
+        setSelectedMember(selfM);
+        return;
+      }
+      // Fallback: AsyncStorage
+      import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+        AS.getItem("linesetu_family").then(raw => {
+          try {
+            const stored: any[] = raw ? JSON.parse(raw) : [];
+            const all = [selfM, ...buildExtras(stored)];
+            setFamily(all);
+            setSelectedMember(selfM);
+          } catch { setFamily([selfM]); setSelectedMember(selfM); }
+        }).catch(() => { setFamily([selfM]); setSelectedMember(selfM); });
+      });
+    }).catch(() => {
+      // Firestore failed — use AsyncStorage
+      import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+        AS.getItem("linesetu_family").then(raw => {
+          try {
+            const stored: any[] = raw ? JSON.parse(raw) : [];
+            const all = [selfM, ...buildExtras(stored)];
+            setFamily(all);
+            setSelectedMember(selfM);
+          } catch { setFamily([selfM]); setSelectedMember(selfM); }
+        }).catch(() => { setFamily([selfM]); setSelectedMember(selfM); });
+      });
     });
   }, [patient?.id]);
 
