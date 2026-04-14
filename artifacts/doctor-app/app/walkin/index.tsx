@@ -411,27 +411,26 @@ export default function AddWalkinScreen() {
                   {getNext30Days().map(d => {
                     const iso = dateISO(d);
                     const cfg = (doctor as any)?.calendar?.[iso];
-                    const isOff = cfg?.off === true;
                     const hasMorning = cfg?.morning?.enabled === true;
                     const hasEvening = cfg?.evening?.enabled === true;
-                    const hasAny = !isOff && (hasMorning || hasEvening);
+                    const hasAny = hasMorning || hasEvening;
+                    // No entry OR explicitly off OR no enabled shift → holiday by default
+                    const isOff = !cfg || cfg?.off === true || !hasAny;
                     const active = pickDate === iso;
                     return (
                       <TouchableOpacity
                         key={iso}
                         onPress={() => {
                           setPickDate(iso);
-                          if (cfg) {
-                            if (hasMorning && !hasEvening) setPickShift('morning');
-                            else if (hasEvening && !hasMorning) setPickShift('evening');
-                          }
+                          if (hasMorning && !hasEvening) setPickShift('morning');
+                          else if (hasEvening && !hasMorning) setPickShift('evening');
                         }}
                         disabled={isOff}
                         style={[
                           wStyles.dateCell,
                           active && wStyles.dateCellActive,
                           isOff && { opacity: 0.22 },
-                          hasAny && !active && { borderColor: 'rgba(45,212,191,0.2)' },
+                          !isOff && !active && { borderColor: 'rgba(45,212,191,0.2)' },
                         ]}
                       >
                         <Text style={[wStyles.dateDayLabel, active && { color: TEAL_LT }]}>{dayLabel(d)}</Text>
@@ -455,7 +454,9 @@ export default function AddWalkinScreen() {
               {(() => {
                 const cal = (doctor as any)?.calendar ?? {};
                 const dayCfg = cal[pickDate];
-                if (dayCfg?.off === true) {
+                const isDayOff = !dayCfg || dayCfg?.off === true
+                  || !(dayCfg?.morning?.enabled === true || dayCfg?.evening?.enabled === true);
+                if (isDayOff) {
                   return (
                     <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 16 }}>
                       <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
@@ -467,7 +468,7 @@ export default function AddWalkinScreen() {
                   <View style={wStyles.shiftRow}>
                     {(['morning', 'evening'] as const).map(s => {
                       const shiftCfg = dayCfg?.[s];
-                      const enabled = dayCfg ? shiftCfg?.enabled === true : true;
+                      const enabled = shiftCfg?.enabled === true;
                       const active  = pickShift === s;
                       const timeRange  = shiftCfg ? `${shiftCfg.startTime ?? ''} – ${shiftCfg.endTime ?? ''}` : '';
                       const clinicName = shiftCfg?.clinicName ?? '';

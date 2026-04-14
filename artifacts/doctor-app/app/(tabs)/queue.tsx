@@ -734,30 +734,26 @@ export default function QueueScreen() {
                   {getNext30Days().map(d => {
                     const iso = dateISO(d);
                     const cfg = (doctor as any)?.calendar?.[iso];
-                    const isOff = cfg?.off === true;
                     const hasMorning = cfg?.morning?.enabled === true;
                     const hasEvening = cfg?.evening?.enabled === true;
-                    const hasAny = !isOff && (hasMorning || hasEvening);
+                    const hasAny = hasMorning || hasEvening;
+                    // No calendar entry OR explicitly off OR no enabled shift → treat as holiday
+                    const isOff = !cfg || cfg?.off === true || !hasAny;
                     const active = pickDate === iso;
-                    // If no calendar entry yet, treat as a potential day (not blocked)
-                    const noEntry = !cfg;
                     return (
                       <TouchableOpacity
                         key={iso}
                         onPress={() => {
                           setPickDate(iso);
-                          // Auto-select shift based on what's enabled for this date
-                          if (cfg) {
-                            if (hasMorning && !hasEvening) setPickShift('morning');
-                            else if (hasEvening && !hasMorning) setPickShift('evening');
-                          }
+                          if (hasMorning && !hasEvening) setPickShift('morning');
+                          else if (hasEvening && !hasMorning) setPickShift('evening');
                         }}
                         disabled={isOff}
                         style={[
                           S.dateCell,
                           active && S.dateCellActive,
                           isOff && { opacity: 0.22 },
-                          hasAny && !active && { borderColor: 'rgba(45,212,191,0.2)' },
+                          !isOff && !active && { borderColor: 'rgba(45,212,191,0.2)' },
                         ]}
                       >
                         <Text style={[S.dateDayLabel, active && { color: TEAL_LT }]}>{dayLabel(d)}</Text>
@@ -765,7 +761,7 @@ export default function QueueScreen() {
                         <Text style={[S.dateMonth,    active && { color: TEAL_LT }]}>
                           {d.toLocaleDateString('en-IN', { month: 'short' })}
                         </Text>
-                        {/* Shift dots */}
+                        {/* Shift dots — only show on configured days */}
                         <View style={{ flexDirection: 'row', gap: 3, marginTop: 2 }}>
                           {hasMorning && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FCD34D' }} />}
                           {hasEvening && <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#A5B4FC' }} />}
@@ -782,7 +778,8 @@ export default function QueueScreen() {
               {(() => {
                 const cal = (doctor as any)?.calendar ?? {};
                 const dayCfg = cal[pickDate];
-                const isOff = dayCfg?.off === true;
+                const isOff = !dayCfg || dayCfg?.off === true
+                  || !(dayCfg?.morning?.enabled === true || dayCfg?.evening?.enabled === true);
 
                 if (isOff) {
                   return (
