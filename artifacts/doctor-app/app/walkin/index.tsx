@@ -365,28 +365,61 @@ export default function AddWalkinScreen() {
             ) : (
               queue.map((t) => {
                 const isE = t.type === 'emergency';
-                const label = isE ? `E${String(t.tokenNumber).padStart(2, '0')}` : `#${t.tokenNumber}`;
-                const STATUS_COLOR: Record<string, string> = {
-                  waiting: '#FCD34D', in_consult: TEAL_LT, done: '#4ADE80', cancelled: '#F87171',
+                const tokenDisp = isE
+                  ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                  : `#${String(t.tokenNumber).padStart(2, '0')}`;
+
+                // Status badge
+                const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+                  waiting:    { label: 'Waiting',    color: '#FCD34D', bg: 'rgba(252,211,77,0.15)'  },
+                  in_consult: { label: 'Consulting', color: TEAL_LT,   bg: 'rgba(45,212,191,0.15)' },
+                  done:       { label: 'Consulted',  color: '#4ADE80', bg: 'rgba(74,222,128,0.15)'  },
+                  cancelled:  { label: 'Cancelled',  color: '#F87171', bg: 'rgba(239,68,68,0.15)'   },
                 };
-                const statusColor = STATUS_COLOR[t.status] ?? 'rgba(255,255,255,0.3)';
+                const st = STATUS_MAP[t.status] ?? { label: t.status, color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.08)' };
+
+                // Priority pill
+                const priLabel = isE ? 'Emergency' : 'Normal';
+                const priClr   = isE ? '#F87171' : '#4ADE80';
+                const priBg    = isE ? 'rgba(239,68,68,0.12)'  : 'rgba(74,222,128,0.12)';
+                const priBd    = isE ? 'rgba(239,68,68,0.28)'  : 'rgba(74,222,128,0.28)';
+
                 return (
-                  <View key={t.id} style={styles.recentItem}>
+                  <View key={t.id} style={[styles.recentItem, isE && styles.recentItemEmerg]}>
+                    {/* Token chip */}
                     <View style={[styles.recentToken, {
-                      backgroundColor: isE ? 'rgba(239,68,68,0.2)' : 'rgba(13,148,136,0.2)',
+                      backgroundColor: isE ? 'rgba(239,68,68,0.2)'  : 'rgba(13,148,136,0.2)',
                       borderColor:     isE ? 'rgba(239,68,68,0.35)' : 'rgba(45,212,191,0.35)',
                     }]}>
-                      <Text style={styles.recentTokenText}>{label}</Text>
+                      <Text style={[styles.recentTokenText, { color: isE ? '#FCA5A5' : '#FFF' }]}>{tokenDisp}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.recentName}>{t.patientName}</Text>
-                      <Text style={styles.recentSub}>
-                        <Text style={{ color: isE ? '#F87171' : TEAL_LT }}>{isE ? 'Emergency' : 'Normal'}</Text>
-                        {'  ·  '}
-                        <Text style={{ color: statusColor }}>{t.status.replace('_', ' ')}</Text>
-                      </Text>
+
+                    {/* Info rows */}
+                    <View style={{ flex: 1, gap: 4 }}>
+                      {/* Row 1: name + status badge */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <Text style={styles.recentName} numberOfLines={1}>{t.patientName}</Text>
+                        <View style={[styles.recentBadge, { backgroundColor: st.bg, borderColor: `${st.color}55` }]}>
+                          <Text style={[styles.recentBadgeTxt, { color: st.color }]}>{st.label}</Text>
+                        </View>
+                      </View>
+                      {/* Row 2: [Walk-in] · [Normal/Emergency] · time */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={[styles.recentPill, { backgroundColor: 'rgba(45,212,191,0.12)', borderColor: 'rgba(45,212,191,0.28)' }]}>
+                          <Text style={[styles.recentPillTxt, { color: '#2DD4BF' }]}>Walk-in</Text>
+                        </View>
+                        <Text style={styles.recentDot}>·</Text>
+                        <View style={[styles.recentPill, { backgroundColor: priBg, borderColor: priBd }]}>
+                          <Text style={[styles.recentPillTxt, { color: priClr }]}>{priLabel}</Text>
+                        </View>
+                        {!!relTime(t.bookedAt) && (
+                          <>
+                            <Text style={styles.recentDot}>·</Text>
+                            <Text style={styles.recentTime}>{relTime(t.bookedAt)}</Text>
+                          </>
+                        )}
+                      </View>
                     </View>
-                    <Text style={styles.recentTime}>{relTime(t.bookedAt)}</Text>
                   </View>
                 );
               })
@@ -610,11 +643,16 @@ const styles = StyleSheet.create({
   recentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   recentIcon: { fontSize: 11, color: 'rgba(255,255,255,0.3)' },
   recentTitle: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1, flex: 1 },
-  recentItem: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 9, borderRadius: 14, marginBottom: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
-  recentToken: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: 1 },
-  recentTokenText: { fontSize: 11, fontWeight: '900', color: '#FFF', letterSpacing: -0.3 },
-  recentName: { fontSize: 12, fontWeight: '700', color: '#FFF' },
-  recentSub: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
+  recentItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 11, borderRadius: 16, marginBottom: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)' },
+  recentItemEmerg: { backgroundColor: 'rgba(239,68,68,0.07)', borderColor: 'rgba(239,68,68,0.28)' },
+  recentToken: { width: 52, height: 52, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: 1.5 },
+  recentTokenText: { fontSize: 14, fontWeight: '900', color: '#FFF', letterSpacing: -0.3 },
+  recentName: { fontSize: 13, fontWeight: '800', color: '#FFF', flex: 1, minWidth: 0 },
+  recentBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 0.5 },
+  recentBadgeTxt: { fontSize: 9, fontWeight: '800' },
+  recentPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
+  recentPillTxt: { fontSize: 9, fontWeight: '800' },
+  recentDot: { fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: '600' },
   recentTime: { fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: '600' },
   queueCount: { marginLeft: 'auto', backgroundColor: 'rgba(45,212,191,0.15)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)' },
   queueCountTxt: { fontSize: 11, fontWeight: '800', color: TEAL_LT },
