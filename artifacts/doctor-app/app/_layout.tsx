@@ -5,10 +5,10 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -25,8 +25,19 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { doctor, isLoading } = useDoctor();
+  const qc = useQueryClient();
+  const prevDoctorIdRef = useRef<string | null | undefined>(undefined);
 
   const doctorId = doctor?.id ?? null;
+
+  // Clear the entire query cache whenever the logged-in doctor account changes
+  useEffect(() => {
+    if (prevDoctorIdRef.current !== undefined && prevDoctorIdRef.current !== doctorId) {
+      qc.clear();
+    }
+    prevDoctorIdRef.current = doctorId;
+  }, [doctorId]);
+
   useEffect(() => {
     if (!isLoading) {
       if (doctorId) {

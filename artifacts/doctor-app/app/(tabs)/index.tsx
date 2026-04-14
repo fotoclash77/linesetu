@@ -170,6 +170,12 @@ export default function DashboardScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [stats, setStats]         = useState<DashStats>(EMPTY);
 
+  // Reset all stats immediately whenever the logged-in doctor account changes
+  useEffect(() => {
+    setStats(EMPTY);
+    setUnreadCount(0);
+  }, [doctor?.id]);
+
   // Keep toggle in sync with real-time Firestore value from context
   useEffect(() => {
     if (doctor) setAvailable(doctor.isAvailable !== false);
