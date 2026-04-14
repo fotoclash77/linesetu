@@ -14,10 +14,21 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-async function issueRefund(paymentId: string): Promise<{ refundId: string | null; ok: boolean }> {
+async function issueRefund(paymentId: string, orderId: string): Promise<{ refundId: string | null; ok: boolean }> {
   try {
+    // Verify payment ownership before refunding: fetch from Razorpay and confirm
+    // the payment belongs to the order created in this session.
+    const payment = await razorpay.payments.fetch(paymentId);
+    if ((payment as any).order_id !== orderId) {
+      console.error(`[Tokens] Refund blocked: payment ${paymentId} order mismatch (expected ${orderId}, got ${(payment as any).order_id})`);
+      return { refundId: null, ok: false };
+    }
+    if ((payment as any).status !== "captured") {
+      console.error(`[Tokens] Refund blocked: payment ${paymentId} status=${(payment as any).status} (must be 'captured')`);
+      return { refundId: null, ok: false };
+    }
     const refund = await razorpay.payments.refund(paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
-    console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId}`);
+    console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId} orderId=${orderId}`);
     return { refundId: refund.id, ok: true };
   } catch (e: any) {
     console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
@@ -137,6 +148,7 @@ router.post("/tokens", async (req, res) => {
       source = "online",
       age, gender, address, area, notes,
       expectedTokenNumber,
+      orderId,
     } = req.body;
 
     if (!doctorId || !patientName) {
@@ -283,8 +295,9 @@ router.post("/tokens", async (req, res) => {
     if (err.message === "CAPACITY_FULL") {
       let refundInitiated = false;
       let refundId: string | null = null;
-      if (paymentId) {
-        const result = await issueRefund(paymentId);
+      const orderId: string | undefined = req.body.orderId;
+      if (paymentId && orderId) {
+        const result = await issueRefund(paymentId, orderId);
         refundInitiated = result.ok;
         refundId = result.refundId;
       }

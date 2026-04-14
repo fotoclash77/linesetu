@@ -48,30 +48,4 @@ router.post("/verify", (req, res) => {
   }
 });
 
-function requireRefundSecret(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
-  const token = process.env.INTERNAL_REFUND_TOKEN;
-  const provided = req.headers["x-internal-token"];
-  if (!token || !provided || provided !== token) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  next();
-}
-
-router.post("/refund", requireRefundSecret, async (req, res) => {
-  try {
-    const { paymentId, amount } = req.body;
-    if (!paymentId || typeof paymentId !== "string") {
-      return res.status(400).json({ error: "paymentId (string) is required" });
-    }
-    const params: Record<string, unknown> = {};
-    if (amount && typeof amount === "number" && amount > 0) params.amount = amount;
-    const refund = await razorpay.payments.refund(paymentId, params as Parameters<typeof razorpay.payments.refund>[1]);
-    console.log(`[Razorpay] Refund initiated: ${refund.id} for payment ${paymentId}`);
-    res.json({ success: true, refundId: refund.id, status: refund.status, amount: refund.amount });
-  } catch (err: any) {
-    console.error("[Razorpay] refund error:", err);
-    res.status(500).json({ error: err.message ?? "Refund failed" });
-  }
-});
-
 export default router;

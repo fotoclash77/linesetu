@@ -282,6 +282,7 @@ export default function PaymentScreen() {
           shift,
           type: tokenType,
           paymentId,
+          orderId,
           expectedTokenNumber: expectedToken,
         }),
       });
