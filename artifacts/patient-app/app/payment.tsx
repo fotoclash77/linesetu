@@ -289,32 +289,18 @@ export default function PaymentScreen() {
 
       if (bookRes.status === 409) {
         const errData = await bookRes.json().catch(() => ({}));
-        // Primary: server auto-refunds internally; if successful, use that result.
-        // Fallback: if server refund did not fire, call /razorpay/refund with signature proof.
-        let refundInitiated = errData.refundInitiated === true;
-        let refundId: string | null = errData.refundId ?? null;
-        if (!refundInitiated && paymentId && orderId && signature) {
-          try {
-            const rfRes = await fetch(`${apiBase}/razorpay/refund`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, orderId, razorpay_signature: signature }),
-            });
-            const rfData = await rfRes.json().catch(() => ({}));
-            if (rfData.success) { refundInitiated = true; refundId = rfData.refundId ?? null; }
-          } catch (_) {}
-        }
-        const refundMsg = refundInitiated
-          ? refundId
-            ? `Slots are full. Your payment has been refunded (Ref: ${refundId}).`
+        // Server auto-refunds internally on capacity-full; surface the result to the user.
+        const refundMsg = errData.refundInitiated
+          ? errData.refundId
+            ? `Slots are full. Your payment has been refunded (Ref: ${errData.refundId}).`
             : "Slots are full. Your payment has been refunded automatically."
-          : "Slots are full. Please contact support for a refund.";
+          : errData.message ?? "Slots are full. Please contact support for a refund.";
         setResultModal({ visible: true, type: "full", message: refundMsg });
         return;
       }
 
       if (!bookRes.ok) {
-        throw new Error("Booking failed");
+        throw new Error("Booking failed unexpectedly. Please contact support if payment was deducted.");
       }
 
       const booked = await bookRes.json();
@@ -338,17 +324,10 @@ export default function PaymentScreen() {
           tokenId: booked.id,
         });
       }
-    } catch {
-      try {
-        await fetch(`${apiBase}/razorpay/refund`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId }),
-        });
-      } catch (_) {}
+    } catch (err: any) {
       setResultModal({
         visible: true, type: "full",
-        message: "Booking failed after payment. Refund has been initiated.",
+        message: err.message ?? "Booking failed. Please contact support if payment was deducted.",
       });
     } finally {
       setLoading(false);

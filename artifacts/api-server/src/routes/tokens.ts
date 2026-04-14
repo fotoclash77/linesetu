@@ -80,9 +80,9 @@ router.post("/tokens/reserve", async (req, res) => {
         : 0;
 
       if (existing && existingExpiresMs > now) {
-        const totalBooked = (queueData.totalBooked as number) ?? 0;
-        const otherActive = countActiveReservations(pending, patientId);
-        const estimatedToken = totalBooked + otherActive + 1;
+        const lastAssigned = (queueData.nextTokenNumber as number) ?? 0;
+        const otherActive  = countActiveReservations(pending, patientId);
+        const estimatedToken = lastAssigned + otherActive + 1;
         reservedResponse = {
           reserved: true, tokenNumber: estimatedToken,
           expiresAt: existingExpiresMs, ttlMs: existingExpiresMs - now,
@@ -91,6 +91,7 @@ router.post("/tokens/reserve", async (req, res) => {
       }
 
       const totalBooked  = (queueData.totalBooked as number) ?? 0;
+      const lastAssigned = (queueData.nextTokenNumber as number) ?? 0;
       const activeCount  = countActiveReservations(pending);
       const effectiveBooked = totalBooked + activeCount;
 
@@ -99,7 +100,7 @@ router.post("/tokens/reserve", async (req, res) => {
       }
 
       const expiresAt       = Timestamp.fromMillis(now + RESERVATION_TTL_MS);
-      const estimatedToken  = totalBooked + activeCount + 1;
+      const estimatedToken  = lastAssigned + activeCount + 1;
 
       if (queueSnap.exists()) {
         txn.update(queueRef, {
