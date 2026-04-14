@@ -568,6 +568,21 @@ export default function SettingsScreen() {
         <View style={styles.container}>
           <BackHeader title="Doctor Profile" onBack={() => setSection('main')} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            {/* Avatar placeholder */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarLarge}>
+                <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>
+              </View>
+              <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
+                {profilePhotoLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.photoBtnText}>Upload Photo</Text>}
+              </TouchableOpacity>
+              <View style={styles.photoNoteRow}>
+                <Text style={styles.photoNoteText}>⚠ For best results, upload a square (1:1) photo. Rectangular images will be cropped to fit.</Text>
+              </View>
+            </View>
+
             {!!profileError && (
               <View style={{ marginBottom: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: 'rgba(239,68,68,0.08)' }}>
                 <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '700' }}>⚠ {profileError}</Text>
