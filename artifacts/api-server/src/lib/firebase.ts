@@ -22,6 +22,14 @@ import {
   deleteField,
   type Firestore,
 } from "firebase/firestore";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadString,
+  getDownloadURL,
+  deleteObject,
+  type FirebaseStorage,
+} from "firebase/storage";
 
 const firebaseConfig = {
   apiKey:            process.env.FIREBASE_API_KEY,
@@ -38,6 +46,8 @@ if (!firebaseConfig.projectId) {
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const db: Firestore = getFirestore(app);
+export const storage: FirebaseStorage = getStorage(app);
+export { storageRef, uploadString, getDownloadURL, deleteObject };
 
 export {
   collection, doc, getDocs, getDoc, addDoc, setDoc, updateDoc, deleteDoc,

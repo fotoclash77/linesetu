@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator, Modal, FlatList,
+  ActivityIndicator, Modal, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
 import { useDoctor } from '../../contexts/DoctorContext';
 
 const isWeb = Platform.OS === 'web';
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp';
 
@@ -431,6 +433,74 @@ export default function SettingsScreen() {
   const [notifPayout, setNotifPayout] = useState(true);
 
   const [showLogout, setShowLogout] = useState(false);
+
+  // Results / photo gallery state
+  const [resultPhotos, setResultPhotos] = useState<string[]>([]);
+  const [showResults, setShowResults] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
+  const resultsSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!resultsSynced.current && doctor) {
+      resultsSynced.current = true;
+      if (Array.isArray((doctor as any).results)) setResultPhotos((doctor as any).results);
+      if ((doctor as any).showResults !== undefined) setShowResults((doctor as any).showResults !== false);
+    }
+  }, [doctor]);
+
+  const pickAndUploadPhoto = async () => {
+    if (!doctor) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.6,
+      base64: true,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    if (!asset.base64) return;
+    setUploadingPhoto(true);
+    try {
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: asset.base64, mimeType }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        const updated = [...resultPhotos, data.url];
+        setResultPhotos(updated);
+        await updateDoctor({ results: updated } as any);
+      }
+    } catch {}
+    setUploadingPhoto(false);
+  };
+
+  const deletePhoto = async (url: string) => {
+    if (!doctor) return;
+    setDeletingPhotoUrl(url);
+    try {
+      await fetch(`${BASE()}/api/doctors/${doctor.id}/results`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const updated = resultPhotos.filter(u => u !== url);
+      setResultPhotos(updated);
+      await updateDoctor({ results: updated } as any);
+    } catch {}
+    setDeletingPhotoUrl(null);
+  };
+
+  const toggleShowResults = async () => {
+    const next = !showResults;
+    setShowResults(next);
+    try { await updateDoctor({ showResults: next } as any); } catch {}
+  };
 
   const updateClinic = (idx: number, patch: Partial<ClinicData>) => {
     setClinics(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c));
@@ -1023,6 +1093,53 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* My Results / Photo Gallery */}
+          <View style={styles.galleryCard}>
+            <View style={styles.galleryHeader}>
+              <View>
+                <Text style={styles.galleryTitle}>My Results</Text>
+                <Text style={styles.gallerySub}>Photos shown in your patient profile</Text>
+              </View>
+              <TouchableOpacity style={styles.galleryToggleBtn} onPress={toggleShowResults} activeOpacity={0.8}>
+                <View style={[styles.galleryToggleTrack, showResults && styles.galleryToggleTrackOn]}>
+                  <View style={[styles.galleryToggleThumb, showResults && styles.galleryToggleThumbOn]} />
+                </View>
+                <Text style={[styles.galleryToggleTxt, showResults && { color: TEAL_LT }]}>
+                  {showResults ? 'Visible' : 'Hidden'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
+              {resultPhotos.map((uri, i) => (
+                <View key={i} style={styles.galleryThumbWrap}>
+                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+                  <TouchableOpacity
+                    style={styles.galleryDeleteBtn}
+                    onPress={() => deletePhoto(uri)}
+                    disabled={deletingPhotoUrl === uri}
+                  >
+                    {deletingPhotoUrl === uri
+                      ? <ActivityIndicator size={10} color="#FFF" />
+                      : <Text style={styles.galleryDeleteX}>✕</Text>}
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.galleryAddBtn} onPress={pickAndUploadPhoto} disabled={uploadingPhoto}>
+                {uploadingPhoto
+                  ? <ActivityIndicator color={TEAL_LT} size="small" />
+                  : <>
+                      <Text style={styles.galleryAddIcon}>＋</Text>
+                      <Text style={styles.galleryAddTxt}>Add Photo</Text>
+                    </>}
+              </TouchableOpacity>
+            </ScrollView>
+
+            {resultPhotos.length === 0 && !uploadingPhoto && (
+              <Text style={styles.galleryEmpty}>No photos yet — tap Add Photo to upload</Text>
+            )}
+          </View>
+
           {/* Doctor Profile */}
           <SectionLabel label="Doctor Profile" />
           <View style={styles.settingsGroup}>
@@ -1212,6 +1329,25 @@ const styles = StyleSheet.create({
   toggleThumb: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFF' },
   toggleThumbOn: { right: 2 },
   toggleThumbOff: { left: 2 },
+  galleryCard: { borderRadius: 20, padding: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  galleryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  galleryTitle: { fontSize: 13, fontWeight: '800', color: '#FFF', marginBottom: 2 },
+  gallerySub: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
+  galleryToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  galleryToggleTrack: { width: 38, height: 21, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', justifyContent: 'center' },
+  galleryToggleTrackOn: { backgroundColor: 'rgba(45,212,191,0.25)', borderColor: 'rgba(45,212,191,0.5)' },
+  galleryToggleThumb: { position: 'absolute', left: 2, width: 15, height: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.4)' },
+  galleryToggleThumbOn: { left: undefined, right: 2, backgroundColor: TEAL_LT },
+  galleryToggleTxt: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)' },
+  galleryScroll: { gap: 10, paddingVertical: 2 },
+  galleryThumbWrap: { width: 100, height: 80, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', position: 'relative' },
+  galleryThumb: { width: '100%', height: '100%' },
+  galleryDeleteBtn: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+  galleryDeleteX: { fontSize: 9, color: '#FFF', fontWeight: '900' },
+  galleryAddBtn: { width: 100, height: 80, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: 'rgba(45,212,191,0.04)' },
+  galleryAddIcon: { fontSize: 22, color: TEAL_LT, fontWeight: '300' },
+  galleryAddTxt: { fontSize: 10, fontWeight: '700', color: TEAL_LT },
+  galleryEmpty: { fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', textAlign: 'center', paddingTop: 4, paddingBottom: 2 },
   versionText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.15)' },
   buildText: { fontSize: 9, color: 'rgba(255,255,255,0.1)', marginTop: 3 },
   logoutOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end', zIndex: 50 } as ViewStyle,

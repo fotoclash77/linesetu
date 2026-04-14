@@ -39,6 +39,8 @@ export interface DoctorUser {
   showDoctorName?: boolean;
   showFee?: boolean;
   alertMessage?: string;
+  results?: string[];
+  showResults?: boolean;
 }
 
 interface DoctorCtx {
@@ -134,6 +136,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       showDoctorName: data.showDoctorName !== false,
       showFee: data.showFee === true,
       alertMessage: data.alertMessage ?? 'Your turn is coming soon. Please be ready at the clinic.',
+      results: Array.isArray(data.results) ? data.results : [],
+      showResults: data.showResults !== false,
       walkinFee: data.walkinFee != null ? Number(data.walkinFee) : undefined,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));

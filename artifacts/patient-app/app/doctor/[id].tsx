@@ -74,6 +74,8 @@ export default function DoctorDetailScreen() {
     onlineBooking: (doctorData as any).onlineBooking !== false,
     showFee: (doctorData as any).showFee === true,
     alertMessage: (doctorData as any).alertMessage || "",
+    results: Array.isArray((doctorData as any).results) ? (doctorData as any).results : [],
+    showResults: (doctorData as any).showResults !== false,
   } : SAMPLE_DOCTOR);
 
   const isAvailable = doctor.available;

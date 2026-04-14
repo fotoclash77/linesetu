@@ -3,6 +3,8 @@ import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
   query, where, orderBy, limit, increment, runTransaction,
+  arrayUnion, arrayRemove,
+  storage, storageRef, uploadString, getDownloadURL, deleteObject,
 } from "../lib/firebase.js";
 
 const router = Router();
@@ -78,13 +80,49 @@ router.post("/doctors", async (req, res) => {
 // PATCH /api/doctors/:doctorId
 router.patch("/doctors/:doctorId", async (req, res) => {
   try {
-    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage"];
+    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage", "results", "showResults"];
     const updates: Record<string, any> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
     await updateDoc(doc(db, Collections.DOCTORS, req.params.doctorId), updates);
     res.json({ id: req.params.doctorId, updated: Object.keys(updates) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/doctors/:doctorId/results — upload a result photo
+router.post("/doctors/:doctorId/results", async (req, res) => {
+  try {
+    const { base64, mimeType } = req.body as { base64?: string; mimeType?: string };
+    if (!base64) return res.status(400).json({ error: "base64 image data required" });
+    const mime = mimeType || "image/jpeg";
+    const ext = mime.split("/")[1] || "jpg";
+    const fileName = `doctor-results/${req.params.doctorId}/${Date.now()}.${ext}`;
+    const fileRef = storageRef(storage, fileName);
+    await uploadString(fileRef, base64, "base64", { contentType: mime });
+    const url = await getDownloadURL(fileRef);
+    const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
+    await updateDoc(docRef, { results: arrayUnion(url) });
+    res.json({ url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/doctors/:doctorId/results — remove a result photo URL
+router.delete("/doctors/:doctorId/results", async (req, res) => {
+  try {
+    const { url } = req.body as { url?: string };
+    if (!url) return res.status(400).json({ error: "url is required" });
+    const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
+    await updateDoc(docRef, { results: arrayRemove(url) });
+    try {
+      const fileRef = storageRef(storage, url);
+      await deleteObject(fileRef);
+    } catch {}
+    res.json({ removed: url });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
