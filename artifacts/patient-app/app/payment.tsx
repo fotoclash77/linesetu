@@ -38,7 +38,7 @@ export default function PaymentScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 20;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 20 + 64;
 
   const params = useLocalSearchParams<{
     doctorId?: string;

@@ -64,7 +64,7 @@ const CONTACT_CHANNELS: Array<{
 export default function ContactSupportScreen() {
   const insets = useSafeAreaInsets();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 16;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
 
   return (
     <View style={[styles.container, { paddingBottom: bottomPad }]}>

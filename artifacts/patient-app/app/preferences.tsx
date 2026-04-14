@@ -87,7 +87,7 @@ function ToggleRow({
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 16;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
 
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
   const [saving, setSaving] = useState(false);

@@ -140,7 +140,7 @@ function FAQItem({ faq }: { faq: FAQ }) {
 export default function HelpFaqScreen() {
   const insets = useSafeAreaInsets();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 16;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
   const [category, setCategory] = useState<Category>("all");
   const [search, setSearch] = useState("");
 

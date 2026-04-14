@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { Redirect } from "expo-router";
 
@@ -23,25 +23,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: ACTIVE,
         tabBarInactiveTintColor: INACTIVE,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "rgba(10,14,26,0.95)",
-          borderTopWidth: 1,
-          borderTopColor: "rgba(255,255,255,0.07)",
-          height: isWeb ? 84 : 64,
-          elevation: 0,
-        },
-        tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(10,14,26,0.95)" }]} />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "600",
-          marginBottom: isWeb ? 8 : 4,
-        },
-        tabBarIconStyle: {
-          marginTop: 6,
-        },
+        tabBarStyle: { display: "none" },
       }}
     >
       <Tabs.Screen

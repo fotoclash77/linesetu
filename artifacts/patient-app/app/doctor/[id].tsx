@@ -61,7 +61,7 @@ export default function DoctorDetailScreen() {
     hint_clinic?: string;
   }>();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 20;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 20 + 64;
 
   const isDemoId = !id || id.startsWith("demo");
 

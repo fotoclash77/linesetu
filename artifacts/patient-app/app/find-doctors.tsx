@@ -134,7 +134,7 @@ export default function FindDoctorsScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ specialty?: string }>();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 20;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 20 + 64;
 
   const [search, setSearch] = useState("");
   const [selectedSpec, setSelectedSpec] = useState(params.specialty ?? "All");

@@ -87,7 +87,7 @@ export default function BookingScreen() {
     hint_name?: string; hint_photo?: string; hint_spec?: string; hint_clinic?: string;
   }>();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 20;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 20 + 64;
 
   // Build rolling 30-day calendar
   const today = new Date(); today.setHours(0,0,0,0);

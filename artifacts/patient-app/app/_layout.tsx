@@ -6,10 +6,11 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
+import { BottomNavBar } from "@/components/BottomNavBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
@@ -36,6 +37,7 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const { patient, isLoading } = useAuth();
+  const segments = useSegments();
 
   useEffect(() => {
     if (!isLoading) {
@@ -51,21 +53,28 @@ function RootLayoutNav() {
     }
   }, [patient?.id, patient?.profileCompleted, isLoading]);
 
+  const hideNav = isLoading || !patient ||
+    segments[0] === "login" ||
+    segments[0] === "complete-profile";
+
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="complete-profile" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="find-doctors" />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="preferences" />
-      <Stack.Screen name="help-faq" />
-      <Stack.Screen name="contact-support" />
-      <Stack.Screen name="doctor/[id]" />
-      <Stack.Screen name="booking/[doctorId]" />
-      <Stack.Screen name="payment" />
-      <Stack.Screen name="queue/[tokenId]" />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="complete-profile" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="find-doctors" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="preferences" />
+        <Stack.Screen name="help-faq" />
+        <Stack.Screen name="contact-support" />
+        <Stack.Screen name="doctor/[id]" />
+        <Stack.Screen name="booking/[doctorId]" />
+        <Stack.Screen name="payment" />
+        <Stack.Screen name="queue/[tokenId]" />
+      </Stack>
+      {!hideNav && <BottomNavBar />}
+    </View>
   );
 }
 

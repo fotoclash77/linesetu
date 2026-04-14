@@ -136,7 +136,7 @@ const FILTERS: Array<{ key: NotifCategory; label: string }> = [
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 16;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
 
   const { patient } = useAuth();
   const { refresh: refreshBell, markAllRead: markAllReadContext } = usePatientNotifs();

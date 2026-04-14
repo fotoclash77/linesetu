@@ -103,7 +103,7 @@ export default function LiveQueueScreen() {
   const insets = useSafeAreaInsets();
   const { tokenId } = useLocalSearchParams<{ tokenId: string }>();
   const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom + 16;
+  const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
 
   const { data: token, isLoading: tokenLoading } = useQuery({
     queryKey: ["token", tokenId],
