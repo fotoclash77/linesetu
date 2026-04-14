@@ -907,14 +907,17 @@ export default function SettingsScreen() {
                       try {
                         await updateDoctor({ calendar: calendarOverrides as any });
                         setCalSaved(true);
-                        setTimeout(() => setCalSaved(false), 2000);
+                        setTimeout(() => {
+                          setCalSaved(false);
+                          setSection('main');
+                        }, 1200);
                       } catch {}
                       setCalSaving(false);
                     }}
                   >
                     {calSaving
                       ? <ActivityIndicator color="#FFF" size="small" />
-                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Schedule Saved to Firebase!' : '💾 Save 30-Day Schedule'}</Text>}
+                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Saved' : '💾 Save 30-Day Schedule'}</Text>}
                   </TouchableOpacity>
                 </View>
               );
