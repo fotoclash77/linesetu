@@ -80,7 +80,7 @@ router.post("/doctors", async (req, res) => {
 // PATCH /api/doctors/:doctorId
 router.patch("/doctors/:doctorId", async (req, res) => {
   try {
-    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage", "results", "showResults"];
+    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage", "results", "showResults", "notifications"];
     const updates: Record<string, any> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];

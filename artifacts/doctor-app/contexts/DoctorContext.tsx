@@ -52,6 +52,11 @@ export interface DoctorUser {
     payoutCycle?: string;
     payoutEnabled?: boolean;
   };
+  notifications?: {
+    booking: boolean;
+    emergency: boolean;
+    payout: boolean;
+  };
 }
 
 interface DoctorCtx {

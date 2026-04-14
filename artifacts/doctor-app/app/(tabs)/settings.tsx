@@ -457,10 +457,22 @@ export default function SettingsScreen() {
     }
   }, [doctor]);
 
-  // Notification state
+  // Notification state — synced from Firebase
   const [notifBooking, setNotifBooking] = useState(true);
   const [notifEmergency, setNotifEmergency] = useState(true);
   const [notifPayout, setNotifPayout] = useState(true);
+  const notifSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!notifSynced.current && doctor) {
+      notifSynced.current = true;
+      const n = (doctor as any).notifications;
+      if (n) {
+        if (n.booking !== undefined) setNotifBooking(n.booking !== false);
+        if (n.emergency !== undefined) setNotifEmergency(n.emergency !== false);
+        if (n.payout !== undefined) setNotifPayout(n.payout !== false);
+      }
+    }
+  }, [doctor]);
 
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
@@ -1507,11 +1519,23 @@ export default function SettingsScreen() {
           <SectionLabel label="Notifications" />
           <View style={styles.settingsGroup}>
             <SettingRow icon="🔔" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="New Booking Alerts" sub="Notify when a token is booked"
-              right={<Toggle on={notifBooking} onChange={() => setNotifBooking(p => !p)} />} />
+              right={<Toggle on={notifBooking} onChange={() => {
+                const next = !notifBooking;
+                setNotifBooking(next);
+                updateDoctor({ notifications: { booking: next, emergency: notifEmergency, payout: notifPayout } } as any).catch(() => {});
+              }} />} />
             <SettingRow icon="⚠" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Emergency Alerts" sub="High-priority push notifications"
-              right={<Toggle on={notifEmergency} onChange={() => setNotifEmergency(p => !p)} />} />
+              right={<Toggle on={notifEmergency} onChange={() => {
+                const next = !notifEmergency;
+                setNotifEmergency(next);
+                updateDoctor({ notifications: { booking: notifBooking, emergency: next, payout: notifPayout } } as any).catch(() => {});
+              }} />} />
             <SettingRow icon="₹" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Payout Notifications" sub="Settlement & transfer updates"
-              right={<Toggle on={notifPayout} onChange={() => setNotifPayout(p => !p)} />} last />
+              right={<Toggle on={notifPayout} onChange={() => {
+                const next = !notifPayout;
+                setNotifPayout(next);
+                updateDoctor({ notifications: { booking: notifBooking, emergency: notifEmergency, payout: next } } as any).catch(() => {});
+              }} />} last />
           </View>
 
           {/* Support */}
