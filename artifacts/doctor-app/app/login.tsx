@@ -176,7 +176,7 @@ export default function LoginScreen() {
                     </View>
                     <TextInput
                       style={styles.phoneField}
-                      placeholder="98765 43210"
+                      placeholder="Enter 10 digit mobile no."
                       placeholderTextColor="rgba(255,255,255,0.2)"
                       keyboardType="number-pad"
                       maxLength={10}
