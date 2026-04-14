@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 
 const STORAGE_KEY = "linesetu_doctor";
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -192,6 +193,11 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     await AsyncStorage.removeItem(STORAGE_KEY);
     setDoctor(null);
+    if (Platform.OS === 'web') {
+      // On web, Expo Router resolves '/' to the tabs Home tab (same URL due to transparent group).
+      // A full page reload guarantees the login screen renders with cleared storage.
+      (window as any).location.replace('/');
+    }
   };
 
   return (
