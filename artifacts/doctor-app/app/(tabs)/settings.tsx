@@ -438,6 +438,7 @@ export default function SettingsScreen() {
   const [bankSaving, setBankSaving] = useState(false);
   const [bankSaved, setBankSaved] = useState(false);
   const [bankAttempted, setBankAttempted] = useState(false);
+  const [payoutAttempted, setPayoutAttempted] = useState(false);
   const bankSynced = React.useRef(false);
   React.useEffect(() => {
     if (!bankSynced.current && doctor) {
@@ -1192,7 +1193,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
-          <BackHeader title="Payout Settings" onBack={() => setSection('main')} />
+          <BackHeader title="Payout Settings" onBack={() => { setPayoutAttempted(false); setSection('main'); }} />
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
 
             {/* Linked account summary */}
@@ -1247,16 +1248,29 @@ export default function SettingsScreen() {
                 ))}
               </View>
 
-              <Field label="Payout Display Name" value={payoutDisplayName} onChange={setPayoutDisplayName} />
+              <Field
+                label="Payout Display Name"
+                value={payoutDisplayName}
+                onChange={setPayoutDisplayName}
+                required
+                error={payoutAttempted && !payoutDisplayName.trim()}
+              />
               <View style={styles.feeNote}>
                 <Text style={styles.feeNoteText}>Payout display name appears on your settlement receipts and payout notifications.</Text>
               </View>
+              {payoutAttempted && !payoutDisplayName.trim() && (
+                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '600' }}>Please fill in all required fields before saving.</Text>
+                </View>
+              )}
             </View>
 
             <TouchableOpacity
               style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
               disabled={bankSaving}
               onPress={async () => {
+                setPayoutAttempted(true);
+                if (!payoutDisplayName.trim()) return;
                 setBankSaving(true); setBankSaved(false);
                 try {
                   const bank = (doctor as any)?.bankAccount ?? {};
@@ -1270,6 +1284,7 @@ export default function SettingsScreen() {
                     },
                   } as any);
                   setBankSaved(true);
+                  setPayoutAttempted(false);
                   setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
                 } finally {
                   setBankSaving(false);
