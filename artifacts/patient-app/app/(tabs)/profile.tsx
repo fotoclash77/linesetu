@@ -191,9 +191,16 @@ export default function ProfileScreen() {
 
   const persistFamily = async (members: FamilyMember[]) => {
     setFamilyMembers(members);
+    // Write AsyncStorage first (always succeeds offline)
     await AsyncStorage.setItem(FAM_STORAGE_KEY, JSON.stringify(members));
+    // Write Firestore — retry once on failure so a transient error doesn't silently drop members
     if (patient?.id) {
-      try { await setDoc(doc(db, "patients", patient.id), { familyMembers: members }, { merge: true }); } catch {}
+      const write = () => setDoc(doc(db, "patients", patient.id), { familyMembers: members }, { merge: true });
+      try { await write(); } catch {
+        try { await write(); } catch (err: any) {
+          Alert.alert("Sync Warning", "Saved locally but could not sync to cloud. Changes will sync when connection is restored.");
+        }
+      }
     }
   };
 

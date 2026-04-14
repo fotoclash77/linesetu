@@ -108,7 +108,8 @@ export default function BookingScreen() {
   const [selectedMember, setSelectedMember] = useState<FamilyMember>(SELF_DEFAULT);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
-  // Load family members — Firestore is authoritative (profile persists there); AsyncStorage is fallback
+  // Load family members — merge Firestore + AsyncStorage so no member is ever lost
+  // (Firestore write can silently fail while AsyncStorage succeeds, or vice-versa)
   useEffect(() => {
     if (!patient?.id) return;
     const selfM: FamilyMember = {
@@ -117,46 +118,38 @@ export default function BookingScreen() {
       blood: (patient as any)?.blood ?? "", gender: (patient as any)?.gender ?? "",
       phone: (patient as any)?.phone ?? "", avatar: (patient as any)?.profilePhoto ?? "", color: "#6366F1",
     };
-    const buildExtras = (arr: any[]): FamilyMember[] =>
-      arr.map((f: any, i: number) => ({
-        id: f.id ?? `member_${i}`, name: f.name ?? "Member", relation: f.relation ?? "Family",
-        age: Number(f.age) || 0, blood: f.blood ?? "", gender: f.gender ?? "",
-        phone: f.phone ?? "", avatar: f.avatar ?? f.photo ?? "", color: ACCENT_FAMILY[i % ACCENT_FAMILY.length],
-      }));
 
-    // Try Firestore first
-    getDoc(doc(db, "patients", patient.id)).then(snap => {
-      const data = snap.exists() ? snap.data() : null;
-      const fromFirestore: any[] = data?.familyMembers ?? [];
-      if (fromFirestore.length > 0) {
-        const all = [selfM, ...buildExtras(fromFirestore)];
-        setFamily(all);
-        setSelectedMember(selfM);
-        return;
-      }
-      // Fallback: AsyncStorage
-      import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
-        AS.getItem("linesetu_family").then(raw => {
-          try {
-            const stored: any[] = raw ? JSON.parse(raw) : [];
-            const all = [selfM, ...buildExtras(stored)];
-            setFamily(all);
-            setSelectedMember(selfM);
-          } catch { setFamily([selfM]); setSelectedMember(selfM); }
-        }).catch(() => { setFamily([selfM]); setSelectedMember(selfM); });
+    const toExtra = (f: any, i: number): FamilyMember => ({
+      id: f.id ?? `member_${i}`, name: f.name ?? "Member", relation: f.relation ?? "Family",
+      age: Number(f.age) || 0, blood: f.blood ?? "", gender: f.gender ?? "",
+      phone: f.phone ?? "", avatar: f.avatar ?? f.photo ?? "", color: ACCENT_FAMILY[i % ACCENT_FAMILY.length],
+    });
+
+    // Merge two raw arrays by id — Firestore data wins on conflict, extras from storage appended
+    const mergeRaw = (fsArr: any[], asArr: any[]): FamilyMember[] => {
+      const seen = new Set<string>();
+      const merged: FamilyMember[] = [];
+      [...fsArr, ...asArr].forEach((f, i) => {
+        const id = f.id ?? `member_${i}`;
+        if (!seen.has(id)) { seen.add(id); merged.push(toExtra(f, i)); }
       });
-    }).catch(() => {
-      // Firestore failed — use AsyncStorage
-      import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
-        AS.getItem("linesetu_family").then(raw => {
-          try {
-            const stored: any[] = raw ? JSON.parse(raw) : [];
-            const all = [selfM, ...buildExtras(stored)];
-            setFamily(all);
-            setSelectedMember(selfM);
-          } catch { setFamily([selfM]); setSelectedMember(selfM); }
-        }).catch(() => { setFamily([selfM]); setSelectedMember(selfM); });
-      });
+      return merged;
+    };
+
+    // Read both sources in parallel, then merge
+    const fsPromise = getDoc(doc(db, "patients", patient.id))
+      .then(snap => (snap.exists() ? snap.data()?.familyMembers ?? [] : []))
+      .catch(() => [] as any[]);
+    const asPromise = import("@react-native-async-storage/async-storage")
+      .then(({ default: AS }) => AS.getItem("linesetu_family"))
+      .then(raw => { try { return raw ? JSON.parse(raw) : []; } catch { return []; } })
+      .catch(() => [] as any[]);
+
+    Promise.all([fsPromise, asPromise]).then(([fsArr, asArr]) => {
+      const extras = mergeRaw(fsArr, asArr);
+      const all = [selfM, ...extras];
+      setFamily(all);
+      setSelectedMember(selfM);
     });
   }, [patient?.id]);
 
