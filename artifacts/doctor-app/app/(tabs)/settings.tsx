@@ -578,7 +578,7 @@ export default function SettingsScreen() {
       });
       if (result.canceled || !result.assets[0]?.base64) return;
       const asset = result.assets[0];
-      setProfilePhotoPreview(asset.uri);
+      setProfilePhotoPreview(`data:${mimeType};base64,${asset.base64}`);
       const mimeType = asset.mimeType || 'image/jpeg';
       const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
         method: 'POST',
@@ -588,7 +588,6 @@ export default function SettingsScreen() {
       const data = await res.json();
       if (res.ok && data.url) {
         setProfilePhotoUrl(data.url);
-        setProfilePhotoPreview(null);
         await updateDoctor({ profilePhoto: data.url } as any);
       }
     } catch {}
