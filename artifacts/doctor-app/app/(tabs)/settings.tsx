@@ -860,7 +860,11 @@ export default function SettingsScreen() {
                 </View>
                 <Text style={styles.profileSpec}>{specialisation} · {qualifications}</Text>
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                  <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Online</Text></View>
+                  {doctor?.isAvailable !== false ? (
+                    <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Online</Text></View>
+                  ) : (
+                    <View style={styles.unavailBadge}><Text style={styles.unavailBadgeText}>● Unavailable</Text></View>
+                  )}
                   <View style={styles.expBadge}><Text style={styles.expBadgeText}>{experience} yrs exp</Text></View>
                 </View>
               </View>
@@ -1034,6 +1038,8 @@ const styles = StyleSheet.create({
   profileSpec: { fontSize: 11, color: TEAL_LT, fontWeight: '700' },
   onlineBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(45,212,191,0.12)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)' },
   onlineBadgeText: { fontSize: 9, fontWeight: '700', color: TEAL_LT },
+  unavailBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(239,68,68,0.12)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
+  unavailBadgeText: { fontSize: 9, fontWeight: '700', color: '#F87171' },
   expBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(129,140,248,0.12)', borderWidth: 1, borderColor: 'rgba(129,140,248,0.25)' },
   expBadgeText: { fontSize: 9, fontWeight: '700', color: '#A5B4FC' },
   ratingBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(251,191,36,0.1)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)' },
