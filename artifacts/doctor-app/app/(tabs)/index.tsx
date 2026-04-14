@@ -300,13 +300,15 @@ export default function DashboardScreen() {
   interface PatientRow { label:string; value:number; sub:string; icon:string; color:string; spark:number[]; divider?:boolean }
   const spark1 = (v: number) => [0,0,0,0,0,v];
   const patientRows: PatientRow[] = [
-    { label:'Total Patients',     value:pd.total,        sub:'All registered',   icon:'👥', color:'#A5B4FC', spark:spark1(pd.total) },
-    { label:'Consulted',          value:pd.consulted,    sub:'Seen by doctor',   icon:'✓',  color:'#4ADE80', spark:spark1(pd.consulted) },
-    { label:'Not Shown',          value:pd.noShow,       sub:'Absent / skipped', icon:'✗',  color:'#F87171', spark:spark1(pd.noShow) },
-    { label:'Waitlisted',         value:pd.waitlisted,   sub:'Still in queue',   icon:'⏱', color:'#FCD34D', spark:spark1(pd.waitlisted) },
-    { label:'Emergency Patients', value:pd.emergency,    sub:'Priority tokens',  icon:'⚡', color:'#FB923C', spark:spark1(pd.emergency) },
-    { label:'Online Tokens',      value:pd.onlineBooked, sub:'Via app',          icon:'📱', color:'#818CF8', spark:spark1(pd.onlineBooked), divider:true },
-    { label:'Walk-in Tokens',     value:pd.walkIn,       sub:'Added at clinic',  icon:'🚶', color:'#34D399', spark:spark1(pd.walkIn) },
+    { label:'Total Patients',     value:pd.total,        sub:'All registered',              icon:'👥', color:'#A5B4FC', spark:spark1(pd.total) },
+    { label:'Consulted',          value:pd.consulted,    sub:'Seen by doctor',              icon:'✓',  color:'#4ADE80', spark:spark1(pd.consulted) },
+    { label:'Not Shown',          value:pd.noShow,       sub:'Absent / skipped',            icon:'✗',  color:'#F87171', spark:spark1(pd.noShow) },
+    { label:'Waitlisted',         value:pd.waitlisted,   sub:'Still in queue',              icon:'⏱', color:'#FCD34D', spark:spark1(pd.waitlisted) },
+    { label:'Emergency Patients', value:pd.emergency,    sub:'Priority tokens',             icon:'⚡', color:'#FB923C', spark:spark1(pd.emergency) },
+    { label:'First Visit',        value:pd.firstVisit,   sub:'New patients, first time',    icon:'🆕', color:'#818CF8', spark:spark1(pd.firstVisit) },
+    { label:'Follow-up',          value:pd.followUp,     sub:'Return visits',               icon:'🔄', color:'#34D399', spark:spark1(pd.followUp) },
+    { label:'Online Tokens',      value:pd.onlineBooked, sub:'Via app',                     icon:'📱', color:'#A78BFA', spark:spark1(pd.onlineBooked), divider:true },
+    { label:'Walk-in Tokens',     value:pd.walkIn,       sub:'Added at clinic',             icon:'🚶', color:'#2DD4BF', spark:spark1(pd.walkIn) },
   ];
 
   return (
