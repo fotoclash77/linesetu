@@ -124,7 +124,7 @@ function PatientCard({ tok }: { tok: any }) {
           </View>
         </View>
 
-        {/* Row 2: age · gender · [Walk-in/E-Token] · [Normal/Emergency] */}
+        {/* Row 2: age · gender · [Walk-in/E-Token] · [Normal/Emergency] · [Visit Type] */}
         <View style={S.badgeRow}>
           {demo ? <Text style={S.cardMeta}>{demo}</Text> : null}
           {demo ? <Text style={S.cardMetaDot}>·</Text> : null}
@@ -135,6 +135,20 @@ function PatientCard({ tok }: { tok: any }) {
           <View style={[S.pill, { backgroundColor: priBg, borderColor: priBd }]}>
             <Text style={[S.pillTxt, { color: priClr }]}>{priLabel}</Text>
           </View>
+          {!!tok.visitType && <Text style={S.cardMetaDot}>·</Text>}
+          {!!tok.visitType && (() => {
+            const isFirst = tok.visitType === 'first-visit';
+            return (
+              <View style={[S.pill, {
+                backgroundColor: isFirst ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.12)',
+                borderColor: isFirst ? 'rgba(129,140,248,0.30)' : 'rgba(52,211,153,0.30)',
+              }]}>
+                <Text style={[S.pillTxt, { color: isFirst ? '#A5B4FC' : '#6EE7B7' }]}>
+                  {isFirst ? 'First Visit' : 'Follow-up'}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
 

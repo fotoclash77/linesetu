@@ -226,6 +226,7 @@ router.post("/tokens", async (req, res) => {
       source = "online",
       forMemberId = "self",
       age, gender, address, area, notes,
+      visitType = "first-visit",
       expectedTokenNumber,
       orderId,
     } = req.body;
@@ -344,6 +345,7 @@ router.post("/tokens", async (req, res) => {
         age: resolvedAge, gender: resolvedGender,
         address: resolvedAddress, area: resolvedArea,
         notes: notes || null,
+        visitType: visitType || "first-visit",
       };
 
       txn.set(tokenRef, tokenData);

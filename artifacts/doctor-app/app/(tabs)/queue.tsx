@@ -85,13 +85,14 @@ type TabKey = 'all' | 'normal' | 'emergency' | 'skipped' | 'consulted';
 interface MasterRow {
   id: string; tokenNumber: number; patientName: string;
   type: string; source: string; status: string; bookedAt: any;
+  visitType?: string;
 }
 
 interface Token {
   id: string; tokenNumber: number; patientName: string; patientPhone: string;
   type: 'normal' | 'emergency'; source: string; status: string;
   displayStatus: DisplayStatus; shift: string; calledAt?: any;
-  age?: string; gender?: string; area?: string;
+  age?: string; gender?: string; area?: string; visitType?: string;
 }
 
 function sortRows(tokens: MasterRow[]) {
@@ -115,6 +116,7 @@ function mapToken(t: any): Token {
     age: t.age ?? undefined,
     gender: t.gender ?? undefined,
     area: t.area ?? undefined,
+    visitType: t.visitType ?? undefined,
   };
 }
 
@@ -244,6 +246,23 @@ function TypeBadge({ type, source }: { type: string; source: string }) {
 }
 
 // ─── Patient Info ────────────────────────────────────────────────
+function VisitTypePill({ vt }: { vt?: string }) {
+  if (!vt) return null;
+  const isFirst = vt === 'first-visit';
+  return (
+    <View style={{
+      paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5,
+      backgroundColor: isFirst ? 'rgba(99,102,241,0.15)' : 'rgba(16,185,129,0.15)',
+      borderWidth: 1,
+      borderColor: isFirst ? 'rgba(129,140,248,0.35)' : 'rgba(52,211,153,0.35)',
+    }}>
+      <Text style={{ fontSize: 9, fontWeight: '800', color: isFirst ? '#A5B4FC' : '#6EE7B7' }}>
+        {isFirst ? 'First Visit' : 'Follow-up'}
+      </Text>
+    </View>
+  );
+}
+
 function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
   const genderLabel = tok.gender === 'M' || tok.gender === 'male'   ? 'Male'
     : tok.gender === 'F' || tok.gender === 'female' ? 'Female'
@@ -252,13 +271,15 @@ function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
       <Text style={[S.patName, large && S.patNameLg]} numberOfLines={1}>{tok.patientName}</Text>
-      {/* single horizontal meta row: age · gender · badge */}
+      {/* single horizontal meta row: age · gender · badge · visit type */}
       <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 3 }}>
         {metaParts.length > 0 && (
           <Text style={S.patMeta}>{metaParts.join(' · ')}</Text>
         )}
         {metaParts.length > 0 && <Text style={[S.patMeta, { opacity: 0.35 }]}>·</Text>}
         <TypeBadge type={tok.type} source={tok.source} />
+        {!!tok.visitType && <Text style={[S.patMeta, { opacity: 0.35 }]}>·</Text>}
+        <VisitTypePill vt={tok.visitType} />
       </View>
     </View>
   );
@@ -529,7 +550,7 @@ function AllSerialCard({ row }: { row: SerialRow }) {
           </View>
         </View>
 
-        {/* Row 2: age · gender · source pill · priority pill — all horizontal */}
+        {/* Row 2: age · gender · source pill · priority pill · visit type */}
         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
           {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>{demo}</Text> : null}
           {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text> : null}
@@ -540,6 +561,8 @@ function AllSerialCard({ row }: { row: SerialRow }) {
           <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: priBg, borderWidth: 1, borderColor: priBd }}>
             <Text style={{ fontSize: 9, fontWeight: '800', color: priClr }}>{priLbl}</Text>
           </View>
+          {!!row.visitType && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text>}
+          <VisitTypePill vt={row.visitType} />
         </View>
 
       </View>

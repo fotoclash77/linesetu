@@ -56,6 +56,7 @@ function fmtDateDisplay(iso: string): string {
 interface TokenRow {
   id: string; tokenNumber: number; patientName: string;
   type: string; source: string; status: string; bookedAt: any; shift: string;
+  visitType?: string;
 }
 
 export default function AddWalkinScreen() {
@@ -75,6 +76,7 @@ export default function AddWalkinScreen() {
   const [pickShift,    setPickShift]    = useState<'morning' | 'evening'>(initShift);
 
   const [tokenType, setTokenType] = useState<'Normal' | 'Emergency'>('Normal');
+  const [visitType, setVisitType] = useState<'first-visit' | 'follow-up'>('first-visit');
   const [gender, setGender] = useState<'M' | 'F'>('M');
   const [showSuccess, setShowSuccess] = useState(false);
   const [bookedName, setBookedName] = useState('');
@@ -185,6 +187,7 @@ export default function AddWalkinScreen() {
           gender,
           address: trimmedAddress,
           area: trimmedArea,
+          visitType,
         }),
       });
       if (!res.ok) {
@@ -205,7 +208,7 @@ export default function AddWalkinScreen() {
   const resetForm = () => {
     setName(''); setAge(''); setPhone('');
     setAddress(''); setArea('');
-    setGender('M'); setTokenType('Normal');
+    setGender('M'); setTokenType('Normal'); setVisitType('first-visit');
     setBookingError(''); setShowSuccess(false);
   };
 
@@ -276,6 +279,26 @@ export default function AddWalkinScreen() {
                   <Text style={{ fontSize: 18, color: active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)' }}>{isE ? '⚡' : '✓'}</Text>
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{t}</Text>
                   <Text style={[styles.tokenTypeBtnFree, { color: active ? (isE ? '#FCA5A5' : TEAL_LT) : 'rgba(255,255,255,0.2)' }]}>FREE</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Visit type toggle */}
+          <Text style={styles.fieldGroupLabel}>VISIT TYPE</Text>
+          <View style={styles.tokenTypeToggle}>
+            {([
+              { key: 'first-visit', label: 'First Visit', icon: '🩺' },
+              { key: 'follow-up',   label: 'Follow-up',   icon: '🔄' },
+            ] as const).map(opt => {
+              const active = visitType === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key} onPress={() => setVisitType(opt.key)}
+                  style={[styles.tokenTypeBtn, active && styles.tokenTypeBtnNormalActive]}
+                >
+                  <Text style={{ fontSize: 18, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)' }}>{opt.icon}</Text>
+                  <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{opt.label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -410,8 +433,8 @@ export default function AddWalkinScreen() {
                           <Text style={[styles.recentBadgeTxt, { color: st.color }]}>{st.label}</Text>
                         </View>
                       </View>
-                      {/* Row 2: [Walk-in] · [Normal/Emergency] · time */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      {/* Row 2: [Walk-in] · [Normal/Emergency] · [Visit Type] · time */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                         <View style={[styles.recentPill, { backgroundColor: srcBg, borderColor: srcBd }]}>
                           <Text style={[styles.recentPillTxt, { color: srcClr }]}>{srcLabel}</Text>
                         </View>
@@ -419,6 +442,22 @@ export default function AddWalkinScreen() {
                         <View style={[styles.recentPill, { backgroundColor: priBg, borderColor: priBd }]}>
                           <Text style={[styles.recentPillTxt, { color: priClr }]}>{priLabel}</Text>
                         </View>
+                        {!!t.visitType && (() => {
+                          const isFV = t.visitType === 'first-visit';
+                          return (
+                            <>
+                              <Text style={styles.recentDot}>·</Text>
+                              <View style={[styles.recentPill, {
+                                backgroundColor: isFV ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.12)',
+                                borderColor: isFV ? 'rgba(129,140,248,0.30)' : 'rgba(52,211,153,0.30)',
+                              }]}>
+                                <Text style={[styles.recentPillTxt, { color: isFV ? '#A5B4FC' : '#6EE7B7' }]}>
+                                  {isFV ? 'First Visit' : 'Follow-up'}
+                                </Text>
+                              </View>
+                            </>
+                          );
+                        })()}
                         {!!relTime(t.bookedAt) && (
                           <>
                             <Text style={styles.recentDot}>·</Text>
