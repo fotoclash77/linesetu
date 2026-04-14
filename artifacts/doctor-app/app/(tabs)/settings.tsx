@@ -1012,7 +1012,6 @@ export default function SettingsScreen() {
           <SectionLabel label="Doctor Profile" />
           <View style={styles.settingsGroup}>
             <SettingRow icon="👤" iconBg="rgba(129,140,248,0.15)" iconColor="#818CF8" label="Manage Profile" sub="Name, qualifications, bio & photo" onPress={() => setSection('profile')} />
-            <SettingRow icon="🔒" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Change Password" sub="Update your login password" last />
           </View>
 
           {/* Practice */}
