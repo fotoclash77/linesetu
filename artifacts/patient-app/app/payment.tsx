@@ -23,10 +23,12 @@ const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
 const isWeb = Platform.OS === "web";
 
 
-const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-function fmtDate(d: number) {
-  const dow = (3 + d - 1) % 7;
-  return `${DAY_NAMES[dow]}, ${d} Apr 2026`;
+function fmtDate(iso: string) {
+  if (!iso) return "—";
+  const [yr, mo, d] = iso.split("-").map(Number);
+  if (!yr || !mo || !d) return iso;
+  const dt = new Date(yr, mo - 1, d);
+  return dt.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function PaymentScreen() {
@@ -39,6 +41,7 @@ export default function PaymentScreen() {
     doctorId?: string;
     doctorName?: string;
     doctorPhoto?: string;
+    doctorSpec?: string;
     visitType?: string;
     date?: string;
     shift?: string;
@@ -52,26 +55,27 @@ export default function PaymentScreen() {
     consultFee?: string;
   }>();
 
-  const doctorName  = params.doctorName  ?? "Dr. Ananya Sharma";
-  const doctorPhoto = params.doctorPhoto ?? "https://randomuser.me/api/portraits/women/44.jpg";
-  const visitType   = params.visitType   ?? "First Visit";
-  const date        = Number(params.date ?? "10");
-  const shift       = params.shift       ?? "Morning";
-  const clinic      = params.clinic      ?? "HeartCare Clinic";
-  const clinicLoc   = params.clinicLoc   ?? "Andheri West, Mumbai";
-  const time        = params.time        ?? "10:00 AM – 2:00 PM";
-  const patientName = params.patientName ?? patient?.name ?? "Rahul Sharma";
+  const doctorName  = params.doctorName  ?? "Doctor";
+  const doctorPhoto = params.doctorPhoto ?? "";
+  const doctorSpec  = params.doctorSpec  ?? "";
+  const visitType   = params.visitType   ?? "first-visit";
+  const date        = params.date        ?? "";
+  const shift       = (params.shift      ?? "morning").toLowerCase();
+  const clinic      = params.clinic      ?? "Clinic";
+  const clinicLoc   = params.clinicLoc   ?? "";
+  const time        = params.time        ?? "";
+  const patientName = params.patientName ?? patient?.name ?? "Patient";
   const tokenType   = (params.tokenType  ?? "normal") as "normal" | "emergency";
   const isEmergency = tokenType === "emergency";
   const payableNow  = Number(params.payableNow ?? "20");
-  const consultFee  = Number(params.consultFee ?? "500");
+  const consultFee  = Number(params.consultFee ?? "0");
   const eAppFee     = isEmergency ? 20 : 10;
   const platformFee = 10;
-  const yourToken   = 43;
 
   const [loading, setLoading] = useState(false);
   const [rzpVisible, setRzpVisible] = useState(false);
   const [rzpOrder, setRzpOrder] = useState<{ id: string; amount: number; currency: string } | null>(null);
+  const [bookedTokenNum, setBookedTokenNum] = useState<number | null>(null);
 
   const bookToken = useBookToken();
 
@@ -138,18 +142,20 @@ export default function PaymentScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature }),
       });
-      await bookToken.mutateAsync({
+      const booked = await bookToken.mutateAsync({
         data: {
-          doctorId: params.doctorId ?? "demo1",
-          patientId: patient?.id ?? params.patientId ?? "self",
-          patientName: patient?.name ?? "Patient",
+          doctorId: params.doctorId!,
+          patientId: patient?.id ?? params.patientId ?? undefined,
+          patientName: patientName,
           patientPhone: patient?.phone,
-          date: String(date),
-          shift: shift.toLowerCase(),
+          date,
+          shift,
           type: tokenType,
-        },
+          paymentId,
+        } as any,
       });
-      router.replace(`/queue/token-${Date.now()}`);
+      if (booked?.tokenNumber) setBookedTokenNum(booked.tokenNumber);
+      router.replace(`/queue/${booked.id}` as any);
     } catch {
       Alert.alert("Booking Failed", "Payment received but booking failed. Contact support.");
     } finally {
@@ -188,7 +194,7 @@ export default function PaymentScreen() {
                   <Text style={styles.docName} numberOfLines={1}>{doctorName}</Text>
                   <Feather name="check-circle" size={12} color="#4F46E5" />
                 </View>
-                <Text style={styles.docSpec}>Cardiologist</Text>
+                <Text style={styles.docSpec}>{doctorSpec || "Doctor"}</Text>
               </View>
               {isEmergency ? (
                 <View style={styles.emergencyBadge}>
@@ -206,10 +212,10 @@ export default function PaymentScreen() {
             {/* 2×2 Info Grid */}
             <View style={styles.infoGrid}>
               {([
-                { icon: "calendar",                        label: "Date",      val: fmtDate(date) },
-                { icon: shift === "Morning" ? "sun" : "moon", label: "Shift",  val: `${shift} Shift` },
-                { icon: "hash",                            label: "Token No.", val: `#${yourToken}` },
-                { icon: "clock",                           label: "Time",      val: time },
+                { icon: "calendar",                              label: "Date",      val: fmtDate(date) },
+                { icon: shift === "morning" ? "sun" : "moon",   label: "Shift",     val: `${shift.charAt(0).toUpperCase() + shift.slice(1)} Shift` },
+                { icon: "hash",                                  label: "Token No.", val: bookedTokenNum ? `#${bookedTokenNum}` : "—" },
+                { icon: "clock",                                 label: "Time",      val: time || "—" },
               ] as Array<{ icon: React.ComponentProps<typeof Feather>["name"]; label: string; val: string }>).map(({ icon, label, val }) => (
                 <View key={label} style={styles.infoCell}>
                   <View style={styles.infoCellHeader}>
@@ -225,7 +231,7 @@ export default function PaymentScreen() {
             <View style={styles.tokenPatientRow}>
               <View style={[styles.tokenBox, isEmergency && { borderColor: "rgba(239,68,68,0.5)", backgroundColor: "rgba(239,68,68,0.15)" }]}>
                 <Feather name="tag" size={12} color={isEmergency ? "#EF4444" : "#A5B4FC"} />
-                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#A5B4FC" }]}>#{yourToken}</Text>
+                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#A5B4FC" }]}>{bookedTokenNum ? `#${bookedTokenNum}` : "—"}</Text>
               </View>
               <View style={styles.patientBox}>
                 <Feather name="user" size={12} color="rgba(255,255,255,0.4)" />
