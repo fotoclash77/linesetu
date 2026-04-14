@@ -74,7 +74,7 @@ function buildMarked(start: string | null, end: string | null) {
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type SourceFilter = 'all' | 'walkin' | 'online' | 'emergency';
+type SourceFilter = 'all' | 'walkin' | 'online' | 'emergency' | 'first-visit' | 'follow-up';
 type Preset = 'Today' | '7 days' | '30 days' | 'All';
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -320,12 +320,14 @@ export default function PatientsScreen() {
     });
   }, [tokens, rangeStart, rangeEnd]);
 
-  // ── Filter by source ──
+  // ── Filter by source / visit type ──
   const sourceFiltered = useMemo(() => {
-    if (srcFilt === 'all')       return rangeFiltered;
-    if (srcFilt === 'emergency') return rangeFiltered.filter(t => t.type === 'emergency');
-    if (srcFilt === 'walkin')    return rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency');
-    if (srcFilt === 'online')    return rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency');
+    if (srcFilt === 'all')         return rangeFiltered;
+    if (srcFilt === 'emergency')   return rangeFiltered.filter(t => t.type === 'emergency');
+    if (srcFilt === 'walkin')      return rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency');
+    if (srcFilt === 'online')      return rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency');
+    if (srcFilt === 'first-visit') return rangeFiltered.filter(t => t.visitType === 'first-visit');
+    if (srcFilt === 'follow-up')   return rangeFiltered.filter(t => t.visitType === 'follow-up');
     return rangeFiltered;
   }, [rangeFiltered, srcFilt]);
 
@@ -345,17 +347,21 @@ export default function PatientsScreen() {
   [filtered]);
 
   // ── Stats (off rangeFiltered) ──
-  const totalCount   = rangeFiltered.length;
-  const walkinCount  = rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency').length;
-  const onlineCount  = rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency').length;
-  const emergCount   = rangeFiltered.filter(t => t.type === 'emergency').length;
-  const doneCount    = rangeFiltered.filter(t => t.status === 'done').length;
+  const totalCount      = rangeFiltered.length;
+  const walkinCount     = rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency').length;
+  const onlineCount     = rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency').length;
+  const emergCount      = rangeFiltered.filter(t => t.type === 'emergency').length;
+  const doneCount       = rangeFiltered.filter(t => t.status === 'done').length;
+  const firstVisitCount = rangeFiltered.filter(t => t.visitType === 'first-visit').length;
+  const followUpCount   = rangeFiltered.filter(t => t.visitType === 'follow-up').length;
 
   const SRC_TABS: { key: SourceFilter; label: string; color: string; count: number }[] = [
-    { key:'all',       label:'All',       color:'#A5B4FC', count: totalCount },
-    { key:'walkin',    label:'Walk-in',   color:'#67E8F9', count: walkinCount },
-    { key:'online',    label:'Online',    color:'#4ADE80', count: onlineCount },
-    { key:'emergency', label:'Emergency', color:'#F87171', count: emergCount },
+    { key:'all',         label:'All',         color:'#A5B4FC', count: totalCount },
+    { key:'walkin',      label:'Walk-in',     color:'#67E8F9', count: walkinCount },
+    { key:'online',      label:'Online',      color:'#4ADE80', count: onlineCount },
+    { key:'emergency',   label:'Emergency',   color:'#F87171', count: emergCount },
+    { key:'first-visit', label:'First Visit', color:'#818CF8', count: firstVisitCount },
+    { key:'follow-up',   label:'Follow-up',   color:'#34D399', count: followUpCount },
   ];
 
   const rangeLabel = displayRange(rangeStart, rangeEnd);
@@ -428,7 +434,7 @@ export default function PatientsScreen() {
           >
             <View style={S.inner}>
 
-              {/* ── STATS ── */}
+              {/* ── STATS ROW 1 ── */}
               <View style={S.statsRow}>
                 {[
                   { label:'Total',     val:totalCount,  color:'#A5B4FC' },
@@ -442,6 +448,26 @@ export default function PatientsScreen() {
                     <Text style={S.statLbl}>{s.label}</Text>
                   </View>
                 ))}
+              </View>
+
+              {/* ── STATS ROW 2: Visit Type ── */}
+              <View style={S.visitTypeRow}>
+                <View style={S.visitTypeCard}>
+                  <View style={[S.visitTypeDot, { backgroundColor:'#818CF8' }]}/>
+                  <View style={{ flex:1 }}>
+                    <Text style={S.visitTypeLabel}>First Visit</Text>
+                    <Text style={S.visitTypeSub}>New patients</Text>
+                  </View>
+                  <Text style={[S.visitTypeCount, { color:'#818CF8' }]}>{firstVisitCount}</Text>
+                </View>
+                <View style={[S.visitTypeCard, { marginLeft:8 }]}>
+                  <View style={[S.visitTypeDot, { backgroundColor:'#34D399' }]}/>
+                  <View style={{ flex:1 }}>
+                    <Text style={S.visitTypeLabel}>Follow-up</Text>
+                    <Text style={S.visitTypeSub}>Return visits</Text>
+                  </View>
+                  <Text style={[S.visitTypeCount, { color:'#34D399' }]}>{followUpCount}</Text>
+                </View>
               </View>
 
               {/* ── SOURCE FILTER ── */}
@@ -542,6 +568,13 @@ const S = StyleSheet.create({
   statBorder: { borderRightWidth:1, borderRightColor:'rgba(255,255,255,0.06)' },
   statVal:    { fontSize:18, fontWeight:'900', letterSpacing:-0.5 },
   statLbl:    { fontSize:8, fontWeight:'700', color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:0.3, marginTop:1 },
+
+  visitTypeRow:   { flexDirection:'row' },
+  visitTypeCard:  { flex:1, flexDirection:'row', alignItems:'center', gap:10, paddingHorizontal:12, paddingVertical:10, borderRadius:14, backgroundColor:'rgba(255,255,255,0.04)', borderWidth:1, borderColor:'rgba(255,255,255,0.08)' },
+  visitTypeDot:   { width:10, height:10, borderRadius:5 },
+  visitTypeLabel: { fontSize:12, fontWeight:'800', color:'#FFF' },
+  visitTypeSub:   { fontSize:9, color:'rgba(255,255,255,0.3)', fontWeight:'600', marginTop:1 },
+  visitTypeCount: { fontSize:22, fontWeight:'900', letterSpacing:-0.5 },
 
   srcRow:     { paddingHorizontal:0, gap:6, paddingBottom:2 },
   srcPill:    { paddingHorizontal:14, paddingVertical:8, borderRadius:20, backgroundColor:'rgba(255,255,255,0.05)', borderWidth:1.5, borderColor:'rgba(255,255,255,0.1)' },
