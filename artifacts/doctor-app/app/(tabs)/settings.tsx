@@ -494,6 +494,7 @@ export default function SettingsScreen() {
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(doctor?.profilePhoto ?? null);
+  const [profilePhotoLocal, setProfilePhotoLocal] = useState<string | null>(null);
 
   // Results / photo gallery state
   const [resultPhotos, setResultPhotos] = useState<string[]>([]);
@@ -578,6 +579,7 @@ export default function SettingsScreen() {
       if (result.canceled || !result.assets[0]?.base64) return;
       const asset = result.assets[0];
       const mimeType = asset.mimeType || 'image/jpeg';
+      setProfilePhotoLocal(`data:${mimeType};base64,${asset.base64}`);
       const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -587,6 +589,8 @@ export default function SettingsScreen() {
       if (res.ok && data.url) {
         setProfilePhotoUrl(data.url);
         await updateDoctor({ profilePhoto: data.url } as any);
+      } else {
+        setProfilePhotoLocal(null);
       }
     } catch {}
     setProfilePhotoLoading(false);
@@ -725,8 +729,13 @@ export default function SettingsScreen() {
             {/* Avatar */}
             <View style={styles.avatarSection}>
               <View style={styles.avatarLarge}>
-                {profilePhotoUrl
-                  ? <Image key={profilePhotoUrl} source={{ uri: profilePhotoUrl }} style={{ width: '100%', height: '100%', borderRadius: 48 }} resizeMode="cover" />
+                {profilePhotoLocal || profilePhotoUrl
+                  ? <Image
+                      key={profilePhotoLocal || profilePhotoUrl || 'avatar'}
+                      source={{ uri: profilePhotoLocal || profilePhotoUrl || undefined }}
+                      style={{ width: '100%', height: '100%', borderRadius: 26 }}
+                      resizeMode="cover"
+                    />
                   : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
