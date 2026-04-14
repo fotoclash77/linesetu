@@ -578,7 +578,8 @@ export default function SettingsScreen() {
       });
       if (result.canceled || !result.assets[0]?.base64) return;
       const asset = result.assets[0];
-      setProfilePhotoPreview(`data:${mimeType};base64,${asset.base64}`);
+      const localPreview = `data:${mimeType};base64,${asset.base64}`;
+      setProfilePhotoPreview(localPreview);
       const mimeType = asset.mimeType || 'image/jpeg';
       const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
         method: 'POST',
@@ -589,6 +590,7 @@ export default function SettingsScreen() {
       if (res.ok && data.url) {
         setProfilePhotoUrl(data.url);
         await updateDoctor({ profilePhoto: data.url } as any);
+        setProfilePhotoPreview(null);
       }
     } catch {}
     setProfilePhotoLoading(false);
@@ -728,7 +730,7 @@ export default function SettingsScreen() {
             <View style={styles.avatarSection}>
               <View style={styles.avatarLarge}>
                 {profilePhotoPreview || profilePhotoUrl
-                  ? <Image source={{ uri: profilePhotoPreview || profilePhotoUrl || undefined }} style={{ width: '100%', height: '100%', borderRadius: 48 }} />
+                  ? <Image source={{ uri: profilePhotoPreview || profilePhotoUrl || undefined }} style={{ width: '100%', height: '100%', borderRadius: 48 }} onError={() => { if (profilePhotoUrl) setProfilePhotoPreview(null); }} />
                   : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
