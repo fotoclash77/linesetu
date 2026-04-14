@@ -3,8 +3,6 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
-import { useQuery } from "@tanstack/react-query";
-import { getGetDoctorQueryOptions } from "@workspace/api-client-react";
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -19,7 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 const isWeb = Platform.OS === "web";
 const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -182,12 +180,16 @@ export default function BookingScreen() {
     }
   }
 
-  const { data: doctorData } = useQuery({
-    ...getGetDoctorQueryOptions(doctorId ?? ""),
-    enabled: !isDemoId,
-    refetchInterval: 10_000,
-    staleTime: 5_000,
-  });
+  // Real-time Firebase listener for doctor data — zero delay
+  const [doctorData, setDoctorData] = useState<any>(null);
+  useEffect(() => {
+    if (isDemoId || !doctorId) return;
+    const ref = doc(db, "doctors", doctorId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) setDoctorData({ id: snap.id, ...snap.data() });
+    }, () => {});
+    return () => unsub();
+  }, [doctorId, isDemoId]);
 
   const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Doctor");
   const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? "");
@@ -258,14 +260,13 @@ export default function BookingScreen() {
   }, [selectedIso]);
 
   const isEmergency = tokenType === "emergency";
-  const eAppFee = isEmergency ? 20 : 10;
+  const normalETokenFee   = Number((doctorData as any)?.consultFee   ?? 10);
+  const emergencyETokenFee = Number((doctorData as any)?.emergencyFee ?? 20);
+  const eAppFee = isEmergency ? emergencyETokenFee : normalETokenFee;
   const platformFee = 10;
   const payableNow = eAppFee + platformFee;
-  const normalConsultFee  = Number((doctorData as any)?.consultFee  ?? 500);
-  const emergencyConsultFee = Number((doctorData as any)?.emergencyFee ?? 1000);
-  const clinicConsultFee = Number((doctorData as any)?.clinicConsultFee ?? normalConsultFee);
-  const clinicEmergencyFee = Number((doctorData as any)?.clinicEmergencyFee ?? emergencyConsultFee);
-  const consultFee = isEmergency ? emergencyConsultFee : normalConsultFee;
+  const clinicConsultFee   = Number((doctorData as any)?.clinicConsultFee   ?? 0);
+  const clinicEmergencyFee = Number((doctorData as any)?.clinicEmergencyFee ?? 0);
   const clinicFee = isEmergency ? clinicEmergencyFee : clinicConsultFee;
 
   // Calendar cell style — no entry = holiday by default (matches doctor app)
