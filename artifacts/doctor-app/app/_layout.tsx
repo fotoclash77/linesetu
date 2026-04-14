@@ -28,16 +28,21 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoading) {
       if (doctorId) {
-        router.replace("/(tabs)");
+        if (doctor?.profileCompleted) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/complete-profile");
+        }
       } else {
         router.replace("/");
       }
     }
-  }, [doctorId, isLoading]);
+  }, [doctorId, doctor?.profileCompleted, isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="complete-profile" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="walkin/index" />
       <Stack.Screen name="notifications" />

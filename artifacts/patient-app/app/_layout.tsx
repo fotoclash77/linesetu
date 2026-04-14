@@ -38,16 +38,21 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoading) {
       if (patient) {
-        router.replace("/(tabs)");
+        if (patient.profileCompleted) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/complete-profile");
+        }
       } else {
         router.replace("/login");
       }
     }
-  }, [patient, isLoading]);
+  }, [patient?.id, patient?.profileCompleted, isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
       <Stack.Screen name="login" />
+      <Stack.Screen name="complete-profile" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="find-doctors" />
       <Stack.Screen name="notifications" />

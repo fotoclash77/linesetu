@@ -14,6 +14,7 @@ export interface PatientUser {
   email?: string;
   address?: string;
   area?: string;
+  profileCompleted?: boolean;
 }
 
 interface AuthContextType {

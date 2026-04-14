@@ -83,13 +83,22 @@ export default function LoginScreen() {
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error ?? "Verification failed");
+      // Backward compat: existing patients with filled profiles skip the setup screen
+      const alreadyCompleted = data.profileCompleted === true ||
+        (!data.isNew && data.name?.trim() && data.age?.trim() && data.gender?.trim() && data.blood?.trim());
       await login({
         id: data.id,
-        name: data.name ?? "Patient",
+        name: data.name ?? "",
         phone: data.phone ?? fullPhone,
         profilePhoto: data.profilePhoto ?? undefined,
+        age: data.age ?? "",
+        blood: data.blood ?? "",
+        gender: data.gender ?? "",
+        email: data.email ?? "",
+        address: data.address ?? "",
+        area: data.area ?? "",
+        profileCompleted: alreadyCompleted ? true : false,
       });
-      router.replace("/(tabs)");
     } catch (e: any) {
       setError(e?.message ?? "Invalid OTP. Please try again.");
     } finally {

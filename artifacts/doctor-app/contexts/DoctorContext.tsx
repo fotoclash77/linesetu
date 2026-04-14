@@ -19,6 +19,7 @@ export interface DoctorUser {
   clinicAddress: string;
   profilePhoto?: string;
   isAvailable?: boolean;
+  profileCompleted?: boolean;
   qualifications?: string;
   experience?: string;
   bio?: string;
@@ -127,6 +128,10 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "OTP verification failed");
+    // Backward compat: treat existing doctors with a full profile as completed
+    const alreadyCompleted = data.profileCompleted === true ||
+      (data.name?.trim() && data.qualifications?.trim() && data.specialization?.trim() && data.experience?.trim());
+
     const doctorData: DoctorUser = {
       id: data.id,
       name: data.name,
@@ -136,6 +141,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinicAddress: data.clinicAddress || "",
       profilePhoto: data.profilePhoto || "",
       isAvailable: data.isAvailable !== false,
+      profileCompleted: alreadyCompleted ? true : false,
       qualifications: data.qualifications ?? '',
       experience: data.experience ?? '',
       bio: data.bio ?? '',
