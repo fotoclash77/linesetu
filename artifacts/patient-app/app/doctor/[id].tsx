@@ -75,6 +75,8 @@ export default function DoctorDetailScreen() {
     consultFee: (doctorData as any).consultFee,
     emergencyFee: (doctorData as any).emergencyFee,
     walkinFee: (doctorData as any).walkinFee,
+    clinicConsultFee: (doctorData as any).clinicConsultFee,
+    clinicEmergencyFee: (doctorData as any).clinicEmergencyFee,
     onlineBooking: (doctorData as any).onlineBooking !== false,
     showFee: (doctorData as any).showFee === true,
     alertMessage: (doctorData as any).alertMessage || "",
