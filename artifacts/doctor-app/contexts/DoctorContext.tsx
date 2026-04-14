@@ -19,6 +19,10 @@ export interface DoctorUser {
   clinicAddress: string;
   profilePhoto?: string;
   isAvailable?: boolean;
+  qualifications?: string;
+  experience?: string;
+  bio?: string;
+  totalPatients?: string;
   shifts?: {
     morning: boolean; morningStart: string; morningEnd: string;
     evening: boolean; eveningStart: string; eveningEnd: string;
@@ -107,6 +111,10 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinicAddress: data.clinicAddress || "",
       profilePhoto: data.profilePhoto || "",
       isAvailable: data.isAvailable !== false,
+      qualifications: data.qualifications ?? '',
+      experience: data.experience ?? '',
+      bio: data.bio ?? '',
+      totalPatients: data.totalPatients ?? '',
       shifts: data.shifts,
       calendar: data.calendar,
       clinics: data.clinics ?? undefined,

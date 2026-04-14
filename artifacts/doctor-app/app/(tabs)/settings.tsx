@@ -147,15 +147,19 @@ function Toggle({ on, onChange, color = TEAL }: { on: boolean; onChange: () => v
   );
 }
 
-function Field({ label, value, onChange, multiline, keyboardType }: {
+function Field({ label, value, onChange, multiline, keyboardType, required, error }: {
   label: string; value: string; onChange: (v: string) => void;
   multiline?: boolean; keyboardType?: 'default' | 'phone-pad' | 'numeric' | 'url';
+  required?: boolean; error?: boolean;
 }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        {required && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>}
+      </View>
       <TextInput
-        style={[styles.fieldInput, multiline && { height: 72, paddingTop: 10 }]}
+        style={[styles.fieldInput, multiline && { height: 72, paddingTop: 10 }, error && { borderColor: 'rgba(239,68,68,0.6)' }]}
         value={value}
         onChangeText={onChange}
         multiline={multiline}
@@ -163,6 +167,7 @@ function Field({ label, value, onChange, multiline, keyboardType }: {
         placeholderTextColor="rgba(255,255,255,0.2)"
         placeholder={`Enter ${label.toLowerCase()}`}
       />
+      {error && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
     </View>
   );
 }
@@ -209,26 +214,33 @@ export default function SettingsScreen() {
   const [section, setSection] = useState<SettingsSection>('main');
 
   // Profile state — seeded from Firebase via doctor context
-  const [name, setName] = useState(() => (doctor as any)?.name ?? '');
-  const [qualifications, setQualifications] = useState('MBBS, MD');
+  const [name, setName] = useState(() => doctor?.name ?? '');
+  const [qualifications, setQualifications] = useState(() => doctor?.qualifications ?? '');
   const [specialisation, setSpecialisation] = useState(() => (doctor as any)?.specialization ?? '');
-  const [experience, setExperience] = useState('10');
-  const [patientsTotal, setPatientsTotal] = useState('12400');
+  const [experience, setExperience] = useState(() => doctor?.experience ?? '');
+  const [patientsTotal, setPatientsTotal] = useState(() => doctor?.totalPatients ?? '');
   const [mobile, setMobile] = useState(() => {
-    const p: string = (doctor as any)?.phone ?? '';
+    const p: string = doctor?.phone ?? '';
     return p.startsWith('+91') ? p.slice(3).trim() : p;
   });
-  const [bio, setBio] = useState('');
+  const [bio, setBio] = useState(() => doctor?.bio ?? '');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Sync profile fields when doctor context loads (e.g. after async hydration)
   const profileSynced = React.useRef(false);
   React.useEffect(() => {
     if (!profileSynced.current && doctor) {
       profileSynced.current = true;
-      setName((doctor as any).name ?? '');
+      setName(doctor.name ?? '');
+      setQualifications(doctor.qualifications ?? '');
       setSpecialisation((doctor as any).specialization ?? '');
-      const p: string = (doctor as any).phone ?? '';
+      setExperience(doctor.experience ?? '');
+      setPatientsTotal(doctor.totalPatients ?? '');
+      const p: string = doctor.phone ?? '';
       setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
+      setBio(doctor.bio ?? '');
     }
   }, [doctor]);
 
@@ -356,6 +368,43 @@ export default function SettingsScreen() {
     setClinics(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c));
   };
 
+  const profileFieldErrors = {
+    name: profileSaving && !name.trim(),
+    qualifications: profileSaving && !qualifications.trim(),
+    specialisation: profileSaving && !specialisation.trim(),
+    experience: profileSaving && !experience.trim(),
+    patientsTotal: profileSaving && !patientsTotal.trim(),
+    mobile: profileSaving && !mobile.trim(),
+    bio: profileSaving && !bio.trim(),
+  };
+
+  const saveProfile = async () => {
+    const required = [name, qualifications, specialisation, experience, patientsTotal, mobile, bio];
+    if (required.some(v => !v.trim())) {
+      setProfileSaving(true);
+      setProfileError('Please fill in all required fields.');
+      return;
+    }
+    setProfileSaving(true);
+    setProfileError('');
+    try {
+      await updateDoctor({
+        name: name.trim(),
+        qualifications: qualifications.trim(),
+        specialization: specialisation.trim(),
+        experience: experience.trim(),
+        totalPatients: patientsTotal.trim(),
+        phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
+        bio: bio.trim(),
+      });
+      setProfileSaved(true);
+      setTimeout(() => { setProfileSaved(false); setSection('main'); }, 1200);
+    } catch {
+      setProfileError('Failed to save. Please try again.');
+    }
+    setProfileSaving(false);
+  };
+
   if (section === 'profile') {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -374,14 +423,24 @@ export default function SettingsScreen() {
                 <Text style={styles.photoNoteText}>⚠ For best results, upload a square (1:1) photo. Rectangular images will be cropped to fit.</Text>
               </View>
             </View>
+
+            {!!profileError && (
+              <View style={{ marginBottom: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: 'rgba(239,68,68,0.08)' }}>
+                <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '700' }}>⚠ {profileError}</Text>
+              </View>
+            )}
+
             <View style={styles.formCard}>
-              <Field label="Full Name" value={name} onChange={setName} />
-              <Field label="Qualifications" value={qualifications} onChange={setQualifications} />
-              <Field label="Specialisation" value={specialisation} onChange={setSpecialisation} />
-              <Field label="Years of Experience" value={experience} onChange={setExperience} keyboardType="numeric" />
-              <Field label="Total Patients Consulted" value={patientsTotal} onChange={setPatientsTotal} keyboardType="numeric" />
+              <Field label="Full Name" value={name} onChange={setName} required error={profileFieldErrors.name} />
+              <Field label="Qualifications" value={qualifications} onChange={setQualifications} required error={profileFieldErrors.qualifications} />
+              <Field label="Specialisation" value={specialisation} onChange={setSpecialisation} required error={profileFieldErrors.specialisation} />
+              <Field label="Years of Experience" value={experience} onChange={setExperience} keyboardType="numeric" required error={profileFieldErrors.experience} />
+              <Field label="Total Patients Consulted" value={patientsTotal} onChange={setPatientsTotal} keyboardType="numeric" required error={profileFieldErrors.patientsTotal} />
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>REGISTERED MOBILE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+                  <Text style={styles.fieldLabel}>REGISTERED MOBILE</Text>
+                  <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+                </View>
                 <View style={styles.phoneRow}>
                   <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
                   <TextInput
@@ -393,11 +452,23 @@ export default function SettingsScreen() {
                     placeholder="98765 00001"
                   />
                 </View>
+                {profileFieldErrors.mobile && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
               </View>
-              <Field label="About / Bio" value={bio} onChange={setBio} multiline />
+              <Field label="About / Bio" value={bio} onChange={setBio} multiline required error={profileFieldErrors.bio} />
             </View>
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
-              <Text style={styles.saveBtnText}>✓ Save Profile</Text>
+
+            <View style={{ paddingHorizontal: 6, marginBottom: 8 }}>
+              <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>* All fields are mandatory and will be visible to patients in the app.</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, profileSaving && !profileError && { opacity: 0.7 }]}
+              disabled={profileSaving && !profileError}
+              onPress={saveProfile}
+            >
+              {profileSaving && !profileError
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.saveBtnText}>{profileSaved ? '✓ Profile Saved to Firebase!' : '💾 Save Profile'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
