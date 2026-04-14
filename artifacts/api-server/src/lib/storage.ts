@@ -1,6 +1,7 @@
 const API_KEY = () => process.env.FIREBASE_API_KEY!;
 const BUCKET = () => process.env.FIREBASE_STORAGE_BUCKET!;
 const LEGACY_BUCKET = () => `${process.env.FIREBASE_PROJECT_ID}.appspot.com`;
+const PRIMARY_BUCKET = () => "linesetu77.firebasestorage.app";
 
 async function getAnonIdToken(): Promise<string> {
   const res = await fetch(
@@ -33,8 +34,7 @@ export async function uploadBase64ToStorage(
   const buffer = Buffer.from(base64, "base64");
   const encodedPath = encodeURIComponent(path);
 
-  const buckets = [BUCKET(), LEGACY_BUCKET()];
-  let uploadData: any = null;
+  const buckets = [PRIMARY_BUCKET(), BUCKET(), LEGACY_BUCKET()];
   let lastError = "unknown";
 
   for (const bucket of buckets) {
@@ -49,12 +49,19 @@ export async function uploadBase64ToStorage(
         body: buffer,
       },
     );
-    uploadData = await uploadRes.json();
+    const raw = await uploadRes.text();
+    let uploadData: any = null;
+    try {
+      uploadData = raw ? JSON.parse(raw) : null;
+    } catch {
+      uploadData = raw;
+    }
     if (uploadRes.ok) {
-      const token: string = uploadData.downloadTokens;
+      const token: string = uploadData?.downloadTokens ?? "";
+      if (!token) throw new Error("Storage upload succeeded but no download token was returned");
       return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media&token=${token}`;
     }
-    lastError = uploadData?.error?.message ?? JSON.stringify(uploadData);
+    lastError = uploadData?.error?.message ?? raw ?? JSON.stringify(uploadData);
   }
 
   throw new Error(`Storage upload failed: ${lastError}`);
@@ -75,7 +82,7 @@ export async function deleteFromStorage(urlOrPath: string): Promise<void> {
 
     const idToken = await getAnonIdToken();
     const encodedPath = encodeURIComponent(storagePath);
-    for (const bucket of [BUCKET(), LEGACY_BUCKET()]) {
+    for (const bucket of [PRIMARY_BUCKET(), BUCKET(), LEGACY_BUCKET()]) {
       const res = await fetch(
         `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${idToken}` } },
