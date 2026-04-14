@@ -846,9 +846,14 @@ export default function SettingsScreen() {
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
               <View style={styles.avatarWrap}>
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarEmoji}>⚕</Text>
-                </View>
+                <TouchableOpacity onPress={() => setSection('profile')} activeOpacity={0.85} style={{ borderRadius: 16, overflow: 'hidden' }}>
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarEmoji}>⚕</Text>
+                  </View>
+                  <View style={styles.changePhotoBar}>
+                    <Text style={styles.changePhotoBarText}>□ Change Photo</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -876,6 +881,9 @@ export default function SettingsScreen() {
                   <Text style={styles.profileStatLabel}>{s.label}</Text>
                 </View>
               ))}
+            </View>
+            <View style={styles.photoHintRow}>
+              <Text style={styles.photoHintText}>□  Please upload a square (1:1) photo for best results</Text>
             </View>
           </View>
 
@@ -1028,8 +1036,12 @@ const styles = StyleSheet.create({
   },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
   avatarWrap: { position: 'relative', flexShrink: 0 },
-  avatarPlaceholder: { width: 68, height: 68, borderRadius: 20, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'rgba(45,212,191,0.45)' },
-  avatarEmoji: { fontSize: 30, color: '#FFF' },
+  avatarPlaceholder: { width: 82, height: 82, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
+  avatarEmoji: { fontSize: 30, color: 'rgba(255,255,255,0.4)' },
+  changePhotoBar: { backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 5, alignItems: 'center' },
+  changePhotoBarText: { fontSize: 9, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 },
+  photoHintRow: { marginTop: 10, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', backgroundColor: 'rgba(251,191,36,0.06)' },
+  photoHintText: { fontSize: 10, color: 'rgba(251,191,36,0.8)', fontWeight: '600' },
   cameraBtn: { position: 'absolute', bottom: -5, right: -5, width: 24, height: 24, borderRadius: 12, backgroundColor: TEAL, borderWidth: 2, borderColor: BG, alignItems: 'center', justifyContent: 'center' },
   profileName: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: -0.3 },
   profileSpec: { fontSize: 11, color: TEAL_LT, fontWeight: '700' },
