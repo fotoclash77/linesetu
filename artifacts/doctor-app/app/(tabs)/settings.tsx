@@ -836,7 +836,21 @@ export default function SettingsScreen() {
               <Field label="Clinic Name" value={clinic.name} onChange={v => updateClinic(activeClinic, { name: v })} />
               <Field label="Address" value={clinic.address} onChange={v => updateClinic(activeClinic, { address: v })} />
               <Field label="City" value={clinic.city} onChange={v => updateClinic(activeClinic, { city: v })} />
-              <Field label="Clinic Phone" value={clinic.phone} onChange={v => updateClinic(activeClinic, { phone: v })} keyboardType="phone-pad" />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>CLINIC PHONE</Text>
+                <View style={styles.phoneRow}>
+                  <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
+                  <TextInput
+                    style={[styles.fieldInput, { flex: 1 }]}
+                    value={(clinic.phone ?? '').replace(/\D/g, '').slice(0, 10)}
+                    onChangeText={v => updateClinic(activeClinic, { phone: v.replace(/\D/g, '').slice(0, 10) })}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholder="98765 00001"
+                  />
+                </View>
+              </View>
               <Field label="Google Maps Link" value={clinic.maps} onChange={v => updateClinic(activeClinic, { maps: v })} keyboardType="url" />
             </View>
             <TouchableOpacity
