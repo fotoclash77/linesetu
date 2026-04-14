@@ -207,7 +207,7 @@ export default function DoctorDetailScreen() {
               {
                 icon: "alert-circle" as const,
                 label: "Emergency E-Token Fee",
-                sub: "Priority online token — no waiting in queue",
+                sub: "Priority online token via LINESETU — no waiting in queue",
                 amount: `₹${(doctor as any).emergencyFee ?? 0}`,
                 color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)",
               },
