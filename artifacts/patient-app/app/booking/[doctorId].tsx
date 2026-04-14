@@ -263,7 +263,10 @@ export default function BookingScreen() {
   const payableNow = eAppFee + platformFee;
   const normalConsultFee  = Number((doctorData as any)?.consultFee  ?? 500);
   const emergencyConsultFee = Number((doctorData as any)?.emergencyFee ?? 1000);
+  const clinicConsultFee = Number((doctorData as any)?.clinicConsultFee ?? normalConsultFee);
+  const clinicEmergencyFee = Number((doctorData as any)?.clinicEmergencyFee ?? emergencyConsultFee);
   const consultFee = isEmergency ? emergencyConsultFee : normalConsultFee;
+  const clinicFee = isEmergency ? clinicEmergencyFee : clinicConsultFee;
 
   // Calendar cell style — no entry = holiday by default (matches doctor app)
   function cellStyle(cfg: any) {
@@ -306,7 +309,7 @@ export default function BookingScreen() {
         patientName: selectedMember.name,
         tokenType,
         payableNow: `${payableNow}`,
-        consultFee: `${consultFee}`,
+        consultFee: `${clinicFee}`,
       },
     });
   }
@@ -388,7 +391,7 @@ export default function BookingScreen() {
               <Text style={[styles.feePreviewLbl, { color: "#FFF", fontWeight: "700" }]}>Pay Now</Text>
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#A5B4FC", fontWeight: "700", fontSize: 15 }]}>₹{payableNow}</Text>
             </View>
-            <Text style={styles.feePreviewNote}>+ ₹{consultFee} consultation paid directly at clinic</Text>
+            <Text style={styles.feePreviewNote}>+ ₹{clinicFee} consultation paid directly at clinic</Text>
           </View>
         </View>
 
@@ -610,7 +613,7 @@ export default function BookingScreen() {
           <Text style={styles.bottomPriceLbl}>Pay Now</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Text style={styles.bottomPrice}>₹{payableNow}</Text>
-            <Text style={styles.bottomPriceSub}>+ ₹{consultFee} at clinic</Text>
+            <Text style={styles.bottomPriceSub}>+ ₹{clinicFee} at clinic</Text>
           </View>
         </View>
         <Pressable style={[styles.continueBtn, !canBook && { opacity: 0.5 }]} onPress={handleBook}>
