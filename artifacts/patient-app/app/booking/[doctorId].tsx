@@ -137,6 +137,29 @@ export default function BookingScreen() {
 
   // Doctor data from Firebase
   const isDemoId = !doctorId || doctorId.startsWith("demo");
+
+  // Patient's own existing tokens for duplicate detection
+  const [myTokens, setMyTokens] = useState<any[]>([]);
+  useEffect(() => {
+    if (!patient?.id || isDemoId) return;
+    fetch(`${BASE}/api/patients/${patient.id}/tokens`)
+      .then(r => r.json())
+      .then(d => setMyTokens(d.tokens ?? []))
+      .catch(() => {});
+  }, [patient?.id, doctorId, selectedIso]);
+
+  // For selected date + selected member, which shifts are already booked?
+  const alreadyBookedShifts: Record<string, boolean> = {};
+  if (!isDemoId) {
+    for (const tok of myTokens) {
+      if (tok.doctorId !== doctorId || tok.date !== selectedIso) continue;
+      if (tok.status !== "waiting" && tok.status !== "in_consult") continue;
+      const tokMember = tok.forMemberId ?? "self";
+      if (tokMember !== selectedMember.id) continue;
+      alreadyBookedShifts[tok.shift] = true;
+    }
+  }
+
   const { data: doctorData } = useQuery({
     ...getGetDoctorQueryOptions(doctorId ?? ""),
     enabled: !isDemoId,
@@ -203,7 +226,7 @@ export default function BookingScreen() {
   const shiftCards = isDemoId ? [] : buildShiftCards(dayCfg);
 
   const selectedShift = shiftCards.find(s => s.id === selectedShiftId) ?? null;
-  const canBook = selectedShift !== null;
+  const canBook = selectedShift !== null && !alreadyBookedShifts[selectedShiftId ?? ""];
 
   // If previously selected shift is no longer available on new date, clear it
   useEffect(() => {
@@ -434,13 +457,19 @@ export default function BookingScreen() {
                   const fillPct = Math.min(Math.round((booked / shift.maxTokens) * 100), 100);
                   const isSelected = selectedShiftId === shift.id;
                   const isFull = booked >= shift.maxTokens;
+                  const isAlreadyBooked = !!alreadyBookedShifts[shift.id];
                   const fillColor = fillPct >= 80 ? "#EF4444" : fillPct >= 60 ? "#F59E0B" : "#22C55E";
                   return (
                     <Pressable
                       key={shift.id}
-                      style={[styles.shiftCard, isSelected && styles.shiftCardSelected, isFull && styles.shiftCardFull]}
-                      onPress={() => !isFull && setSelectedShiftId(shift.id)}
-                      disabled={isFull}
+                      style={[
+                        styles.shiftCard,
+                        isSelected && styles.shiftCardSelected,
+                        (isFull || isAlreadyBooked) && styles.shiftCardFull,
+                        isAlreadyBooked && { borderColor: "rgba(245,158,11,0.4)" },
+                      ]}
+                      onPress={() => !isFull && !isAlreadyBooked && setSelectedShiftId(shift.id)}
+                      disabled={isFull || isAlreadyBooked}
                     >
                       <View style={styles.shiftCardTop}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -453,10 +482,16 @@ export default function BookingScreen() {
                           </View>
                         </View>
                         <View style={{ alignItems: "flex-end", gap: 4 }}>
-                          {isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
-                          {isFull && <Text style={styles.fullTag}>Full</Text>}
-                          {!isSelected && !isFull && <View style={styles.radioEmpty} />}
-                          {!isFull && (
+                          {isAlreadyBooked && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(245,158,11,0.15)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                              <Feather name="check-circle" size={10} color="#F59E0B" />
+                              <Text style={{ fontSize: 10, fontWeight: "800", color: "#F59E0B", letterSpacing: 0.3 }}>Booked</Text>
+                            </View>
+                          )}
+                          {!isAlreadyBooked && isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
+                          {!isAlreadyBooked && isFull && <Text style={styles.fullTag}>Full</Text>}
+                          {!isAlreadyBooked && !isSelected && !isFull && <View style={styles.radioEmpty} />}
+                          {!isAlreadyBooked && !isFull && (
                             <Text style={{ fontSize: 11, fontWeight: "900", color: isEmergency ? "#F87171" : "#A5B4FC", letterSpacing: 0.3 }}>
                               {isEmergency ? `E${booked + 1}` : `#${booked + 1}`}
                             </Text>

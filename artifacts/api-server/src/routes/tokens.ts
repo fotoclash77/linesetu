@@ -88,15 +88,43 @@ export function countActiveReservations(pending: Record<string, { expiresAt: any
   }).length;
 }
 
+// Helper: check if a patient already has an active (waiting/in_consult) token for a slot
+async function hasDuplicateActiveToken(
+  patientId: string, doctorId: string, tokenDate: string, shift: string, forMemberId: string,
+): Promise<boolean> {
+  const snap = await getDocs(query(
+    collection(db, Collections.TOKENS),
+    where("patientId", "==", patientId),
+    where("doctorId", "==", doctorId),
+  ));
+  return snap.docs.some(d => {
+    const tok = d.data() as any;
+    if (tok.date !== tokenDate || tok.shift !== shift) return false;
+    const status = tok.status as string;
+    if (status !== "waiting" && status !== "in_consult") return false;
+    const tokMember = tok.forMemberId ?? "self";
+    return tokMember === forMemberId;
+  });
+}
+
 // POST /api/tokens/reserve — Firestore-atomic soft-lock with pre-assigned token number (FCFS guaranteed)
 // Increments nextTokenNumber at reserve time so the patient's position is deterministic.
 router.post("/tokens/reserve", async (req, res) => {
-  const { doctorId, patientId, date, shift = "morning" } = req.body;
+  const { doctorId, patientId, date, shift = "morning", forMemberId = "self" } = req.body;
   if (!doctorId || !patientId) {
     return res.status(400).json({ error: "doctorId and patientId are required" });
   }
 
   const tokenDate  = date || todayDate();
+
+  // Duplicate check — must be before the queue transaction (transactions can't do collection queries)
+  try {
+    const isDuplicate = await hasDuplicateActiveToken(patientId, doctorId, tokenDate, shift, forMemberId);
+    if (isDuplicate) {
+      return res.status(409).json({ reserved: false, duplicateBooking: true, error: "Already booked for this slot" });
+    }
+  } catch { /* non-fatal — proceed to transaction */ }
+
   const queueId    = queueDocId(doctorId, tokenDate, shift);
   const queueRef   = doc(db, Collections.QUEUES, queueId);
   const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
@@ -193,6 +221,7 @@ router.post("/tokens", async (req, res) => {
       doctorId, patientId, patientName, patientPhone,
       type = "normal", date, shift = "morning",
       source = "online",
+      forMemberId = "self",
       age, gender, address, area, notes,
       expectedTokenNumber,
       orderId,
@@ -200,6 +229,15 @@ router.post("/tokens", async (req, res) => {
 
     if (!doctorId || !patientName) {
       return res.status(400).json({ error: "doctorId and patientName are required" });
+    }
+
+    // Duplicate check for online bookings with a known patientId
+    if (patientId && source !== "walkin") {
+      const tokenDate = date || todayDate();
+      const isDuplicate = await hasDuplicateActiveToken(patientId, doctorId, tokenDate, shift, forMemberId);
+      if (isDuplicate) {
+        return res.status(409).json({ duplicateBooking: true, error: "Already booked for this slot" });
+      }
     }
 
     // For online bookings, enrich token with patient profile data (age, gender, etc.)
@@ -293,6 +331,7 @@ router.post("/tokens", async (req, res) => {
         doctorId, patientId: patientId || null, patientName,
         patientPhone: patientPhone || "",
         type, source, status: "waiting",
+        forMemberId: forMemberId || "self",
         date: tokenDate, shift,
         patientPaid, doctorEarns, platformFee,
         paymentId: paymentId || "",

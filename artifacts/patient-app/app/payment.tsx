@@ -94,7 +94,7 @@ export default function PaymentScreen() {
   // Result modal state
   const [resultModal, setResultModal] = useState<{
     visible: boolean;
-    type: "success" | "adjusted" | "full";
+    type: "success" | "adjusted" | "full" | "duplicate";
     message: string;
     tokenNumber?: number;
     tokenId?: string;
@@ -174,6 +174,8 @@ export default function PaymentScreen() {
     setLoading(true);
     try {
       // Step 1: soft-lock a token number before touching payment
+      // forMemberId = selectedMember.id from booking screen ("self" or "member_0" etc.)
+      const forMemberId = params.patientId ?? "self";
       if (patient?.id && params.doctorId) {
         const resRes = await fetch(`${apiBase}/tokens/reserve`, {
           method: "POST",
@@ -183,9 +185,14 @@ export default function PaymentScreen() {
             patientId: patient.id,
             date,
             shift,
+            forMemberId,
           }),
         });
         const resData = await resRes.json();
+        if (resData.duplicateBooking) {
+          setResultModal({ visible: true, type: "duplicate", message: "You already have an active token for this slot. Check My Bookings to view it." });
+          return;
+        }
         if (resRes.status === 409 || resData.capacityFull) {
           setIsFull(true);
           setResultModal({ visible: true, type: "full", message: "No slots available. All tokens are booked." });
@@ -274,12 +281,13 @@ export default function PaymentScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           doctorId: params.doctorId!,
-          patientId: patient?.id ?? params.patientId ?? undefined,
+          patientId: patient?.id ?? undefined,
           patientName: patientName,
           patientPhone: patient?.phone,
           date,
           shift,
           type: tokenType,
+          forMemberId: params.patientId ?? "self",
           paymentId,
           orderId,
           expectedTokenNumber: expectedToken,
@@ -288,6 +296,10 @@ export default function PaymentScreen() {
 
       if (bookRes.status === 409) {
         const errData = await bookRes.json().catch(() => ({}));
+        if (errData.duplicateBooking) {
+          setResultModal({ visible: true, type: "duplicate", message: "You already have an active token for this slot. Check My Bookings to view it." });
+          return;
+        }
         // Server auto-refunds on CAPACITY_FULL and writes a failedBookings record.
         // Read the auto-refund result first; call the refund endpoint as a retry/fallback
         // (the endpoint is idempotent and requires the server-written failedBookings record).
@@ -569,34 +581,43 @@ export default function PaymentScreen() {
         <View style={modalStyles.overlay}>
           <View style={modalStyles.card}>
             <View style={[modalStyles.iconCircle, {
-              backgroundColor: resultModal.type === "full"
-                ? "rgba(239,68,68,0.15)"
-                : resultModal.type === "adjusted"
-                  ? "rgba(245,158,11,0.15)"
-                  : "rgba(34,197,94,0.15)",
+              backgroundColor:
+                resultModal.type === "full"      ? "rgba(239,68,68,0.15)"   :
+                resultModal.type === "duplicate" ? "rgba(245,158,11,0.15)"  :
+                resultModal.type === "adjusted"  ? "rgba(245,158,11,0.15)"  :
+                                                   "rgba(34,197,94,0.15)",
             }]}>
               <Feather
-                name={resultModal.type === "full" ? "x-circle" : resultModal.type === "adjusted" ? "alert-circle" : "check-circle"}
+                name={
+                  resultModal.type === "full"      ? "x-circle"     :
+                  resultModal.type === "duplicate" ? "alert-circle"  :
+                  resultModal.type === "adjusted"  ? "alert-circle"  :
+                                                     "check-circle"
+                }
                 size={36}
-                color={resultModal.type === "full" ? "#EF4444" : resultModal.type === "adjusted" ? "#F59E0B" : "#22C55E"}
+                color={
+                  resultModal.type === "full"      ? "#EF4444" :
+                  resultModal.type === "duplicate" ? "#F59E0B" :
+                  resultModal.type === "adjusted"  ? "#F59E0B" :
+                                                     "#22C55E"
+                }
               />
             </View>
             <Text style={modalStyles.title}>
-              {resultModal.type === "full"
-                ? "Booking Failed"
-                : resultModal.type === "adjusted"
-                  ? "Token Adjusted"
-                  : "Booking Confirmed!"}
+              {resultModal.type === "full"      ? "Booking Failed"    :
+               resultModal.type === "duplicate" ? "Already Booked"    :
+               resultModal.type === "adjusted"  ? "Token Adjusted"    :
+                                                  "Booking Confirmed!"}
             </Text>
-            {resultModal.tokenNumber && resultModal.type !== "full" && (
+            {resultModal.tokenNumber && resultModal.type !== "full" && resultModal.type !== "duplicate" && (
               <Text style={modalStyles.tokenNum}>{isEmergency ? `E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
             )}
             <Text style={modalStyles.message}>{resultModal.message}</Text>
             <Pressable style={[modalStyles.btn, {
-              backgroundColor: resultModal.type === "full" ? "#EF4444" : "#4F46E5",
+              backgroundColor: resultModal.type === "full" ? "#EF4444" : resultModal.type === "duplicate" ? "#F59E0B" : "#4F46E5",
             }]} onPress={handleModalDismiss}>
               <Text style={modalStyles.btnTxt}>
-                {resultModal.type === "full" ? "Go Back" : "View Queue"}
+                {resultModal.type === "full" ? "Go Back" : resultModal.type === "duplicate" ? "Go Back" : "View Queue"}
               </Text>
             </Pressable>
           </View>
