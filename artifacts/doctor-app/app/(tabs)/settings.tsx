@@ -937,18 +937,6 @@ export default function SettingsScreen() {
                 placeholder="Enter the alert message sent to patients..."
               />
             </View>
-            <View style={styles.formCard}>
-              <Text style={styles.formCardTitle}>NOTIFICATION PREFERENCES</Text>
-              {[
-                { label: 'Sound', val: notifSound, set: setNotifSound },
-                { label: 'Vibrate', val: notifVibrate, set: setNotifVibrate },
-              ].map((item, i) => (
-                <View key={item.label} style={[styles.toggleRow, i > 0 && { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }]}>
-                  <Text style={styles.toggleRowLabel}>{item.label}</Text>
-                  <Toggle on={item.val} onChange={() => item.set(p => !p)} />
-                </View>
-              ))}
-            </View>
             <TouchableOpacity style={styles.saveBtn} onPress={() => setSection('main')}>
               <Text style={styles.saveBtnText}>✓ Save Patient App Settings</Text>
             </TouchableOpacity>
