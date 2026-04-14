@@ -518,14 +518,14 @@ export default function SettingsScreen() {
       setUploadError('Permission denied — please allow photo access in your device settings.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.5,
-      base64: true,
-      allowsEditing: true,
-      aspect: [4, 3],
-      exif: false,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.5,
+        base64: true,
+        allowsEditing: true,
+        aspect: [16, 9],
+        exif: false,
+      });
     if (result.canceled || !result.assets[0]) {
       setUploadingPhoto(false);
       return;
