@@ -493,6 +493,7 @@ export default function SettingsScreen() {
 
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(doctor?.profilePhoto ?? null);
 
   // Results / photo gallery state
   const [resultPhotos, setResultPhotos] = useState<string[]>([]);
@@ -508,6 +509,10 @@ export default function SettingsScreen() {
       if ((doctor as any).showResults !== undefined) setShowResults((doctor as any).showResults !== false);
     }
   }, [doctor]);
+
+  React.useEffect(() => {
+    setProfilePhotoUrl(doctor?.profilePhoto ?? null);
+  }, [doctor?.profilePhoto]);
 
   const pickAndUploadPhoto = async () => {
     if (!doctor) return;
@@ -580,6 +585,7 @@ export default function SettingsScreen() {
       });
       const data = await res.json();
       if (res.ok && data.url) {
+        setProfilePhotoUrl(data.url);
         await updateDoctor({ profilePhoto: data.url } as any);
       }
     } catch {}
@@ -719,14 +725,14 @@ export default function SettingsScreen() {
             {/* Avatar */}
             <View style={styles.avatarSection}>
               <View style={styles.avatarLarge}>
-                {doctor?.profilePhoto
-                  ? <Image source={{ uri: doctor.profilePhoto }} style={{ width: '100%', height: '100%', borderRadius: 48 }} />
+                {profilePhotoUrl
+                  ? <Image source={{ uri: profilePhotoUrl }} style={{ width: '100%', height: '100%', borderRadius: 48 }} />
                   : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
                 {profilePhotoLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={styles.photoBtnText}>{doctor?.profilePhoto ? 'Change Photo' : 'Upload Photo'}</Text>}
+                  : <Text style={styles.photoBtnText}>{profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}</Text>}
               </TouchableOpacity>
             </View>
 
