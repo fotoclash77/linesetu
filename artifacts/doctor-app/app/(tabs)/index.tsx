@@ -237,10 +237,6 @@ export default function DashboardScreen() {
                 <Text style={styles.queueBtnText}>⏱ View Queue</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.patientsBtn} onPress={() => router.push('/patients')}>
-              <Text style={styles.patientsBtnText}>👤  My Patients</Text>
-              <Text style={styles.patientsBtnArrow}>›</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Earnings Overview */}
@@ -291,6 +287,10 @@ export default function DashboardScreen() {
               <View style={[styles.sectionHeader, { marginBottom: 10 }]}>
                 <Text style={styles.sectionDot}>📊</Text>
                 <Text style={styles.sectionTitle}>Patient Data</Text>
+                <TouchableOpacity style={styles.patientsBtn} onPress={() => router.push('/patients')}>
+                  <Text style={styles.patientsBtnText}>👤  My Patients</Text>
+                  <Text style={styles.patientsBtnArrow}>›</Text>
+                </TouchableOpacity>
               </View>
               <View style={[styles.periodTabs, { alignSelf: 'flex-start' }]}>
                 {(['Today','Last 7 days','Last 30 days'] as EarningPeriod[]).map(p => (
