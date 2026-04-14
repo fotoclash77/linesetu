@@ -997,14 +997,17 @@ export default function SettingsScreen() {
                 try {
                   await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0 } as any);
                   setFeeSaved(true);
-                  setTimeout(() => { setFeeSaved(false); setSection('main'); }, 1200);
+                  setTimeout(() => {
+                    setFeeSaved(false);
+                    setSection('main');
+                  }, 1200);
                 } catch {}
                 setFeeSaving(false);
               }}
             >
               {feeSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{feeSaved ? '✓ Fee Structure Saved!' : '💾 Save Fee Structure'}</Text>}
+                : <Text style={styles.saveBtnText}>{feeSaved ? '✓ Saved' : '💾 Save Fee Structure'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
