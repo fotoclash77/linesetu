@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator, Modal, FlatList, Image,
+  ActivityIndicator, Modal, FlatList, Image, BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -595,6 +595,63 @@ export default function SettingsScreen() {
       setProfileSaving(false);
     }
   };
+
+  // ── Device hardware back button: auto-save + navigate to main ──────────
+  // Use ref so handler always closes over fresh state (no stale closure issue)
+  const deviceBackHandlerRef = React.useRef<() => void>(() => {});
+  deviceBackHandlerRef.current = () => {
+    const go = () => setSection('main');
+    if (section === 'profile') {
+      const required = [name, qualifications, specialisation, experience, patientsTotal, mobile, bio];
+      if (required.every(v => v.trim())) {
+        updateDoctor({
+          name: name.trim(),
+          qualifications: qualifications.trim(),
+          specialization: specialisation.trim(),
+          experience: experience.trim(),
+          totalPatients: patientsTotal.trim(),
+          phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
+          bio: bio.trim(),
+        }).catch(() => {});
+      }
+    } else if (section === 'clinics') {
+      updateDoctor({ clinics: clinics as any }).catch(() => {});
+    } else if (section === 'schedule') {
+      updateDoctor({ calendar: calendarOverrides as any }).catch(() => {});
+    } else if (section === 'fees') {
+      updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0 } as any).catch(() => {});
+    } else if (section === 'patientApp') {
+      updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showFee, alertMessage } as any).catch(() => {});
+    } else if (section === 'bank') {
+      const valid = payoutType === 'bank'
+        ? accountHolderName.trim() && bankName.trim() && accountNumber.trim() && ifscCode.trim() && branch.trim()
+        : upiId.trim() && payoutDisplayName.trim();
+      if (valid) {
+        updateDoctor({
+          bankAccount: { accountType: payoutType, accountHolderName, bankName, accountNumber, ifscCode, branch, upiId, payoutName: payoutDisplayName, payoutCycle, payoutEnabled },
+        } as any).catch(() => {});
+      }
+      setBankAttempted(false);
+    } else if (section === 'payout') {
+      if (payoutDisplayName.trim()) {
+        const bank = (doctor as any)?.bankAccount ?? {};
+        updateDoctor({ bankAccount: { ...bank, accountType: payoutType, payoutName: payoutDisplayName, payoutCycle, payoutEnabled } } as any).catch(() => {});
+      }
+      setPayoutAttempted(false);
+    }
+    go();
+  };
+
+  // Register/unregister BackHandler whenever section changes
+  useEffect(() => {
+    if (section === 'main') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      deviceBackHandlerRef.current();
+      return true;
+    });
+    return () => sub.remove();
+  }, [section]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   if (section === 'profile') {
     return (
