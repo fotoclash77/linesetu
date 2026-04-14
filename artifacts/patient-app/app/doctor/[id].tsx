@@ -47,10 +47,21 @@ const SAMPLE_DOCTOR = {
 
 export default function DoctorDetailScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const {
+    id,
+    hint_name,
+    hint_photo,
+    hint_spec,
+    hint_clinic,
+  } = useLocalSearchParams<{
+    id: string;
+    hint_name?: string;
+    hint_photo?: string;
+    hint_spec?: string;
+    hint_clinic?: string;
+  }>();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
-
 
   const isDemoId = !id || id.startsWith("demo");
 
@@ -67,38 +78,42 @@ export default function DoctorDetailScreen() {
 
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
-  const doctor = isDemoId ? SAMPLE_DOCTOR : (doctorData ? {
+  // Use route hint params as instant initial data while Firebase loads —
+  // prevents any flash of demo content and eliminates the loading spinner
+  const hasHints = !!hint_name;
+  const doctor = isDemoId ? SAMPLE_DOCTOR : {
     ...SAMPLE_DOCTOR,
-    id: doctorData.id ?? id ?? "demo1",
-    name: doctorData.name ?? SAMPLE_DOCTOR.name,
-    specialization: doctorData.specialization ?? SAMPLE_DOCTOR.specialization,
-    clinicName: doctorData.clinicName ?? SAMPLE_DOCTOR.clinicName,
+    id: doctorData?.id ?? id ?? "demo1",
+    name: doctorData?.name ?? hint_name ?? SAMPLE_DOCTOR.name,
+    specialization: doctorData?.specialization ?? hint_spec ?? SAMPLE_DOCTOR.specialization,
+    clinicName: doctorData?.clinicName ?? hint_clinic ?? SAMPLE_DOCTOR.clinicName,
     location: SAMPLE_DOCTOR.location,
-    available: (doctorData as any).isAvailable !== false,
-    experience: (doctorData as any).experience ?? SAMPLE_DOCTOR.experience,
-    about: (doctorData as any).bio || (doctorData as any).about || SAMPLE_DOCTOR.about,
-    patients: (doctorData as any).totalPatients || SAMPLE_DOCTOR.patients,
-    qualifications: (doctorData as any).qualifications || "",
-    photo: (doctorData as any).profilePhoto || SAMPLE_DOCTOR.photo,
-    consultFee: (doctorData as any).consultFee,
-    emergencyFee: (doctorData as any).emergencyFee,
-    walkinFee: (doctorData as any).walkinFee,
-    clinicConsultFee: (doctorData as any).clinicConsultFee,
-    clinicEmergencyFee: (doctorData as any).clinicEmergencyFee,
-    onlineBooking: (doctorData as any).onlineBooking !== false,
-    showFee: (doctorData as any).showFee === true,
-    alertMessage: (doctorData as any).alertMessage || "",
-    results: Array.isArray((doctorData as any).results) ? (doctorData as any).results : [],
-    showResults: (doctorData as any).showResults !== false,
-  } : SAMPLE_DOCTOR);
+    available: doctorData ? (doctorData.isAvailable !== false) : true,
+    experience: doctorData?.experience ?? SAMPLE_DOCTOR.experience,
+    about: doctorData?.bio || doctorData?.about || SAMPLE_DOCTOR.about,
+    patients: doctorData?.totalPatients || SAMPLE_DOCTOR.patients,
+    qualifications: doctorData?.qualifications || "",
+    photo: doctorData?.profilePhoto ?? hint_photo ?? SAMPLE_DOCTOR.photo,
+    consultFee: doctorData?.consultFee,
+    emergencyFee: doctorData?.emergencyFee,
+    walkinFee: doctorData?.walkinFee,
+    clinicConsultFee: doctorData?.clinicConsultFee,
+    clinicEmergencyFee: doctorData?.clinicEmergencyFee,
+    onlineBooking: doctorData ? (doctorData.onlineBooking !== false) : true,
+    showFee: doctorData?.showFee === true,
+    alertMessage: doctorData?.alertMessage || "",
+    results: Array.isArray(doctorData?.results) ? doctorData.results : [],
+    showResults: doctorData ? (doctorData.showResults !== false) : false,
+  };
 
   const isAvailable = doctor.available;
 
   const currentToken = queueData?.currentToken ?? 47;
   const queueCount = queueData?.totalBooked ?? 14;
 
-  // Prevent demo data flash — wait for real Firebase data
-  if (!isDemoId && !doctorData) {
+  // Only show spinner if no hints were passed AND Firebase hasn't responded yet
+  // (e.g. direct URL navigation without list context)
+  if (!isDemoId && !doctorData && !hasHints) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#67E8F9" />
@@ -273,7 +288,10 @@ export default function DoctorDetailScreen() {
         {isAvailable && (doctor as any).onlineBooking !== false ? (
           <Pressable
             style={styles.bookBtn}
-            onPress={() => router.push(`/booking/${id ?? "demo1"}`)}
+            onPress={() => router.push({
+              pathname: `/booking/${id ?? "demo1"}` as any,
+              params: { hint_name: doctor.name, hint_photo: doctor.photo, hint_spec: doctor.specialization, hint_clinic: doctor.clinicName },
+            })}
           >
             <LinearGradient colors={["#4F46E5", "#6366F1", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
             <Feather name="calendar" size={18} color="#FFF" />

@@ -74,8 +74,17 @@ function buildShiftCards(dayCfg: any): ShiftCard[] {
 export default function BookingScreen() {
   const insets = useSafeAreaInsets();
   const { patient } = useAuth();
-  const { doctorId, date: dateParam, shift: shiftParam } = useLocalSearchParams<{
+  const {
+    doctorId,
+    date: dateParam,
+    shift: shiftParam,
+    hint_name,
+    hint_photo,
+    hint_spec,
+    hint_clinic,
+  } = useLocalSearchParams<{
     doctorId: string; date?: string; shift?: string;
+    hint_name?: string; hint_photo?: string; hint_spec?: string; hint_clinic?: string;
   }>();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
@@ -191,9 +200,9 @@ export default function BookingScreen() {
     return () => unsub();
   }, [doctorId, isDemoId]);
 
-  const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Doctor");
-  const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? "");
-  const docPhoto = (doctorData as any)?.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
+  const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? hint_name ?? "Doctor");
+  const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? hint_spec ?? "");
+  const docPhoto = doctorData?.profilePhoto ?? hint_photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
   const docAvail = isDemoId ? true : ((doctorData as any)?.isAvailable !== false);
 
   const calendar: Record<string, any> = (doctorData as any)?.calendar ?? {};
@@ -291,8 +300,10 @@ export default function BookingScreen() {
     }
   });
 
-  // Block render until real doctor data is available — prevents demo data flash
-  if (!doctorId || (!isDemoId && !doctorData)) {
+  // Show spinner only when there's no hint data AND Firebase hasn't loaded yet
+  // (direct URL access without navigation context)
+  const hasHints = !!hint_name;
+  if (!doctorId || (!isDemoId && !doctorData && !hasHints)) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#67E8F9" />

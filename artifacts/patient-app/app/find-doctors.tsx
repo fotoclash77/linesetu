@@ -53,10 +53,14 @@ interface DoctorItem {
 
 function DoctorListCard({ doc }: { doc: DoctorItem }) {
   const available = doc.isAvailable !== false;
+  const navToDoctor = () => router.push({
+    pathname: `/doctor/${doc.id}` as any,
+    params: { hint_name: doc.name, hint_photo: doc.photo, hint_spec: doc.specialty, hint_clinic: doc.clinicName },
+  });
   return (
     <Pressable
       style={({ pressed }) => [styles.listCard, { opacity: pressed ? 0.88 : 1 }]}
-      onPress={() => router.push(`/doctor/${doc.id}`)}
+      onPress={navToDoctor}
     >
       <Image
         source={{ uri: doc.photo }}
@@ -115,7 +119,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
         <Pressable
           disabled={!available}
           style={[styles.getTokenBtn, { backgroundColor: available ? doc.accent : "rgba(255,255,255,0.07)" }]}
-          onPress={() => available && router.push(`/doctor/${doc.id}`)}
+          onPress={() => available && navToDoctor()}
         >
           <Text style={[styles.getTokenTxt, !available && { color: "rgba(255,255,255,0.3)" }]}>
             {available ? "Book" : "N/A"}
