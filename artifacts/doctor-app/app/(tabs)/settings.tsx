@@ -12,7 +12,7 @@ import { useDoctor } from '../../contexts/DoctorContext';
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp';
+type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout';
 
 interface ClinicData {
   name: string; address: string; city: string; phone: string; maps: string; active: boolean;
@@ -408,7 +408,6 @@ export default function SettingsScreen() {
   const [emergencyTokens, setEmergencyTokens] = useState(true);
   const [showWaitTime, setShowWaitTime] = useState(true);
   const [showPosition, setShowPosition] = useState(true);
-  const [showDoctorName, setShowDoctorName] = useState(true);
   const [showFee, setShowFee] = useState(false);
   const [alertMessage, setAlertMessage] = useState('Your turn is coming soon. Please be ready at the clinic.');
   const [patientAppSaving, setPatientAppSaving] = useState(false);
@@ -421,9 +420,38 @@ export default function SettingsScreen() {
       if ((doctor as any).emergencyTokens !== undefined) setEmergencyTokens((doctor as any).emergencyTokens);
       if ((doctor as any).showWaitTime !== undefined) setShowWaitTime((doctor as any).showWaitTime);
       if ((doctor as any).showPosition !== undefined) setShowPosition((doctor as any).showPosition);
-      if ((doctor as any).showDoctorName !== undefined) setShowDoctorName((doctor as any).showDoctorName);
       if ((doctor as any).showFee !== undefined) setShowFee((doctor as any).showFee);
       if ((doctor as any).alertMessage) setAlertMessage((doctor as any).alertMessage);
+    }
+  }, [doctor]);
+
+  const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('bank');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [branch, setBranch] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [payoutDisplayName, setPayoutDisplayName] = useState('');
+  const [payoutCycle, setPayoutCycle] = useState('Weekly');
+  const [payoutEnabled, setPayoutEnabled] = useState(true);
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankSaved, setBankSaved] = useState(false);
+  const bankSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!bankSynced.current && doctor) {
+      bankSynced.current = true;
+      const bank = (doctor as any).bankAccount ?? {};
+      setPayoutType(bank.accountType === 'upi' ? 'upi' : 'bank');
+      setAccountHolderName(bank.accountHolderName ?? '');
+      setBankName(bank.bankName ?? '');
+      setAccountNumber(bank.accountNumber ?? '');
+      setIfscCode(bank.ifscCode ?? '');
+      setBranch(bank.branch ?? '');
+      setUpiId(bank.upiId ?? '');
+      setPayoutDisplayName(bank.payoutName ?? '');
+      setPayoutCycle(bank.payoutCycle ?? 'Weekly');
+      setPayoutEnabled(bank.payoutEnabled !== false);
     }
   }, [doctor]);
 
@@ -1056,7 +1084,7 @@ export default function SettingsScreen() {
               onPress={async () => {
                 setPatientAppSaving(true); setPatientAppSaved(false);
                 try {
-                  await updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showDoctorName, showFee, alertMessage } as any);
+                  await updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showFee, alertMessage } as any);
                   setPatientAppSaved(true);
                   setTimeout(() => { setPatientAppSaved(false); setSection('main'); }, 1200);
                 } catch {}
@@ -1066,6 +1094,121 @@ export default function SettingsScreen() {
               {patientAppSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
                 : <Text style={styles.saveBtnText}>{patientAppSaved ? '✓ Settings Saved!' : '💾 Save Patient App Settings'}</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'bank') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Bank Account" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>PAYMENT METHOD</Text>
+              <View style={styles.clinicTabs}>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'bank' && styles.clinicTabActive]} onPress={() => setPayoutType('bank')}>
+                  <Text style={[styles.clinicTabText, payoutType === 'bank' && styles.clinicTabTextActive]}>Bank Transfer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'upi' && styles.clinicTabActive]} onPress={() => setPayoutType('upi')}>
+                  <Text style={[styles.clinicTabText, payoutType === 'upi' && styles.clinicTabTextActive]}>UPI</Text>
+                </TouchableOpacity>
+              </View>
+              {payoutType === 'bank' ? (
+                <>
+                  <Field label="Account Holder Name" value={accountHolderName} onChange={setAccountHolderName} required />
+                  <Field label="Bank Name" value={bankName} onChange={setBankName} required />
+                  <Field label="Account Number" value={accountNumber} onChange={setAccountNumber} keyboardType="numeric" required />
+                  <Field label="IFSC Code" value={ifscCode} onChange={setIfscCode} required />
+                  <Field label="Branch" value={branch} onChange={setBranch} />
+                </>
+              ) : (
+                <>
+                  <Field label="UPI ID" value={upiId} onChange={setUpiId} required />
+                  <Field label="Receiver Name" value={payoutDisplayName} onChange={setPayoutDisplayName} />
+                </>
+              )}
+            </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
+              disabled={bankSaving}
+              onPress={async () => {
+                setBankSaving(true); setBankSaved(false);
+                try {
+                  await updateDoctor({
+                    bankAccount: {
+                      accountType: payoutType,
+                      accountHolderName,
+                      bankName,
+                      accountNumber,
+                      ifscCode,
+                      branch,
+                      upiId,
+                      payoutName: payoutDisplayName,
+                      payoutCycle,
+                      payoutEnabled,
+                    },
+                  } as any);
+                  setBankSaved(true);
+                  setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
+                } finally {
+                  setBankSaving(false);
+                }
+              }}
+            >
+              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Bank Details'}</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'payout') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Payout Settings" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>SETTLEMENT</Text>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleRowLabel}>Enable Payouts</Text>
+                  <Text style={styles.toggleRowSub}>Allow settlement transfers to your account</Text>
+                </View>
+                <Toggle on={payoutEnabled} onChange={() => setPayoutEnabled(p => !p)} />
+              </View>
+              <Field label="Payout Display Name" value={payoutDisplayName} onChange={setPayoutDisplayName} />
+              <Field label="Payout Cycle" value={payoutCycle} onChange={setPayoutCycle} />
+            </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
+              disabled={bankSaving}
+              onPress={async () => {
+                setBankSaving(true); setBankSaved(false);
+                try {
+                  const bank = (doctor as any)?.bankAccount ?? {};
+                  await updateDoctor({
+                    bankAccount: {
+                      ...bank,
+                      accountType: payoutType,
+                      payoutName: payoutDisplayName,
+                      payoutCycle,
+                      payoutEnabled,
+                    },
+                  } as any);
+                  setBankSaved(true);
+                  setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
+                } finally {
+                  setBankSaving(false);
+                }
+              }}
+            >
+              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Payout Settings'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>

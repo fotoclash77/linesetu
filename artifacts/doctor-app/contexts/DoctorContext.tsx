@@ -36,11 +36,22 @@ export interface DoctorUser {
   emergencyTokens?: boolean;
   showWaitTime?: boolean;
   showPosition?: boolean;
-  showDoctorName?: boolean;
   showFee?: boolean;
   alertMessage?: string;
   results?: string[];
   showResults?: boolean;
+  bankAccount?: {
+    accountType?: 'bank' | 'upi';
+    accountHolderName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    upiId?: string;
+    branch?: string;
+    payoutName?: string;
+    payoutCycle?: string;
+    payoutEnabled?: boolean;
+  };
 }
 
 interface DoctorCtx {
@@ -133,12 +144,12 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       emergencyTokens: data.emergencyTokens !== false,
       showWaitTime: data.showWaitTime !== false,
       showPosition: data.showPosition !== false,
-      showDoctorName: data.showDoctorName !== false,
       showFee: data.showFee === true,
       alertMessage: data.alertMessage ?? 'Your turn is coming soon. Please be ready at the clinic.',
       results: Array.isArray(data.results) ? data.results : [],
       showResults: data.showResults !== false,
       walkinFee: data.walkinFee != null ? Number(data.walkinFee) : undefined,
+      bankAccount: data.bankAccount ?? undefined,
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);
