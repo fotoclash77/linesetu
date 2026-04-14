@@ -200,47 +200,39 @@ export default function DoctorDetailScreen() {
               {
                 icon: "monitor" as const,
                 label: "Normal E-Token Fee",
-                sub: "Book online via LINESETU — skip the queue",
                 amount: `₹${(doctor as any).consultFee ?? 0}`,
                 color: "#67E8F9", bg: "rgba(6,182,212,0.1)", border: "rgba(6,182,212,0.25)",
               },
               {
                 icon: "alert-circle" as const,
                 label: "Emergency E-Token Fee",
-                sub: "Priority online token — no waiting in queue",
                 amount: `₹${(doctor as any).emergencyFee ?? 0}`,
                 color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)",
               },
               {
                 icon: "check-circle" as const,
                 label: "Walk-In Fee",
-                sub: "Come early at clinic to get your token",
                 amount: `₹${(doctor as any).walkinFee ?? 0}`,
                 color: "#4ADE80", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)",
               },
               {
                 icon: "home" as const,
                 label: "Consultation at Clinic",
-                sub: "Pay directly at the clinic",
                 amount: `₹${(doctor as any).clinicConsultFee ?? 0}`,
                 color: "#22C55E", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)",
               },
               {
                 icon: "zap" as const,
                 label: "Emergency Consultation at Clinic",
-                sub: "Urgent in-clinic visit — priority access",
                 amount: `₹${(doctor as any).clinicEmergencyFee ?? 0}`,
                 color: "#EF4444", bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.25)",
               },
-            ].map(({ icon, label, sub, amount, color, bg, border }) => (
-              <View key={label} style={[styles.feeRow, { backgroundColor: bg, borderColor: border }]}>
+            ].map(({ icon, label, amount, color, bg, border }) => (
+              <View key={label} style={[styles.feeRow, { backgroundColor: bg, borderColor: border, minHeight: 52 }]}>
                 <View style={[styles.feeIcon, { backgroundColor: color + "22" }]}>
                   <Feather name={icon} size={15} color={color} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.feeLbl}>{label}</Text>
-                  <Text style={styles.feeSub}>{sub}</Text>
-                </View>
+                <Text style={[styles.feeLbl, { flex: 1 }]}>{label}</Text>
                 <Text style={[styles.feeAmount, { color }]}>{amount}</Text>
               </View>
             ))}
