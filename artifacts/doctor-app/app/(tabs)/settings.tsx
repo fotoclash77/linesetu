@@ -767,8 +767,9 @@ export default function SettingsScreen() {
                   <TextInput
                     style={[styles.fieldInput, { flex: 1 }]}
                     value={mobile}
-                    onChangeText={setMobile}
+                    onChangeText={v => setMobile(v.replace(/\D/g, '').slice(0, 10))}
                     keyboardType="phone-pad"
+                    maxLength={10}
                     placeholderTextColor="rgba(255,255,255,0.2)"
                     placeholder="98765 00001"
                   />
