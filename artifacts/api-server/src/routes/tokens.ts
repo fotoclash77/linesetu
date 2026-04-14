@@ -2,7 +2,7 @@ import { Router } from "express";
 import Razorpay from "razorpay";
 import {
   db, Collections, Timestamp,
-  collection, doc, getDocs, getDoc, addDoc,
+  collection, doc, getDocs, getDoc, addDoc, setDoc,
   query, where, orderBy, writeBatch, runTransaction,
   arrayUnion, arrayRemove, increment, deleteField,
   queueDocId, todayDate,
@@ -14,21 +14,61 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-async function issueRefund(paymentId: string, orderId: string): Promise<{ refundId: string | null; ok: boolean }> {
+interface RefundContext {
+  paymentId: string;
+  orderId: string;
+  patientId?: string;
+  doctorId: string;
+  date: string;
+  shift: string;
+}
+
+// issueRefund persists a server-side record in Firestore before and after the refund.
+// The Firestore doc (failedBookings/{paymentId}) ties this refund to an actual
+// capacity-full booking failure, prevents double-refunds, and provides an audit trail.
+// Only one refund per paymentId can ever be issued through this path.
+async function issueRefund(ctx: RefundContext): Promise<{ refundId: string | null; ok: boolean }> {
+  const { paymentId, orderId } = ctx;
   try {
-    // Verify payment ownership before refunding: fetch from Razorpay and confirm
-    // the payment belongs to the order created in this session.
+    const recordRef  = doc(db, Collections.FAILED_BOOKINGS, paymentId);
+    const recordSnap = await getDoc(recordRef);
+
+    // Idempotency: if already refunded, return the stored result
+    if (recordSnap.exists()) {
+      const rec = recordSnap.data() as any;
+      if (rec.status === "refunded" && rec.refundId) {
+        console.log(`[Tokens] Refund already issued for ${paymentId}: ${rec.refundId}`);
+        return { refundId: rec.refundId, ok: true };
+      }
+      // If orderId doesn't match, block — this paymentId belongs to a different booking
+      if (rec.orderId && rec.orderId !== orderId) {
+        console.error(`[Tokens] Refund blocked: orderId mismatch for ${paymentId}`);
+        return { refundId: null, ok: false };
+      }
+    }
+
+    // Verify ownership via Razorpay before touching money
     const payment = await razorpay.payments.fetch(paymentId);
-    if ((payment as any).order_id !== orderId) {
-      console.error(`[Tokens] Refund blocked: payment ${paymentId} order mismatch (expected ${orderId}, got ${(payment as any).order_id})`);
+    const pmtData  = payment as any;
+    if (pmtData.order_id !== orderId) {
+      console.error(`[Tokens] Refund blocked: Razorpay order mismatch for ${paymentId}`);
       return { refundId: null, ok: false };
     }
-    if ((payment as any).status !== "captured") {
-      console.error(`[Tokens] Refund blocked: payment ${paymentId} status=${(payment as any).status} (must be 'captured')`);
+    if (pmtData.status !== "captured") {
+      console.error(`[Tokens] Refund blocked: payment not captured (status=${pmtData.status})`);
       return { refundId: null, ok: false };
     }
+
+    // Write a "pending" record to claim this refund slot atomically
+    await setDoc(recordRef, {
+      ...ctx, status: "pending", createdAt: Timestamp.now(),
+    }, { merge: true });
+
     const refund = await razorpay.payments.refund(paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
-    console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId} orderId=${orderId}`);
+    console.log(`[Tokens] Auto-refund issued: refundId=${refund.id} paymentId=${paymentId}`);
+
+    // Mark as completed — no further refunds can be issued for this paymentId
+    await setDoc(recordRef, { status: "refunded", refundId: refund.id, refundedAt: Timestamp.now() }, { merge: true });
     return { refundId: refund.id, ok: true };
   } catch (e: any) {
     console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
@@ -314,9 +354,15 @@ router.post("/tokens", async (req, res) => {
     if (err.message === "CAPACITY_FULL") {
       let refundInitiated = false;
       let refundId: string | null = null;
-      const orderId: string | undefined = req.body.orderId;
-      if (paymentId && orderId) {
-        const result = await issueRefund(paymentId, orderId);
+      const { orderId, doctorId, patientId, date, shift = "morning" } = req.body;
+      if (paymentId && orderId && doctorId) {
+        const result = await issueRefund({
+          paymentId, orderId,
+          patientId: patientId ?? undefined,
+          doctorId,
+          date: date ?? "",
+          shift: shift ?? "morning",
+        });
         refundInitiated = result.ok;
         refundId = result.refundId;
       }
