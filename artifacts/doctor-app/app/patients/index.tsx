@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, RefreshControl, Platform,
@@ -48,6 +48,7 @@ async function fetchAllTokens(doctorId: string) {
 // ─── Types ────────────────────────────────────────────────────────────
 type Period = 'Today' | '7 days' | '30 days' | 'All';
 type SourceFilter = 'all' | 'walkin' | 'online' | 'emergency';
+type RangePreset = 'Today' | '7 days' | '30 days' | 'All';
 
 // ─── Status helpers ────────────────────────────────────────────────────
 function statusLabel(s: string) {
@@ -166,11 +167,12 @@ export default function PatientsScreen() {
   const [search,  setSearch]  = useState('');
   const [period,  setPeriod]  = useState<Period>('Today');
   const [srcFilt, setSrcFilt] = useState<SourceFilter>('all');
+  const [rangePreset, setRangePreset] = useState<RangePreset>('Today');
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['all-tokens', docId],
     queryFn: () => fetchAllTokens(docId),
-    enabled: !!docId, staleTime: 30_000,
+    enabled: !!docId, staleTime: 0, refetchInterval: 15_000,
   });
 
   const tokens: any[] = data ?? [];
@@ -188,14 +190,33 @@ export default function PatientsScreen() {
     });
   }, [tokens, period]);
 
+  const rangeFiltered = useMemo(() => {
+    if (rangePreset === 'All') return tokens;
+    if (rangePreset === 'Today') return tokens.filter(t => {
+      const d = tokenDate(t);
+      const today = daysBefore(0);
+      const now = new Date(); now.setHours(23,59,59,999);
+      return d >= today && d <= now;
+    });
+    if (rangePreset === '7 days') return tokens.filter(t => {
+      const d = tokenDate(t);
+      return d >= daysBefore(6);
+    });
+    if (rangePreset === '30 days') return tokens.filter(t => {
+      const d = tokenDate(t);
+      return d >= daysBefore(29);
+    });
+    return tokens;
+  }, [tokens, rangePreset]);
+
   // ── Filter by source ──
   const sourceFiltered = useMemo(() => {
-    if (srcFilt === 'all')       return periodFiltered;
-    if (srcFilt === 'emergency') return periodFiltered.filter(t => t.type === 'emergency');
-    if (srcFilt === 'walkin')    return periodFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency');
-    if (srcFilt === 'online')    return periodFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency');
-    return periodFiltered;
-  }, [periodFiltered, srcFilt]);
+    if (srcFilt === 'all')       return rangeFiltered;
+    if (srcFilt === 'emergency') return rangeFiltered.filter(t => t.type === 'emergency');
+    if (srcFilt === 'walkin')    return rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency');
+    if (srcFilt === 'online')    return rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency');
+    return rangeFiltered;
+  }, [rangeFiltered, srcFilt]);
 
   // ── Search ──
   const filtered = useMemo(() => {
@@ -217,11 +238,11 @@ export default function PatientsScreen() {
   [filtered]);
 
   // ── Stats ──
-  const totalInPeriod  = periodFiltered.length;
-  const walkinCount    = periodFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency').length;
-  const onlineCount    = periodFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency').length;
-  const emergCount     = periodFiltered.filter(t => t.type === 'emergency').length;
-  const consultedCount = periodFiltered.filter(t => t.status === 'done').length;
+  const totalInPeriod  = rangeFiltered.length;
+  const walkinCount    = rangeFiltered.filter(t => t.source === 'walkin' && t.type !== 'emergency').length;
+  const onlineCount    = rangeFiltered.filter(t => t.source !== 'walkin' && t.type !== 'emergency').length;
+  const emergCount     = rangeFiltered.filter(t => t.type === 'emergency').length;
+  const consultedCount = rangeFiltered.filter(t => t.status === 'done').length;
 
   const PERIODS: Period[] = ['Today', '7 days', '30 days', 'All'];
   const SRC_TABS: { key: SourceFilter; label: string; color: string; count: number }[] = [
@@ -278,6 +299,25 @@ export default function PatientsScreen() {
               <Text style={[S.periodTabTxt, period===p && S.periodTabTxtActive]}>{p}</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* ── DATE RANGE ── */}
+        <View style={S.rangeCard}>
+          <Text style={S.rangeTitle}>Date Range</Text>
+          <Text style={S.rangeSub}>Realtime from Firebase tokens</Text>
+          <View style={S.periodRow}>
+            {PERIODS.map(p => (
+              <TouchableOpacity
+                key={p}
+                style={[S.periodTab, rangePreset===p && S.periodTabActive]}
+                onPress={() => {
+                  setRangePreset(p);
+                }}
+              >
+                <Text style={[S.periodTabTxt, rangePreset===p && S.periodTabTxtActive]}>{p}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {isLoading ? (
@@ -387,6 +427,9 @@ const S = StyleSheet.create({
   periodTabActive:{ backgroundColor:TEAL },
   periodTabTxt:{ fontSize:11, fontWeight:'800', color:'rgba(255,255,255,0.35)' },
   periodTabTxtActive:{ color:'#FFF' },
+  rangeCard:{ marginHorizontal:16, marginBottom:6, padding:12, borderRadius:16, backgroundColor:'rgba(255,255,255,0.04)', borderWidth:1, borderColor:'rgba(255,255,255,0.08)' },
+  rangeTitle:{ fontSize:12, fontWeight:'900', color:'#FFF', marginBottom:2 },
+  rangeSub:{ fontSize:10, color:'rgba(255,255,255,0.28)', fontWeight:'600', marginBottom:10 },
 
   // Load
   loadWrap:{ flex:1, alignItems:'center', justifyContent:'center', gap:12 },
