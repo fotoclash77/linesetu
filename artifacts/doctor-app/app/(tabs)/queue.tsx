@@ -80,7 +80,7 @@ async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/c
 
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
-type TabKey = 'normal' | 'emergency' | 'skipped' | 'consulted';
+type TabKey = 'all' | 'normal' | 'emergency' | 'skipped' | 'consulted';
 
 interface MasterRow {
   id: string; tokenNumber: number; patientName: string;
@@ -454,6 +454,57 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
   );
 }
 
+// ─── All Serial Card — compact, read-only, shown only in "All" tab ──
+interface GapRow { gap: true; tokenNumber: number; }
+type SerialRow = Token | GapRow;
+
+const STATUS_BADGE: Record<DisplayStatus, { label: string; color: string; bg: string }> = {
+  consulting: { label: '● Consulting', color: AMBER,  bg: 'rgba(180,83,9,0.28)'   },
+  waiting:    { label: '○ Waiting',    color: CYAN,   bg: 'rgba(22,78,99,0.35)'   },
+  done:       { label: '✓ Done',       color: GREEN,  bg: 'rgba(21,128,61,0.28)'  },
+  skipped:    { label: '↷ Skipped',    color: PURPLE, bg: 'rgba(109,40,217,0.22)' },
+};
+
+function AllSerialCard({ row }: { row: SerialRow }) {
+  if ('gap' in row) {
+    return (
+      <View style={[S.allRow, { opacity: 0.42 }]}>
+        <View style={[S.chip, { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }]}>
+          <Text style={S.chipLabel}>TOKEN</Text>
+          <Text style={[S.chipNum, { color: 'rgba(255,255,255,0.25)' }]}>{`#${String(row.tokenNumber).padStart(2, '0')}`}</Text>
+        </View>
+        <Text style={{ flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.25)', marginLeft: 10, fontStyle: 'italic' }}>
+          — Expired reservation
+        </Text>
+        <View style={[S.allBadge, { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }]}>
+          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '700' }}>GAP</Text>
+        </View>
+      </View>
+    );
+  }
+  const badge = STATUS_BADGE[row.displayStatus];
+  return (
+    <TouchableOpacity
+      style={S.allRow}
+      onPress={() => router.push(`/patients/${row.id}` as any)}
+      activeOpacity={0.72}
+    >
+      <TokenChip token={row.tokenNumber} type={row.type} />
+      <View style={{ flex: 1, minWidth: 0, marginLeft: 10 }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }} numberOfLines={1}>{row.patientName}</Text>
+        {(row.age || row.gender) ? (
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+            {[row.age ? `${row.age} yr` : '', row.gender === 'M' || row.gender === 'male' ? 'Male' : row.gender === 'F' || row.gender === 'female' ? 'Female' : row.gender ?? ''].filter(Boolean).join(' · ')}
+          </Text>
+        ) : null}
+      </View>
+      <View style={[S.allBadge, { backgroundColor: badge.bg, borderColor: `${badge.color}55` }]}>
+        <Text style={{ fontSize: 10, color: badge.color, fontWeight: '700' }}>{badge.label}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Past Card (done / skipped, read-only) ───────────────────────
 function PastCard({ tok }: { tok: Token }) {
   const isDone = tok.displayStatus === 'done';
@@ -478,7 +529,7 @@ function PastCard({ tok }: { tok: Token }) {
 export default function QueueScreen() {
   const { doctor } = useDoctor();
   const qc = useQueryClient();
-  const [tab,          setTab]        = useState<TabKey>('normal');
+  const [tab,          setTab]        = useState<TabKey>('all');
   const [shift,        setShift]      = useState<'morning' | 'evening'>('morning');
   const [schedDate,    setSchedDate]  = useState<string>(todayISO);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -555,7 +606,20 @@ export default function QueueScreen() {
   const normalList  = waitSorted.filter(t => t.type === 'normal');
   const emergList   = waitSorted.filter(t => t.type === 'emergency');
 
+  // ── Gap detection for "All" tab ───────────────────────────────
+  // nextTokenNumber = highest token number ever issued (from queue doc).
+  // Any number 1..nextTokenNumber missing from booked tokens = abandoned reservation.
+  const highestIssued = (qData?.nextTokenNumber ?? 0) as number;
+  const bookedNums    = new Set(all.map(t => t.tokenNumber));
+  const gapNums       = Array.from({ length: highestIssued }, (_, i) => i + 1)
+                              .filter(n => !bookedNums.has(n));
+  const allSerialRows: SerialRow[] = [
+    ...all,
+    ...gapNums.map(n => ({ gap: true as const, tokenNumber: n })),
+  ].sort((a, b) => a.tokenNumber - b.tokenNumber);
+
   const TABS: { key: TabKey; label: string; color: string; count: number }[] = [
+    { key: 'all',       label: 'All',       color: CYAN,   count: highestIssued || all.length },
     { key: 'normal',    label: 'Normal',    color: GREEN,  count: normalList.length  },
     { key: 'emergency', label: 'Emergency', color: RED,    count: emergList.length   },
     { key: 'skipped',   label: 'Skipped',   color: AMBER,  count: skippedList.length },
@@ -651,8 +715,12 @@ export default function QueueScreen() {
             {/* ── WAITING LIST HEADER + TABS ─────────── */}
             <View style={{ paddingHorizontal: 14 }}>
               <View style={S.waitingHeader}>
-                <Text style={S.waitingTitle}>Waiting List</Text>
-                <Text style={S.waitingCount}>{waitSorted.length} patients</Text>
+                <Text style={S.waitingTitle}>{tab === 'all' ? 'Token List' : 'Waiting List'}</Text>
+                <Text style={S.waitingCount}>
+                  {tab === 'all'
+                    ? `${highestIssued || all.length} issued today`
+                    : `${waitSorted.length} patients`}
+                </Text>
               </View>
               {/* Tab bar */}
               <View style={S.tabBar}>
@@ -688,7 +756,21 @@ export default function QueueScreen() {
               refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={TEAL} />}
               contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 100, paddingTop: 8 }}
             >
-              {tabPatients.length === 0 ? (
+              {tab === 'all' ? (
+                allSerialRows.length === 0 ? (
+                  <View style={S.emptyState}>
+                    <Text style={S.emptyStateIcon}>📋</Text>
+                    <Text style={S.emptyStateTxt}>No tokens issued yet for this shift</Text>
+                  </View>
+                ) : (
+                  allSerialRows.map(row => (
+                    <AllSerialCard
+                      key={'gap' in row ? `gap-${row.tokenNumber}` : row.id}
+                      row={row}
+                    />
+                  ))
+                )
+              ) : tabPatients.length === 0 ? (
                 <View style={S.emptyState}>
                   <Text style={S.emptyStateIcon}>
                     {tab === 'consulted' ? '📋' : tab === 'skipped' ? '👍' : '✅'}
@@ -976,4 +1058,8 @@ const S = StyleSheet.create({
   emptyState:    { alignItems: 'center', paddingVertical: 44 },
   emptyStateIcon:{ fontSize: 32, marginBottom: 10 },
   emptyStateTxt: { fontSize: 13, color: 'rgba(255,255,255,0.25)', fontWeight: '600', textAlign: 'center' },
+
+  // All-tab serial rows
+  allRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: 10, marginBottom: 6 },
+  allBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
