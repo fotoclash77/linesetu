@@ -122,6 +122,7 @@ router.post("/doctors/:doctorId/results", async (req, res) => {
     await updateDoc(docRef, { results: arrayUnion(url) });
     res.json({ url });
   } catch (err: any) {
+    console.error("results upload failed", err);
     res.status(500).json({ error: err.message });
   }
 });
