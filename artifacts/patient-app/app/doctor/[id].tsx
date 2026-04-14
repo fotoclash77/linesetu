@@ -3,8 +3,8 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { getGetDoctorQueryOptions, getGetLiveQueueQueryOptions } from "@workspace/api-client-react";
-import React from "react";
+import { getGetLiveQueueQueryOptions } from "@workspace/api-client-react";
+import React, { useState, useEffect } from "react";
 import {
   Platform,
   Pressable,
@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const isWeb = Platform.OS === "web";
 
@@ -50,13 +52,18 @@ export default function DoctorDetailScreen() {
 
 
   const isDemoId = !id || id.startsWith("demo");
-  const { data: doctorData } = useQuery({
-    ...getGetDoctorQueryOptions(id ?? ""),
-    enabled: !isDemoId,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchInterval: 15_000,
-  });
+
+  // Real-time Firebase listener — zero delay
+  const [doctorData, setDoctorData] = useState<any>(null);
+  useEffect(() => {
+    if (isDemoId || !id) return;
+    const ref = doc(db, "doctors", id);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) setDoctorData({ id: snap.id, ...snap.data() });
+    }, () => {});
+    return () => unsub();
+  }, [id, isDemoId]);
+
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
   const doctor = isDemoId ? SAMPLE_DOCTOR : (doctorData ? {
