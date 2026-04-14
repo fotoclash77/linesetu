@@ -48,7 +48,16 @@ router.post("/verify", (req, res) => {
   }
 });
 
-router.post("/refund", async (req, res) => {
+function requireRefundSecret(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  const provided = req.headers["x-refund-secret"];
+  if (!secret || !provided || provided !== secret) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+}
+
+router.post("/refund", requireRefundSecret, async (req, res) => {
   try {
     const { paymentId, amount } = req.body;
     if (!paymentId || typeof paymentId !== "string") {

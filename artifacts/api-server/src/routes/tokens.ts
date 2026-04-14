@@ -163,27 +163,36 @@ router.post("/tokens", async (req, res) => {
       const queueData = queueSnap.exists() ? queueSnap.data() : {} as any;
       const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
 
-      const currentNextToken  = (queueData.nextTokenNumber as number) ?? 0;
-      const currentBooked     = (queueData.totalBooked as number) ?? 0;
+      const currentBooked = (queueData.totalBooked as number) ?? 0;
+      const nowMs         = Date.now();
 
-      const hasReservation     = !!pending[patientId];
-      const otherActiveCount   = countActiveReservations(pending, patientId);
-      const effectiveBooked    = currentBooked + otherActiveCount;
+      // Validate reservation freshness — expired entries do NOT grant soft-lock privilege
+      const rawReservation  = pending[patientId];
+      const reservationExpMs = rawReservation
+        ? (typeof rawReservation.expiresAt?.toMillis === "function"
+            ? rawReservation.expiresAt.toMillis()
+            : Number(rawReservation.expiresAt))
+        : 0;
+      const hasValidReservation = !!rawReservation && reservationExpMs > nowMs;
 
-      if (maxTokens !== null && !hasReservation && effectiveBooked >= maxTokens) {
+      // Active reservations excluding this patient (only fresh ones count)
+      const otherActiveCount = countActiveReservations(pending, patientId);
+      const effectiveBooked  = currentBooked + otherActiveCount;
+
+      // Patients without a valid reservation must compete against full effectiveBooked
+      if (maxTokens !== null && !hasValidReservation && effectiveBooked >= maxTokens) {
         throw new Error("CAPACITY_FULL");
       }
-      if (maxTokens !== null && hasReservation && currentBooked >= maxTokens) {
+      // Patients with a valid reservation only need committed bookings < maxTokens
+      if (maxTokens !== null && hasValidReservation && currentBooked >= maxTokens) {
         throw new Error("CAPACITY_FULL");
       }
 
-      const nextTokenNumber = currentNextToken + 1;
+      // Token number derived from totalBooked so SSE estimate and assignment always agree
+      const nextTokenNumber = currentBooked + 1;
 
       if (expectedTokenNumber !== undefined && expectedTokenNumber !== null && nextTokenNumber !== Number(expectedTokenNumber)) {
         autoAdjusted = true;
-      } else if (hasReservation) {
-        const reservedEstimate = currentBooked + otherActiveCount + 1;
-        if (reservedEstimate !== nextTokenNumber) autoAdjusted = true;
       }
 
       const nowTs = Timestamp.now();
@@ -211,7 +220,8 @@ router.post("/tokens", async (req, res) => {
         waitingTokenIds: arrayUnion(tokenRef.id),
         updatedAt: nowTs,
       };
-      if (patientId && pending[patientId]) {
+      // Remove reservation entry (valid or stale) atomically during booking
+      if (patientId && rawReservation) {
         queueUpdate[`pendingReservations.${patientId}`] = deleteField();
       }
 
