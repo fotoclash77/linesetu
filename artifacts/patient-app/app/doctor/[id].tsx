@@ -243,7 +243,7 @@ export default function DoctorDetailScreen() {
 
           // Determine cell color for new DayCfg or legacy string format
           function cellStyle(cfg: any): { bg: string; border: string; dotColor: string } {
-            if (!cfg) return { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.09)', dotColor: '' };
+            if (!cfg) return { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', dotColor: '#F87171' };
             // New format: { off, morning, evening }
             if (typeof cfg === 'object' && 'off' in cfg) {
               if (cfg.off) return { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)', dotColor: '#F87171' };
@@ -289,7 +289,7 @@ export default function DoctorDetailScreen() {
                         const cs = cellStyle(cfg);
                         const isPast = cell < today;
                         const isToday = cell.getTime() === today.getTime();
-                        const isOff = cfg && (cfg.off === true || (typeof cfg === 'string' && cfg === 'holiday'));
+                        const isOff = !cfg || cfg.off === true || (typeof cfg === 'string' && cfg === 'holiday') || (!cfg?.morning?.enabled && !cfg?.evening?.enabled);
                         return (
                           <Pressable
                             key={ci}

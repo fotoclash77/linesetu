@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-const DEMO_PHOTO = require("../../assets/images/demo-doctor.jpg");
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { pct } from "@/constants/design";
@@ -34,11 +33,6 @@ const SPECIALTIES = [
   { icon: "thermometer" as const, label: "General", color: "#F59E0B" },
 ] as const;
 
-const SAMPLE_DOCTORS: DoctorItem[] = [
-  { id: "demo1", name: "Dr. Ananya Sharma", specialty: "Cardiologist",  clinicName: "HeartCare Clinic, Andheri",   rating: "4.9", wait: "25 min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: "demo2", name: "Dr. Vikram Patel",  specialty: "Dermatologist", clinicName: "Skin Glow Center, Bandra",    rating: "4.8", wait: "10 min", token: 12, accent: "#3B82F6", exp: "9 yrs",  patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg"   },
-  { id: "demo3", name: "Dr. Priya Nair",    specialty: "Neurologist",   clinicName: "NeuroPlus Hospital, Powai",   rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
-];
 
 interface DoctorItem {
   id: string;
@@ -70,7 +64,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
     >
       <View style={{ position: "relative", marginBottom: 10 }}>
         <Image
-          source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
+          source={{ uri: doc.photo }}
           style={[styles.docPhoto, { borderColor: accent + "55", opacity: available ? 1 : 0.6 }]}
           contentFit="cover"
         />
@@ -282,10 +276,10 @@ export default function HomeScreen() {
     token: 1,
     exp: "10 yrs",
     patients: "1K+",
-    photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
+    photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
-  const doctors: DoctorItem[] = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
+  const doctors: DoctorItem[] = apiDoctors;
 
   const VALID_STATUSES = new Set<TokenItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
   const activeTokens: TokenItem[] = (tokenData?.tokens ?? [])

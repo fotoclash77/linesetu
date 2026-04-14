@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-const DEMO_PHOTO = require("../assets/images/demo-doctor.jpg");
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
@@ -51,16 +50,6 @@ interface DoctorItem {
   isAvailable?: boolean;
 }
 
-const SAMPLE_DOCTORS: DoctorItem[] = [
-  { id: "demo1", name: "Dr. Ananya Sharma",  specialty: "Cardiology",   clinicName: "HeartCare Clinic, Andheri",     rating: "4.9", wait: "25 min", token: 47, accent: "#EF4444", exp: "12 yrs", patients: "4.2K+", photo: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { id: "demo2", name: "Dr. Vikram Patel",   specialty: "Dermatology",  clinicName: "Skin Glow Center, Bandra",      rating: "4.8", wait: "10 min", token: 12, accent: "#3B82F6", exp: "9 yrs",  patients: "3.1K+", photo: "https://randomuser.me/api/portraits/men/32.jpg"   },
-  { id: "demo3", name: "Dr. Priya Nair",     specialty: "Neurology",    clinicName: "NeuroPlus Hospital, Powai",     rating: "4.7", wait: "18 min", token: 31, accent: "#8B5CF6", exp: "15 yrs", patients: "2.8K+", photo: "https://randomuser.me/api/portraits/women/68.jpg" },
-  { id: "demo4", name: "Dr. Rohan Mehta",    specialty: "Orthopedic",   clinicName: "OrthoLife Clinic, Juhu",        rating: "4.6", wait: "30 min", token: 22, accent: "#F97316", exp: "8 yrs",  patients: "1.9K+", photo: "https://randomuser.me/api/portraits/men/45.jpg"   },
-  { id: "demo5", name: "Dr. Kavya Reddy",    specialty: "Eye Care",     clinicName: "VisionPlus, Dadar",             rating: "4.9", wait: "12 min", token: 8,  accent: "#06B6D4", exp: "11 yrs", patients: "3.5K+", photo: "https://randomuser.me/api/portraits/women/55.jpg" },
-  { id: "demo6", name: "Dr. Arun Joshi",     specialty: "General",      clinicName: "City Health Clinic, Thane",     rating: "4.5", wait: "5 min",  token: 3,  accent: "#F59E0B", exp: "6 yrs",  patients: "1.2K+", photo: "https://randomuser.me/api/portraits/men/61.jpg"   },
-  { id: "demo7", name: "Dr. Neha Kapoor",    specialty: "Dentist",      clinicName: "SmileCare Dental, Goregaon",    rating: "4.8", wait: "20 min", token: 18, accent: "#3B82F6", exp: "7 yrs",  patients: "2.1K+", photo: "https://randomuser.me/api/portraits/women/29.jpg" },
-  { id: "demo8", name: "Dr. Suresh Iyer",    specialty: "ENT",          clinicName: "Hearing & Speech Centre, Kurla", rating: "4.7", wait: "15 min", token: 25, accent: "#EC4899", exp: "13 yrs", patients: "2.4K+", photo: "https://randomuser.me/api/portraits/men/78.jpg"   },
-];
 
 function DoctorListCard({ doc }: { doc: DoctorItem }) {
   const available = doc.isAvailable !== false;
@@ -70,7 +59,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       onPress={() => router.push(`/doctor/${doc.id}`)}
     >
       <Image
-        source={doc.id === "demo1" ? DEMO_PHOTO : { uri: doc.photo }}
+        source={{ uri: doc.photo }}
         style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
         contentFit="cover"
       />
@@ -159,11 +148,11 @@ export default function FindDoctorsScreen() {
     token: Math.floor(Math.random() * 50) + 1,
     exp: "10 yrs",
     patients: "1K+",
-    photo: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
+    photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
 
-  const allDoctors = apiDoctors.length > 0 ? apiDoctors : SAMPLE_DOCTORS;
+  const allDoctors = apiDoctors;
 
   const filtered = useMemo(() => {
     return allDoctors.filter((d) => {

@@ -14,28 +14,21 @@ const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const isWeb = Platform.OS === 'web';
 
 type EarningPeriod = 'Today' | 'Last 7 days' | 'Last 30 days';
-type PatientPeriod = 'Today' | 'Last 7 days' | 'Last 30 days';
 
-const EARNINGS = {
-  Today:   { n1:  540,  n2:  300,  total:   840,  spark: [620,740,580,920,760,840] },
-  'Last 7 days':  { n1: 3400,  n2: 1900,  total:  5300,  spark: [4100,5000,4500,5700,4900,5300] },
-  'Last 30 days': { n1:13400,  n2: 7500,  total: 20900,  spark: [17200,19000,18400,21600,20100,20900] },
+interface DashStats {
+  earningsNormal: number; earningsEmergency: number; earningsTotal: number; spark: number[];
+  total: number; consulted: number; noShow: number; waitlisted: number;
+  emergency: number; onlineBooked: number; walkIn: number; followUp: number; newPatient: number;
+}
+const EMPTY_STATS: DashStats = {
+  earningsNormal: 0, earningsEmergency: 0, earningsTotal: 0, spark: [0,0,0,0,0,0],
+  total: 0, consulted: 0, noShow: 0, waitlisted: 0, emergency: 0,
+  onlineBooked: 0, walkIn: 0, followUp: 0, newPatient: 0,
 };
 
-const PATIENT_DATA = {
-  Today:   { total: 29,  consulted: 18,  noShow: 4,  waitlisted: 7,   emergency: 3,  walkIn: 8,
-             onlineBooked: 21, followUp: 11, newPatient: 8,
-    consultedSpark: [12,16,14,19,15,18], noShowSpark: [2,4,3,5,3,4], waitSpark: [8,6,9,5,7,7],
-    onlineSpark: [14,18,16,22,19,21], followUpSpark: [7,10,9,12,10,11], newSpark: [4,7,5,9,6,8] },
-  'Last 7 days':  { total: 184, consulted: 121, noShow: 24, waitlisted: 39,  emergency: 18, walkIn: 46,
-             onlineBooked: 138, followUp: 73, newPatient: 48,
-    consultedSpark: [95,112,108,125,115,121], noShowSpark: [18,22,20,26,21,24], waitSpark: [42,36,44,30,38,39],
-    onlineSpark: [108,125,118,142,130,138], followUpSpark: [55,68,62,78,68,73], newSpark: [35,44,40,52,44,48] },
-  'Last 30 days': { total: 736, consulted: 484, noShow: 96, waitlisted: 156, emergency: 72, walkIn: 184,
-             onlineBooked: 552, followUp: 292, newPatient: 192,
-    consultedSpark: [420,455,470,440,468,484], noShowSpark: [78,90,85,98,88,96], waitSpark: [168,145,175,130,152,156],
-    onlineSpark: [430,498,472,568,520,552], followUpSpark: [220,272,248,312,272,292], newSpark: [140,176,160,208,176,192] },
-};
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const w = 80, h = 30;
@@ -69,8 +62,8 @@ export default function DashboardScreen() {
   const { doctor } = useDoctor();
   const [period, setPeriod] = useState<EarningPeriod>('Today');
   const [available, setAvailable] = useState(() => (doctor as any)?.isAvailable !== false);
-  const [patientPeriod, setPatientPeriod] = useState<PatientPeriod>('Today');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [stats, setStats] = useState<DashStats>(EMPTY_STATS);
 
   // Keep toggle in sync when doctor context hydrates from AsyncStorage
   const availSynced = React.useRef(false);
@@ -80,6 +73,47 @@ export default function DashboardScreen() {
       setAvailable((doctor as any).isAvailable !== false);
     }
   }, [doctor]);
+
+  // Fetch real token + earnings stats for the selected period
+  useEffect(() => {
+    if (!doctor?.id) return;
+    const todayD = new Date();
+    const toDate = isoDate(todayD);
+    let fromDate = toDate;
+    if (period === 'Last 7 days') {
+      const d = new Date(todayD); d.setDate(d.getDate() - 6);
+      fromDate = isoDate(d);
+    } else if (period === 'Last 30 days') {
+      const d = new Date(todayD); d.setDate(d.getDate() - 29);
+      fromDate = isoDate(d);
+    }
+    const B = BASE();
+    const tokenUrl = fromDate === toDate
+      ? `${B}/api/tokens?doctorId=${doctor.id}&date=${toDate}`
+      : `${B}/api/tokens?doctorId=${doctor.id}&from=${fromDate}&to=${toDate}`;
+    Promise.all([
+      fetch(tokenUrl).then(r => r.json()).catch(() => ({ tokens: [] })),
+      fetch(`${B}/api/doctors/${doctor.id}/earnings?from=${fromDate}&to=${toDate}`)
+        .then(r => r.json()).catch(() => ({ earnings: [] })),
+    ]).then(([tokenRes, earningsRes]) => {
+      const tokens: any[] = tokenRes.tokens ?? [];
+      const edocs: any[] = earningsRes.earnings ?? [];
+      const total       = tokens.length;
+      const consulted   = tokens.filter(t => t.status === 'done').length;
+      const noShow      = tokens.filter(t => t.status === 'cancelled' || t.status === 'skipped').length;
+      const waitlisted  = tokens.filter(t => ['waiting','up_next','in_consult'].includes(t.status)).length;
+      const emergency   = tokens.filter(t => t.type === 'emergency').length;
+      const onlineBooked = tokens.filter(t => t.source !== 'walkin').length;
+      const walkIn      = tokens.filter(t => t.source === 'walkin').length;
+      const earningsTotal     = edocs.reduce((s, e) => s + (e.earned ?? 0), 0);
+      const earningsNormal    = edocs.reduce((s, e) => s + ((e.tokensNormal ?? 0) * 10), 0);
+      const earningsEmergency = edocs.reduce((s, e) => s + ((e.tokensEmergency ?? 0) * 20), 0);
+      setStats({ total, consulted, noShow, waitlisted, emergency, onlineBooked, walkIn,
+        followUp: 0, newPatient: 0, earningsNormal, earningsEmergency, earningsTotal,
+        spark: [0, 0, 0, 0, 0, earningsTotal],
+      });
+    }).catch(() => {});
+  }, [doctor?.id, period]);
 
   useEffect(() => {
     if (!doctor?.id) return;
@@ -112,24 +146,31 @@ export default function DashboardScreen() {
     }
   }, [available, doctor?.id]);
 
-  const earn = EARNINGS[period];
-  const pd = PATIENT_DATA[patientPeriod];
+  const earn = { n1: stats.earningsNormal, n2: stats.earningsEmergency, total: stats.earningsTotal, spark: stats.spark };
+  const pd   = stats;
   const fmt = (n: number) => n >= 1000 ? `₹${(n/1000).toFixed(1)}k` : `₹${n}`;
-  const consultPct = Math.round((pd.consulted / pd.total) * 100);
+  const consultPct = pd.total > 0 ? Math.round((pd.consulted / pd.total) * 100) : 0;
+
+  const now = new Date();
+  const DOW_S = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MON_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const headerDate = `${DOW_S[now.getDay()]}, ${now.getDate()} ${MON_S[now.getMonth()]} ${now.getFullYear()}`;
+  const greetingTime = now.getHours() < 12 ? 'Morning' : now.getHours() < 17 ? 'Afternoon' : 'Evening';
+  const greetingName = (doctor as any)?.name?.replace(/^Dr\.?\s*/i, '').split(' ')[0] ?? 'Doctor';
 
   interface PatientRow {
     label: string; value: number; sub: string; icon: string;
     color: string; spark: number[]; divider?: boolean;
   }
+  const spark1 = (v: number) => [0,0,0,0,0,v];
   const patientRows: PatientRow[] = [
-    { label: 'Total Patients',      value: pd.total,       sub: 'All registered',        icon: '👥', color: '#A5B4FC', spark: [20,24,22,28,25,pd.total] },
-    { label: 'Consulted',           value: pd.consulted,   sub: 'Seen by doctor',         icon: '✓',  color: '#4ADE80', spark: pd.consultedSpark },
-    { label: 'Not Shown',           value: pd.noShow,      sub: 'Absent / skipped',       icon: '✗',  color: '#F87171', spark: pd.noShowSpark },
-    { label: 'Waitlisted',          value: pd.waitlisted,  sub: 'Still in queue',         icon: '⏱', color: '#FCD34D', spark: pd.waitSpark },
-    { label: 'Emergency Patients',  value: pd.emergency,   sub: 'Priority tokens',        icon: '⚡', color: '#FB923C', spark: [1,3,2,4,2,pd.emergency] },
-    { label: 'Online Token Booked', value: pd.onlineBooked,sub: 'Via app',                icon: '📱', color: '#818CF8', spark: pd.onlineSpark, divider: true },
-    { label: 'Follow-up Patients',  value: pd.followUp,    sub: 'Returning patients',     icon: '↩', color: '#34D399', spark: pd.followUpSpark },
-    { label: 'New Patients',        value: pd.newPatient,  sub: 'First-time visit',       icon: '★',  color: '#F9A8D4', spark: pd.newSpark },
+    { label: 'Total Patients',      value: pd.total,        sub: 'All registered',    icon: '👥', color: '#A5B4FC', spark: spark1(pd.total) },
+    { label: 'Consulted',           value: pd.consulted,    sub: 'Seen by doctor',    icon: '✓',  color: '#4ADE80', spark: spark1(pd.consulted) },
+    { label: 'Not Shown',           value: pd.noShow,       sub: 'Absent / skipped',  icon: '✗',  color: '#F87171', spark: spark1(pd.noShow) },
+    { label: 'Waitlisted',          value: pd.waitlisted,   sub: 'Still in queue',    icon: '⏱', color: '#FCD34D', spark: spark1(pd.waitlisted) },
+    { label: 'Emergency Patients',  value: pd.emergency,    sub: 'Priority tokens',   icon: '⚡', color: '#FB923C', spark: spark1(pd.emergency) },
+    { label: 'Online Tokens',       value: pd.onlineBooked, sub: 'Via app',           icon: '📱', color: '#818CF8', spark: spark1(pd.onlineBooked), divider: true },
+    { label: 'Walk-in Tokens',      value: pd.walkIn,       sub: 'Added at clinic',   icon: '🚶', color: '#34D399', spark: spark1(pd.walkIn) },
   ];
 
   return (
@@ -141,9 +182,9 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerDate}>Fri, 10 Apr 2026</Text>
+            <Text style={styles.headerDate}>{headerDate}</Text>
             <Text style={styles.headerTitle}>
-              Good Morning, <Text style={styles.headerName}>Dr. Sharma</Text>
+              Good {greetingTime}, <Text style={styles.headerName}>{greetingName}</Text>
             </Text>
           </View>
           <View style={styles.headerIcons}>
@@ -252,9 +293,9 @@ export default function DashboardScreen() {
                 <Text style={styles.sectionTitle}>Patient Data</Text>
               </View>
               <View style={[styles.periodTabs, { alignSelf: 'flex-start' }]}>
-                {(['Today','Last 7 days','Last 30 days'] as PatientPeriod[]).map(p => (
-                  <TouchableOpacity key={p} onPress={() => setPatientPeriod(p)} style={[styles.periodTab, patientPeriod === p && styles.periodTabActive]}>
-                    <Text style={[styles.periodTabText, patientPeriod === p && styles.periodTabTextActive]}>{p}</Text>
+                {(['Today','Last 7 days','Last 30 days'] as EarningPeriod[]).map(p => (
+                  <TouchableOpacity key={p} onPress={() => setPeriod(p)} style={[styles.periodTab, period === p && styles.periodTabActive]}>
+                    <Text style={[styles.periodTabText, period === p && styles.periodTabTextActive]}>{p}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

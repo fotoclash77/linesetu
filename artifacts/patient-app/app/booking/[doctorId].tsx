@@ -22,12 +22,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const isWeb = Platform.OS === "web";
 const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-const FAMILY: Array<{ id: string; name: string; relation: string; age: number; blood: string; gender: string; phone: string; avatar: string; color: string }> = [
-  { id: "self",   name: "Rahul Sharma",  relation: "Self",   age: 32, blood: "B+",  gender: "Male",   phone: "+91 98765 43210", avatar: "https://randomuser.me/api/portraits/men/32.jpg",    color: "#6366F1" },
-  { id: "wife",   name: "Priya Sharma",  relation: "Wife",   age: 29, blood: "O+",  gender: "Female", phone: "+91 98765 12345", avatar: "https://randomuser.me/api/portraits/women/26.jpg",  color: "#EC4899" },
-  { id: "mother", name: "Sunita Sharma", relation: "Mother", age: 58, blood: "A+",  gender: "Female", phone: "+91 99887 65432", avatar: "https://randomuser.me/api/portraits/women/55.jpg",  color: "#F59E0B" },
-  { id: "father", name: "Ramesh Sharma", relation: "Father", age: 62, blood: "AB+", gender: "Male",   phone: "+91 99887 12345", avatar: "https://randomuser.me/api/portraits/men/58.jpg",    color: "#10B981" },
-];
+type FamilyMember = { id: string; name: string; relation: string; age: number; blood: string; gender: string; phone: string; avatar: string; color: string };
+const ACCENT_FAMILY = ["#6366F1","#EC4899","#F59E0B","#10B981","#06B6D4","#8B5CF6"];
+const SELF_DEFAULT: FamilyMember = { id: "self", name: "Self", relation: "Self", age: 0, blood: "", gender: "", phone: "", avatar: "", color: "#6366F1" };
 
 const TYPE_COLOR: Record<string, string> = {
   emergency: "#F87171",
@@ -110,8 +107,34 @@ export default function BookingScreen() {
   const [tokenType, setTokenType] = useState<"normal" | "emergency">("normal");
   const [selectedIso, setSelectedIso] = useState<string>(initDate);
   const [selectedShiftId, setSelectedShiftId] = useState<"morning" | "evening" | null>(initShift);
-  const [selectedMember, setSelectedMember] = useState(FAMILY[0]);
+  const [family, setFamily] = useState<FamilyMember[]>([SELF_DEFAULT]);
+  const [selectedMember, setSelectedMember] = useState<FamilyMember>(SELF_DEFAULT);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
+
+  // Load family members from AsyncStorage
+  useEffect(() => {
+    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+      AS.getItem("linesetu_family").then(raw => {
+        try {
+          const stored: any[] = raw ? JSON.parse(raw) : [];
+          const selfM: FamilyMember = {
+            id: "self", name: (patient as any)?.name ?? "Self",
+            relation: "Self", age: (patient as any)?.age ?? 0,
+            blood: (patient as any)?.blood ?? "", gender: (patient as any)?.gender ?? "",
+            phone: (patient as any)?.phone ?? "", avatar: (patient as any)?.photo ?? "", color: "#6366F1",
+          };
+          const extras: FamilyMember[] = stored.map((f: any, i: number) => ({
+            id: f.id ?? `member_${i}`, name: f.name ?? "Member", relation: f.relation ?? "Family",
+            age: f.age ?? 0, blood: f.blood ?? "", gender: f.gender ?? "",
+            phone: f.phone ?? "", avatar: f.photo ?? "", color: ACCENT_FAMILY[i % ACCENT_FAMILY.length],
+          }));
+          const all = [selfM, ...extras];
+          setFamily(all);
+          setSelectedMember(selfM);
+        } catch { /* ignore */ }
+      }).catch(() => {});
+    });
+  }, [patient?.id]);
 
   // Real token counts for selected date (re-fetched via SSE/polling)
   const [tokenCounts, setTokenCounts] = useState<Record<string, number>>({ morning: 0, evening: 0 });
@@ -129,7 +152,7 @@ export default function BookingScreen() {
 
   const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Doctor");
   const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? "");
-  const docPhoto = `https://randomuser.me/api/portraits/women/44.jpg`;
+  const docPhoto = (doctorData as any)?.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
   const docAvail = isDemoId ? true : ((doctorData as any)?.isAvailable !== false);
 
   const calendar: Record<string, any> = (doctorData as any)?.calendar ?? {};
@@ -475,7 +498,7 @@ export default function BookingScreen() {
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Booking For</Text>
           <View style={{ gap: 8 }}>
-            {FAMILY.map(m => {
+            {family.map(m => {
               const isSelected = selectedMember.id === m.id;
               const isExpanded = expandedMember === m.id;
               return (

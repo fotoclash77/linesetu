@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import { useQuery } from "@tanstack/react-query";
-import { getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
+import { getGetPatientTokensQueryOptions, getListDoctorsQueryOptions } from "@workspace/api-client-react";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -21,21 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const isWeb = Platform.OS === "web";
 
-const MEMBERS = [
-  { id: "all", name: "All Members", relation: "", age: 0, avatar: "", color: "#A5B4FC" },
-  { id: "self", name: "Rahul Sharma", relation: "Self", age: 32, avatar: "https://randomuser.me/api/portraits/men/32.jpg", color: "#6366F1" },
-  { id: "wife", name: "Priya Sharma", relation: "Wife", age: 29, avatar: "https://randomuser.me/api/portraits/women/26.jpg", color: "#EC4899" },
-  { id: "mother", name: "Sunita Sharma", relation: "Mother", age: 58, avatar: "https://randomuser.me/api/portraits/women/55.jpg", color: "#F59E0B" },
-  { id: "father", name: "Ramesh Sharma", relation: "Father", age: 62, avatar: "https://randomuser.me/api/portraits/men/58.jpg", color: "#10B981" },
-];
-
-const SAMPLE_BOOKINGS = [
-  { id: "b1", memberId: "self", status: "waiting" as const, tokenNumber: 56, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Today, 10 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "first" as const, ahead: 9, patientPaid: 20, consultFee: 500 },
-  { id: "b2", memberId: "self", status: "upcoming" as const, tokenNumber: 12, doctor: "Dr. Meera Joshi", doctorPhoto: "https://randomuser.me/api/portraits/women/68.jpg", specialty: "Ophthalmologist", clinicName: "Vision Care Center", clinicLoc: "Bandra West", date: "Wed, 15 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "followup" as const, patientPaid: 20, consultFee: 400 },
-  { id: "b3", memberId: "wife", status: "upcoming" as const, tokenNumber: 7, doctor: "Dr. Vikram Patel", doctorPhoto: "https://randomuser.me/api/portraits/men/52.jpg", specialty: "Dermatologist", clinicName: "SkinCure Clinic", clinicLoc: "Juhu", date: "Sat, 18 Apr", shift: "evening", time: "5:00 PM – 9:00 PM", visitType: "first" as const, patientPaid: 20, consultFee: 600 },
-  { id: "b4", memberId: "mother", status: "done" as const, tokenNumber: 23, doctor: "Dr. Suresh Nair", doctorPhoto: "https://randomuser.me/api/portraits/men/45.jpg", specialty: "Orthopedist", clinicName: "Bone & Joint Clinic", clinicLoc: "Powai", date: "Sun, 5 Apr", shift: "morning", time: "9:00 AM – 1:00 PM", visitType: "followup" as const, patientPaid: 20, consultFee: 800 },
-  { id: "b5", memberId: "mother", status: "cancelled" as const, tokenNumber: 41, doctor: "Dr. Ananya Sharma", doctorPhoto: "https://randomuser.me/api/portraits/women/44.jpg", specialty: "Cardiologist", clinicName: "HeartCare Clinic", clinicLoc: "Andheri West", date: "Wed, 1 Apr", shift: "morning", time: "10:00 AM – 2:00 PM", visitType: "first" as const, patientPaid: 20, consultFee: 500 },
-];
+const ACCENT_POOL = ["#6366F1","#EC4899","#F59E0B","#10B981","#06B6D4","#8B5CF6","#EF4444","#F97316"];
 
 type FilterTab = "all" | "active" | "upcoming" | "past";
 
@@ -77,7 +63,11 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   cancelled:  { label: "Skipped",   color: "#F59E0B", bg: "rgba(245,158,11,0.14)",  border: "rgba(245,158,11,0.3)"  },
 };
 
-function MemberDropdown({ selected, onSelect }: { selected: typeof MEMBERS[0]; onSelect: (m: typeof MEMBERS[0]) => void }) {
+interface MemberItem {
+  id: string; name: string; relation: string; age: number; avatar: string; color: string;
+}
+
+function MemberDropdown({ selected, members, onSelect }: { selected: MemberItem; members: MemberItem[]; onSelect: (m: MemberItem) => void }) {
   const [open, setOpen] = useState(false);
   const isAll = selected.id === "all";
 
@@ -103,13 +93,13 @@ function MemberDropdown({ selected, onSelect }: { selected: typeof MEMBERS[0]; o
 
       {open && (
         <View style={styles.dropdownMenu}>
-          {MEMBERS.map((m, i) => {
+          {members.map((m, i) => {
             const isSelected = m.id === selected.id;
             const hasAvatar = m.id !== "all";
             return (
               <Pressable
                 key={m.id}
-                style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected, i < MEMBERS.length - 1 && styles.dropdownItemBorder]}
+                style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected, i < members.length - 1 && styles.dropdownItemBorder]}
                 onPress={() => { onSelect(m); setOpen(false); }}
               >
                 {hasAvatar ? (
@@ -158,11 +148,14 @@ function SummaryStrip({ bookings }: { bookings: BookingItem[] }) {
   );
 }
 
-function BookingCard({ booking, showMember }: { booking: BookingItem; showMember: boolean }) {
+const MEMBER_ALL: MemberItem = { id: "all", name: "All Members", relation: "", age: 0, avatar: "", color: "#A5B4FC" };
+const MEMBER_SELF_DEFAULT: MemberItem = { id: "self", name: "Self", relation: "Self", age: 0, avatar: "", color: "#6366F1" };
+
+function BookingCard({ booking, members, showMember }: { booking: BookingItem; members: MemberItem[]; showMember: boolean }) {
   const cfg = STATUS_CFG[booking.status] ?? STATUS_CFG.waiting;
   const isActive = booking.status === "waiting" || booking.status === "in_consult";
   const isSkipped = booking.status === "cancelled";
-  const member = MEMBERS.find(m => m.id === booking.memberId) ?? MEMBERS[0];
+  const member = members.find(m => m.id === booking.memberId) ?? MEMBER_SELF_DEFAULT;
   const waitMin = booking.ahead != null ? Math.round(booking.ahead * 2.5) : null;
 
   return (
@@ -274,40 +267,73 @@ export default function BookingsScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
-  const [selectedMember, setSelectedMember] = useState(MEMBERS[0]);
+  const [selectedMember, setSelectedMember] = useState<MemberItem>(MEMBER_ALL);
   const [filter, setFilter] = useState<FilterTab>("all");
+  const [members, setMembers] = useState<MemberItem[]>([MEMBER_ALL]);
+
+  // Load family members from AsyncStorage
+  React.useEffect(() => {
+    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
+      AS.getItem("linesetu_family").then(raw => {
+        try {
+          const family: any[] = raw ? JSON.parse(raw) : [];
+          const selfMember: MemberItem = {
+            id: "self", name: (patient as any)?.name ?? "Self",
+            relation: "Self", age: 0, avatar: (patient as any)?.photo ?? "", color: "#6366F1",
+          };
+          const extras: MemberItem[] = family.map((f: any, i: number) => ({
+            id: f.id ?? `member_${i}`, name: f.name ?? "Member",
+            relation: f.relation ?? "Family", age: f.age ?? 0,
+            avatar: f.photo ?? "", color: ACCENT_POOL[i % ACCENT_POOL.length],
+          }));
+          setMembers([MEMBER_ALL, selfMember, ...extras]);
+        } catch { /* ignore */ }
+      }).catch(() => {});
+    });
+  }, [patient?.id]);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
     enabled: !!patient?.id,
   });
 
+  const { data: doctorsData } = useQuery({
+    ...getListDoctorsQueryOptions(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const doctorById = React.useMemo(() => {
+    const m = new Map<string, any>();
+    (doctorsData?.doctors ?? []).forEach((d: any) => m.set(d.id, d));
+    return m;
+  }, [doctorsData]);
+
   const apiTokens = data?.tokens ?? [];
 
   const BOOKING_STATUSES = new Set<BookingItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
-  const allBookings: BookingItem[] = apiTokens.length > 0
-    ? apiTokens.map((t, i: number) => ({
-        id: t.id,
-        doctorId: t.doctorId,
-        tokenNumber: t.tokenNumber,
-        status: BOOKING_STATUSES.has(t.status as BookingItem["status"])
-          ? (t.status as BookingItem["status"])
-          : "waiting" as const,
-        doctor: `Doctor ${i + 1}`,
-        doctorPhoto: `https://randomuser.me/api/portraits/${i % 2 === 0 ? "women" : "men"}/${30 + i}.jpg`,
-        specialty: "General",
-        clinicName: "Clinic",
-        clinicLoc: "Mumbai",
-        date: t.date,
-        shift: t.shift,
-        time: t.shift === "morning" ? "9:00 AM – 1:00 PM" : "5:00 PM – 9:00 PM",
-        visitType: "first" as const,
-        memberId: "self",
-        ahead: 0,
-        patientPaid: 20,
-        consultFee: 500,
-      }))
-    : SAMPLE_BOOKINGS;
+  const allBookings: BookingItem[] = apiTokens.map((t: any) => {
+    const doc = doctorById.get(t.doctorId);
+    return {
+      id: t.id,
+      doctorId: t.doctorId,
+      tokenNumber: t.tokenNumber,
+      status: BOOKING_STATUSES.has(t.status as BookingItem["status"])
+        ? (t.status as BookingItem["status"])
+        : "waiting" as const,
+      doctor: doc?.name ?? t.doctorName ?? "Doctor",
+      doctorPhoto: doc?.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(doc?.name ?? "D")}&background=4F46E5&color=fff`,
+      specialty: doc?.specialization ?? "General",
+      clinicName: doc?.clinicName ?? doc?.clinics?.[0]?.name ?? "Clinic",
+      clinicLoc: doc?.clinicAddress ?? doc?.clinics?.[0]?.address ?? "",
+      date: t.date,
+      shift: t.shift,
+      time: t.shift === "morning" ? "9:00 AM – 1:00 PM" : "5:00 PM – 9:00 PM",
+      visitType: "first" as const,
+      memberId: t.memberId ?? "self",
+      ahead: t.queuePosition ?? 0,
+      patientPaid: t.amount ?? 20,
+      consultFee: doc?.fee ?? 500,
+    };
+  });
 
   const memberBookings = selectedMember.id === "all"
     ? allBookings
@@ -345,7 +371,7 @@ export default function BookingsScreen() {
       </View>
 
       <View style={styles.filterSection}>
-        <MemberDropdown selected={selectedMember} onSelect={setSelectedMember} />
+        <MemberDropdown selected={selectedMember} members={members} onSelect={setSelectedMember} />
 
         <View style={styles.filterTabs}>
           {(["all", "active", "upcoming", "past"] as FilterTab[]).map((t) => (
@@ -387,7 +413,7 @@ export default function BookingsScreen() {
         ) : (
           <View style={{ marginTop: 4 }}>
             {filtered.map((bk) => (
-              <BookingCard key={bk.id} booking={bk} showMember={showMember} />
+              <BookingCard key={bk.id} booking={bk} members={members} showMember={showMember} />
             ))}
           </View>
         )}

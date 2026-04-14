@@ -125,14 +125,19 @@ router.post("/tokens", async (req, res) => {
 // GET /api/tokens
 router.get("/tokens", async (req, res) => {
   try {
-    const { doctorId, patientId, date, status } = req.query as Record<string, string>;
+    const { doctorId, patientId, date, status, from, to } = req.query as Record<string, string>;
     const constraints: any[] = [];
     if (doctorId)  constraints.push(where("doctorId", "==", doctorId));
     if (patientId) constraints.push(where("patientId", "==", patientId));
     if (status)    constraints.push(where("status", "==", status));
-    // Push date into Firestore filter when it's ISO format (YYYY-MM-DD) to minimise reads
+    // Exact date filter takes priority over range
     const isISODate = date && /^\d{4}-\d{2}-\d{2}$/.test(date);
-    if (isISODate)  constraints.push(where("date", "==", date));
+    if (isISODate) {
+      constraints.push(where("date", "==", date));
+    } else if (from || to) {
+      if (from) constraints.push(where("date", ">=", from));
+      if (to)   constraints.push(where("date", "<=", to));
+    }
     const snap = await getDocs(query(collection(db, Collections.TOKENS), ...constraints));
     let tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     // In-memory date filter for legacy numeric date format only
