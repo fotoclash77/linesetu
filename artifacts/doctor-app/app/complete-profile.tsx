@@ -28,12 +28,12 @@ export default function CompleteProfile() {
   const { doctor, updateDoctor } = useDoctor();
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(doctor?.name ?? '');
-  const [specialization, setSpecialization] = useState(doctor?.specialization ?? '');
+  const [name, setName] = useState('');
+  const [specialization, setSpecialization] = useState('');
   const [customSpec, setCustomSpec] = useState('');
-  const [qualifications, setQualifications] = useState(doctor?.qualifications ?? '');
-  const [experience, setExperience] = useState(doctor?.experience ?? '');
-  const [bio, setBio] = useState(doctor?.bio ?? '');
+  const [qualifications, setQualifications] = useState('');
+  const [experience, setExperience] = useState('');
+  const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
