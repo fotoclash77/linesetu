@@ -42,31 +42,6 @@ const SAMPLE_DOCTOR = {
   ],
 };
 
-const SCHEDULE = [
-  {
-    days: "Mon – Wed",
-    shifts: [
-      { label: "Morning", icon: "sun" as const, time: "9:00 AM – 1:00 PM",  clinic: "HeartCare Clinic",  loc: "Andheri West, Mumbai", color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai" },
-      { label: "Evening", icon: "moon" as const, time: "5:00 PM – 9:00 PM", clinic: "City Heart Center", loc: "Bandra East, Mumbai",  color: "#818CF8", maps: "https://maps.google.com/?q=City+Heart+Center+Bandra+East+Mumbai" },
-    ],
-    active: true,
-  },
-  {
-    days: "Thu – Fri",
-    shifts: [
-      { label: "Morning", icon: "sun" as const, time: "10:00 AM – 2:00 PM", clinic: "HeartCare Clinic", loc: "Andheri West, Mumbai", color: "#F59E0B", maps: "https://maps.google.com/?q=HeartCare+Clinic+Andheri+West+Mumbai" },
-    ],
-    active: true,
-  },
-  {
-    days: "Sat",
-    shifts: [
-      { label: "Morning", icon: "sun" as const, time: "9:00 AM – 12:00 PM", clinic: "MedPlus Hospital", loc: "Powai, Mumbai", color: "#22C55E", maps: "https://maps.google.com/?q=MedPlus+Hospital+Powai+Mumbai", note: "Alternate Sat only" },
-    ],
-    active: true,
-  },
-  { days: "Sun", shifts: [], active: false },
-];
 
 const FEES = [
   { icon: "check-circle" as const, label: "Walk-in Token",         sub: "Come early at clinic by 9 AM to get your token",                     amount: "₹0",   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",  border: "rgba(34,197,94,0.3)"   },
@@ -81,7 +56,6 @@ export default function DoctorDetailScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 20;
 
-  const [activeDay, setActiveDay] = useState(0);
   const [selectedDay, setSelectedDay] = useState<{ iso: string; cfg: any } | null>(null);
 
   const isDemoId = !id || id.startsWith("demo");
@@ -410,74 +384,6 @@ export default function DoctorDetailScreen() {
             </Pressable>
           </Pressable>
         </Modal>
-
-        {/* Weekly Schedule */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Feather name="calendar" size={13} color="#06B6D4" />
-            <Text style={styles.sectionTitle}>Weekly Schedule</Text>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-            <View style={{ flexDirection: "row", gap: 6 }}>
-              {SCHEDULE.map((s, i) => (
-                <Pressable
-                  key={s.days}
-                  style={[styles.dayTab, activeDay === i && styles.dayTabActive, !s.active && styles.dayTabOff]}
-                  onPress={() => setActiveDay(i)}
-                >
-                  <Text style={[styles.dayTabTxt, activeDay === i && styles.dayTabTxtActive, !s.active && { color: "rgba(255,255,255,0.2)" }]}>
-                    {s.days}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
-
-          {SCHEDULE[activeDay].active ? (
-            <View style={{ gap: 8 }}>
-              {SCHEDULE[activeDay].shifts.map(shift => (
-                <View key={shift.label} style={[styles.shiftCard, { backgroundColor: shift.color + "10", borderColor: shift.color + "28" }]}>
-                  <View style={styles.shiftCardTop}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <View style={[styles.shiftIcon, { backgroundColor: shift.color + "22" }]}>
-                        <Feather name={shift.icon} size={13} color={shift.color} />
-                      </View>
-                      <Text style={[styles.shiftLbl, { color: shift.color }]}>{shift.label} Shift</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Feather name="clock" size={10} color="rgba(255,255,255,0.35)" />
-                      <Text style={styles.shiftTime}>{shift.time}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.shiftCardBottom}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}>
-                      <Feather name="home" size={10} color="rgba(255,255,255,0.3)" />
-                      <Text style={styles.shiftClinicTxt} numberOfLines={1}>{shift.clinic}</Text>
-                      <Text style={styles.shiftDot}>·</Text>
-                      <Feather name="map-pin" size={9} color="rgba(255,255,255,0.3)" />
-                      <Text style={styles.shiftLocTxt} numberOfLines={1}>{shift.loc}</Text>
-                    </View>
-                    <Pressable
-                      style={styles.mapsBtn}
-                      onPress={() => Linking.openURL(shift.maps)}
-                    >
-                      <Feather name="navigation" size={10} color="#4285F4" />
-                      <Text style={styles.mapsBtnTxt}>Maps</Text>
-                    </Pressable>
-                  </View>
-                  {"note" in shift && shift.note && (
-                    <Text style={styles.shiftNote}>⚠ {shift.note}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.offDay}>
-              <Text style={styles.offDayTxt}>Not available on Sunday</Text>
-            </View>
-          )}
-        </View>
 
       </ScrollView>
 
