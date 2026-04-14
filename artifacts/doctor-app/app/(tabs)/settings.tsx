@@ -1734,9 +1734,13 @@ export default function SettingsScreen() {
           <View style={styles.profileCard}>
             <View style={styles.profileRow}>
               <View style={styles.avatarWrap}>
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarEmoji}>⚕</Text>
-                </View>
+                {profilePhotoUrl ? (
+                  <Image key={profilePhotoUrl} source={{ uri: profilePhotoUrl }} style={styles.avatarPlaceholder} resizeMode="cover" />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarEmoji}>⚕</Text>
+                  </View>
+                )}
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
