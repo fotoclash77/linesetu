@@ -417,32 +417,6 @@ export default function DashboardScreen() {
               <PeriodTabs value={period} onChange={setPeriod}/>
             </View>
 
-            {/* ── BAR CHART ── */}
-            {pd.dailyData.length > 0 && (
-              <View style={styles.chartWrap}>
-                <DailyBarChart data={pd.dailyData}/>
-                {/* Legend */}
-                <View style={styles.chartLegend}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot,{backgroundColor:'rgba(165,180,252,0.4)'}]}/>
-                    <Text style={styles.legendTxt}>Total</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot,{backgroundColor:'rgba(74,222,128,0.7)'}]}/>
-                    <Text style={styles.legendTxt}>Consulted</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot,{backgroundColor:'#818CF8'}]}/>
-                    <Text style={styles.legendTxt}>First Visit</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot,{backgroundColor:'#34D399'}]}/>
-                    <Text style={styles.legendTxt}>Follow-up</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
             {/* ── CONSULTATION RATE ── */}
             <ProgressCard
               label="Consultation Rate"
