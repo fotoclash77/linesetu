@@ -407,7 +407,6 @@ export default function EarningsScreen() {
                     <Text style={styles.sectionDot}>🛡</Text>
                     <Text style={styles.sectionTitle}>E-Token Rates</Text>
                   </View>
-                  <Text style={styles.platformSetText}>Doctor-set</Text>
                 </View>
                 {[
                   { type: 'Normal E-Token',    earn: `₹${inClinicFee   ?? 10}`, platform: '₹10', patient: `₹${(inClinicFee   ?? 10) + 10}` },
