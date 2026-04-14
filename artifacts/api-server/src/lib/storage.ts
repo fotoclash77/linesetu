@@ -1,5 +1,6 @@
 const API_KEY = () => process.env.FIREBASE_API_KEY!;
 const BUCKET = () => process.env.FIREBASE_STORAGE_BUCKET!;
+const LEGACY_BUCKET = () => `${process.env.FIREBASE_PROJECT_ID}.appspot.com`;
 
 async function getAnonIdToken(): Promise<string> {
   const res = await fetch(
@@ -32,24 +33,31 @@ export async function uploadBase64ToStorage(
   const buffer = Buffer.from(base64, "base64");
   const encodedPath = encodeURIComponent(path);
 
-  const uploadRes = await fetch(
-    `https://firebasestorage.googleapis.com/v0/b/${BUCKET()}/o?name=${encodedPath}&uploadType=media`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": mimeType,
-        Authorization: `Bearer ${idToken}`,
+  const buckets = [BUCKET(), LEGACY_BUCKET()];
+  let uploadData: any = null;
+  let lastError = "unknown";
+
+  for (const bucket of buckets) {
+    const uploadRes = await fetch(
+      `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?name=${encodedPath}&uploadType=media`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": mimeType,
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: buffer,
       },
-      body: buffer,
-    },
-  );
-  const uploadData = await uploadRes.json();
-  if (!uploadRes.ok) {
-    throw new Error(`Storage upload failed: ${uploadData?.error?.message ?? JSON.stringify(uploadData)}`);
+    );
+    uploadData = await uploadRes.json();
+    if (uploadRes.ok) {
+      const token: string = uploadData.downloadTokens;
+      return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media&token=${token}`;
+    }
+    lastError = uploadData?.error?.message ?? JSON.stringify(uploadData);
   }
 
-  const token: string = uploadData.downloadTokens;
-  return `https://firebasestorage.googleapis.com/v0/b/${BUCKET()}/o/${encodedPath}?alt=media&token=${token}`;
+  throw new Error(`Storage upload failed: ${lastError}`);
 }
 
 /**
@@ -67,10 +75,13 @@ export async function deleteFromStorage(urlOrPath: string): Promise<void> {
 
     const idToken = await getAnonIdToken();
     const encodedPath = encodeURIComponent(storagePath);
-    await fetch(
-      `https://firebasestorage.googleapis.com/v0/b/${BUCKET()}/o/${encodedPath}`,
-      { method: "DELETE", headers: { Authorization: `Bearer ${idToken}` } },
-    );
+    for (const bucket of [BUCKET(), LEGACY_BUCKET()]) {
+      const res = await fetch(
+        `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${idToken}` } },
+      );
+      if (res.ok || res.status === 404) return;
+    }
   } catch {
     // Non-critical — ignore delete failures
   }
