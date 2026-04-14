@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useBookToken } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import RazorpayCheckout from "@/components/RazorpayCheckout";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
 
@@ -76,6 +78,33 @@ export default function PaymentScreen() {
   const [rzpVisible, setRzpVisible] = useState(false);
   const [rzpOrder, setRzpOrder] = useState<{ id: string; amount: number; currency: string } | null>(null);
   const [bookedTokenNum, setBookedTokenNum] = useState<number | null>(null);
+
+  // Live Firebase data — 0-second delay via onSnapshot
+  const [liveClinic, setLiveClinic] = useState(clinic);
+  const [liveTime, setLiveTime] = useState(time);
+  const [livePhone, setLivePhone] = useState("");
+
+  useEffect(() => {
+    if (!params.doctorId) return;
+    const ref = doc(db, "doctors", params.doctorId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      // Doctor-level phone (clinic contact)
+      if (data.phone) setLivePhone(data.phone);
+      // Shift-specific data from calendar
+      const calEntry = data.calendar?.[date];
+      const shiftCfg = calEntry?.[shift];
+      if (shiftCfg) {
+        if (shiftCfg.clinicName) setLiveClinic(shiftCfg.clinicName);
+        if (shiftCfg.startTime && shiftCfg.endTime)
+          setLiveTime(`${shiftCfg.startTime} – ${shiftCfg.endTime}`);
+        // clinicPhone at shift level overrides doctor-level
+        if (shiftCfg.clinicPhone) setLivePhone(shiftCfg.clinicPhone);
+      }
+    }, () => {/* ignore errors — fallback to param values already set */});
+    return () => unsub();
+  }, [params.doctorId, date, shift]);
 
   const bookToken = useBookToken();
 
@@ -209,13 +238,15 @@ export default function PaymentScreen() {
               )}
             </View>
 
-            {/* 2×2 Info Grid */}
+            {/* Info Grid — real-time from Firebase */}
             <View style={styles.infoGrid}>
               {([
-                { icon: "calendar",                              label: "Date",      val: fmtDate(date) },
-                { icon: shift === "morning" ? "sun" : "moon",   label: "Shift",     val: `${shift.charAt(0).toUpperCase() + shift.slice(1)} Shift` },
-                { icon: "hash",                                  label: "Token No.", val: bookedTokenNum ? `#${bookedTokenNum}` : "—" },
-                { icon: "clock",                                 label: "Time",      val: time || "—" },
+                { icon: "calendar",                          label: "Date",         val: fmtDate(date) },
+                { icon: shift === "morning" ? "sun" : "moon", label: "Shift",       val: `${shift.charAt(0).toUpperCase() + shift.slice(1)} Shift` },
+                { icon: "clock",                             label: "Time",         val: liveTime || "—" },
+                { icon: "hash",                              label: "Token No.",    val: bookedTokenNum ? `#${bookedTokenNum}` : "—" },
+                { icon: "home",                              label: "Clinic",       val: liveClinic || "—" },
+                { icon: "phone",                             label: "Clinic Phone", val: livePhone || "—" },
               ] as Array<{ icon: React.ComponentProps<typeof Feather>["name"]; label: string; val: string }>).map(({ icon, label, val }) => (
                 <View key={label} style={styles.infoCell}>
                   <View style={styles.infoCellHeader}>
