@@ -55,7 +55,7 @@ function fmtDateDisplay(iso: string): string {
 
 interface TokenRow {
   id: string; tokenNumber: number; patientName: string;
-  type: string; status: string; bookedAt: any; shift: string;
+  type: string; source: string; status: string; bookedAt: any; shift: string;
 }
 
 export default function AddWalkinScreen() {
@@ -384,6 +384,13 @@ export default function AddWalkinScreen() {
                 const priBg    = isE ? 'rgba(239,68,68,0.12)'  : 'rgba(74,222,128,0.12)';
                 const priBd    = isE ? 'rgba(239,68,68,0.28)'  : 'rgba(74,222,128,0.28)';
 
+                // Source pill — read actual source field
+                const isOnline  = t.source === 'online';
+                const srcLabel  = isOnline ? 'E-Token' : 'Walk-In';
+                const srcClr    = isOnline ? '#A5B4FC' : '#2DD4BF';
+                const srcBg     = isOnline ? 'rgba(165,180,252,0.12)' : 'rgba(45,212,191,0.12)';
+                const srcBd     = isOnline ? 'rgba(165,180,252,0.28)' : 'rgba(45,212,191,0.28)';
+
                 return (
                   <View key={t.id} style={[styles.recentItem, isE && styles.recentItemEmerg]}>
                     {/* Token chip */}
@@ -405,8 +412,8 @@ export default function AddWalkinScreen() {
                       </View>
                       {/* Row 2: [Walk-in] · [Normal/Emergency] · time */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <View style={[styles.recentPill, { backgroundColor: 'rgba(45,212,191,0.12)', borderColor: 'rgba(45,212,191,0.28)' }]}>
-                          <Text style={[styles.recentPillTxt, { color: '#2DD4BF' }]}>Walk-in</Text>
+                        <View style={[styles.recentPill, { backgroundColor: srcBg, borderColor: srcBd }]}>
+                          <Text style={[styles.recentPillTxt, { color: srcClr }]}>{srcLabel}</Text>
                         </View>
                         <Text style={styles.recentDot}>·</Text>
                         <View style={[styles.recentPill, { backgroundColor: priBg, borderColor: priBd }]}>
