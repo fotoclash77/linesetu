@@ -370,6 +370,9 @@ export default function SettingsScreen() {
               <TouchableOpacity style={styles.photoChangeBtn}>
                 <Text style={styles.photoBtnText}>📷 Change Photo</Text>
               </TouchableOpacity>
+              <View style={styles.photoNoteRow}>
+                <Text style={styles.photoNoteText}>⚠ For best results, upload a square (1:1) photo. Rectangular images will be cropped to fit.</Text>
+              </View>
             </View>
             <View style={styles.formCard}>
               <Field label="Full Name" value={name} onChange={setName} />
@@ -1000,6 +1003,8 @@ const styles = StyleSheet.create({
   },
   photoChangeBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(13,148,136,0.2)', borderWidth: 1.5, borderColor: 'rgba(13,148,136,0.4)' },
   photoBtnText: { fontSize: 12, fontWeight: '700', color: TEAL_LT },
+  photoNoteRow: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', backgroundColor: 'rgba(251,191,36,0.07)', maxWidth: 300 },
+  photoNoteText: { fontSize: 11, color: 'rgba(251,191,36,0.85)', fontWeight: '600', textAlign: 'center', lineHeight: 16 },
   field: { marginBottom: 10 },
   fieldLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 },
   fieldInput: {
