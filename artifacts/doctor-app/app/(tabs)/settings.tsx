@@ -1771,21 +1771,16 @@ export default function SettingsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
               {resultPhotos.map((uri, i) => (
                 <View key={i} style={styles.galleryThumbWrap}>
-                  <View style={styles.galleryThumbDeleteRow}>
-                    <TouchableOpacity
-                      style={styles.galleryDeleteBtn}
-                      onPress={() => deletePhoto(uri)}
-                      disabled={deletingPhotoUrl === uri}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      {deletingPhotoUrl === uri
-                        ? <ActivityIndicator size={10} color="#FF6B6B" />
-                        : <Text style={styles.galleryDeleteX}>🗑</Text>}
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.galleryThumbImg}>
-                    <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
-                  </View>
+                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+                  <TouchableOpacity
+                    style={styles.galleryDeleteBtn}
+                    onPress={() => deletePhoto(uri)}
+                    disabled={deletingPhotoUrl === uri}
+                  >
+                    {deletingPhotoUrl === uri
+                      ? <ActivityIndicator size={10} color="#FFF" />
+                      : <Text style={styles.galleryDeleteX}>✕</Text>}
+                  </TouchableOpacity>
                 </View>
               ))}
               <TouchableOpacity style={styles.galleryAddBtn} onPress={pickAndUploadPhoto} disabled={uploadingPhoto}>
