@@ -9,6 +9,9 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
+// One-time secret generated at startup — only internal calls (from tokens.ts issueRefund) can use this
+export const INTERNAL_REFUND_SECRET = crypto.randomBytes(32).toString("hex");
+
 router.post("/create-order", async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
@@ -49,6 +52,10 @@ router.post("/verify", (req, res) => {
 });
 
 router.post("/refund", async (req, res) => {
+  const token = req.headers["x-internal-token"];
+  if (!token || token !== INTERNAL_REFUND_SECRET) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
   try {
     const { paymentId, amount } = req.body;
     if (!paymentId) {

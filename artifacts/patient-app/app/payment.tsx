@@ -287,19 +287,11 @@ export default function PaymentScreen() {
       });
 
       if (bookRes.status === 409) {
-        // Capacity full — trigger auto-refund
-        try {
-          await fetch(`${apiBase}/razorpay/refund`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId }),
-          });
-        } catch (_) {}
-
+        const errData = await bookRes.json().catch(() => ({}));
         setResultModal({
           visible: true,
           type: "full",
-          message: "Booking failed: Slots are full. Refund initiated.",
+          message: errData.message ?? "Slots are full. Refund has been initiated automatically.",
         });
         return;
       }

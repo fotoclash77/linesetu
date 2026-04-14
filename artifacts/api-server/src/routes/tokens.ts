@@ -1,5 +1,4 @@
 import { Router } from "express";
-import Razorpay from "razorpay";
 import {
   db, Collections, Timestamp,
   collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc,
@@ -8,16 +7,24 @@ import {
   queueDocId, todayDate,
 } from "../lib/firebase.js";
 import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+import { INTERNAL_REFUND_SECRET } from "./razorpay.js";
 
 async function issueRefund(paymentId: string) {
   try {
-    await (razorpay.payments as any).refund(paymentId, {});
-    console.log(`[Tokens] Auto-refund issued for paymentId=${paymentId}`);
+    const base = `http://localhost:${process.env.PORT ?? 8080}`;
+    const r = await fetch(`${base}/api/razorpay/refund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-token": INTERNAL_REFUND_SECRET,
+      },
+      body: JSON.stringify({ paymentId }),
+    });
+    if (r.ok) {
+      console.log(`[Tokens] Auto-refund issued for paymentId=${paymentId}`);
+    } else {
+      console.error(`[Tokens] Auto-refund HTTP ${r.status} for paymentId=${paymentId}`);
+    }
   } catch (e: any) {
     console.error(`[Tokens] Auto-refund failed for paymentId=${paymentId}:`, e?.message);
   }
@@ -128,10 +135,11 @@ router.post("/tokens/reserve", async (req, res) => {
 
 // POST /api/tokens — atomic token booking with capacity check
 router.post("/tokens", async (req, res) => {
+  const paymentId: string | undefined = req.body.paymentId;
   try {
     const {
       doctorId, patientId, patientName, patientPhone,
-      type = "normal", date, shift = "morning", paymentId,
+      type = "normal", date, shift = "morning",
       source = "online",
       age, gender, address, area, notes,
       expectedTokenNumber,
