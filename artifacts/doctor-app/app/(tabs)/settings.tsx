@@ -494,7 +494,6 @@ export default function SettingsScreen() {
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(doctor?.profilePhoto ?? null);
-  const [profilePhotoSeeded, setProfilePhotoSeeded] = useState(false);
 
   // Results / photo gallery state
   const [resultPhotos, setResultPhotos] = useState<string[]>([]);
@@ -512,11 +511,8 @@ export default function SettingsScreen() {
   }, [doctor]);
 
   React.useEffect(() => {
-    if (!profilePhotoSeeded && doctor?.profilePhoto) {
-      setProfilePhotoUrl(doctor.profilePhoto);
-      setProfilePhotoSeeded(true);
-    }
-  }, [doctor?.profilePhoto, profilePhotoSeeded]);
+    setProfilePhotoUrl(doctor?.profilePhoto ?? null);
+  }, [doctor?.profilePhoto]);
 
   const pickAndUploadPhoto = async () => {
     if (!doctor) return;
@@ -590,7 +586,6 @@ export default function SettingsScreen() {
       const data = await res.json();
       if (res.ok && data.url) {
         setProfilePhotoUrl(data.url);
-        setProfilePhotoSeeded(true);
         await updateDoctor({ profilePhoto: data.url } as any);
       }
     } catch {}
@@ -731,7 +726,7 @@ export default function SettingsScreen() {
             <View style={styles.avatarSection}>
               <View style={styles.avatarLarge}>
                 {profilePhotoUrl
-                  ? <Image source={{ uri: profilePhotoUrl }} style={{ width: '100%', height: '100%', borderRadius: 48 }} />
+                  ? <Image key={profilePhotoUrl} source={{ uri: profilePhotoUrl }} style={{ width: '100%', height: '100%', borderRadius: 48 }} resizeMode="cover" />
                   : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
