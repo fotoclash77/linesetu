@@ -123,7 +123,8 @@ export default function BookingScreen() {
   const { data: doctorData } = useQuery({
     ...getGetDoctorQueryOptions(doctorId ?? ""),
     enabled: !isDemoId,
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
+    staleTime: 5_000,
   });
 
   const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? "Doctor");
@@ -202,9 +203,9 @@ export default function BookingScreen() {
   const payableNow = eAppFee + platformFee;
   const consultFee = 500;
 
-  // Calendar cell style based on calendar data
+  // Calendar cell style — no entry = holiday by default (matches doctor app)
   function cellStyle(cfg: any) {
-    if (!cfg) return { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.07)", off: false };
+    if (!cfg) return { bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.2)", off: true };
     if (cfg.off) return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", off: true };
     const m = cfg.morning?.enabled, e = cfg.evening?.enabled;
     if (m && e)  return { bg: "rgba(13,148,136,0.13)",  border: "rgba(45,212,191,0.35)",  off: false };
@@ -369,6 +370,17 @@ export default function BookingScreen() {
                           isOff && !isDemoId && { color: "rgba(239,68,68,0.6)", textDecorationLine: "line-through" },
                           isToday && !isSelected && { color: "#2DD4BF", fontWeight: "800" },
                         ]}>{cell.getDate()}</Text>
+                        {/* Shift availability dots */}
+                        {!isDemoId && !isPast && (
+                          <View style={{ flexDirection: "row", gap: 2, marginTop: 2, height: 5, alignItems: "center", justifyContent: "center" }}>
+                            {!isOff && cfg?.morning?.enabled && (
+                              <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#FCD34D" }} />
+                            )}
+                            {!isOff && cfg?.evening?.enabled && (
+                              <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#A5B4FC" }} />
+                            )}
+                          </View>
+                        )}
                       </Pressable>
                     );
                   })}
@@ -392,14 +404,10 @@ export default function BookingScreen() {
         {!isDemoId && (
           <View style={styles.sectionPad}>
             <Text style={styles.sectionLabel}>Available Shifts</Text>
-            {dayCfg?.off ? (
+            {(!dayCfg || dayCfg?.off || shiftCards.length === 0) ? (
               <View style={calRowStyles.offDay}>
                 <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
                 <Text style={{ color: "#F87171", fontWeight: "700", fontSize: 13 }}>Doctor is off on this day</Text>
-              </View>
-            ) : shiftCards.length === 0 ? (
-              <View style={calRowStyles.offDay}>
-                <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>No shifts configured for this date.</Text>
               </View>
             ) : (
               <View style={{ gap: 10 }}>
