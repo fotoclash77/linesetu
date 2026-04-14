@@ -1771,7 +1771,6 @@ export default function SettingsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
               {resultPhotos.map((uri, i) => (
                 <View key={i} style={styles.galleryThumbWrap}>
-                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
                   <TouchableOpacity
                     style={styles.galleryDeleteBtn}
                     onPress={() => deletePhoto(uri)}
@@ -1781,6 +1780,7 @@ export default function SettingsScreen() {
                       ? <ActivityIndicator size={10} color="#FFF" />
                       : <Text style={styles.galleryDeleteX}>✕</Text>}
                   </TouchableOpacity>
+                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
                 </View>
               ))}
               <TouchableOpacity style={styles.galleryAddBtn} onPress={pickAndUploadPhoto} disabled={uploadingPhoto}>
