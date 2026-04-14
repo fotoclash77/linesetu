@@ -405,7 +405,7 @@ export default function EarningsScreen() {
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionDot}>🛡</Text>
-                    <Text style={styles.sectionTitle}>Online E-Token Rates</Text>
+                    <Text style={styles.sectionTitle}>E-Token Rates</Text>
                   </View>
                   <Text style={styles.platformSetText}>Doctor-set</Text>
                 </View>
