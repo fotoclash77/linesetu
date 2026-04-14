@@ -256,7 +256,7 @@ export default function BookingScreen() {
         doctorId: doctorId ?? "demo1",
         doctorName: docName,
         doctorPhoto: docPhoto,
-        doctorSpec: (doctor as any)?.specialization ?? "",
+        doctorSpec: docSpec,
         visitType,
         date: selectedIso,
         shift: selectedShift!.id,
