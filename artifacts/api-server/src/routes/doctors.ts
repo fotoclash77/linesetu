@@ -238,4 +238,24 @@ router.get("/doctors/:doctorId/payouts", async (req, res) => {
   }
 });
 
+// POST /api/feedback
+router.post("/feedback", async (req, res) => {
+  try {
+    const { doctorId, category, message } = req.body;
+    if (!message?.trim()) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+    await addDoc(collection(db, "feedback"), {
+      doctorId: doctorId ?? null,
+      category: category ?? "General",
+      message: message.trim(),
+      source: "doctor-app",
+      createdAt: Timestamp.now(),
+    });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

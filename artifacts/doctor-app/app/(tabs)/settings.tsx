@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator, Modal, FlatList, Image, BackHandler,
+  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,7 +12,7 @@ import { useDoctor } from '../../contexts/DoctorContext';
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout';
+type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms';
 
 interface ClinicData {
   name: string; address: string; city: string; phone: string; maps: string; active: boolean;
@@ -473,6 +473,12 @@ export default function SettingsScreen() {
       }
     }
   }, [doctor]);
+
+  // Feedback state
+  const [feedbackCategory, setFeedbackCategory] = useState('Feature Request');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const [showLogout, setShowLogout] = useState(false);
   const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
@@ -1368,6 +1374,293 @@ export default function SettingsScreen() {
     );
   }
 
+  // ── Help & Support ──────────────────────────────────────────────────────
+  if (section === 'help') {
+    const faqs = [
+      { q: 'How do I add or edit a clinic?', a: 'Go to Settings → Manage Clinics. You can add up to 3 clinics, set their address, phone, and Google Maps link, and toggle each one active or inactive.' },
+      { q: 'How do online tokens work?', a: 'Patients book via the LINESETU Patient App. They pay your configured E-Token fee plus a ₹10 platform fee. A sequential token number is assigned automatically and they can track their position in the queue in real time.' },
+      { q: 'When do I receive my payouts?', a: 'Based on your Payout Cycle setting under Bank & Payout. Funds are settled to your linked bank account or UPI. You can view payout history in the Earnings tab.' },
+      { q: 'How do I mark myself unavailable for a day?', a: 'Go to Settings → Schedule & Shifts. Tap the date on the 30-day calendar and select "Mark as Off / Holiday". Patients will be unable to book tokens for that day.' },
+      { q: 'Can I set different shifts for different dates?', a: 'Yes. In Schedule & Shifts, tap any date to configure morning/evening slots, start/end times, and max tokens specifically for that day, overriding your default shift settings.' },
+      { q: 'How do emergency tokens work?', a: 'Emergency tokens skip the regular queue and are assigned a priority number. They are controlled by the Emergency Tokens toggle in Patient App Settings. You can also set a separate fee for them in Fee Structure.' },
+      { q: 'Why are patients not seeing my profile?', a: 'Ensure your profile is complete (name, qualifications, bio, specialization) and that you are set as Available on the Home screen. Incomplete profiles may not appear in patient searches.' },
+    ];
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Help & Support" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {/* Contact options */}
+            <Text style={styles.sectionLabel}>CONTACT US</Text>
+            <View style={styles.formCard}>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://wa.me/919876000000?text=Hi%20LINESETU%2C%20I%20need%20support').catch(() => {})}
+                style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
+                  <Text style={{ fontSize: 18 }}>💬</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>WhatsApp Support</Text>
+                  <Text style={styles.helpContactSub}>+91 98760 00000 · Fastest response</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('mailto:support@linesetu.com?subject=Doctor%20App%20Support%20Request').catch(() => {})}
+                style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(103,232,249,0.12)' }]}>
+                  <Text style={{ fontSize: 18 }}>✉️</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>Email Support</Text>
+                  <Text style={styles.helpContactSub}>support@linesetu.com</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('tel:+919876000000').catch(() => {})}
+                style={styles.helpContactRow}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
+                  <Text style={{ fontSize: 18 }}>📞</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>Call Support</Text>
+                  <Text style={styles.helpContactSub}>Mon – Sat · 9 AM – 9 PM IST</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginBottom: 20, paddingHorizontal: 2, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(45,212,191,0.07)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.15)', paddingLeft: 12 }}>
+              <Text style={{ fontSize: 11, color: 'rgba(45,212,191,0.8)', fontWeight: '600', lineHeight: 17 }}>
+                ⏱  We typically respond within 2–4 hours during business hours (Mon – Sat, 9 AM – 9 PM IST). Urgent issues via WhatsApp get the fastest response.
+              </Text>
+            </View>
+
+            {/* FAQs */}
+            <Text style={styles.sectionLabel}>FREQUENTLY ASKED QUESTIONS</Text>
+            {faqs.map((faq, i) => (
+              <View key={i} style={[styles.formCard, { marginBottom: 8 }]}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF', marginBottom: 6, lineHeight: 18 }}>Q. {faq.q}</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 18, fontWeight: '500' }}>{faq.a}</Text>
+              </View>
+            ))}
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Send Feedback ────────────────────────────────────────────────────────
+  if (section === 'feedback') {
+    const categories = [
+      { label: '🐛  Bug Report', value: 'Bug Report' },
+      { label: '✨  Feature Request', value: 'Feature Request' },
+      { label: '💬  General', value: 'General' },
+      { label: '🎉  Compliment', value: 'Compliment' },
+    ];
+    const submitFeedback = async () => {
+      if (!feedbackText.trim()) return;
+      setFeedbackSubmitting(true);
+      try {
+        await fetch(`${BASE()}/api/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doctorId: doctor?.id ?? null,
+            category: feedbackCategory,
+            message: feedbackText.trim(),
+          }),
+        });
+        setFeedbackSubmitted(true);
+        setTimeout(() => setSection('main'), 2200);
+      } catch {}
+      setFeedbackSubmitting(false);
+    };
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Send Feedback" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {feedbackSubmitted ? (
+              <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>🎉</Text>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: TEAL_LT, marginBottom: 10 }}>Thank you!</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 22 }}>
+                  Your feedback has been received. We read every submission and use them to make LINESETU better for doctors and patients.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 20, fontWeight: '500' }}>
+                  Help us improve LINESETU. Whether it's a bug, a feature idea, or a general observation — we want to hear from you.
+                </Text>
+
+                {/* Category */}
+                <Text style={styles.sectionLabel}>CATEGORY</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                  {categories.map(cat => (
+                    <TouchableOpacity
+                      key={cat.value}
+                      onPress={() => setFeedbackCategory(cat.value)}
+                      style={{
+                        paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20,
+                        borderWidth: 1.5,
+                        borderColor: feedbackCategory === cat.value ? TEAL : 'rgba(255,255,255,0.12)',
+                        backgroundColor: feedbackCategory === cat.value ? 'rgba(45,212,191,0.14)' : 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: feedbackCategory === cat.value ? TEAL_LT : 'rgba(255,255,255,0.5)' }}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Message */}
+                <Text style={styles.sectionLabel}>YOUR MESSAGE</Text>
+                <TextInput
+                  style={[styles.fieldInput, {
+                    height: 140, textAlignVertical: 'top', paddingTop: 12,
+                    marginBottom: 6,
+                    borderColor: feedbackText.trim() ? 'rgba(45,212,191,0.4)' : 'rgba(255,255,255,0.12)',
+                  }]}
+                  value={feedbackText}
+                  onChangeText={setFeedbackText}
+                  multiline
+                  placeholder={`Describe your ${feedbackCategory.toLowerCase()}...`}
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                />
+                {!feedbackText.trim() && (
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 16, fontWeight: '600' }}>
+                    Please describe your feedback in a few words.
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.saveBtn, { opacity: feedbackText.trim() ? 1 : 0.4 }]}
+                  disabled={!feedbackText.trim() || feedbackSubmitting}
+                  onPress={submitFeedback}
+                >
+                  {feedbackSubmitting
+                    ? <ActivityIndicator color="#FFF" size="small" />
+                    : <Text style={styles.saveBtnText}>📤  Submit Feedback</Text>}
+                </TouchableOpacity>
+
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: 12, fontWeight: '500', lineHeight: 17 }}>
+                  By submitting, you agree that your feedback may be used to improve LINESETU products and services. We do not share your personal details with third parties.
+                </Text>
+              </>
+            )}
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Terms & Privacy Policy ───────────────────────────────────────────────
+  if (section === 'terms') {
+    const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ fontSize: 12, fontWeight: '900', color: TEAL_LT, letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>{title}</Text>
+        {children}
+      </View>
+    );
+    const Para = ({ text }: { text: string }) => (
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 20, fontWeight: '500', marginBottom: 8 }}>{text}</Text>
+    );
+    const Bullet = ({ text }: { text: string }) => (
+      <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+        <Text style={{ color: TEAL, fontWeight: '900', marginRight: 8, fontSize: 12 }}>·</Text>
+        <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 20, fontWeight: '500' }}>{text}</Text>
+      </View>
+    );
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Terms & Privacy Policy" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            <View style={{ marginBottom: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>LINESETU Doctor App  ·  v2.1.0</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', marginTop: 2 }}>Last updated: January 2026  ·  Effective: January 1, 2026</Text>
+            </View>
+
+            <Section title="1. Terms of Service">
+              <Para text="By accessing or using the LINESETU Doctor App, you agree to be bound by these Terms. If you disagree with any part, you may not use the App." />
+              <Para text="LINESETU provides a smart queue and token management platform for registered medical practitioners in India. The platform facilitates real-time token booking and queue management between doctors and patients." />
+              <Bullet text="You must be a licensed medical practitioner in India to register as a doctor on LINESETU." />
+              <Bullet text="You are responsible for the accuracy of your profile information including qualifications, specialization, and clinic details." />
+              <Bullet text="LINESETU reserves the right to suspend accounts found providing false credentials or violating patient trust." />
+              <Bullet text="Fees and payout structures are subject to change with 30 days prior notice." />
+            </Section>
+
+            <Section title="2. Doctor Obligations">
+              <Para text="As a registered doctor on LINESETU, you agree to:" />
+              <Bullet text="Maintain accurate schedule, availability, and fee information visible to patients." />
+              <Bullet text="Honor token bookings made by patients unless an emergency or system error occurs." />
+              <Bullet text="Notify patients promptly via the app if significant delays or closures arise." />
+              <Bullet text="Not misuse the platform to collect payments outside of the disclosed fee structure." />
+              <Bullet text="Comply with all applicable laws, medical regulations, and the Indian Medical Council Act." />
+            </Section>
+
+            <Section title="3. Platform Fee & Payouts">
+              <Para text="LINESETU charges a platform fee of ₹10 per online E-Token booking. This is collected from the patient in addition to your configured consultation fee. Your earnings are settled based on your selected payout cycle (Daily, Weekly, Bi-weekly, Monthly, or Manual)." />
+              <Para text="Payout disputes must be raised within 7 days of the scheduled settlement date by contacting support@linesetu.com." />
+            </Section>
+
+            <Section title="4. Privacy Policy">
+              <Para text="LINESETU is committed to protecting the privacy of doctors and patients. This Privacy Policy describes how we collect, use, and protect your information." />
+              <Bullet text="Account data: Name, phone, qualifications, clinic details, and bank/UPI information collected at registration." />
+              <Bullet text="Usage data: Schedule configurations, token data, queue activity, and session logs are stored for platform functionality." />
+              <Bullet text="Patient data: We store only the minimum patient information required for token management. Doctors do not have access to patients' payment details." />
+              <Bullet text="Data sharing: We do not sell or share your personal data with third parties for marketing. Payment data is processed securely via Razorpay and governed by Razorpay's own privacy policy." />
+              <Bullet text="Data retention: Your account data is retained for 3 years after account closure for legal and financial compliance." />
+            </Section>
+
+            <Section title="5. Data Security">
+              <Para text="All data is transmitted over HTTPS and stored in Google Firebase with industry-standard encryption. Bank account details and UPI IDs are encrypted at rest. We conduct periodic security reviews to ensure the safety of your information." />
+              <Para text="You are responsible for maintaining the confidentiality of your login OTP and account access. Report any suspected unauthorized access immediately to support@linesetu.com." />
+            </Section>
+
+            <Section title="6. Intellectual Property">
+              <Para text="The LINESETU name, logo, and all associated marks are the property of LINESETU Technologies Pvt. Ltd. The App and its content may not be reproduced, distributed, or used for commercial purposes without written permission." />
+            </Section>
+
+            <Section title="7. Limitation of Liability">
+              <Para text="LINESETU is a technology platform and is not responsible for the medical services provided by doctors registered on the platform. In no event shall LINESETU be liable for indirect, incidental, or consequential damages arising from the use of the platform." />
+              <Para text="Service availability is provided on a best-effort basis. Scheduled maintenance windows will be communicated in advance via in-app notifications." />
+            </Section>
+
+            <Section title="8. Governing Law">
+              <Para text="These Terms are governed by the laws of India. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts in Bengaluru, Karnataka, India." />
+            </Section>
+
+            <Section title="9. Contact">
+              <Para text="For any questions regarding these Terms or our Privacy Policy, contact:" />
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:legal@linesetu.com').catch(() => {})}>
+                <Text style={{ fontSize: 13, color: TEAL_LT, fontWeight: '700', marginBottom: 4 }}>legal@linesetu.com</Text>
+              </TouchableOpacity>
+              <Para text="LINESETU Technologies Pvt. Ltd., Bengaluru, Karnataka – 560001, India" />
+            </Section>
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // Main settings menu
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -1541,10 +1834,10 @@ export default function SettingsScreen() {
           {/* Support */}
           <SectionLabel label="Support & Legal" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="❓" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Help & Support" sub="Chat, call or raise a ticket" />
-            <SettingRow icon="💬" iconBg="rgba(129,140,248,0.12)" iconColor="#818CF8" label="Send Feedback" sub="Help us improve LINESETU" />
-            <SettingRow icon="★" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Rate the App" sub="Love the app? Leave a review" />
-            <SettingRow icon="📄" iconBg="rgba(255,255,255,0.07)" iconColor="rgba(255,255,255,0.4)" label="Terms & Privacy Policy" sub="v2.1.0 · Last updated Jan 2026" last />
+            <SettingRow icon="❓" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Help & Support" sub="Chat, call or raise a ticket" onPress={() => setSection('help')} />
+            <SettingRow icon="💬" iconBg="rgba(129,140,248,0.12)" iconColor="#818CF8" label="Send Feedback" sub="Help us improve LINESETU" onPress={() => { setFeedbackText(''); setFeedbackCategory('Feature Request'); setFeedbackSubmitted(false); setSection('feedback'); }} />
+            <SettingRow icon="★" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Rate the App" sub="Love the app? Leave a review" onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.linesetu.doctor').catch(() => {})} />
+            <SettingRow icon="📄" iconBg="rgba(255,255,255,0.07)" iconColor="rgba(255,255,255,0.4)" label="Terms & Privacy Policy" sub="v2.1.0 · Last updated Jan 2026" onPress={() => setSection('terms')} last />
           </View>
 
           {/* Account Actions */}
@@ -1685,6 +1978,10 @@ const styles = StyleSheet.create({
   settingLabel: { fontSize: 13, fontWeight: '700', color: '#FFF', lineHeight: 18 },
   settingSub: { fontSize: 10, color: 'rgba(255,255,255,0.32)', fontWeight: '500', marginTop: 2 },
   chevron: { fontSize: 18, color: 'rgba(255,255,255,0.2)' },
+  helpContactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 2, gap: 12 },
+  helpContactIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  helpContactLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  helpContactSub: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
   toggle: { width: 40, height: 22, borderRadius: 11, justifyContent: 'center', borderWidth: 1 },
   toggleThumb: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFF' },
   toggleThumbOn: { right: 2 },
