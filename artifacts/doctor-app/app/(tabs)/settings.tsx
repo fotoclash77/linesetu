@@ -1230,7 +1230,7 @@ export default function SettingsScreen() {
               onPress={async () => {
                 setFeeSaving(true); setFeeSaved(false);
                 try {
-                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0 } as any);
+                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0, clinicConsultFee: Number(clinicConsultFee) || 0, clinicEmergencyFee: Number(clinicEmergencyFee) || 0 } as any);
                   setFeeSaved(true);
                   setTimeout(() => {
                     setFeeSaved(false);
