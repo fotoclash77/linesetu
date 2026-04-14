@@ -438,7 +438,7 @@ export default function EarningsScreen() {
                 </View>
                 {[
                   { type: 'Normal E-Token',  val: `₹${inClinicFee   ?? 10}`, color: '#A5B4FC' },
-                  { type: 'Emergency Token', val: `₹${inClinicEmFee ?? 20}`, color: '#FCD34D' },
+                  { type: 'Emergency E-Token', val: `₹${inClinicEmFee ?? 20}`, color: '#FCD34D' },
                 ].map(r => (
                   <View key={r.type} style={[styles.rateRow, { justifyContent: 'space-between' }]}>
                     <Text style={styles.rateType}>{r.type}</Text>
