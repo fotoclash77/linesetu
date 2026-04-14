@@ -4,8 +4,8 @@ import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc,
   query, where, orderBy, limit, increment, runTransaction,
   arrayUnion, arrayRemove,
-  storage, storageRef, uploadString, getDownloadURL, deleteObject,
 } from "../lib/firebase.js";
+import { uploadBase64ToStorage, deleteFromStorage } from "../lib/storage.js";
 
 const router = Router();
 
@@ -100,9 +100,7 @@ router.post("/doctors/:doctorId/profile-photo", async (req, res) => {
     const mime = mimeType || "image/jpeg";
     const ext = mime.split("/")[1] || "jpg";
     const fileName = `doctor-profiles/${req.params.doctorId}/profile.${ext}`;
-    const fileRef = storageRef(storage, fileName);
-    await uploadString(fileRef, base64, "base64", { contentType: mime });
-    const url = await getDownloadURL(fileRef);
+    const url = await uploadBase64ToStorage(base64, fileName, mime);
     const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
     await updateDoc(docRef, { profilePhoto: url });
     res.json({ url });
@@ -119,9 +117,7 @@ router.post("/doctors/:doctorId/results", async (req, res) => {
     const mime = mimeType || "image/jpeg";
     const ext = mime.split("/")[1] || "jpg";
     const fileName = `doctor-results/${req.params.doctorId}/${Date.now()}.${ext}`;
-    const fileRef = storageRef(storage, fileName);
-    await uploadString(fileRef, base64, "base64", { contentType: mime });
-    const url = await getDownloadURL(fileRef);
+    const url = await uploadBase64ToStorage(base64, fileName, mime);
     const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
     await updateDoc(docRef, { results: arrayUnion(url) });
     res.json({ url });
@@ -137,10 +133,7 @@ router.delete("/doctors/:doctorId/results", async (req, res) => {
     if (!url) return res.status(400).json({ error: "url is required" });
     const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
     await updateDoc(docRef, { results: arrayRemove(url) });
-    try {
-      const fileRef = storageRef(storage, url);
-      await deleteObject(fileRef);
-    } catch {}
+    await deleteFromStorage(url);
     res.json({ removed: url });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
