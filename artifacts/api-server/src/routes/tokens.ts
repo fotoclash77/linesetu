@@ -48,7 +48,8 @@ export function countActiveReservations(pending: Record<string, { expiresAt: any
   }).length;
 }
 
-// POST /api/tokens/reserve — Firestore-atomic soft-lock before payment
+// POST /api/tokens/reserve — Firestore-atomic soft-lock with pre-assigned token number (FCFS guaranteed)
+// Increments nextTokenNumber at reserve time so the patient's position is deterministic.
 router.post("/tokens/reserve", async (req, res) => {
   const { doctorId, patientId, date, shift = "morning" } = req.body;
   if (!doctorId || !patientId) {
@@ -70,41 +71,46 @@ router.post("/tokens/reserve", async (req, res) => {
     await runTransaction(db, async (txn) => {
       const queueSnap = await txn.get(queueRef);
       const queueData = queueSnap.exists() ? queueSnap.data() : {} as any;
-      const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
+      const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any; tokenNumber?: number }>;
       const now       = Date.now();
       const nowTs     = Timestamp.now();
 
+      // If a valid unexpired reservation already exists, return it unchanged (idempotent)
       const existing = pending[patientId];
       const existingExpiresMs = existing
         ? (typeof existing.expiresAt?.toMillis === "function" ? existing.expiresAt.toMillis() : Number(existing.expiresAt))
         : 0;
 
       if (existing && existingExpiresMs > now) {
-        const lastAssigned = (queueData.nextTokenNumber as number) ?? 0;
-        const otherActive  = countActiveReservations(pending, patientId);
-        const estimatedToken = lastAssigned + otherActive + 1;
         reservedResponse = {
-          reserved: true, tokenNumber: estimatedToken,
-          expiresAt: existingExpiresMs, ttlMs: existingExpiresMs - now,
+          reserved: true,
+          tokenNumber: existing.tokenNumber ?? 0,
+          expiresAt: existingExpiresMs,
+          ttlMs: existingExpiresMs - now,
         };
-        return;
+        return; // No queue mutation needed — reservation still active
       }
 
-      const totalBooked  = (queueData.totalBooked as number) ?? 0;
-      const lastAssigned = (queueData.nextTokenNumber as number) ?? 0;
-      const activeCount  = countActiveReservations(pending);
+      // Capacity check: effectiveBooked = committed (totalBooked) + other active reservations
+      const totalBooked     = (queueData.totalBooked as number) ?? 0;
+      const activeCount     = countActiveReservations(pending, patientId); // exclude own (expired) entry
       const effectiveBooked = totalBooked + activeCount;
 
       if (maxTokens !== null && effectiveBooked >= maxTokens) {
         throw new Error("CAPACITY_FULL");
       }
 
+      // Pre-assign a deterministic token number by consuming the next slot on the monotonic counter
+      const lastAssigned    = (queueData.nextTokenNumber as number) ?? 0;
+      const assignedToken   = lastAssigned + 1;
       const expiresAt       = Timestamp.fromMillis(now + RESERVATION_TTL_MS);
-      const estimatedToken  = lastAssigned + activeCount + 1;
+
+      const reservationEntry = { expiresAt, createdAt: nowTs, tokenNumber: assignedToken };
 
       if (queueSnap.exists()) {
         txn.update(queueRef, {
-          [`pendingReservations.${patientId}`]: { expiresAt, createdAt: nowTs },
+          [`pendingReservations.${patientId}`]: reservationEntry,
+          nextTokenNumber: assignedToken, // Monotonic counter advanced at reservation time
           updatedAt: nowTs,
         });
       } else {
@@ -112,20 +118,20 @@ router.post("/tokens/reserve", async (req, res) => {
           doctorId, date: tokenDate, shift,
           isActive: false,
           currentToken: 0,
-          nextTokenNumber: 0,
+          nextTokenNumber: assignedToken,
           totalBooked: 0,
           doneCount: 0,
           waitingTokenIds: [],
-          pendingReservations: {
-            [patientId]: { expiresAt, createdAt: nowTs },
-          },
+          pendingReservations: { [patientId]: reservationEntry },
           updatedAt: nowTs,
         });
       }
 
       reservedResponse = {
-        reserved: true, tokenNumber: estimatedToken,
-        expiresAt: now + RESERVATION_TTL_MS, ttlMs: RESERVATION_TTL_MS,
+        reserved: true,
+        tokenNumber: assignedToken,
+        expiresAt: now + RESERVATION_TTL_MS,
+        ttlMs: RESERVATION_TTL_MS,
       };
     });
 
@@ -176,13 +182,14 @@ router.post("/tokens", async (req, res) => {
     await runTransaction(db, async (txn) => {
       const queueSnap = await txn.get(queueRef);
       const queueData = queueSnap.exists() ? queueSnap.data() : {} as any;
-      const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
+      const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any; tokenNumber?: number }>;
 
-      const currentBooked = (queueData.totalBooked as number) ?? 0;
-      const nowMs         = Date.now();
+      const currentBooked   = (queueData.totalBooked as number) ?? 0;
+      const currentNextToken = (queueData.nextTokenNumber as number) ?? 0;
+      const nowMs           = Date.now();
 
       // Validate reservation freshness — expired entries do NOT grant soft-lock privilege
-      const rawReservation  = pending[patientId];
+      const rawReservation   = pending[patientId];
       const reservationExpMs = rawReservation
         ? (typeof rawReservation.expiresAt?.toMillis === "function"
             ? rawReservation.expiresAt.toMillis()
@@ -190,23 +197,32 @@ router.post("/tokens", async (req, res) => {
         : 0;
       const hasValidReservation = !!rawReservation && reservationExpMs > nowMs;
 
-      // Active reservations excluding this patient (only fresh ones count)
+      // Active reservations from OTHER patients (fresh only) count against capacity
       const otherActiveCount = countActiveReservations(pending, patientId);
       const effectiveBooked  = currentBooked + otherActiveCount;
 
-      // Patients without a valid reservation must compete against full effectiveBooked
-      if (maxTokens !== null && !hasValidReservation && effectiveBooked >= maxTokens) {
-        throw new Error("CAPACITY_FULL");
-      }
-      // Patients with a valid reservation only need committed bookings < maxTokens
+      // Patients with a valid reservation: only committed bookings count (their slot is held)
+      // Patients without reservation: compete against full effectiveBooked
       if (maxTokens !== null && hasValidReservation && currentBooked >= maxTokens) {
         throw new Error("CAPACITY_FULL");
       }
+      if (maxTokens !== null && !hasValidReservation && effectiveBooked >= maxTokens) {
+        throw new Error("CAPACITY_FULL");
+      }
 
-      // Token number uses nextTokenNumber (monotonic counter — never decremented by cancellations)
-      // This prevents token number reuse even when totalBooked shrinks after cancellations.
-      const currentNextToken = (queueData.nextTokenNumber as number) ?? 0;
-      const nextTokenNumber = currentNextToken + 1;
+      let nextTokenNumber: number;
+      let queueTokenUpdate: Record<string, any> = {};
+
+      if (hasValidReservation && rawReservation.tokenNumber) {
+        // FCFS: use the token number pre-assigned at reservation time
+        // nextTokenNumber counter was already incremented when reservation was created
+        nextTokenNumber = rawReservation.tokenNumber;
+        // No increment to nextTokenNumber — already done at reserve time
+      } else {
+        // Walk-in / no valid reservation: assign the next sequential token
+        nextTokenNumber = currentNextToken + 1;
+        queueTokenUpdate.nextTokenNumber = nextTokenNumber;
+      }
 
       if (expectedTokenNumber !== undefined && expectedTokenNumber !== null && nextTokenNumber !== Number(expectedTokenNumber)) {
         autoAdjusted = true;
@@ -232,7 +248,7 @@ router.post("/tokens", async (req, res) => {
       txn.set(tokenRef, tokenData);
 
       const queueUpdate: Record<string, any> = {
-        nextTokenNumber,
+        ...queueTokenUpdate, // includes nextTokenNumber only for non-reserved bookings
         totalBooked: increment(1),
         waitingTokenIds: arrayUnion(tokenRef.id),
         updatedAt: nowTs,

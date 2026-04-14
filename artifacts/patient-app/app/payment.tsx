@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useBookToken } from "@workspace/api-client-react";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -167,7 +166,6 @@ export default function PaymentScreen() {
     return () => { active = false; clearInterval(iv); };
   }, [params.doctorId, date, shift]);
 
-  const bookToken = useBookToken();
   const apiBase = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
   async function handlePay() {
@@ -289,10 +287,26 @@ export default function PaymentScreen() {
 
       if (bookRes.status === 409) {
         const errData = await bookRes.json().catch(() => ({}));
-        // Server auto-refunds internally on capacity-full; surface the result to the user.
-        const refundMsg = errData.refundInitiated
-          ? errData.refundId
-            ? `Slots are full. Your payment has been refunded (Ref: ${errData.refundId}).`
+        // Primary path: server auto-refunds on capacity-full (refundInitiated in response body)
+        let refundInitiated: boolean = errData.refundInitiated === true;
+        let refundId: string | null  = errData.refundId ?? null;
+
+        // Fallback: if server did not auto-refund, call /razorpay/refund with signature proof
+        if (!refundInitiated && paymentId && orderId && signature) {
+          try {
+            const rfRes  = await fetch(`${apiBase}/razorpay/refund`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, orderId, razorpay_signature: signature }),
+            });
+            const rfData = await rfRes.json().catch(() => ({}));
+            if (rfData.success) { refundInitiated = true; refundId = rfData.refundId ?? null; }
+          } catch (_) {}
+        }
+
+        const refundMsg = refundInitiated
+          ? refundId
+            ? `Slots are full. Your payment has been refunded (Ref: ${refundId}).`
             : "Slots are full. Your payment has been refunded automatically."
           : errData.message ?? "Slots are full. Please contact support for a refund.";
         setResultModal({ visible: true, type: "full", message: refundMsg });

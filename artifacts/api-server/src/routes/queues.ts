@@ -114,13 +114,14 @@ router.get("/queues/:doctorId/next-token/stream", async (req, res) => {
 
       const queueData          = queueSnap.exists() ? queueSnap.data() : {} as any;
       const totalBooked        = (queueData.totalBooked as number) ?? 0;
-      const lastAssigned       = (queueData.nextTokenNumber as number) ?? 0; // monotonic counter
+      const lastAssigned       = (queueData.nextTokenNumber as number) ?? 0;
       const pending            = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any }>;
       const activeReservations = countActiveReservations(pending);
 
-      // Next token uses the monotonic counter (never decremented by cancellations)
-      const nextTokenNumber = lastAssigned + activeReservations + 1;
-      // Remaining capacity uses totalBooked (active, non-cancelled) + reservations
+      // nextTokenNumber is already advanced at reserve time — so the next position is lastAssigned + 1
+      // Reservation holders get their pre-assigned number; walk-ins get lastAssigned + 1.
+      const nextTokenNumber = lastAssigned + 1;
+      // Capacity: totalBooked (committed, non-cancelled) + active (fresh) reservations
       const effectiveBooked = totalBooked + activeReservations;
       const remaining = maxTokens !== null ? Math.max(0, maxTokens - effectiveBooked) : null;
       const isFull    = maxTokens !== null && effectiveBooked >= maxTokens;
