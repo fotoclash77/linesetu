@@ -602,6 +602,7 @@ export default function QueueScreen() {
   const [pickShift,    setPickShift]  = useState<'morning' | 'evening'>('morning');
   const [busyId,       setBusy]       = useState<string | null>(null);
   const [manualNextId, setManualNext] = useState<string | null>(null);
+  const [autoHandoffId, setAutoHandoffId] = useState<string | null>(null);
   const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
@@ -623,13 +624,14 @@ export default function QueueScreen() {
   ]), [qc, docId, schedDate]);
 
   // Clear manual pick whenever schedule changes
-  useEffect(() => { setManualNext(null); }, [shift, schedDate]);
+  useEffect(() => { setManualNext(null); setAutoHandoffId(null); }, [shift, schedDate]);
 
   const doCall = async (id: string) => {
     setBusy(id);
     try {
       await apiCall(id);
       setManualNext(prev => prev === id ? null : prev);
+      setAutoHandoffId(null);
       await inv();
     } catch {}
     setBusy(null);
@@ -640,12 +642,19 @@ export default function QueueScreen() {
     try {
       await apiDone(id, nextId);
       if (nextId) setManualNext(null);
+      if (nextId) setAutoHandoffId(nextId);
       await inv(); // wait for refetch to complete BEFORE re-enabling the button
     } catch {}
     setBusy(null);
   };
   const doSkipToken = async (id: string) => {
-    setBusy(id); try { await apiSkip(id); await inv(); } catch {} setBusy(null);
+    setBusy(id);
+    try {
+      await apiSkip(id);
+      if (upNextRef.current) setAutoHandoffId(upNextRef.current);
+      await inv();
+    } catch {}
+    setBusy(null);
   };
   const doCancel = async (id: string) => {
     setBusy(id); try { await apiCancel(id); await inv(); } catch {} setBusy(null);
@@ -670,7 +679,10 @@ export default function QueueScreen() {
   const manualNext = manualNextId
     ? [...waitSorted, ...skippedList].find(t => t.id === manualNextId) ?? null
     : null;
-  const upNext = manualNext ?? waitSorted[0] ?? skippedList[0] ?? null;
+  const queuedNext = manualNext ?? waitSorted[0] ?? skippedList[0] ?? null;
+  const upNext = autoHandoffId
+    ? [...waitSorted, ...skippedList].find(t => t.id === autoHandoffId) ?? queuedNext
+    : queuedNext;
   upNextRef.current = upNext?.id; // always tracks what the Up Next card shows
 
   // ── Tab config ────────────────────────────────────────────────
