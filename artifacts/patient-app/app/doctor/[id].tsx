@@ -218,28 +218,28 @@ export default function DoctorDetailScreen() {
                 label: "Emergency E-Token Fee",
                 sub: "Priority online token via LINESETU — no waiting in queue",
                 amount: `₹${(doctor as any).emergencyFee ?? 0}`,
-                color: "#F97316", bg: "rgba(249,115,22,0.08)", border: "rgba(249,115,22,0.25)",
+                color: "#FBBF24", bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.28)",
               },
               {
                 icon: "check-circle" as const,
                 label: "Walk-In Fee",
                 sub: "Come early at clinic to collect your token",
                 amount: `₹${(doctor as any).walkinFee ?? 0}`,
-                color: "#4ADE80", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.3)",
+                color: "#A78BFA", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.28)",
               },
               {
                 icon: "home" as const,
                 label: "Consultation at Clinic",
                 sub: "Pay directly at the clinic during your visit",
                 amount: `₹${(doctor as any).clinicConsultFee ?? 0}`,
-                color: "#22C55E", bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.2)",
+                color: "#34D399", bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.25)",
               },
               {
                 icon: "zap" as const,
                 label: "Emergency Consultation at Clinic",
                 sub: "Urgent in-clinic visit — priority access",
                 amount: `₹${(doctor as any).clinicEmergencyFee ?? 0}`,
-                color: "#EF4444", bg: "rgba(239,68,68,0.08)", border: "rgba(239,68,68,0.25)",
+                color: "#FB7185", bg: "rgba(251,113,133,0.08)", border: "rgba(251,113,133,0.25)",
               },
             ].map(({ icon, label, sub, amount, color, bg, border }) => (
               <View key={label} style={[styles.feeRow, { backgroundColor: bg, borderColor: border }]}>
