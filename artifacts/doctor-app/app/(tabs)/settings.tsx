@@ -677,14 +677,17 @@ export default function SettingsScreen() {
                 try {
                   await updateDoctor({ clinics: clinics as any });
                   setClinicSaved(true);
-                  setTimeout(() => { setClinicSaved(false); setSection('main'); }, 1200);
+                  setTimeout(() => {
+                    setClinicSaved(false);
+                    setSection('main');
+                  }, 1200);
                 } catch {}
                 setClinicSaving(false);
               }}
             >
               {clinicSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{clinicSaved ? '✓ Clinics Saved to Firebase!' : '💾 Save Clinics'}</Text>}
+                : <Text style={styles.saveBtnText}>{clinicSaved ? '✓ Saved' : '💾 Save Clinics'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
