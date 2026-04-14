@@ -364,6 +364,9 @@ export default function EarningsScreen() {
                       <Text style={styles.sectionDot}>📊</Text>
                       <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
                     </View>
+                    <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8, fontStyle: 'italic' }}>
+                      Calculated at your current fee rates. Actual payouts may differ if rates were updated mid-period.
+                    </Text>
                     {[
                       { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   ?? 10), count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   ?? 10}/token` },
                       { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee ?? 20), count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee ?? 20}/token` },
@@ -557,14 +560,14 @@ export default function EarningsScreen() {
               autoCorrect={false}
             />
 
-            <Text style={styles.withdrawFieldLabel}>Amount (₹)</Text>
+            <Text style={styles.withdrawFieldLabel}>Amount (₹ whole number)</Text>
             <TextInput
               style={styles.withdrawInput}
               value={withdrawAmt}
-              onChangeText={setWithdrawAmt}
-              placeholder={String(pendingPayout)}
+              onChangeText={v => setWithdrawAmt(v.replace(/[^0-9]/g, ''))}
+              placeholder={String(Math.floor(pendingPayout))}
               placeholderTextColor="rgba(255,255,255,0.2)"
-              keyboardType="numeric"
+              keyboardType="number-pad"
             />
 
             {withdrawError ? (
