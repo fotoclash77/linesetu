@@ -322,6 +322,8 @@ export default function SettingsScreen() {
   const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 10));
   const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 20));
   const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [feeSaved, setFeeSaved] = useState(false);
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
@@ -687,8 +689,6 @@ export default function SettingsScreen() {
   }
 
   if (section === 'fees') {
-    const [feeSaving, setFeeSaving] = React.useState(false);
-    const [feeSaved, setFeeSaved] = React.useState(false);
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
