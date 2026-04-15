@@ -1997,10 +1997,6 @@ export default function SettingsScreen() {
 
           {/* Patient App */}
           <SectionLabel label="Patient App" />
-          <View style={styles.settingsGroup}>
-            <SettingRow iconName="smartphone" iconBg="rgba(99,102,241,0.12)" iconColor="#818CF8" label="Patient App Settings" sub="Booking, display & notifications" onPress={() => setSection('patientApp')} last />
-          </View>
-
           {/* Bank */}
           <SectionLabel label="Bank & Payments" />
           <View style={styles.settingsGroup}>
