@@ -73,7 +73,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
           contentFit="cover"
         />
         <View style={styles.photoBadgeWrap}>
-          <View style={styles.ratingRow}>
+          <View style={styles.verifiedBadge}>
             <Feather name="check-circle" size={10} color="#06B6D4" />
             <Text style={styles.verifiedTxt}>Verified</Text>
           </View>
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   photoBadgeWrap: { position: "absolute", top: 10, right: 10, zIndex: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
   docName: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF" },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(10,14,26,0.72)", borderRadius: 999, paddingHorizontal: 6, paddingVertical: 3 },
+  verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(10,14,26,0.72)", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: "rgba(6,182,212,0.2)" },
   ratingTxt: { fontSize: 11, fontWeight: "700", color: "#F59E0B" },
   ratingSlash: { fontSize: 10, color: "rgba(255,255,255,0.3)" },
   verifiedTxt: { fontSize: 10, fontWeight: "600", color: "#06B6D4" },
