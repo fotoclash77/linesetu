@@ -101,7 +101,7 @@ export default function DoctorDetailScreen() {
     clinicEmergencyFee: doctorData?.clinicEmergencyFee,
     onlineBooking: doctorData ? (doctorData.onlineBooking !== false) : true,
     showFee: doctorData?.showFee === true,
-    alertMessage: doctorData?.alertMessage || "",
+
     results: Array.isArray(doctorData?.results) ? doctorData.results : [],
     showResults: doctorData ? (doctorData.showResults !== false) : false,
   };
@@ -172,12 +172,7 @@ export default function DoctorDetailScreen() {
           {!!(doctor as any).qualifications && (
             <Text style={styles.qualTxt}>{(doctor as any).qualifications}</Text>
           )}
-          {!!(doctor as any).alertMessage && (
-            <View style={styles.alertBanner}>
-              <Feather name="info" size={11} color="#F59E0B" />
-              <Text style={styles.alertBannerTxt}>{(doctor as any).alertMessage}</Text>
-            </View>
-          )}
+
         </View>
 
         {/* Stats */}
@@ -341,8 +336,7 @@ const styles = StyleSheet.create({
   expBadge: { backgroundColor: "rgba(255,255,255,0.07)", paddingHorizontal: 9, paddingVertical: 3, borderRadius: 8 },
   expBadgeTxt: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.45)" },
   qualTxt: { fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: "500", marginTop: 4, marginBottom: 2 },
-  alertBanner: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 8, backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", borderRadius: 10, padding: 8 },
-  alertBannerTxt: { fontSize: 11, color: "#FCD34D", fontWeight: "500", flex: 1, lineHeight: 16 },
+
   clinicRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   clinicTxt: { fontSize: 11, color: "rgba(255,255,255,0.4)" },
   clinicDot: { color: "rgba(255,255,255,0.2)" },
