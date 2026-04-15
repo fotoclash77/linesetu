@@ -798,8 +798,8 @@ export default function QueueScreen() {
                     : `${waitSorted.length} patients`}
                 </Text>
               </View>
-              {/* Tab bar — horizontal scroll so labels never clip on narrow screens */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.tabBar}>
+              {/* Tab bar — equal-width flex tabs filling the full row */}
+              <View style={S.tabBar}>
                 {TABS.map(t => {
                   const active = tab === t.key;
                   return (
@@ -808,10 +808,10 @@ export default function QueueScreen() {
                       onPress={() => setTab(t.key)}
                       style={[
                         S.tabItem,
-                        active && { backgroundColor: `${t.color}20`, borderColor: `${t.color}55` },
+                        active && { backgroundColor: `${t.color}30`, borderColor: `${t.color}70` },
                       ]}
                     >
-                      <Text style={[S.tabTxt, { color: active ? t.color : 'rgba(255,255,255,0.3)' }]}>
+                      <Text style={[S.tabTxt, { color: active ? t.color : 'rgba(255,255,255,0.28)' }]}>
                         {t.label}
                       </Text>
                       {t.count > 0 && (
@@ -822,7 +822,7 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </View>
             </View>
 
             {/* ── SCROLLABLE WAITING CARDS ───────────── */}
@@ -1115,11 +1115,11 @@ const S = StyleSheet.create({
   waitingCount: { fontSize: 12, fontWeight: '700', color: TEAL_LT, textAlign: 'center' },
 
   // Tabs
-  tabBar:     { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  tabItem:    { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', position: 'relative' },
-  tabTxt:     { fontSize: 10, fontWeight: '800' },
-  tabBadge:   { position: 'absolute', top: -6, right: -4, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  tabBadgeTxt:{ fontSize: 9, fontWeight: '900' },
+  tabBar:     { flexDirection: 'row', gap: 5, marginBottom: 4 },
+  tabItem:    { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', position: 'relative' },
+  tabTxt:     { fontSize: 11, fontWeight: '700' },
+  tabBadge:   { position: 'absolute', top: -7, right: -5, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  tabBadgeTxt:{ fontSize: 10, fontWeight: '900' },
 
   // Waiting cards
   waitCard:   { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', borderRadius: 16, padding: 14, marginBottom: 8 },
