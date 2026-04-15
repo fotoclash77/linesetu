@@ -509,7 +509,7 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
               : <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
                   <Feather name="rotate-ccw" size={12} color={isRefundable ? '#FCA5A5' : '#FCA5A5'} />
                   <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
-                    {isRefundable ? 'Cancel & Refund' : 'Cancel'}
+                    Cancel & Refund
                   </Text>
                 </View>}
           </TouchableOpacity>
