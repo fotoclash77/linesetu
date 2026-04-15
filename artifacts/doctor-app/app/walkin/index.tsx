@@ -317,7 +317,7 @@ export default function AddWalkinScreen() {
                   key={t} onPress={() => setTokenType(t)}
                   style={[styles.tokenTypeBtn, active && (isE ? styles.tokenTypeBtnEmergencyActive : styles.tokenTypeBtnNormalActive)]}
                 >
-                  <Feather name={isE ? 'zap' : 'check'} size={20} color={active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)'} />
+                  <Feather name={isE ? 'zap' : 'check'} size={18} color={active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)'} />
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{t}</Text>
                   <Text style={[styles.tokenTypeBtnFree, { color: active ? (isE ? '#FCA5A5' : TEAL_LT) : 'rgba(255,255,255,0.2)' }]}>FREE</Text>
                 </TouchableOpacity>
@@ -338,7 +338,7 @@ export default function AddWalkinScreen() {
                   key={opt.key} onPress={() => setVisitType(opt.key)}
                   style={[styles.tokenTypeBtn, active && styles.tokenTypeBtnNormalActive]}
                 >
-                  <Feather name={opt.iconName} size={20} color={active ? TEAL_LT : 'rgba(255,255,255,0.3)'} />
+                  <Feather name={opt.iconName} size={18} color={active ? TEAL_LT : 'rgba(255,255,255,0.3)'} />
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{opt.label}</Text>
                 </TouchableOpacity>
               );
@@ -753,11 +753,11 @@ const styles = StyleSheet.create({
   nextTokenValue: { fontSize: 13, fontWeight: '800', color: '#FFF' },
   fieldGroupLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7 },
   tokenTypeToggle: { flexDirection: 'row', gap: 5, padding: 4, borderRadius: 16, marginBottom: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
-  tokenTypeBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  tokenTypeBtn: { flex: 1, height: 52, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   tokenTypeBtnNormalActive: { backgroundColor: 'rgba(13,148,136,0.28)', borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.5)' },
   tokenTypeBtnEmergencyActive: { backgroundColor: 'rgba(239,68,68,0.25)', borderWidth: 1.5, borderColor: 'rgba(239,68,68,0.5)' },
-  tokenTypeBtnText: { fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.38)', marginTop: 2 },
-  tokenTypeBtnFree: { fontSize: 9, fontWeight: '700', marginTop: 1 },
+  tokenTypeBtnText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.38)' },
+  tokenTypeBtnFree: { fontSize: 9, fontWeight: '700' },
   formCard: { borderRadius: 20, padding: 16, marginBottom: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
   formCardTitle: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
   fieldWrap: { marginBottom: 10 },
