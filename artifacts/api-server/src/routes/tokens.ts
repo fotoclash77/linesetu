@@ -279,10 +279,17 @@ router.post("/tokens", async (req, res) => {
     const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
     // Walk-in/offline tokens: no online payment, no platform fee, no doctor online earnings
-    const isWalkinSource = source === "walkin";
-    const patientPaid = isWalkinSource ? 0 : (type === "emergency" ? 30 : 20);
-    const doctorEarns = isWalkinSource ? 0 : (type === "emergency" ? 20 : 10);
-    const platformFee = isWalkinSource ? 0 : 10;
+    const PLATFORM_FEE = 10;
+    const isWalkinSource  = source === "walkin";
+    const isEmergencyType = type === "emergency";
+    // Use the doctor's actual configured fee (fall back to safe defaults if not yet set)
+    const rawDoctorFee = isWalkinSource ? 0
+      : isEmergencyType
+        ? (Number(doctorData?.emergencyFee) || 30)
+        : (Number(doctorData?.consultFee)   || 10);
+    const doctorEarns = rawDoctorFee;
+    const platformFee = isWalkinSource ? 0 : PLATFORM_FEE;
+    const patientPaid = isWalkinSource ? 0 : doctorEarns + platformFee;
 
     let resultTokenData: any = null;
     let autoAdjusted = false;
@@ -396,27 +403,59 @@ router.post("/tokens", async (req, res) => {
     const nextTokenNumber = resultTokenData.tokenNumber;
     const nextTokenLabel = formatTokenLabel(nextTokenNumber, resultTokenData.type);
 
-    // Create transaction record for online paid bookings (not walk-in)
+    // Create transaction record for online paid bookings (not walk-in).
+    // Uses tokenRef.id as the document ID → idempotent (retries overwrite, no duplicates).
     if (!isWalkinSource && paymentId && resultTokenData) {
+      const txRef       = doc(db, Collections.TRANSACTIONS, tokenRef.id);
+      const earningsRef = doc(db, Collections.DOCTORS, doctorId, "earnings", tokenDate);
       try {
-        await addDoc(collection(db, Collections.TRANSACTIONS), {
+        await setDoc(txRef, {
           doctorId,
-          patientId: patientId || null,
+          patientId:    patientId || null,
           patientName,
-          tokenId:     tokenRef.id,
-          tokenNumber: nextTokenNumber,
-          amount:      doctorEarns,
-          type:        "earning",
-          status:      "earned",
-          source:      "online",
+          tokenId:      tokenRef.id,
+          tokenNumber:  nextTokenNumber,
+          tokenType:    type,          // "normal" | "emergency"
+          amount:       doctorEarns,   // net doctor earning (actual fee)
+          platformFee,                 // always ₹10 for online tokens
+          patientPaid,                 // doctorEarns + platformFee
+          type:         "earning",
+          status:       "earned",      // pending completion; becomes "completed" on done
+          source:       "online",
           shift,
-          date:        tokenDate,
-          paymentId:   paymentId || "",
+          date:         tokenDate,
+          paymentId:    paymentId || "",
           paymentStatus: "paid",
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
         });
       } catch (_) {}
+
+      // Credit doctor's balance + daily aggregate immediately after verified payment + token creation.
+      // This replaces the old behaviour (credit only at done) so earnings appear at once.
+      if (doctorEarns > 0) {
+        try {
+          const earningsSnap = await getDoc(earningsRef);
+          const isE          = isEmergencyType;
+          const earnBatch    = writeBatch(db);
+          earnBatch.update(doctorRef, { pendingPayout: increment(doctorEarns) });
+          if (earningsSnap.exists()) {
+            earnBatch.update(earningsRef, {
+              totalTokens:     increment(1),
+              tokensNormal:    increment(isE ? 0 : 1),
+              tokensEmergency: increment(isE ? 1 : 0),
+              earned:          increment(doctorEarns),
+            });
+          } else {
+            earnBatch.set(earningsRef, {
+              date: tokenDate, totalTokens: 1,
+              tokensNormal: isE ? 0 : 1, tokensEmergency: isE ? 1 : 0,
+              earned: doctorEarns, shift,
+            });
+          }
+          await earnBatch.commit();
+        } catch (_) {}
+      }
     }
 
     if (!isWalkinSource) {
@@ -572,9 +611,9 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
-    const token       = tokenSnap.data();
-    const queueRef    = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
-    const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
+    const token    = tokenSnap.data();
+    const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+    const txRef    = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
 
     let nextToken: any = null;
     let nextRef: any   = null;
@@ -584,42 +623,17 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       if (nextSnap.exists()) nextToken = nextSnap.data();
     }
 
-    const doctorRef = doc(db, Collections.DOCTORS, token.doctorId);
-    const [earningsSnap, doctorSnap] = await Promise.all([
-      getDoc(earningsRef),
-      getDoc(doctorRef),
-    ]);
-    const doctorData = doctorSnap.exists() ? doctorSnap.data() : {};
-    const isE = token.type === "emergency";
-    // Online paid token: patient actually paid and it's not a walk-in
+    // Earnings are credited at booking time (POST /api/tokens).
+    // done-route only marks the token/transaction complete — no balance change here.
     const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
-    // Use doctor's live configured rates at completion time (not booking-time hardcoded values)
-    const earnedNow = isOnlineToken
-      ? (isE ? (doctorData.emergencyFee ?? 20) : (doctorData.consultFee ?? 10))
-      : 0;
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
 
-    // Only track earnings and pendingPayout for paid online tokens
-    if (isOnlineToken && earnedNow > 0) {
-      if (earningsSnap.exists()) {
-        batch.update(earningsRef, {
-          totalTokens: increment(1),
-          tokensNormal: increment(isE ? 0 : 1),
-          tokensEmergency: increment(isE ? 1 : 0),
-          earned: increment(earnedNow),
-        });
-      } else {
-        batch.set(earningsRef, {
-          date: token.date, totalTokens: 1,
-          tokensNormal: isE ? 0 : 1, tokensEmergency: isE ? 1 : 0,
-          earned: earnedNow, shift: token.shift,
-        });
-      }
-      // Accumulate in doctor's pending payout balance using live rate
-      batch.update(doctorRef, { pendingPayout: increment(earnedNow) });
+    // Mark transaction as "completed" so the Earnings tab can show the correct status badge.
+    if (isOnlineToken) {
+      batch.update(txRef, { status: "completed", updatedAt: Timestamp.now() });
     }
 
     if (nextToken && nextRef) {
@@ -725,13 +739,18 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
       return res.status(502).json({ error: "Refund via payment gateway failed. Please try again." });
     }
 
-    // Find transaction record(s) for this token
-    const txSnap = await getDocs(query(
-      collection(db, Collections.TRANSACTIONS),
-      where("tokenId", "==", tokenId),
-    ));
+    // Transaction document uses tokenId as doc ID (idempotent writes at booking).
+    const txRef       = doc(db, Collections.TRANSACTIONS, tokenId);
+    const doctorRef   = doc(db, Collections.DOCTORS, token.doctorId);
+    const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
+    const [txSnap, earningsSnap] = await Promise.all([
+      getDoc(txRef),
+      getDoc(earningsRef),
+    ]);
+    const storedEarns = txSnap.exists() ? (txSnap.data()?.amount ?? 0) : 0;
+    const isE         = token.type === "emergency";
 
-    // Update token + transaction records in one batch
+    // Update token + transaction + reverse earnings in one batch
     const batch = writeBatch(db);
     batch.update(tokenRef, {
       status: "cancelled",
@@ -739,15 +758,27 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
       refundId: refundId ?? "",
       refundedAt: Timestamp.now(),
     });
-    txSnap.docs.forEach(d => {
-      batch.update(d.ref, {
-        type:   "refund",
-        status: "refunded",
-        refundId: refundId ?? "",
+    if (txSnap.exists()) {
+      batch.update(txRef, {
+        type:          "refund",
+        status:        "refunded",
+        refundId:      refundId ?? "",
         paymentStatus: "refunded",
-        updatedAt: Timestamp.now(),
+        updatedAt:     Timestamp.now(),
       });
-    });
+    }
+    // Reverse the earnings credited at booking time
+    if (storedEarns > 0) {
+      batch.update(doctorRef, { pendingPayout: increment(-storedEarns) });
+      if (earningsSnap.exists()) {
+        batch.update(earningsRef, {
+          totalTokens:     increment(-1),
+          tokensNormal:    increment(isE ? 0 : -1),
+          tokensEmergency: increment(isE ? -1 : 0),
+          earned:          increment(-storedEarns),
+        });
+      }
+    }
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
 

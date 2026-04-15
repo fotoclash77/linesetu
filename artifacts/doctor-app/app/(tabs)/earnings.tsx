@@ -455,9 +455,12 @@ export default function EarningsScreen() {
                           : PERIOD_LABELS[period]}</Text>
                         <Text style={styles.totalValue}>{fmtFull(d.earned)}</Text>
                         {trend !== null && (
-                          <Text style={[styles.trendText, { color: trend >= 0 ? '#4ADE80' : '#F87171' }]}>
-                            {trend >= 0 ? '↑' : '↓'} {trend >= 0 ? '+' : ''}{trend}% vs last month
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                            <Feather name={trend >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color={trend >= 0 ? '#4ADE80' : '#F87171'} />
+                            <Text style={[styles.trendText, { color: trend >= 0 ? '#4ADE80' : '#F87171' }]}>
+                              {trend >= 0 ? '+' : ''}{trend}% vs last month
+                            </Text>
+                          </View>
                         )}
                       </View>
                       <MiniSparkline data={sparkData} color={TEAL_LT} />

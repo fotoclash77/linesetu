@@ -267,7 +267,7 @@ function SettingRow({
         <Text style={[styles.settingLabel, danger && { color: '#F87171' }]}>{label}</Text>
         {sub && <Text style={styles.settingSub}>{sub}</Text>}
       </View>
-      {right ?? <Text style={styles.chevron}>›</Text>}
+      {right ?? <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />}
     </Wrapper>
   );
 }
@@ -1453,7 +1453,7 @@ export default function SettingsScreen() {
   if (section === 'payout') {
     const cycles = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'];
     const linkedAccount = accountNumber
-      ? `${bankName || 'Bank'} ••${accountNumber.slice(-4)}`
+      ? `${bankName || 'Bank'} **${accountNumber.slice(-4)}`
       : upiId
         ? `UPI · ${upiId}`
         : null;
@@ -1484,7 +1484,7 @@ export default function SettingsScreen() {
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#FCD34D' }}>No account linked</Text>
                   <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Tap to add bank account or UPI</Text>
                 </View>
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>›</Text>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.3)" />
               </TouchableOpacity>
             )}
 
@@ -1600,7 +1600,7 @@ export default function SettingsScreen() {
                   <Text style={styles.helpContactLabel}>WhatsApp Support</Text>
                   <Text style={styles.helpContactSub}>+91 98760 00000 · Fastest response</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1614,7 +1614,7 @@ export default function SettingsScreen() {
                   <Text style={styles.helpContactLabel}>Email Support</Text>
                   <Text style={styles.helpContactSub}>support@linesetu.com</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1628,13 +1628,14 @@ export default function SettingsScreen() {
                   <Text style={styles.helpContactLabel}>Call Support</Text>
                   <Text style={styles.helpContactSub}>Mon – Sat · 9 AM – 9 PM IST</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
               </TouchableOpacity>
             </View>
 
-            <View style={{ marginBottom: 20, paddingHorizontal: 2, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(45,212,191,0.07)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.15)', paddingLeft: 12 }}>
-              <Text style={{ fontSize: 11, color: 'rgba(45,212,191,0.8)', fontWeight: '600', lineHeight: 17 }}>
-                ⏱  We typically respond within 2–4 hours during business hours (Mon – Sat, 9 AM – 9 PM IST). Urgent issues via WhatsApp get the fastest response.
+            <View style={{ marginBottom: 20, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(45,212,191,0.07)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.15)', flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+              <Feather name="clock" size={13} color="rgba(45,212,191,0.8)" style={{ marginTop: 2 }} />
+              <Text style={{ flex: 1, fontSize: 11, color: 'rgba(45,212,191,0.8)', fontWeight: '600', lineHeight: 17 }}>
+                We typically respond within 2–4 hours during business hours (Mon – Sat, 9 AM – 9 PM IST). Urgent issues via WhatsApp get the fastest response.
               </Text>
             </View>
 
@@ -1955,7 +1956,7 @@ export default function SettingsScreen() {
                 {uploadingPhoto
                   ? <ActivityIndicator color={TEAL_LT} size="small" />
                   : <>
-                      <Text style={styles.galleryAddIcon}>＋</Text>
+                      <Feather name="plus" size={18} color={TEAL_LT} />
                       <Text style={styles.galleryAddTxt}>Add Photo</Text>
                     </>}
               </TouchableOpacity>
@@ -2003,7 +2004,7 @@ export default function SettingsScreen() {
               label="Bank Account"
               sub={
                 accountNumber
-                  ? `${bankName || 'Bank'} ••${accountNumber.slice(-4)}`
+                  ? `${bankName || 'Bank'} **${accountNumber.slice(-4)}`
                   : upiId
                     ? `UPI · ${upiId}`
                     : 'Add bank account or UPI'
@@ -2055,9 +2056,9 @@ export default function SettingsScreen() {
           <SectionLabel label="Account Actions" />
           <View style={styles.settingsGroup}>
             <SettingRow iconName="log-out" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Log Out" danger
-              right={<Text style={{ color: '#F87171', fontSize: 18 }}>›</Text>} onPress={() => setShowLogout(true)} />
+              right={<Feather name="chevron-right" size={16} color="#F87171" />} onPress={() => setShowLogout(true)} />
             <SettingRow iconName="trash-2" iconBg="rgba(239,68,68,0.08)" iconColor="rgba(239,68,68,0.55)" label="Delete Account" sub="Permanently remove your LINESETU account" danger
-              right={<Text style={{ color: 'rgba(239,68,68,0.45)', fontSize: 18 }}>›</Text>} last
+              right={<Feather name="chevron-right" size={16} color="rgba(239,68,68,0.45)" />} last
               onPress={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }} />
           </View>
 
@@ -2272,7 +2273,6 @@ const styles = StyleSheet.create({
   settingIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: 1 },
   settingLabel: { fontSize: 13, fontWeight: '700', color: '#FFF', lineHeight: 18 },
   settingSub: { fontSize: 10, color: 'rgba(255,255,255,0.32)', fontWeight: '500', marginTop: 2 },
-  chevron: { fontSize: 18, color: 'rgba(255,255,255,0.2)' },
   helpContactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 2, gap: 12 },
   helpContactIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   helpContactLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
@@ -2297,7 +2297,6 @@ const styles = StyleSheet.create({
   galleryDeleteBtn: { position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(15,15,20,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   galleryDeleteX: { fontSize: 11, color: '#FFF', fontWeight: '800', lineHeight: 13 },
   galleryAddBtn: { width: 100, height: 80, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: 'rgba(45,212,191,0.04)' },
-  galleryAddIcon: { fontSize: 22, color: TEAL_LT, fontWeight: '300' },
   galleryAddTxt: { fontSize: 10, fontWeight: '700', color: TEAL_LT },
   galleryLoadingOverlay: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' },
   galleryLoadingText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },

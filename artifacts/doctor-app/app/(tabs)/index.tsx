@@ -423,7 +423,7 @@ export default function DashboardScreen() {
                   <TouchableOpacity style={styles.patientsBtn} onPress={() => router.push('/patients')}>
                     <Feather name="user" size={11} color="#A5B4FC" />
                     <Text style={styles.patientsBtnText}>My Patients</Text>
-                    <Text style={styles.patientsBtnArrow}>›</Text>
+                    <Feather name="chevron-right" size={12} color="#A5B4FC" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -611,7 +611,6 @@ const styles = StyleSheet.create({
 
   patientsBtn:      { flexDirection:'row', alignItems:'center', gap:5, justifyContent:'space-between', marginTop:8, height:44, borderRadius:14, paddingHorizontal:16, backgroundColor:'rgba(99,102,241,0.14)', borderWidth:1.5, borderColor:'rgba(99,102,241,0.38)' },
   patientsBtnText:  { fontSize:12, fontWeight:'800', color:'#A5B4FC' },
-  patientsBtnArrow: { fontSize:20, color:'#A5B4FC', fontWeight:'300' },
 
   // Unused legacy – kept to avoid ref errors
   consultRate:    { padding:12, borderRadius:14, marginBottom:12, backgroundColor:'rgba(34,197,94,0.1)', borderWidth:1, borderColor:'rgba(34,197,94,0.2)' },

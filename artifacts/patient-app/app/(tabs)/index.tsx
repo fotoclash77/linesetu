@@ -250,7 +250,10 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
       </View>
 
       <Pressable style={styles.viewQueueBtn} onPress={() => router.push(`/queue/${token.id}` as any)}>
-        <Text style={styles.viewQueueBtnTxt}>View Full Queue →</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <Text style={styles.viewQueueBtnTxt}>View Full Queue</Text>
+          <Feather name="arrow-right" size={13} color="#FFF" />
+        </View>
       </Pressable>
     </View>
   );

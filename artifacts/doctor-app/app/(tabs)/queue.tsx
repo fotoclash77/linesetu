@@ -413,7 +413,7 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
           <TokenChip token={tok.tokenNumber} type={tok.type} large amber={tok.type !== 'emergency'} />
         </View>
         <PatientInfo tok={tok} large />
-        <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 20, alignSelf: 'center' }}>›</Text>
+        <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.25)" />
       </TouchableOpacity>
       <View style={S.consBtnRow}>
         <TouchableOpacity
@@ -470,7 +470,7 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
       >
         <TokenChip token={tok.tokenNumber} type={tok.type} />
         <PatientInfo tok={tok} />
-        <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, marginLeft: 4 }}>›</Text>
+        <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" style={{ marginLeft: 4 }} />
       </TouchableOpacity>
       {isCancelled && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingBottom: 10 }}>
@@ -846,7 +846,7 @@ export default function QueueScreen() {
               style={S.walkInBtn}
               onPress={() => router.push(`/walkin?date=${schedDate}&shift=${shift}` as any)}
             >
-              <Text style={S.walkInTxt}>＋</Text>
+              <Feather name="plus" size={18} color={TEAL_LT} />
             </TouchableOpacity>
             <TouchableOpacity style={S.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
               <Feather name="bell" size={16} color={unreadCount > 0 ? '#FCD34D' : 'rgba(255,255,255,0.5)'} />
@@ -1227,7 +1227,6 @@ const S = StyleSheet.create({
   schedBtn:  { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(13,148,136,0.18)', borderColor: 'rgba(45,212,191,0.4)' },
   schedTxt:  { fontSize: 11, fontWeight: '800', color: TEAL_LT },
   walkInBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(13,148,136,0.25)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.45)', alignItems: 'center', justifyContent: 'center' },
-  walkInTxt: { fontSize: 18, color: TEAL_LT, lineHeight: 22, fontWeight: '800' },
   bellBtn:   { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   bellDot:   { position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
 
