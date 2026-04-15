@@ -687,7 +687,7 @@ export default function QueueScreen() {
     if (!alertTok || !alertMsg.trim()) return;
     setAlertSending(true);
     try {
-      await apiSendAlert({
+      const alertResp = await apiSendAlert({
         tokenId:    alertTok.id,
         message:    alertMsg.trim(),
         patientId:  alertTok.patientId ?? alertTok.patientPhone,
@@ -695,6 +695,7 @@ export default function QueueScreen() {
         doctorId:   docId,
         doctorName: doctor?.name ?? '',
       });
+      console.log('[Alert] Response:', JSON.stringify(alertResp));
       setAlertResult('sent');
       setTimeout(() => { setAlertTok(null); setAlertResult(null); }, 1400);
     } catch {

@@ -140,7 +140,9 @@ router.post("/notifications/send-alert", async (req, res) => {
 
     // 2. Try SMS via Fast2SMS (India) — needs FAST2SMS_API_KEY secret
     let smsStatus = "not_configured";
-    const fast2smsKey = process.env.FAST2SMS_API_KEY;
+    let smsDebug: any = null;
+    const fast2smsKey = process.env.FAST2SMS_API_KEY?.trim();
+    console.log("[SMS] FAST2SMS_API_KEY present:", !!fast2smsKey, "| phone:", phone);
     if (fast2smsKey && phone) {
       try {
         const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
@@ -149,18 +151,43 @@ router.post("/notifications/send-alert", async (req, res) => {
           ? (String(doctorName).startsWith("Dr.") ? doctorName : `Dr. ${doctorName}`)
           : null;
         const smsBody = drName ? `${trimmed}\n-${drName}` : trimmed;
-        const smsRes = await fetch(
-          `https://www.fast2sms.com/dev/bulkV2?authorization=${fast2smsKey}` +
-          `&message=${encodeURIComponent(smsBody)}&language=english&route=q&numbers=${cleanPhone}`,
-        );
-        const smsJson = await smsRes.json();
-        smsStatus = smsJson.return === true ? "sent" : "failed";
-      } catch {
-        smsStatus = "error";
-      }
-    }
+        console.log("[SMS] Sending to:", cleanPhone, "| body:", smsBody);
 
-    res.json({ notificationId: notif.id, smsStatus });
+        // Use POST with Authorization header (recommended by Fast2SMS)
+        const smsRes = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+          method: "POST",
+          headers: {
+            "authorization": fast2smsKey,
+            "Content-Type":  "application/json",
+            "Cache-Control": "no-cache",
+          },
+          body: JSON.stringify({
+            route:    "q",
+            message:  smsBody,
+            language: "english",
+            numbers:  cleanPhone,
+          }),
+        });
+        const smsText = await smsRes.text();
+        console.log("[SMS] Fast2SMS raw response:", smsText);
+        try {
+          const smsJson = JSON.parse(smsText);
+          smsDebug  = smsJson;
+          smsStatus = smsJson.return === true ? "sent" : `failed: ${smsJson.message ?? smsText}`;
+        } catch {
+          smsStatus = `parse_error: ${smsText.slice(0, 200)}`;
+        }
+      } catch (smsErr: any) {
+        smsStatus = "error";
+        console.error("[SMS] Fast2SMS fetch error:", smsErr?.message);
+      }
+    } else {
+      if (!fast2smsKey) console.warn("[SMS] FAST2SMS_API_KEY is not set");
+      if (!phone)       console.warn("[SMS] No phone number provided in request");
+    }
+    console.log("[SMS] Final status:", smsStatus, "| debug:", JSON.stringify(smsDebug));
+
+    res.json({ notificationId: notif.id, smsStatus, smsDebug });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
