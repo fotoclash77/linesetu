@@ -637,6 +637,7 @@ export default function QueueScreen() {
   const [alertMsg,     setAlertMsg]   = useState('');
   const [alertSending, setAlertSending] = useState(false);
   const [alertResult,  setAlertResult] = useState<'sent' | 'error' | null>(null);
+  const [unreadCount,  setUnreadCount] = useState(0);
   const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
@@ -659,6 +660,21 @@ export default function QueueScreen() {
 
   // Clear manual pick whenever schedule changes
   useEffect(() => { setManualNext(null); setAutoHandoffId(null); }, [shift, schedDate]);
+
+  useEffect(() => {
+    if (!docId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${BASE()}/api/notifications/${docId}`);
+        const data = await res.json();
+        if (data.notifications)
+          setUnreadCount((data.notifications as any[]).filter((n: any) => !n.read).length);
+      } catch (_) {}
+    };
+    poll();
+    const iv = setInterval(poll, 30_000);
+    return () => clearInterval(iv);
+  }, [docId]);
 
   const doCall = async (id: string) => {
     setBusy(id);
@@ -825,9 +841,10 @@ export default function QueueScreen() {
             >
               <Text style={S.walkInTxt}>＋</Text>
             </TouchableOpacity>
-            <View style={S.bellBtn}>
-              <Feather name="bell" size={16} color="rgba(255,255,255,0.5)" />
-            </View>
+            <TouchableOpacity style={S.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
+              <Feather name="bell" size={16} color={unreadCount > 0 ? '#FCD34D' : 'rgba(255,255,255,0.5)'} />
+              {unreadCount > 0 && <View style={S.bellDot} />}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -1191,7 +1208,8 @@ const S = StyleSheet.create({
   schedTxt:  { fontSize: 11, fontWeight: '800', color: TEAL_LT },
   walkInBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(13,148,136,0.25)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.45)', alignItems: 'center', justifyContent: 'center' },
   walkInTxt: { fontSize: 18, color: TEAL_LT, lineHeight: 22, fontWeight: '800' },
-  bellBtn:   { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  bellBtn:   { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  bellDot:   { position: 'absolute', top: 6, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: BG },
 
   // Schedule modal
   modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
