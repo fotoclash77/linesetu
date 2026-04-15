@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";

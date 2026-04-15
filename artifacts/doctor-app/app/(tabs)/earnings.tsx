@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar } from 'react-native-calendars';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
-import { Feather } from '@expo/vector-icons';
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { useDoctor } from '../../contexts/DoctorContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 

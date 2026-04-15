@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { useAuth } from "@/contexts/AuthContext";
 
 const isWeb = Platform.OS === "web";

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
-import { Feather } from '@expo/vector-icons';
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { useDoctor } from '../../contexts/DoctorContext';
 
 const isWeb = Platform.OS === 'web';

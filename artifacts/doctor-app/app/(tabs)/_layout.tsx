@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { TEAL_LT } from "../../constants/theme";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { fireSettingsReset } from "./_settingsResetBridge";
 
 const INACTIVE = "rgba(255,255,255,0.3)";

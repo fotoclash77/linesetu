@@ -5,12 +5,10 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Feather } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as Font from "expo-font";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -18,26 +16,10 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
 import { useForceUpdate } from "../hooks/useForceUpdate";
-import { FEATHER_FONT_BASE64 } from "../constants/featherFontBase64";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 }
-
-// Inject Feather icon font on web via base64 data URL — no network request
-// needed, works through any proxy, guaranteed to match @expo/vector-icons usage.
-if (Platform.OS === "web" && typeof document !== "undefined") {
-  const style = document.createElement("style");
-  style.textContent = `@font-face { font-family: 'feather'; src: url('${FEATHER_FONT_BASE64}') format('truetype'); font-weight: normal; font-style: normal; }`;
-  document.head.appendChild(style);
-}
-
-// On native, load the Feather icon font from a local copy of the TTF file.
-// This bypasses any PNPM symlink resolution issues with @expo/vector-icons.
-const _featherFontReady =
-  Platform.OS !== "web"
-    ? Font.loadAsync({ feather: require("../assets/fonts/Feather.ttf") })
-    : Promise.resolve();
 
 const queryClient = new QueryClient();
 
@@ -88,7 +70,6 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
-  const [featherReady, setFeatherReady] = useState(Platform.OS === "web");
   const forceUpdate = useForceUpdate();
 
   useEffect(() => {
@@ -96,20 +77,12 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== "web") {
-      _featherFontReady
-        .then(() => setFeatherReady(true))
-        .catch(() => setFeatherReady(true));
-    }
-  }, []);
-
-  useEffect(() => {
-    if ((fontsLoaded || fontError) && featherReady) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError, featherReady]);
+  }, [fontsLoaded, fontError]);
 
-  if ((!fontsLoaded && !fontError) || !featherReady) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>

@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
-import { Feather } from '@expo/vector-icons';
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';

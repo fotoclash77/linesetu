@@ -45,6 +45,9 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - **Bookings List**: Polls patient tokens every 10s with 5s stale time.
 - All SSE endpoints use `tokenEmitter` (EventEmitter) to broadcast changes whenever tokens are booked/called/completed.
 
+### Icons
+Both patient-app and doctor-app use SVG-based Feather icons via `components/FeatherIcon.tsx` (renders inline SVG via `react-native-svg`). This replaces the font-based `@expo/vector-icons/Feather` which failed to render on native Expo Go. The component accepts `name`, `size`, `color` props matching the original Feather API. All 75+ icon SVG paths are hardcoded in the PATHS map. When adding new icon usage, ensure the icon name exists in the PATHS record or add its SVG path from feathericons.com.
+
 ### expo-router Base URL Patch
 The patient app requires a patch to expo-router's `getPathFromState-forks.js`, `getPathFromState.js`, and `getStateFromPath-forks.js` to enable base URL handling in dev mode. The `postinstall` script (`scripts/patch-expo-router.js`) auto-applies these patches. After patching, Metro cache must be cleared (`rm -rf /tmp/metro-cache /tmp/metro-file-map-*`) and the workflow restarted.
 

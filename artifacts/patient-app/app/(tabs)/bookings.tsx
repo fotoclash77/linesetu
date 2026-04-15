@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";

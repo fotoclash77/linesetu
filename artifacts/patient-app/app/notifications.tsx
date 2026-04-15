@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import { db } from "@/lib/firebase";

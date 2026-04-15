@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import Svg, { Polyline, Polygon, Rect, G, Line, Text as SvgText } from 'react-native-svg';
 import { useDoctor } from '../../contexts/DoctorContext';

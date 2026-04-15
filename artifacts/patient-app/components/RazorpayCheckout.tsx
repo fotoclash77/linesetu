@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, View, StyleSheet, Platform, Pressable, Text, ActivityIndicator } from "react-native";
 import { WebView } from "react-native-webview";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 
 interface RazorpayOptions {
   keyId: string;
