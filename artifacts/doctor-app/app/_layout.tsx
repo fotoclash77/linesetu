@@ -54,6 +54,7 @@ function RootLayoutNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+      <Stack.Screen name="index" />
       <Stack.Screen name="login" />
       <Stack.Screen name="complete-profile" />
       <Stack.Screen name="(tabs)" />
