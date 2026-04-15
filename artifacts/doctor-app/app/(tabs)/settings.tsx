@@ -1995,8 +1995,6 @@ export default function SettingsScreen() {
             <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} last />
           </View>
 
-          {/* Patient App */}
-          <SectionLabel label="Patient App" />
           {/* Bank */}
           <SectionLabel label="Bank & Payments" />
           <View style={styles.settingsGroup}>
