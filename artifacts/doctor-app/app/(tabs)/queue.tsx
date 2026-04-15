@@ -472,6 +472,12 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
         <PatientInfo tok={tok} />
         <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, marginLeft: 4 }}>›</Text>
       </TouchableOpacity>
+      {isCancelled && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingBottom: 10 }}>
+          <Feather name="x-circle" size={13} color="#F87171" />
+          <Text style={{ fontSize: 11, fontWeight: '800', color: '#F87171', letterSpacing: 0.3 }}>Cancelled & Refunded</Text>
+        </View>
+      )}
       {!isCancelled && (
         <View style={S.waitBtns}>
           <TouchableOpacity
