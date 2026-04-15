@@ -120,11 +120,14 @@ router.post("/auth/doctor/verify-otp", async (req, res) => {
     });
 
     if (match) {
-      // Ensure isActive
-      if (!match.data().isActive) {
+      const matchData = match.data();
+      if (matchData.isDeleted) {
+        return res.status(403).json({ error: "Account has been deleted. Contact admin.", deleted: true });
+      }
+      if (!matchData.isActive) {
         await updateDoc(doc(db, Collections.DOCTORS, match.id), { isActive: true });
       }
-      return res.json({ id: match.id, ...match.data(), isActive: true });
+      return res.json({ id: match.id, ...matchData, isActive: true });
     }
 
     // No doctor found — create one with a placeholder profile
@@ -137,6 +140,8 @@ router.post("/auth/doctor/verify-otp", async (req, res) => {
       clinicAddress: "City Centre",
       profilePhoto: "",
       isActive: true,
+      isApproved: false,
+      isDeleted: false,
       fcmToken: "",
       shifts: {
         morning: true, morningStart: "09:00", morningEnd: "13:00",

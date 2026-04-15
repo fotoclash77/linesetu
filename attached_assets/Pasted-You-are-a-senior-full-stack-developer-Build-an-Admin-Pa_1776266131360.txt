@@ -1,0 +1,198 @@
+You are a senior full-stack developer.
+
+Build an **Admin Panel (Web App)** for LINESETU and connect it in real-time with:
+
+- Patient Mobile App
+- Doctor Mobile App
+
+Use:
+- React (Web) + Tailwind CSS
+- Firebase Authentication
+- Cloud Firestore (real-time listeners)
+
+⚠️ This is a REAL FEATURE with correct business logic.
+
+---
+
+# 🎯 CORE REQUIREMENT
+
+Admin must be able to:
+
+- View all doctors
+- Approve doctors
+- Hide doctors (only from patient app)
+- Delete doctors (completely remove account)
+
+All actions must reflect **instantly in real-time** across apps.
+
+---
+
+# 🧱 FIRESTORE STRUCTURE
+
+Collection: users/{userId}
+
+Fields:
+
+- name
+- phone
+- role ("doctor" | "patient" | "admin")
+- isApproved (true | false)
+- isActive (true | false)   // controls visibility in patient app
+- isDeleted (true | false)
+- createdAt
+
+---
+
+# 🔁 LOGIC RULES
+
+## 1. APPROVE DOCTOR
+
+Action: "Approve"
+
+- isApproved = true
+
+👉 Doctor becomes visible in Patient App (if active)
+
+---
+
+## 2. HIDE DOCTOR (IMPORTANT)
+
+Action: "Hide"
+
+- isActive = false
+
+👉 This means:
+- Doctor will NOT be visible in Patient App
+- Doctor will NOT appear in:
+  - doctor listing
+  - search
+  - booking
+
+👉 BUT:
+- Doctor can still log in to Doctor App
+- Doctor account is NOT deleted
+
+---
+
+## 3. UNHIDE DOCTOR
+
+- isActive = true
+
+👉 Doctor becomes visible again in Patient App
+
+---
+
+## 4. DELETE DOCTOR (CRITICAL)
+
+Action: "Delete"
+
+This must:
+
+1. Set:
+   - isDeleted = true
+
+2. Remove doctor access:
+   - Disable login OR delete Firebase Auth user
+
+3. Effect:
+
+👉 Doctor must be:
+- Completely removed from Patient App
+- Completely removed from Doctor App
+- Cannot log in anymore
+- Treated as fully deleted account
+
+---
+
+# 📱 PATIENT APP QUERY LOGIC
+
+Only show doctors where:
+
+- role == "doctor"
+- isApproved == true
+- isActive == true
+- isDeleted == false
+
+---
+
+# 📱 DOCTOR APP LOGIC
+
+On login:
+
+IF isDeleted == true:
+👉 Block access (logout immediately)
+
+---
+
+# 📡 REAL-TIME SYNC
+
+- Use Firestore listeners
+- Any admin action must instantly reflect in:
+  - Patient App
+  - Doctor App
+
+No refresh required.
+
+---
+
+# 💻 ADMIN PANEL UI
+
+## Page: Doctors Management
+
+Show all doctors in list/table:
+
+Each row:
+
+- Doctor Name
+- Phone
+- Status:
+  - Approved / Pending
+  - Active / Hidden
+
+---
+
+## ACTION BUTTONS
+
+- Approve
+- Hide / Unhide (toggle)
+- Delete (with confirmation)
+
+---
+
+# ⚠️ IMPORTANT BEHAVIOR
+
+- Hide = only affects patient app visibility
+- Delete = complete removal from system
+- Never show deleted doctors anywhere
+
+---
+
+# ⚡ EDGE CASES
+
+- Prevent multiple delete clicks
+- Confirm before delete
+- Prevent actions on deleted users
+- Real-time UI updates
+
+---
+
+# 📁 CODE STRUCTURE
+
+- /admin-panel
+  - pages/DoctorsPage.jsx
+  - components/DoctorRow.jsx
+  - services/adminService.js
+  - hooks/useDoctors.js
+
+---
+
+# 🎯 FINAL GOAL
+
+👉 Admin has full control over doctor lifecycle  
+👉 Hide = visibility control  
+👉 Delete = full account removal  
+👉 Real-time sync across entire system  
+
+---
+
+Build production-ready feature with clean logic and Firebase integration.

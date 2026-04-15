@@ -105,6 +105,11 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${BASE()}/api/doctors/${doctor.id}`);
         if (!res.ok) return;
         const data = await res.json();
+        if (data.isDeleted) {
+          await AsyncStorage.removeItem(STORAGE_KEY);
+          setDoctor(null);
+          return;
+        }
         const fresh = data.isAvailable !== false;
         setDoctor(prev => {
           if (!prev) return prev;

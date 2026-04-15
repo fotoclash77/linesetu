@@ -30,8 +30,9 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 | Artifact | Type | Port | Preview Path |
 |---|---|---|---|
-| patient-app | Expo mobile | 20116 | /patient-app/ |
-| doctor-app | Expo mobile | 20117 | /doctor-app/ |
+| patient-app | Expo mobile | 20117 | /patient-app/ |
+| doctor-app | Expo mobile | 20119 | /doctor-app/ |
+| admin-panel | Web (React+Vite) | 20130 | /admin-panel/ |
 | doctor-onboarding | Slides (Vite) | 19222 | /doctor-onboarding/ |
 | investor-pitch | Slides (Vite) | 21160 | /investor-pitch/ |
 | api-server | API (Express) | 8080 | — |
@@ -50,6 +51,16 @@ Both patient-app and doctor-app use SVG-based Feather icons via `components/Feat
 
 ### expo-router Base URL Patch
 The patient app requires a patch to expo-router's `getPathFromState-forks.js`, `getPathFromState.js`, and `getStateFromPath-forks.js` to enable base URL handling in dev mode. The `postinstall` script (`scripts/patch-expo-router.js`) auto-applies these patches. After patching, Metro cache must be cleared (`rm -rf /tmp/metro-cache /tmp/metro-file-map-*`) and the workflow restarted.
+
+### Admin Panel (artifacts/admin-panel)
+React+Vite web app for admin doctor lifecycle management.
+- Real-time Firestore `onSnapshot` listener on `doctors` collection (client-side filtering, no composite index needed)
+- Stat cards: Total Doctors, Pending Approval, Active & Approved, Hidden
+- Filter tabs: All, Pending, Approved, Hidden + search by name/phone/specialty
+- Actions: Approve, Hide/Unhide, Delete (with confirmation modal)
+- API routes at `/api/admin/doctors/:id/{approve,hide,unhide}` (POST) and `DELETE /api/admin/doctors/:id`
+- Vite proxy forwards `/api` requests to api-server on port 8080
+- Doctor lifecycle: new doctors start with `isApproved:false, isDeleted:false`; deleted doctors filtered out client-side; `GET /api/doctors` filters by `isApproved !== false`; doctor-app auto-logouts if `isDeleted` detected
 
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.

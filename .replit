@@ -80,6 +80,10 @@ localPort = 20120
 externalPort = 8000
 
 [[ports]]
+localPort = 20130
+externalPort = 8008
+
+[[ports]]
 localPort = 21160
 externalPort = 3001
 
@@ -111,6 +115,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID = "1:669948564779:web:5cb0991e9e7a9ed065e16e"
 EXPO_PUBLIC_DOMAIN = "d8479a8d-fa68-4a0e-9145-0243e19272df-00-aspsb1pq2zqb.spock.replit.dev"
 EXPO_PUBLIC_RAZORPAY_KEY_ID = "rzp_test_ScpON907BJC3GP"
 FAST2SMS_API_KEY = "klNS6ABpsaf2PuhRIdW5e91834v7yHoEOKLZgjr0TMQDmcYxiXpBP4e7Qr1kyWoFmAuTKUSG02gbCn6j"
+VITE_API_BASE = ""
 
 [nix]
 channel = "stable-25_05"

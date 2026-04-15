@@ -9,7 +9,7 @@ import { uploadBase64ToStorage, deleteFromStorage } from "../lib/storage.js";
 
 const router = Router();
 
-// GET /api/doctors — list all active doctors
+// GET /api/doctors — list all active, approved, non-deleted doctors (for patient app)
 router.get("/doctors", async (req, res) => {
   try {
     const q = query(
@@ -17,7 +17,9 @@ router.get("/doctors", async (req, res) => {
       where("isActive", "==", true)
     );
     const snap = await withRetry(() => getDocs(q));
-    const doctors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const doctors = snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as any))
+      .filter(d => d.isApproved !== false && !d.isDeleted);
     res.json({ doctors });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -56,6 +58,8 @@ router.post("/doctors", async (req, res) => {
       clinicAddress: clinicAddress || "",
       profilePhoto: "",
       isActive: true,
+      isApproved: false,
+      isDeleted: false,
       isAvailable: true,
       fcmToken: "",
       shifts: shifts || {
