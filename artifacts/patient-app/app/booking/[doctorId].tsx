@@ -441,11 +441,11 @@ export default function BookingScreen() {
                     return (
                       <Pressable
                         key={ci}
-                        disabled={isPast || (isOff && !isDemoId)}
+                        disabled={isPast || isOff}
                         onPress={() => { setSelectedIso(iso); setSelectedShiftId(null); }}
                         style={[
                           styles.calCell,
-                          !isDemoId && { backgroundColor: cs.bg, borderWidth: 1, borderColor: cs.border, borderRadius: 8 },
+                          { backgroundColor: cs.bg, borderWidth: 1, borderColor: cs.border, borderRadius: 8 },
                           isSelected && styles.calCellSelected,
                           isToday && !isSelected && styles.calCellToday,
                           isPast && !isSelected && styles.calCellPast,
@@ -455,11 +455,11 @@ export default function BookingScreen() {
                           styles.calCellTxt,
                           isSelected && styles.calCellTxtSelected,
                           isPast && styles.calCellTxtPast,
-                          isOff && !isDemoId && { color: "rgba(239,68,68,0.6)", textDecorationLine: "line-through" },
+                          isOff && { color: "rgba(239,68,68,0.6)", textDecorationLine: "line-through" },
                           isToday && !isSelected && { color: "#2DD4BF", fontWeight: "800" },
                         ]}>{cell.getDate()}</Text>
                         {/* Shift availability dots */}
-                        {!isDemoId && !isPast && (
+                        {!isPast && (
                           <View style={{ flexDirection: "row", gap: 2, marginTop: 2, height: 5, alignItems: "center", justifyContent: "center" }}>
                             {!isOff && cfg?.morning?.enabled && (
                               <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#FCD34D" }} />
@@ -476,21 +476,18 @@ export default function BookingScreen() {
               </View>
             );
           })}
-          {!isDemoId && (
-            <View style={calRowStyles.legend}>
-              {[{ color: "#2DD4BF", label: "Both" }, { color: "#FCD34D", label: "Morning" }, { color: "#A5B4FC", label: "Evening" }, { color: "#F87171", label: "Holiday" }].map(item => (
-                <View key={item.label} style={calRowStyles.legendItem}>
-                  <View style={[calRowStyles.legendDot, { backgroundColor: item.color }]} />
-                  <Text style={calRowStyles.legendTxt}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+          <View style={calRowStyles.legend}>
+            {[{ color: "#2DD4BF", label: "Both" }, { color: "#FCD34D", label: "Morning" }, { color: "#A5B4FC", label: "Evening" }, { color: "#F87171", label: "Holiday" }].map(item => (
+              <View key={item.label} style={calRowStyles.legendItem}>
+                <View style={[calRowStyles.legendDot, { backgroundColor: item.color }]} />
+                <Text style={calRowStyles.legendTxt}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Shift Cards — real from Firebase calendar */}
-        {!isDemoId && (
-          <View style={styles.sectionPad}>
+        <View style={styles.sectionPad}>
             <Text style={styles.sectionLabel}>Available Shifts</Text>
             {(!dayCfg || dayCfg?.off || shiftCards.length === 0) ? (
               <View style={calRowStyles.offDay}>
@@ -574,7 +571,7 @@ export default function BookingScreen() {
               </View>
             )}
           </View>
-        )}
+        </View>
 
         {/* Family Member */}
         <View style={styles.sectionPad}>
