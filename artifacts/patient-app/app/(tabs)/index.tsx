@@ -53,6 +53,14 @@ interface DoctorItem {
   isAvailable?: boolean;
 }
 
+function formatWait(mins: number) {
+  if (!Number.isFinite(mins) || mins <= 0) return "~0 min";
+  if (mins < 60) return `~${Math.round(mins)} min`;
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return m ? `~${h}h ${m}m` : `~${h}h`;
+}
+
 function DoctorCard({ doc }: { doc: DoctorItem }) {
   const { accent } = doc;
   const available = doc.isAvailable !== false;
@@ -279,7 +287,7 @@ export default function HomeScreen() {
     clinicName: d.clinicName ?? "Clinic",
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
-    wait: "~15 min",
+    wait: formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins ?? 0)),
     token: 1,
     exp: "10 yrs",
     patients: "1K+",
