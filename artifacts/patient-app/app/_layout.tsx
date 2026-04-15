@@ -36,6 +36,13 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   document.head.appendChild(style);
 }
 
+// Eagerly start loading the Feather icon font on native at module-load time,
+// before any React component mounts. This ensures Font.isLoaded('feather')
+// returns true when icon components first check it, preventing box glyphs.
+if (Platform.OS !== "web") {
+  void Feather.loadFont();
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
