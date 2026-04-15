@@ -198,7 +198,7 @@ export default function BookingScreen() {
 
   const docName  = doctorData?.name ?? hint_name ?? "Doctor";
   const docSpec  = doctorData?.specialization ?? hint_spec ?? "";
-  const docPhoto = doctorData?.profilePhoto ?? hint_photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
+  const docPhoto = doctorData?.profilePhoto || doctorData?.photo || hint_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
   const docAvail = (doctorData as any)?.isAvailable !== false;
 
   const calendar: Record<string, any> = (doctorData as any)?.calendar ?? {};
