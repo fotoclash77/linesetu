@@ -639,7 +639,10 @@ export default function BookingScreen() {
         </View>
         <Pressable style={[styles.continueBtn, !canBook && { opacity: 0.5 }]} onPress={handleBook}>
           <LinearGradient colors={["#4F46E5", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-          <Text style={styles.continueBtnTxt}>Continue →</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={styles.continueBtnTxt}>Continue</Text>
+            <Feather name="arrow-right" size={15} color="#FFF" />
+          </View>
         </Pressable>
       </View>
     </View>

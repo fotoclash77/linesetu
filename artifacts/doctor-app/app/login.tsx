@@ -144,7 +144,7 @@ export default function LoginScreen() {
               <View style={styles.stepRow}>
                 {step === 'otp' && (
                   <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); }} style={styles.backBtn}>
-                    <Text style={styles.backArrow}>←</Text>
+                    <Feather name="arrow-left" size={18} color="rgba(255,255,255,0.7)" />
                   </TouchableOpacity>
                 )}
                 <View style={{ flex: 1 }}>
@@ -202,9 +202,10 @@ export default function LoginScreen() {
                     onPress={handleSendOtp}
                     disabled={!phoneValid || sending}
                   >
-                    <Text style={styles.ctaBtnText}>
-                      {sending ? 'Sending OTP…' : 'Send OTP →'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={styles.ctaBtnText}>{sending ? 'Sending OTP…' : 'Send OTP'}</Text>
+                      {!sending && <Feather name="arrow-right" size={15} color="#FFF" />}
+                    </View>
                   </TouchableOpacity>
                 </>
               )}
@@ -322,7 +323,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
-  backArrow: { fontSize: 16, color: 'rgba(255,255,255,0.7)' },
   cardTitle: { fontSize: 16, fontWeight: '900', color: '#FFF' },
   cardSub: { fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2, fontWeight: '500' },
   stepDots: { flexDirection: 'row', gap: 5, alignItems: 'center', flexShrink: 0 },

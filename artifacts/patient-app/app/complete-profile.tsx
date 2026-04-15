@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -85,14 +86,14 @@ export default function CompleteProfile() {
           {/* Brand */}
           <View style={s.header}>
             <View style={s.logoRing}>
-              <Text style={s.logoIcon}>🏥</Text>
+              <Feather name="activity" size={28} color="#67E8F9" />
             </View>
             <Text style={s.brand}>LINESETU</Text>
             <Text style={s.tagline}>Smart Queue · Token Management</Text>
           </View>
 
           {/* Headline */}
-          <Text style={s.title}>Almost there! 🎉</Text>
+          <Text style={s.title}>Almost there!</Text>
           <Text style={s.sub}>Complete your profile so doctors can serve you better.</Text>
 
           {/* Card */}
@@ -163,7 +164,10 @@ export default function CompleteProfile() {
           >
             {saving
               ? <ActivityIndicator color="#0A0E1A" size="small" />
-              : <Text style={s.btnTxt}>Continue to App →</Text>}
+              : <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={s.btnTxt}>Continue to App</Text>
+                  <Feather name="arrow-right" size={16} color="#0A0E1A" />
+                </View>}
           </Pressable>
 
           <Text style={s.footer}>You can update these anytime from your profile</Text>
@@ -182,7 +186,6 @@ const s = StyleSheet.create({
 
   header: { alignItems: "center", marginBottom: 24 },
   logoRing: { width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(6,182,212,0.15)", borderWidth: 1.5, borderColor: "rgba(6,182,212,0.3)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  logoIcon: { fontSize: 28 },
   brand: { fontSize: 22, fontWeight: "800", color: TEAL_LT, letterSpacing: 3 },
   tagline: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3, letterSpacing: 0.5 },
 

@@ -170,11 +170,11 @@ export default function ScheduleScreen() {
             {/* Month nav */}
             <View style={styles.calNav}>
               <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
-                <Text style={styles.navBtnText}>‹</Text>
+                <Feather name="chevron-left" size={18} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
               <Text style={styles.calMonthTitle}>{MONTHS[viewMonth]} {viewYear}</Text>
               <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
-                <Text style={styles.navBtnText}>›</Text>
+                <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
             </View>
 
@@ -431,7 +431,6 @@ const styles = StyleSheet.create({
   },
   calNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   navBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-  navBtnText: { fontSize: 18, color: 'rgba(255,255,255,0.6)', lineHeight: 22 },
   calMonthTitle: { fontSize: 14, fontWeight: '800', color: '#FFF' },
   dayRow: { flexDirection: 'row', marginBottom: 4 },
   dayHeader: { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase' },

@@ -197,12 +197,18 @@ export default function CompleteProfile() {
           {/* Action button */}
           {step === 0 ? (
             <TouchableOpacity style={s.btn} onPress={handleNext} activeOpacity={0.85}>
-              <Text style={s.btnTxt}>Continue →</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={s.btnTxt}>Continue</Text>
+                <Feather name="arrow-right" size={15} color="#000" />
+              </View>
             </TouchableOpacity>
           ) : (
             <View style={s.btnRow}>
               <TouchableOpacity style={s.btnBack} onPress={() => { setStep(0); setErrors({}); }} activeOpacity={0.8}>
-                <Text style={s.btnBackTxt}>← Back</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="arrow-left" size={15} color="rgba(255,255,255,0.7)" />
+                  <Text style={s.btnBackTxt}>Back</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity style={[s.btn, s.btnFlex, saving && s.btnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
                 {saving

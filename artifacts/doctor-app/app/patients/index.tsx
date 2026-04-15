@@ -156,7 +156,7 @@ function PatientCard({ tok }: { tok: any }) {
         </View>
         {fmtDate(tok) ? <Text style={S.cardDate}>{fmtDate(tok)}</Text> : null}
       </View>
-      <Text style={S.cardChevron}>›</Text>
+      <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.3)" />
     </TouchableOpacity>
   );
 }
@@ -247,7 +247,7 @@ function CalendarModal({
             <View style={CS.selectedRow}>
               <Text style={CS.selectedLabel}>From</Text>
               <Text style={CS.selectedVal}>{displayRange(selStart, null)}</Text>
-              {selEnd && <Text style={CS.selectedLabel}>  →  To</Text>}
+              {selEnd && <><Feather name="arrow-right" size={12} color="rgba(255,255,255,0.4)" /><Text style={CS.selectedLabel}>To</Text></>}
               {selEnd && <Text style={CS.selectedVal}>{displayRange(selEnd, null)}</Text>}
             </View>
           )}
@@ -378,7 +378,7 @@ export default function PatientsScreen() {
         {/* ── HEADER ── */}
         <View style={S.hdr}>
           <TouchableOpacity onPress={() => router.back()} style={S.back}>
-            <Text style={S.backTxt}>‹</Text>
+            <Feather name="chevron-left" size={22} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>
           <View style={{ flex:1 }}>
             <Text style={S.hdrTitle}>My Patients</Text>
@@ -425,7 +425,7 @@ export default function PatientsScreen() {
               </View>
             </TouchableOpacity>
           )}
-          <Text style={S.rangeChevron}>›</Text>
+          <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.4)" />
         </TouchableOpacity>
 
         {isLoading ? (
@@ -549,7 +549,6 @@ const S = StyleSheet.create({
 
   hdr:     { flexDirection:'row', alignItems:'center', gap:12, paddingHorizontal:16, paddingTop:12, paddingBottom:8 },
   back:    { width:36, height:36, borderRadius:12, backgroundColor:'rgba(255,255,255,0.06)', borderWidth:1, borderColor:'rgba(255,255,255,0.1)', alignItems:'center', justifyContent:'center' },
-  backTxt: { fontSize:22, color:'#FFF', fontWeight:'300', lineHeight:28 },
   hdrTitle:{ fontSize:17, fontWeight:'900', color:'#FFF', letterSpacing:-0.3 },
   hdrSub:  { fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:'600', marginTop:1 },
 
@@ -565,8 +564,6 @@ const S = StyleSheet.create({
   rangeBtnValue:  { fontSize:13, fontWeight:'800', color:'#2DD4BF', marginTop:1 },
   rangeClearBtn:  { paddingHorizontal:10, paddingVertical:5, borderRadius:8, backgroundColor:'rgba(239,68,68,0.15)', borderWidth:1, borderColor:'rgba(239,68,68,0.3)' },
   rangeClearTxt:  { fontSize:10, fontWeight:'800', color:'#F87171' },
-  rangeChevron:   { fontSize:20, color:'rgba(45,212,191,0.5)', fontWeight:'300' },
-
   loadWrap: { flex:1, alignItems:'center', justifyContent:'center', gap:12 },
   loadTxt:  { fontSize:12, color:'rgba(255,255,255,0.3)', fontWeight:'600' },
 
@@ -613,8 +610,8 @@ const S = StyleSheet.create({
   pill:           { paddingHorizontal:6, paddingVertical:2, borderRadius:6, borderWidth:1 },
   pillTxt:        { fontSize:9, fontWeight:'800' },
   cardDate:       { fontSize:9, color:'rgba(255,255,255,0.25)', fontWeight:'600', marginTop:1 },
-  cardChevron:    { fontSize:20, color:'rgba(255,255,255,0.18)', fontWeight:'300', alignSelf:'center' },
 });
+
 
 // ─── Calendar Modal Styles ────────────────────────────────────────────────────
 const CS = StyleSheet.create({
