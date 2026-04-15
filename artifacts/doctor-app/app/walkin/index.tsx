@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Modal,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Modal, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -680,6 +680,19 @@ export default function AddWalkinScreen() {
               <TouchableOpacity
                 style={wStyles.confirmBtn}
                 onPress={() => {
+                  const cal = (doctor as any)?.calendar ?? {};
+                  const dayCfg = cal[pickDate];
+                  const isDayOff = !dayCfg || dayCfg?.off === true
+                    || !(dayCfg?.morning?.enabled === true || dayCfg?.evening?.enabled === true);
+                  const shiftEnabled = dayCfg?.[pickShift]?.enabled === true;
+                  if (isDayOff || !shiftEnabled) {
+                    Alert.alert(
+                      'Select a Clinic',
+                      'Please select a valid date and shift with a clinic assigned before applying.',
+                      [{ text: 'OK' }]
+                    );
+                    return;
+                  }
                   setSelectedDate(pickDate);
                   setSelectedShift(pickShift);
                   setShowSchedule(false);

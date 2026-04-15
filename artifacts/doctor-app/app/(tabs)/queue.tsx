@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform, Animated, Modal, RefreshControl, TextInput,
+  ActivityIndicator, Platform, Animated, Modal, RefreshControl, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -1106,6 +1106,19 @@ export default function QueueScreen() {
               <TouchableOpacity
                 style={S.confirmBtn}
                 onPress={() => {
+                  const cal = (doctor as any)?.calendar ?? {};
+                  const dayCfg = cal[pickDate];
+                  const isDayOff = !dayCfg || dayCfg?.off === true
+                    || !(dayCfg?.morning?.enabled === true || dayCfg?.evening?.enabled === true);
+                  const shiftEnabled = dayCfg?.[pickShift]?.enabled === true;
+                  if (isDayOff || !shiftEnabled) {
+                    Alert.alert(
+                      'Select a Clinic',
+                      'Please select a valid date and shift with a clinic assigned before applying.',
+                      [{ text: 'OK' }]
+                    );
+                    return;
+                  }
                   setSchedDate(pickDate);
                   setShift(pickShift);
                   setShowSchedule(false);
