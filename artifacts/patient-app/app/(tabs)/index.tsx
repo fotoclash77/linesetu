@@ -289,8 +289,8 @@ export default function HomeScreen() {
     rating: "4.8",
     wait: formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins ?? 0)),
     token: 1,
-    exp: "10 yrs",
-    patients: "1K+",
+    exp: d.experience ? `${d.experience}` : "—",
+    patients: d.totalPatients ? `${d.totalPatients}` : "—",
     photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
