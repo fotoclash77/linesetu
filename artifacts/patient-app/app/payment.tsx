@@ -109,12 +109,15 @@ export default function PaymentScreen() {
       .catch(() => {});
   }, []);
 
+  const [liveDoctorPhoto, setLiveDoctorPhoto] = useState("");
+
   useEffect(() => {
     if (!params.doctorId) return;
     const ref = doc(db, "doctors", params.doctorId);
     const unsub = onSnapshot(ref, (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as any;
+      if (data.profilePhoto || data.photo) setLiveDoctorPhoto(data.profilePhoto || data.photo);
       if (data.phone) setLivePhone(data.phone);
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
@@ -127,8 +130,6 @@ export default function PaymentScreen() {
     }, () => {});
     return () => unsub();
   }, [params.doctorId, date, shift]);
-
-  const liveDoctorPhoto = (params as any).doctorPhoto ?? "";
 
   // SSE: subscribe to next-token stream (polyfill works on both web + React Native)
   useEffect(() => {
@@ -451,7 +452,7 @@ export default function PaymentScreen() {
           <View style={styles.summaryCard}>
             {/* Doctor Row */}
             <View style={styles.docRow}>
-              <Image source={{ uri: doctorPhoto || liveDoctorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctorName || "Doctor")}&background=4F46E5&color=fff` }} style={styles.docPhoto} contentFit="cover" />
+              <Image source={{ uri: liveDoctorPhoto || doctorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctorName || "Doctor")}&background=4F46E5&color=fff` }} style={styles.docPhoto} contentFit="cover" />
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                   <Text style={styles.docName} numberOfLines={1}>{doctorName}</Text>
