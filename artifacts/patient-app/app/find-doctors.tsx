@@ -5,7 +5,9 @@ import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions } from "@workspace/api-client-react";
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
   Platform,
@@ -140,19 +142,24 @@ export default function FindDoctorsScreen() {
 
   const allDoctors = apiDoctors;
 
-  // Build specialty chips dynamically from real doctor data
-  const specialtyChips = useMemo(() => {
-    const seen = new Set<string>();
-    const chips: { label: string; color: string }[] = [{ label: "All", color: "#818CF8" }];
-    apiDoctors.forEach((d) => {
-      const s = d.specialty?.trim();
-      if (s && !seen.has(s)) {
-        seen.add(s);
-        chips.push({ label: s, color: ACCENT_COLORS[(chips.length - 1) % ACCENT_COLORS.length] });
+  const [fbSpecList, setFbSpecList] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "appConfig", "specializations"), (snap) => {
+      const data = snap.data();
+      if (data && Array.isArray(data.list)) {
+        setFbSpecList(data.list.filter((s: string) => s !== "Other"));
       }
     });
+    return unsub;
+  }, []);
+
+  const specialtyChips = useMemo(() => {
+    const chips: { label: string; color: string }[] = [{ label: "All", color: "#818CF8" }];
+    fbSpecList.forEach((s, i) => {
+      chips.push({ label: s, color: ACCENT_COLORS[i % ACCENT_COLORS.length] });
+    });
     return chips;
-  }, [apiDoctors]);
+  }, [fbSpecList]);
 
   const filtered = useMemo(() => {
     return allDoctors.filter((d) => {
