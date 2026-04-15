@@ -523,7 +523,8 @@ export default function BookingScreen() {
                           <View>
                             <Text style={[styles.shiftLabel, { color: shift.color }]}>{shift.label} Shift</Text>
                             <Text style={styles.shiftTime}>{shift.startTime} – {shift.endTime}</Text>
-        </View>
+                          </View>
+                        </View>
                         <View style={{ alignItems: "flex-end", gap: 4 }}>
                           {isAlreadyBooked && (
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(245,158,11,0.15)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
