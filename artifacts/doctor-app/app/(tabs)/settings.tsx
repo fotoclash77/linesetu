@@ -566,7 +566,9 @@ export default function SettingsScreen() {
       });
       const data = await res.json();
       if (res.ok && data.url) {
-        setResultPhotos(prev => [...prev, data.url]);
+        const newResults = [...resultPhotos, data.url];
+        setResultPhotos(newResults);
+        await updateDoctor({ results: newResults } as any);
       } else {
         setUploadError(data.error || 'Upload failed. Please try again.');
       }
