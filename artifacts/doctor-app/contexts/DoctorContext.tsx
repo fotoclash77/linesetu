@@ -34,6 +34,8 @@ export interface DoctorUser {
   consultFee?: number;
   emergencyFee?: number;
   walkinFee?: number;
+  clinicConsultFee?: number;
+  clinicEmergencyFee?: number;
   onlineBooking?: boolean;
   emergencyTokens?: boolean;
   showWaitTime?: boolean;
@@ -152,6 +154,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       clinics: data.clinics ?? undefined,
       consultFee: data.consultFee != null ? Number(data.consultFee) : undefined,
       emergencyFee: data.emergencyFee != null ? Number(data.emergencyFee) : undefined,
+      clinicConsultFee: data.clinicConsultFee != null ? Number(data.clinicConsultFee) : undefined,
+      clinicEmergencyFee: data.clinicEmergencyFee != null ? Number(data.clinicEmergencyFee) : undefined,
       onlineBooking: data.onlineBooking !== false,
       emergencyTokens: data.emergencyTokens !== false,
       showWaitTime: data.showWaitTime !== false,
