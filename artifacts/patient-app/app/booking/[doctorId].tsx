@@ -577,6 +577,7 @@ export default function BookingScreen() {
         {/* Family Member */}
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Booking For</Text>
+          <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Add family members from Settings</Text>
           <View style={{ gap: 8 }}>
             {family.map(m => {
               const isSelected = selectedMember.id === m.id;
