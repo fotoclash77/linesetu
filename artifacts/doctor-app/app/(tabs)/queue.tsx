@@ -234,21 +234,21 @@ function TokenChip({ token, type, large = false, amber = false }: { token: numbe
 function TypeBadge({ type, source }: { type: string; source: string }) {
   if (type === 'emergency') {
     return (
-      <View style={[S.badge, { backgroundColor: 'rgba(239,68,68,0.18)', borderColor: 'rgba(239,68,68,0.4)' }]}>
-        <Text style={[S.badgeTxt, { color: RED }]}>🚨 EMERGENCY</Text>
+      <View style={[S.badge, { backgroundColor: 'rgba(239,68,68,0.65)', borderColor: 'rgba(239,68,68,0.9)' }]}>
+        <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>🚨 EMERGENCY</Text>
       </View>
     );
   }
   if (source === 'walkin') {
     return (
-      <View style={[S.badge, { backgroundColor: 'rgba(103,232,249,0.12)', borderColor: 'rgba(103,232,249,0.3)' }]}>
-        <Text style={[S.badgeTxt, { color: CYAN }]}>WALK-IN</Text>
+      <View style={[S.badge, { backgroundColor: 'rgba(103,232,249,0.15)', borderColor: 'rgba(103,232,249,0.4)' }]}>
+        <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>WALK-IN</Text>
       </View>
     );
   }
   return (
-    <View style={[S.badge, { backgroundColor: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.3)' }]}>
-      <Text style={[S.badgeTxt, { color: GREEN }]}>E-TOKEN</Text>
+    <View style={[S.badge, { backgroundColor: 'rgba(74,222,128,0.15)', borderColor: 'rgba(74,222,128,0.4)' }]}>
+      <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>E-TOKEN</Text>
     </View>
   );
 }
