@@ -414,7 +414,7 @@ export default function PaymentScreen() {
         setResultModal({
           visible: true,
           type: "adjusted",
-          message: booked.message || `Selected token unavailable. Assigned next available token: ${tokenNum}.`,
+          message: booked.message || `Selected token unavailable. Assigned next available token: ${isEmergency ? `E${tokenNum}` : `#${tokenNum}`}.`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
@@ -422,7 +422,7 @@ export default function PaymentScreen() {
         setResultModal({
           visible: true,
           type: "success",
-          message: booked.message || `Token booked successfully. Your token number is ${tokenNum}.`,
+          message: booked.message || `Token booked successfully. Your token number is ${isEmergency ? `E${tokenNum}` : `#${tokenNum}`}.`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
