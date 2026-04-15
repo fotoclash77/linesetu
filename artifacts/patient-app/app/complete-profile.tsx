@@ -103,7 +103,7 @@ export default function CompleteProfile() {
             <Text style={s.label}>Your Full Name <Text style={s.req}>*</Text></Text>
             <TextInput
               style={[s.input, errors.name && s.inputErr]}
-              placeholder="e.g. Rahul Sharma"
+              placeholder="Enter your full name"
               placeholderTextColor="rgba(255,255,255,0.25)"
               value={name}
               onChangeText={v => { setName(v); setErrors(e => ({ ...e, name: false })); }}
