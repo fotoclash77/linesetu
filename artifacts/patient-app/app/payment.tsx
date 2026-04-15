@@ -68,10 +68,8 @@ export default function PaymentScreen() {
   const patientName = params.patientName ?? patient?.name ?? "";
   const tokenType   = (params.tokenType  ?? "normal") as "normal" | "emergency";
   const isEmergency = tokenType === "emergency";
-  const payableNow  = Number(params.payableNow ?? "20");
-  const consultFee  = Number(params.consultFee ?? "0");
-  const eAppFee     = isEmergency ? 20 : 10;
-  const platformFee = 10;
+  const paramPayableNow = Number(params.payableNow ?? "20");
+  const paramConsultFee = Number(params.consultFee ?? "0");
 
   const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,6 +81,20 @@ export default function PaymentScreen() {
   const [liveClinic, setLiveClinic] = useState(clinic);
   const [liveTime, setLiveTime] = useState(time);
   const [livePhone, setLivePhone] = useState("");
+  const [liveNormalFee, setLiveNormalFee] = useState<number | null>(null);
+  const [liveEmergencyFee, setLiveEmergencyFee] = useState<number | null>(null);
+  const [liveClinicConsultFee, setLiveClinicConsultFee] = useState<number | null>(null);
+  const [liveClinicEmergencyFee, setLiveClinicEmergencyFee] = useState<number | null>(null);
+  const [livePlatformFee, setLivePlatformFee] = useState<number | null>(null);
+
+  const eAppFee = isEmergency
+    ? (liveEmergencyFee ?? paramPayableNow - 10)
+    : (liveNormalFee ?? paramPayableNow - 10);
+  const platformFee = livePlatformFee ?? 10;
+  const consultFee = isEmergency
+    ? (liveClinicEmergencyFee ?? paramConsultFee)
+    : (liveClinicConsultFee ?? paramConsultFee);
+  const payableNow = eAppFee + platformFee;
 
   // Real-time next token via SSE
   const [nextToken, setNextToken] = useState<number | null>(null);
@@ -124,6 +136,11 @@ export default function PaymentScreen() {
         emergency: data.emergencyFeeLabel || "Emergency E-Token Fee",
         platform: data.platformFeeLabel || "Platform Fee",
       });
+      if (data.consultFee != null) setLiveNormalFee(Number(data.consultFee));
+      if (data.emergencyFee != null) setLiveEmergencyFee(Number(data.emergencyFee));
+      if (data.clinicConsultFee != null) setLiveClinicConsultFee(Number(data.clinicConsultFee));
+      if (data.clinicEmergencyFee != null) setLiveClinicEmergencyFee(Number(data.clinicEmergencyFee));
+      if (data.platformFee != null) setLivePlatformFee(Number(data.platformFee));
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
       let resolvedClinicName = shiftCfg?.clinicName ?? "";
