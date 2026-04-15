@@ -429,7 +429,9 @@ router.post("/tokens", async (req, res) => {
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
         });
-      } catch (_) {}
+      } catch (e: any) {
+        console.error(`[Tokens] Transaction write failed tokenId=${tokenRef.id}:`, e?.message);
+      }
 
       // Credit doctor's balance + daily aggregate immediately after verified payment + token creation.
       // This replaces the old behaviour (credit only at done) so earnings appear at once.
@@ -454,7 +456,9 @@ router.post("/tokens", async (req, res) => {
             });
           }
           await earnBatch.commit();
-        } catch (_) {}
+        } catch (e: any) {
+          console.error(`[Tokens] Earnings credit failed tokenId=${tokenRef.id} doctorId=${doctorId}:`, e?.message);
+        }
       }
     }
 
