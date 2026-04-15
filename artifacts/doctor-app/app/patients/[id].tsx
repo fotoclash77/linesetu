@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -80,7 +81,7 @@ function capitalize(s: string) { return s ? s.charAt(0).toUpperCase() + s.slice(
 
 // ─── Row component ──────────────────────────────────────────────────────
 function Row({ icon, label, value, valueColor, always }: {
-  icon:string; label:string; value?:string|null; valueColor?:string; always?:boolean
+  icon:React.ComponentProps<typeof Feather>['name']; label:string; value?:string|null; valueColor?:string; always?:boolean
 }) {
   if (!value && !always) return null;
   const display = value || '—';
@@ -88,7 +89,7 @@ function Row({ icon, label, value, valueColor, always }: {
   return (
     <View style={S.row}>
       <View style={S.rowLeft}>
-        <Text style={S.rowIcon}>{icon}</Text>
+        <View style={S.rowIcon}><Feather name={icon} size={12} color="rgba(255,255,255,0.4)" /></View>
         <Text style={S.rowLabel}>{label}</Text>
       </View>
       <Text style={[S.rowValue, valueColor && value ? {color:valueColor} : {}, dimmed && {color:'rgba(255,255,255,0.2)', fontStyle:'italic'}]}>
@@ -99,11 +100,11 @@ function Row({ icon, label, value, valueColor, always }: {
 }
 
 // ─── Section card ──────────────────────────────────────────────────────
-function Section({ title, icon, children, accent }: { title:string; icon:string; children:React.ReactNode; accent?:string }) {
+function Section({ title, icon, children, accent }: { title:string; icon:React.ComponentProps<typeof Feather>['name']; children:React.ReactNode; accent?:string }) {
   return (
     <View style={[S.section, accent ? {borderColor:`${accent}25`} : {}]}>
       <View style={S.sectionHdr}>
-        <Text style={{fontSize:12}}>{icon}</Text>
+        <Feather name={icon} size={12} color={accent ?? 'rgba(255,255,255,0.5)'} />
         <Text style={[S.sectionTitle, accent ? {color:accent} : {}]}>{title}</Text>
       </View>
       {children}
@@ -167,7 +168,7 @@ export default function PatientDetailScreen() {
         {/* Header */}
         <View style={S.hdr}>
           <TouchableOpacity onPress={() => router.back()} style={S.back}>
-            <Text style={S.backTxt}>‹</Text>
+            <Feather name="chevron-left" size={20} color="#FFF" />
           </TouchableOpacity>
           <View style={{flex:1}}>
             <Text style={S.hdrTitle} numberOfLines={1}>
@@ -184,7 +185,7 @@ export default function PatientDetailScreen() {
           </View>
         ) : error || !tok ? (
           <View style={S.loadWrap}>
-            <Text style={{fontSize:36}}>⚠️</Text>
+            <Feather name="alert-triangle" size={36} color="#FCA5A5" />
             <Text style={[S.loadTxt,{color:'#FCA5A5'}]}>Patient record not found</Text>
             <TouchableOpacity onPress={() => router.back()} style={S.retryBtn}>
               <Text style={S.retryTxt}>Go Back</Text>
@@ -225,7 +226,7 @@ export default function PatientDetailScreen() {
                       </View>
                     )}
                     <View style={[S.badge,{backgroundColor:isEmerg?'rgba(239,68,68,0.2)':isWalkin?'rgba(6,182,212,0.2)':'rgba(34,197,94,0.2)'}]}>
-                      <Text style={[S.badgeTxt,{color:accentColor}]}>{isEmerg?'⚡ Emergency':isWalkin?'🚶 Walk-in':'📱 Online'}</Text>
+                      <Text style={[S.badgeTxt,{color:accentColor}]}>{isEmerg?'Emergency':isWalkin?'Walk-in':'Online'}</Text>
                     </View>
                   </View>
                 </View>
@@ -248,30 +249,30 @@ export default function PatientDetailScreen() {
             </View>
 
             {/* ── PATIENT PROFILE ── */}
-            <Section title="Patient Profile" icon="👤" accent="#A5B4FC">
-              <Row icon="👤" label="Full Name"   value={tok.patientName} always/>
-              <Row icon="📞" label="Phone"       value={tok.patientPhone || null} always/>
-              <Row icon="📅" label="Age"         value={tok.age ? `${tok.age} years` : null} always/>
-              <Row icon="⚥"  label="Gender"      value={tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? null)} always/>
-              <Row icon="🏠" label="Address"     value={tok.address || null} always/>
-              <Row icon="📍" label="Area / City" value={tok.area || null} always/>
+            <Section title="Patient Profile" icon="user" accent="#A5B4FC">
+              <Row icon="user"    label="Full Name"   value={tok.patientName} always/>
+              <Row icon="phone"   label="Phone"       value={tok.patientPhone || null} always/>
+              <Row icon="calendar" label="Age"        value={tok.age ? `${tok.age} years` : null} always/>
+              <Row icon="users"   label="Gender"      value={tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? null)} always/>
+              <Row icon="home"    label="Address"     value={tok.address || null} always/>
+              <Row icon="map-pin" label="Area / City" value={tok.area || null} always/>
             </Section>
 
             {/* ── BOOKING DETAILS ── */}
-            <Section title="Booking Details" icon="🎟" accent={TEAL_LT}>
-              <Row icon="🎟" label="Token Number"  value={`#${tok.tokenNumber}`}/>
-              <Row icon="📆" label="Date"          value={tok.date}/>
-              <Row icon="🌅" label="Shift"         value={capitalize(tok.shift)}/>
-              <Row icon="📡" label="Source"        value={isWalkin ? 'Walk-in (Clinic)' : 'Online (Patient App)'}
+            <Section title="Booking Details" icon="tag" accent={TEAL_LT}>
+              <Row icon="tag"      label="Token Number"  value={`#${tok.tokenNumber}`}/>
+              <Row icon="calendar" label="Date"          value={tok.date}/>
+              <Row icon="sunrise"  label="Shift"         value={capitalize(tok.shift)}/>
+              <Row icon="radio"    label="Source"        value={isWalkin ? 'Walk-in (Clinic)' : 'Online (Patient App)'}
                    valueColor={accentColor}/>
-              <Row icon="⚡" label="Priority"      value={capitalize(tok.type)}
+              <Row icon="zap"      label="Priority"      value={capitalize(tok.type)}
                    valueColor={isEmerg ? '#F87171' : '#4ADE80'}/>
-              <Row icon="🕐" label="Booked At"     value={fmtTs(tok.bookedAt)}/>
-              {tok.bookingSerial ? <Row icon="🆔" label="Booking ID" value={`#${String(tok.bookingSerial).padStart(4,'0')}`}/> : null}
+              <Row icon="clock"    label="Booked At"     value={fmtTs(tok.bookedAt)}/>
+              {tok.bookingSerial ? <Row icon="hash" label="Booking ID" value={`#${String(tok.bookingSerial).padStart(4,'0')}`}/> : null}
             </Section>
 
             {/* ── STATUS TIMELINE ── */}
-            <Section title="Visit Timeline" icon="⏱" accent="#FCD34D">
+            <Section title="Visit Timeline" icon="clock" accent="#FCD34D">
               <View style={{marginTop:4}}>
                 <TimelineStep label="Token Booked"      ts={tok.bookedAt}  color="#A5B4FC"/>
                 <TimelineStep label="Called In"         ts={tok.calledAt}  color={TEAL_LT}/>
@@ -294,7 +295,7 @@ export default function PatientDetailScreen() {
 
             {/* ── NOTES ── */}
             {tok.notes && (
-              <Section title="Notes" icon="📝" accent="#FCD34D">
+              <Section title="Notes" icon="file-text" accent="#FCD34D">
                 <View style={S.notesBox}>
                   <Text style={S.notesTxt}>{tok.notes}</Text>
                 </View>
@@ -362,7 +363,7 @@ const S = StyleSheet.create({
   // Row
   row:       { flexDirection:'row', alignItems:'center', paddingVertical:8, borderTopWidth:1, borderTopColor:'rgba(255,255,255,0.05)' },
   rowLeft:   { flexDirection:'row', alignItems:'center', gap:7, flex:1, minWidth:0 },
-  rowIcon:   { fontSize:12, width:20, textAlign:'center' },
+  rowIcon:   { width:20, alignItems:'center' as const },
   rowLabel:  { fontSize:11, color:'rgba(255,255,255,0.38)', fontWeight:'600', flex:1 },
   rowValue:  { fontSize:12, color:'rgba(255,255,255,0.85)', fontWeight:'700', textAlign:'right', flexShrink:0, maxWidth:'55%' },
 

@@ -2,23 +2,23 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { TEAL_LT } from "../../constants/theme";
-import { Text } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { fireSettingsReset } from "./_settingsResetBridge";
 
 const INACTIVE = "rgba(255,255,255,0.3)";
 const isWeb = Platform.OS === "web";
 
 function HomeIcon({ color }: { color: string }) {
-  return <Text style={{ fontSize: 20, color }}>⌂</Text>;
+  return <Feather name="home" size={22} color={color} />;
 }
 function QueueIcon({ color }: { color: string }) {
-  return <Text style={{ fontSize: 20, color }}>⏱</Text>;
+  return <Feather name="list" size={22} color={color} />;
 }
 function EarningsIcon({ color }: { color: string }) {
-  return <Text style={{ fontSize: 20, color }}>↗</Text>;
+  return <Feather name="trending-up" size={22} color={color} />;
 }
 function SettingsIcon({ color }: { color: string }) {
-  return <Text style={{ fontSize: 20, color }}>⚙</Text>;
+  return <Feather name="settings" size={22} color={color} />;
 }
 
 export default function TabLayout() {

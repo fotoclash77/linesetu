@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import Svg, { Polyline, Polygon, Rect, G, Line, Text as SvgText } from 'react-native-svg';
 import { useDoctor } from '../../contexts/DoctorContext';
@@ -302,18 +303,18 @@ export default function DashboardScreen() {
   const greetTime   = greetHour < 12 ? 'Morning' : greetHour < 17 ? 'Afternoon' : 'Evening';
   const greetName   = (doctor as any)?.name?.replace(/^Dr\.?\s*/i,'').split(' ')[0] ?? 'Doctor';
 
-  interface PatientRow { label:string; value:number; sub:string; icon:string; color:string; spark:number[]; divider?:boolean }
+  interface PatientRow { label:string; value:number; sub:string; iconName:React.ComponentProps<typeof Feather>['name']; color:string; spark:number[]; divider?:boolean }
   const spark1 = (v: number) => [0,0,0,0,0,v];
   const patientRows: PatientRow[] = [
-    { label:'Total Patients',     value:pd.total,        sub:'All registered',              icon:'👥', color:'#A5B4FC', spark:spark1(pd.total) },
-    { label:'Consulted',          value:pd.consulted,    sub:'Seen by doctor',              icon:'✓',  color:'#4ADE80', spark:spark1(pd.consulted) },
-    { label:'Not Shown',          value:pd.noShow,       sub:'Absent / skipped',            icon:'✗',  color:'#F87171', spark:spark1(pd.noShow) },
-    { label:'Waitlisted',         value:pd.waitlisted,   sub:'Still in queue',              icon:'⏱', color:'#FCD34D', spark:spark1(pd.waitlisted) },
-    { label:'Emergency Patients', value:pd.emergency,    sub:'Priority tokens',             icon:'⚡', color:'#FB923C', spark:spark1(pd.emergency) },
-    { label:'First Visit',        value:pd.firstVisit,   sub:'New patients, first time',    icon:'🆕', color:'#818CF8', spark:spark1(pd.firstVisit) },
-    { label:'Follow-up',          value:pd.followUp,     sub:'Return visits',               icon:'🔄', color:'#34D399', spark:spark1(pd.followUp) },
-    { label:'Online Tokens',      value:pd.onlineBooked, sub:'Via app',                     icon:'📱', color:'#A78BFA', spark:spark1(pd.onlineBooked), divider:true },
-    { label:'Walk-in Tokens',     value:pd.walkIn,       sub:'Added at clinic',             icon:'🚶', color:'#2DD4BF', spark:spark1(pd.walkIn) },
+    { label:'Total Patients',     value:pd.total,        sub:'All registered',              iconName:'users',       color:'#A5B4FC', spark:spark1(pd.total) },
+    { label:'Consulted',          value:pd.consulted,    sub:'Seen by doctor',              iconName:'check',       color:'#4ADE80', spark:spark1(pd.consulted) },
+    { label:'Not Shown',          value:pd.noShow,       sub:'Absent / skipped',            iconName:'x',          color:'#F87171', spark:spark1(pd.noShow) },
+    { label:'Waitlisted',         value:pd.waitlisted,   sub:'Still in queue',              iconName:'clock',       color:'#FCD34D', spark:spark1(pd.waitlisted) },
+    { label:'Emergency Patients', value:pd.emergency,    sub:'Priority tokens',             iconName:'zap',        color:'#FB923C', spark:spark1(pd.emergency) },
+    { label:'First Visit',        value:pd.firstVisit,   sub:'New patients, first time',    iconName:'user-plus',  color:'#818CF8', spark:spark1(pd.firstVisit) },
+    { label:'Follow-up',          value:pd.followUp,     sub:'Return visits',               iconName:'repeat',     color:'#34D399', spark:spark1(pd.followUp) },
+    { label:'Online Tokens',      value:pd.onlineBooked, sub:'Via app',                     iconName:'smartphone', color:'#A78BFA', spark:spark1(pd.onlineBooked), divider:true },
+    { label:'Walk-in Tokens',     value:pd.walkIn,       sub:'Added at clinic',             iconName:'user-check', color:'#2DD4BF', spark:spark1(pd.walkIn) },
   ];
 
   return (
@@ -332,7 +333,7 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
-              <Text style={styles.bellIcon}>🔔</Text>
+              <Feather name="bell" size={17} color="rgba(255,255,255,0.85)" />
               {unreadCount > 0 && <View style={styles.bellDot}/>}
             </TouchableOpacity>
           </View>
@@ -343,7 +344,7 @@ export default function DashboardScreen() {
           {/* ── QUICK CONTROLS ── */}
           <View style={styles.glassCard}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionDot}>⚡</Text>
+              <Feather name="zap" size={14} color={TEAL_LT} />
               <Text style={styles.sectionTitle}>Quick Controls</Text>
             </View>
             <TouchableOpacity
@@ -364,10 +365,16 @@ export default function DashboardScreen() {
             </TouchableOpacity>
             <View style={styles.quickActions}>
               <TouchableOpacity style={styles.walkinBtn} onPress={() => router.push('/walkin')}>
-                <Text style={styles.walkinBtnText}>✚ Add Walk-in</Text>
+                <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
+                  <Feather name="plus" size={14} color="#FFF" />
+                  <Text style={styles.walkinBtnText}>Add Walk-in</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity style={styles.queueBtn} onPress={() => router.navigate('/(tabs)/queue' as any)}>
-                <Text style={styles.queueBtnText}>⏱ View Queue</Text>
+                <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
+                  <Feather name="list" size={14} color="rgba(255,255,255,0.75)" />
+                  <Text style={styles.queueBtnText}>View Queue</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -376,7 +383,7 @@ export default function DashboardScreen() {
           <View style={styles.earningsCard}>
             <View style={{marginBottom:14}}>
               <View style={[styles.sectionHeader,{marginBottom:10}]}>
-                <Text style={styles.sectionDot}>↗</Text>
+                <Feather name="trending-up" size={14} color={TEAL_LT} />
                 <Text style={styles.sectionTitle}>Earnings Overview</Text>
               </View>
               <PeriodTabs value={period} onChange={setPeriod}/>
@@ -410,11 +417,12 @@ export default function DashboardScreen() {
           <View style={styles.glassCard}>
             <View style={{marginBottom:14}}>
               <View style={[styles.sectionHeader,{marginBottom:10}]}>
-                <Text style={styles.sectionDot}>📊</Text>
+                <Feather name="bar-chart-2" size={14} color={TEAL_LT} />
                 <Text style={styles.sectionTitle}>Patient Data</Text>
                 <View style={{flex:1,alignItems:'flex-end'}}>
                   <TouchableOpacity style={styles.patientsBtn} onPress={() => router.push('/patients')}>
-                    <Text style={styles.patientsBtnText}>👤  My Patients</Text>
+                    <Feather name="user" size={11} color="#A5B4FC" />
+                    <Text style={styles.patientsBtnText}>My Patients</Text>
                     <Text style={styles.patientsBtnArrow}>›</Text>
                   </TouchableOpacity>
                 </View>
@@ -448,7 +456,7 @@ export default function DashboardScreen() {
                   )}
                   <View style={[styles.statRow, i > 0 && {borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.05)'}]}>
                     <View style={[styles.statIcon,{backgroundColor:`${row.color}22`}]}>
-                      <Text style={{fontSize:14,color:row.color}}>{row.icon}</Text>
+                      <Feather name={row.iconName} size={14} color={row.color} />
                     </View>
                     <View style={{flex:1,minWidth:0}}>
                       <View style={styles.statTopRow}>
@@ -601,7 +609,7 @@ const styles = StyleSheet.create({
   statBarFg:  { height:'100%' as DimensionValue, borderRadius:3, opacity:0.85 },
   statSub:    { fontSize:9, color:'rgba(255,255,255,0.25)', fontWeight:'500', marginTop:3 },
 
-  patientsBtn:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8, height:44, borderRadius:14, paddingHorizontal:16, backgroundColor:'rgba(99,102,241,0.14)', borderWidth:1.5, borderColor:'rgba(99,102,241,0.38)' },
+  patientsBtn:      { flexDirection:'row', alignItems:'center', gap:5, justifyContent:'space-between', marginTop:8, height:44, borderRadius:14, paddingHorizontal:16, backgroundColor:'rgba(99,102,241,0.14)', borderWidth:1.5, borderColor:'rgba(99,102,241,0.38)' },
   patientsBtnText:  { fontSize:12, fontWeight:'800', color:'#A5B4FC' },
   patientsBtnArrow: { fontSize:20, color:'#A5B4FC', fontWeight:'300' },
 

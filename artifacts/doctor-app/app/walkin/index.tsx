@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { Feather } from '@expo/vector-icons';
 import { useDoctor } from '../../contexts/DoctorContext';
 
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -228,7 +229,7 @@ export default function AddWalkinScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Text style={styles.backIcon}>←</Text>
+              <Feather name="chevron-left" size={22} color="#FFF" />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Book Walk-in Token</Text>
@@ -238,9 +239,16 @@ export default function AddWalkinScreen() {
               style={styles.schedPill}
               onPress={() => { setPickDate(selectedDate); setPickShift(selectedShift); setShowSchedule(true); }}
             >
-              <Text style={styles.schedPillTxt}>
-                📅  {fmtDateDisplay(selectedDate)}  ·  {selectedShift === 'morning' ? '☀ Morning' : '☾ Evening'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="calendar" size={12} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.schedPillTxt}>
+                  {fmtDateDisplay(selectedDate)}  ·
+                </Text>
+                <Feather name={selectedShift === 'morning' ? 'sun' : 'moon'} size={12} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.schedPillTxt}>
+                  {selectedShift === 'morning' ? 'Morning' : 'Evening'}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -252,7 +260,7 @@ export default function AddWalkinScreen() {
               borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
               flexDirection: 'row', alignItems: 'center', gap: 10,
             }}>
-              <Text style={{ fontSize: 22 }}>🚫</Text>
+              <Feather name="slash" size={22} color="#FCA5A5" />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#FCA5A5', fontSize: 14, fontWeight: '700' }}>
                   {isHoliday ? 'Holiday — Booking Not Allowed' : `${selectedShift === 'morning' ? 'Morning' : 'Evening'} Shift Not Scheduled`}
@@ -279,7 +287,7 @@ export default function AddWalkinScreen() {
                 <Text style={[styles.nextTokenLabel, { color: (isBlocked || isShiftFull) ? '#FCA5A5' : isEmerg ? '#FCA5A5' : TEAL_LT }]}>
                   {isBlocked ? 'Off' : isShiftFull ? 'Full' : 'Next'}
                 </Text>
-                <Text style={styles.nextTokenNum}>{isBlocked ? '🏖' : queueLoading ? '…' : isShiftFull ? '🚫' : `#${nextTokenPreview}`}</Text>
+                <Text style={styles.nextTokenNum}>{isBlocked ? '—' : queueLoading ? '…' : isShiftFull ? 'X' : `#${nextTokenPreview}`}</Text>
               </View>
               <View>
                 <Text style={styles.nextTokenTitle}>{isBlocked ? (isHoliday ? 'Holiday' : 'Shift Off') : isShiftFull ? 'Shift Full' : 'Next Token'}</Text>
@@ -309,7 +317,7 @@ export default function AddWalkinScreen() {
                   key={t} onPress={() => setTokenType(t)}
                   style={[styles.tokenTypeBtn, active && (isE ? styles.tokenTypeBtnEmergencyActive : styles.tokenTypeBtnNormalActive)]}
                 >
-                  <Text style={{ fontSize: 18, color: active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)' }}>{isE ? '⚡' : '✓'}</Text>
+                  <Feather name={isE ? 'zap' : 'check'} size={18} color={active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)'} />
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{t}</Text>
                   <Text style={[styles.tokenTypeBtnFree, { color: active ? (isE ? '#FCA5A5' : TEAL_LT) : 'rgba(255,255,255,0.2)' }]}>FREE</Text>
                 </TouchableOpacity>
@@ -321,8 +329,8 @@ export default function AddWalkinScreen() {
           <Text style={styles.fieldGroupLabel}>VISIT TYPE</Text>
           <View style={styles.tokenTypeToggle}>
             {([
-              { key: 'first-visit', label: 'First Visit', icon: '🩺' },
-              { key: 'follow-up',   label: 'Follow-up',   icon: '🔄' },
+              { key: 'first-visit', label: 'First Visit', iconName: 'activity' as const },
+              { key: 'follow-up',   label: 'Follow-up',   iconName: 'repeat'   as const },
             ] as const).map(opt => {
               const active = visitType === opt.key;
               return (
@@ -330,7 +338,7 @@ export default function AddWalkinScreen() {
                   key={opt.key} onPress={() => setVisitType(opt.key)}
                   style={[styles.tokenTypeBtn, active && styles.tokenTypeBtnNormalActive]}
                 >
-                  <Text style={{ fontSize: 18, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)' }}>{opt.icon}</Text>
+                  <Feather name={opt.iconName} size={18} color={active ? TEAL_LT : 'rgba(255,255,255,0.3)'} />
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{opt.label}</Text>
                 </TouchableOpacity>
               );
@@ -342,13 +350,19 @@ export default function AddWalkinScreen() {
             <Text style={styles.formCardTitle}>PATIENT DETAILS</Text>
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>👤 PATIENT NAME</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                <Feather name="user" size={11} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.fieldLabel}>PATIENT NAME</Text>
+              </View>
               <TextInput style={styles.input} placeholder="Enter full name" placeholderTextColor="rgba(255,255,255,0.2)" value={name} onChangeText={setName} />
             </View>
 
             <View style={styles.rowFields}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>📅 AGE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                  <Feather name="calendar" size={11} color="rgba(255,255,255,0.4)" />
+                  <Text style={styles.fieldLabel}>AGE</Text>
+                </View>
                 <TextInput style={styles.input} placeholder="e.g. 35" placeholderTextColor="rgba(255,255,255,0.2)" keyboardType="number-pad" maxLength={2} value={age} onChangeText={t => setAge(t.replace(/\D/g, '').slice(0, 2))} />
               </View>
               <View style={{ flex: 1 }}>
@@ -356,7 +370,7 @@ export default function AddWalkinScreen() {
                 <View style={styles.genderToggle}>
                   {(['M', 'F'] as const).map(g => (
                     <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.genderBtn, gender === g && styles.genderBtnActive]}>
-                      <Text style={[styles.genderBtnText, gender === g && styles.genderBtnTextActive]}>{g === 'M' ? '♂ Male' : '♀ Female'}</Text>
+                      <Text style={[styles.genderBtnText, gender === g && styles.genderBtnTextActive]}>{g === 'M' ? 'Male' : 'Female'}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -364,7 +378,10 @@ export default function AddWalkinScreen() {
             </View>
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>📞 PHONE NUMBER</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                <Feather name="phone" size={11} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.fieldLabel}>PHONE NUMBER</Text>
+              </View>
               <View style={styles.phoneRow}>
                 <View style={styles.countryPrefix}><Text style={styles.countryPrefixText}>+91</Text></View>
                 <TextInput style={[styles.input, { flex: 1 }]} placeholder="98765 43210" placeholderTextColor="rgba(255,255,255,0.2)" keyboardType="phone-pad" maxLength={10} value={phone} onChangeText={t => setPhone(t.replace(/\D/g, '').slice(0, 10))} />
@@ -372,19 +389,28 @@ export default function AddWalkinScreen() {
             </View>
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>📍 AREA</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                <Feather name="map-pin" size={11} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.fieldLabel}>AREA</Text>
+              </View>
               <TextInput style={styles.input} placeholder="Street / Area" placeholderTextColor="rgba(255,255,255,0.2)" value={address} onChangeText={setAddress} />
             </View>
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>🗺 ADDRESS</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                <Feather name="map" size={11} color="rgba(255,255,255,0.4)" />
+                <Text style={styles.fieldLabel}>ADDRESS</Text>
+              </View>
               <TextInput style={styles.input} placeholder="Village / Colony / City / Pin Code" placeholderTextColor="rgba(255,255,255,0.2)" value={area} onChangeText={setArea} />
             </View>
           </View>
 
           {!!bookingError && (
             <View style={{ marginBottom: 10, paddingHorizontal: 4, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.12)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}>
-              <Text style={{ color: '#FCA5A5', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>⚠ {bookingError}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Feather name="alert-triangle" size={13} color="#FCA5A5" />
+                <Text style={{ color: '#FCA5A5', fontSize: 13, fontWeight: '600' }}>{bookingError}</Text>
+              </View>
             </View>
           )}
 
@@ -402,19 +428,26 @@ export default function AddWalkinScreen() {
           >
             {booking
               ? <ActivityIndicator color="#FFF" size="small" />
-              : <Text style={styles.bookBtnText}>
-                  {isBlocked
-                    ? (isHoliday ? '🏖 Holiday — Cannot Book' : '🚫 Shift Not Scheduled')
-                    : isShiftFull
-                    ? '🚫 Shift Full — No More Tokens'
-                    : `✚ Book ${tokenType} Token — FREE`}
-                </Text>}
+              : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Feather
+                    name={isBlocked ? 'slash' : isShiftFull ? 'slash' : 'plus-circle'}
+                    size={16}
+                    color="#FFF"
+                  />
+                  <Text style={styles.bookBtnText}>
+                    {isBlocked
+                      ? (isHoliday ? 'Holiday — Cannot Book' : 'Shift Not Scheduled')
+                      : isShiftFull
+                      ? 'Shift Full — No More Tokens'
+                      : `Book ${tokenType} Token — FREE`}
+                  </Text>
+                </View>}
           </TouchableOpacity>
 
           {/* Live queue for selected date+shift */}
           <View style={styles.recentSection}>
             <View style={styles.recentHeader}>
-              <Text style={styles.recentIcon}>📋</Text>
+              <Feather name="list" size={16} color={TEAL_LT} />
               <Text style={styles.recentTitle}>
                 {fmtDateDisplay(selectedDate).toUpperCase()} · {selectedShift === 'morning' ? 'MORNING' : 'EVENING'} QUEUE
               </Text>
@@ -527,7 +560,10 @@ export default function AddWalkinScreen() {
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={wStyles.modalSheet}>
               <View style={wStyles.modalHandle} />
-              <Text style={wStyles.modalTitle}>📅  Select Schedule</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Feather name="calendar" size={18} color={TEAL_LT} />
+                <Text style={wStyles.modalTitle}>Select Schedule</Text>
+              </View>
               <Text style={wStyles.modalSub}>Dates & shifts from your configured calendar</Text>
 
               {/* Date strip — 30-day calendar */}
@@ -585,7 +621,7 @@ export default function AddWalkinScreen() {
                 if (isDayOff) {
                   return (
                     <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 16 }}>
-                      <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                      <Feather name="slash" size={28} color="#F87171" style={{ marginBottom: 8 }} />
                       <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>This day is marked as Holiday</Text>
                     </View>
                   );
@@ -611,23 +647,23 @@ export default function AddWalkinScreen() {
                           ]}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                            <Text style={{ fontSize: 16, opacity: active ? 1 : 0.5 }}>
-                              {s === 'morning' ? '☀' : '☾'}
-                            </Text>
+                            <Feather name={s === 'morning' ? 'sun' : 'moon'} size={16} color={active ? (s === 'morning' ? AMBER_LT : '#A5B4FC') : 'rgba(255,255,255,0.4)'} />
                             <Text style={[wStyles.shiftOptLabel, active && { color: '#FFF' }]}>
                               {s === 'morning' ? 'Morning' : 'Evening'}
                             </Text>
                             {!enabled && <Text style={{ fontSize: 9, fontWeight: '700', color: '#F87171', textTransform: 'uppercase' }}>Off</Text>}
                           </View>
                           {timeRange.trim() !== '–' && timeRange !== '' && (
-                            <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>
-                              🕐 {timeRange}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Feather name="clock" size={10} color={active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)'} />
+                              <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>{timeRange}</Text>
+                            </View>
                           )}
                           {clinicName ? (
-                            <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500', marginTop: 2 }} numberOfLines={1}>
-                              🏥 {clinicName}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <Feather name="home" size={10} color={active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'} />
+                              <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500' }} numberOfLines={1}>{clinicName}</Text>
+                            </View>
                           ) : null}
                           {maxTok ? (
                             <Text style={{ fontSize: 10, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)', fontWeight: '700', marginTop: 3 }}>
@@ -649,7 +685,10 @@ export default function AddWalkinScreen() {
                   setShowSchedule(false);
                 }}
               >
-                <Text style={wStyles.confirmBtnTxt}>✓  Set Schedule</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                  <Feather name="check" size={15} color="#FFF" />
+                  <Text style={wStyles.confirmBtnTxt}>Set Schedule</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -661,7 +700,7 @@ export default function AddWalkinScreen() {
         <View style={styles.overlay}>
           <View style={styles.successCard}>
             <View style={styles.successIconWrap}>
-              <Text style={styles.successIcon}>✓</Text>
+              <Feather name="check" size={32} color="#4ADE80" />
             </View>
             <Text style={styles.successTitle}>Token Booked!</Text>
             <Text style={styles.successSub}>
@@ -673,12 +712,18 @@ export default function AddWalkinScreen() {
             </Text>
             <View style={styles.successBtns}>
               <TouchableOpacity style={styles.btnNewToken} activeOpacity={0.8} onPress={resetForm}>
-                <Text style={styles.btnNewTokenTxt}>＋ Book New Token</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="plus" size={14} color={TEAL_LT} />
+                  <Text style={styles.btnNewTokenTxt}>Book New Token</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity style={styles.btnHome} activeOpacity={0.8}
                 onPress={() => { setShowSuccess(false); router.navigate('/(tabs)/queue' as any); }}
               >
-                <Text style={styles.btnHomeTxt}>⏱ View Queue</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="clock" size={14} color="#FFF" />
+                  <Text style={styles.btnHomeTxt}>View Queue</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>

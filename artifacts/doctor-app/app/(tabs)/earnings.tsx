@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar } from 'react-native-calendars';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { Feather } from '@expo/vector-icons';
 import { useDoctor } from '../../contexts/DoctorContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -331,7 +332,7 @@ export default function EarningsScreen() {
             <Text style={styles.headerSub}>{doctor?.name ?? 'Doctor'} · LINESETU</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 7 }}>
-            <View style={styles.iconBtn}><Text style={styles.iconBtnText}>⬇</Text></View>
+            <View style={styles.iconBtn}><Feather name="download" size={18} color="#FFF" /></View>
           </View>
         </View>
 
@@ -348,11 +349,14 @@ export default function EarningsScreen() {
                 <View>
                   <Text style={styles.heroBalanceLabel}>Lifetime Earned (Online)</Text>
                   <Text style={styles.heroBalance}>{fmtFull(totalEarned)}</Text>
-                  <Text style={styles.heroReady}>
-                    {periods.Today.earned > 0
-                      ? `✓ +${fmtFull(periods.Today.earned)} today`
-                      : '✓ Live from your token data'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <Feather name="check" size={12} color="#4ADE80" />
+                    <Text style={styles.heroReady}>
+                      {periods.Today.earned > 0
+                        ? `+${fmtFull(periods.Today.earned)} today`
+                        : 'Live from your token data'}
+                    </Text>
+                  </View>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 6 }}>
                   <TouchableOpacity
@@ -360,7 +364,10 @@ export default function EarningsScreen() {
                     onPress={() => { setWithdrawAmt(String(pendingPayout)); setWithdrawModal(true); }}
                     disabled={pendingPayout === 0}
                   >
-                    <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Feather name="credit-card" size={14} color="#FFF" />
+                      <Text style={styles.withdrawBtnText}>Withdraw</Text>
+                    </View>
                   </TouchableOpacity>
                   <View style={styles.pendingBadge}>
                     <Text style={styles.pendingBadgeLabel}>Available</Text>
@@ -413,7 +420,7 @@ export default function EarningsScreen() {
                     onPress={() => { setPickingEnd(false); setCalOpen(true); }}
                     style={[styles.periodChip, period === 'Custom' && styles.periodChipActive, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
                   >
-                    <Text style={{ fontSize: 13 }}>📅</Text>
+                    <Feather name="calendar" size={13} color="rgba(255,255,255,0.6)" />
                     <Text style={[styles.periodChipText, period === 'Custom' && styles.periodChipTextActive]}>
                       {period === 'Custom' && customStart
                         ? `${fmtDate(customStart)}${customEnd && customEnd !== customStart ? ` – ${fmtDate(customEnd)}` : ''}`
@@ -429,7 +436,7 @@ export default function EarningsScreen() {
                 </View>
               ) : d.earned === 0 && d.totalTokens === 0 ? (
                 <View style={[styles.glassCard, { alignItems: 'center', paddingVertical: 36 }]}>
-                  <Text style={{ fontSize: 36, marginBottom: 12 }}>📊</Text>
+                  <Feather name="bar-chart-2" size={36} color="rgba(255,255,255,0.3)" style={{ marginBottom: 12 }} />
                   <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '700' }}>No earnings yet</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 4 }}>
                     for {period === 'Custom' && customStart
@@ -470,15 +477,15 @@ export default function EarningsScreen() {
                   {/* Breakdown */}
                   <View style={[styles.glassCard, { marginTop: 10 }]}>
                     <View style={styles.sectionHeader}>
-                      <Text style={styles.sectionDot}>📊</Text>
+                      <Feather name="bar-chart-2" size={16} color={TEAL_LT} />
                       <Text style={styles.sectionTitle}>Earnings Breakdown</Text>
                     </View>
                     <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 8, fontStyle: 'italic' }}>
                       Calculated at your current fee rates. Actual payouts may differ if rates were updated mid-period.
                     </Text>
                     {[
-                      { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   ?? 10), count: d.tokensNormal,    icon: '📱', color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   ?? 10}/token` },
-                      { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee ?? 20), count: d.tokensEmergency, icon: '⚡', color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee ?? 20}/token` },
+                      { label: 'Online Normal Token',    value: d.tokensNormal    * (inClinicFee   ?? 10), count: d.tokensNormal,    iconName: 'smartphone' as const, color: '#A5B4FC', bg: 'rgba(99,102,241,0.15)', rate: `₹${inClinicFee   ?? 10}/token` },
+                      { label: 'Online Emergency Token', value: d.tokensEmergency * (inClinicEmFee ?? 20), count: d.tokensEmergency, iconName: 'zap'        as const, color: '#FCD34D', bg: 'rgba(245,158,11,0.15)', rate: `₹${inClinicEmFee ?? 20}/token` },
                     ].map((row) => {
                       const total = (d.tokensNormal * (inClinicFee ?? 10)) + (d.tokensEmergency * (inClinicEmFee ?? 20));
                       const pct = total > 0 ? Math.round((row.value / total) * 100) : 0;
@@ -486,7 +493,7 @@ export default function EarningsScreen() {
                         <View key={row.label} style={styles.breakdownRow}>
                           <View style={styles.breakdownTop}>
                             <View style={[styles.breakdownIcon, { backgroundColor: row.bg }]}>
-                              <Text style={{ fontSize: 13, color: row.color }}>{row.icon}</Text>
+                              <Feather name={row.iconName} size={13} color={row.color} />
                             </View>
                             <View style={{ flex: 1 }}>
                               <View style={styles.breakdownTopRow}>
@@ -513,7 +520,7 @@ export default function EarningsScreen() {
               <View style={[styles.glassCard, { marginTop: 10 }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionDot}>🛡</Text>
+                    <Feather name="shield" size={16} color={TEAL_LT} />
                     <Text style={styles.sectionTitle}>E-Token Rates</Text>
                   </View>
                 </View>
@@ -539,7 +546,7 @@ export default function EarningsScreen() {
               <View style={[styles.glassCard, { marginTop: 10 }]}>
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionDot}>💰</Text>
+                    <Feather name="dollar-sign" size={16} color={TEAL_LT} />
                     <Text style={styles.sectionTitle}>Your Fee Rates</Text>
                   </View>
                   <Text style={[styles.platformSetText, { color: '#A5B4FC' }]}>Set by Doctor</Text>
@@ -565,12 +572,12 @@ export default function EarningsScreen() {
               {/* Summary cards */}
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
                 {[
-                  { label: 'Today',         value: fmtFull(txSummary.todayEarned),   color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',  icon: '⚡' },
-                  { label: 'Total Earned',  value: fmtFull(txSummary.totalEarnedTx), color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '✓' },
-                  { label: 'Total Refunds', value: fmtFull(txSummary.totalRefunded), color: '#F87171', bg: 'rgba(248,113,113,0.08)', icon: '↩' },
+                  { label: 'Today',         value: fmtFull(txSummary.todayEarned),   color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',  iconName: 'zap'        as const },
+                  { label: 'Total Earned',  value: fmtFull(txSummary.totalEarnedTx), color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', iconName: 'check'      as const },
+                  { label: 'Total Refunds', value: fmtFull(txSummary.totalRefunded), color: '#F87171', bg: 'rgba(248,113,113,0.08)', iconName: 'rotate-ccw' as const },
                 ].map(s => (
                   <View key={s.label} style={[styles.summaryCard, { backgroundColor: s.bg, borderColor: `${s.color}33` }]}>
-                    <Text style={{ fontSize: 16, color: s.color, marginBottom: 5 }}>{s.icon}</Text>
+                    <Feather name={s.iconName} size={16} color={s.color} style={{ marginBottom: 5 }} />
                     <Text style={[styles.summaryValue, { color: s.color }]}>{s.value}</Text>
                     <Text style={styles.summaryLabel}>{s.label}</Text>
                   </View>
@@ -589,7 +596,7 @@ export default function EarningsScreen() {
                     ]}
                   >
                     <Text style={[styles.periodChipText, txFilter === f && styles.periodChipTextActive]}>
-                      {f === 'all' ? 'All' : f === 'earnings' ? '✓ Earnings' : '↩ Refunds'}
+                      {f === 'all' ? 'All' : f === 'earnings' ? 'Earnings' : 'Refunds'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -598,7 +605,7 @@ export default function EarningsScreen() {
               {/* Transaction list */}
               <View style={styles.glassCard}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionDot}>📋</Text>
+                  <Feather name="list" size={16} color={TEAL_LT} />
                   <Text style={styles.sectionTitle}>
                     {txFilter === 'all' ? 'All Transactions' : txFilter === 'earnings' ? 'Earnings' : 'Refunds'}
                   </Text>
@@ -610,7 +617,7 @@ export default function EarningsScreen() {
                   </View>
                 ) : filteredTx.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 28 }}>
-                    <Text style={{ fontSize: 32, marginBottom: 10 }}>🧾</Text>
+                    <Feather name="file-text" size={32} color="rgba(255,255,255,0.3)" style={{ marginBottom: 10 }} />
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No transactions yet</Text>
                     <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>
                       {txFilter === 'refunds' ? 'No refunds issued' : 'Bookings will appear here'}
@@ -622,16 +629,16 @@ export default function EarningsScreen() {
                     const color     = isRefund ? '#F87171' : '#4ADE80';
                     const bg        = isRefund ? 'rgba(248,113,113,0.12)' : 'rgba(74,222,128,0.12)';
                     const border    = isRefund ? 'rgba(248,113,113,0.3)'  : 'rgba(74,222,128,0.3)';
-                    const icon      = isRefund ? '↩' : tx.type === 'emergency' ? '🚨' : '✓';
+                    const iconName  = (isRefund ? 'rotate-ccw' : tx.type === 'emergency' ? 'alert-triangle' : 'check') as React.ComponentProps<typeof Feather>['name'];
                     const tokenLabel = tx.tokenNumber ? `#${String(tx.tokenNumber).padStart(2, '0')}` : '—';
                     const dateStr   = tx.date
                       ? new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
                       : '—';
-                    const shiftLabel = tx.shift === 'evening' ? '☾ Eve' : '☀ Morn';
+                    const shiftLabel = tx.shift === 'evening' ? 'Eve' : 'Morn';
                     return (
                       <View key={tx.id} style={[styles.payoutRow, { paddingVertical: 12 }]}>
                         <View style={[styles.payoutIcon, { backgroundColor: bg, borderRadius: 12 }]}>
-                          <Text style={{ fontSize: 15, color }}>{icon}</Text>
+                          <Feather name={iconName} size={15} color={color} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <View style={styles.payoutTopRow}>
@@ -679,19 +686,22 @@ export default function EarningsScreen() {
                   onPress={() => { setWithdrawAmt(String(pendingPayout)); setWithdrawModal(true); }}
                   disabled={pendingPayout === 0}
                 >
-                  <Text style={styles.withdrawBtnText}>💳 Withdraw</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Feather name="credit-card" size={14} color="#FFF" />
+                    <Text style={styles.withdrawBtnText}>Withdraw</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
 
               {/* Earnings summary */}
               <View style={styles.payoutSummary}>
                 {[
-                  { label: 'Lifetime',   value: fmtFull(totalEarned),          color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   icon: '✓' },
-                  { label: 'This Month', value: fmtFull(periods.Month.earned),  color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', icon: '📅' },
-                  { label: 'Today',      value: fmtFull(periods.Today.earned),  color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  icon: '⚡' },
+                  { label: 'Lifetime',   value: fmtFull(totalEarned),          color: '#4ADE80', bg: 'rgba(74,222,128,0.1)',   iconName: 'check'    as const },
+                  { label: 'This Month', value: fmtFull(periods.Month.earned),  color: '#67E8F9', bg: 'rgba(103,232,249,0.08)', iconName: 'calendar' as const },
+                  { label: 'Today',      value: fmtFull(periods.Today.earned),  color: '#FCD34D', bg: 'rgba(252,211,77,0.08)',  iconName: 'zap'      as const },
                 ].map(s => (
                   <View key={s.label} style={[styles.summaryCard, { backgroundColor: s.bg, borderColor: `${s.color}33` }]}>
-                    <Text style={{ fontSize: 16, color: s.color, marginBottom: 6 }}>{s.icon}</Text>
+                    <Feather name={s.iconName} size={16} color={s.color} style={{ marginBottom: 6 }} />
                     <Text style={[styles.summaryValue, { color: s.color }]}>{s.value}</Text>
                     <Text style={styles.summaryLabel}>{s.label}</Text>
                   </View>
@@ -701,12 +711,12 @@ export default function EarningsScreen() {
               {/* Real payout request history from Firebase */}
               <View style={[styles.glassCard, { marginTop: 0 }]}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionDot}>📋</Text>
+                  <Feather name="list" size={16} color={TEAL_LT} />
                   <Text style={styles.sectionTitle}>Payout Requests</Text>
                 </View>
                 {payouts.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                    <Text style={{ fontSize: 28, marginBottom: 8 }}>💸</Text>
+                    <Feather name="credit-card" size={28} color="rgba(255,255,255,0.3)" style={{ marginBottom: 8 }} />
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>No payout requests yet</Text>
                     <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>
                       Tap Withdraw above to request your first payout
@@ -724,9 +734,11 @@ export default function EarningsScreen() {
                     return (
                       <View key={p.id} style={styles.payoutRow}>
                         <View style={[styles.payoutIcon, { backgroundColor: `${st.color}15` }]}>
-                          <Text style={{ fontSize: 14 }}>
-                            {p.status === 'approved' ? '✅' : p.status === 'rejected' ? '❌' : '⏳'}
-                          </Text>
+                          <Feather
+                            name={p.status === 'approved' ? 'check' : p.status === 'rejected' ? 'x' : 'clock'}
+                            size={14}
+                            color={st.color}
+                          />
                         </View>
                         <View style={{ flex: 1 }}>
                           <View style={styles.payoutTopRow}>
@@ -824,7 +836,7 @@ export default function EarningsScreen() {
                     <Text style={styles.calRangeLabel}>From</Text>
                     <Text style={styles.calRangeDate}>{fmtDate(customStart)}</Text>
                   </View>
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>→</Text>
+                  <Feather name="arrow-right" size={16} color="rgba(255,255,255,0.4)" />
                   <View style={styles.calRangeChip}>
                     <Text style={styles.calRangeLabel}>To</Text>
                     <Text style={styles.calRangeDate}>{fmtDate(customEnd)}</Text>

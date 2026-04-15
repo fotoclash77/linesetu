@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { Feather } from '@expo/vector-icons';
 import { useDoctor } from '../../contexts/DoctorContext';
 
 const isWeb = Platform.OS === 'web';
@@ -54,7 +55,7 @@ function fmtScheduleLabel(iso: string, shift: string): string {
   const prefix = d.getTime() === today.getTime()
     ? 'Today'
     : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  return `${prefix} · ${shift === 'morning' ? '☀ Morning' : '☾ Evening'}`;
+  return `${prefix} · ${shift === 'morning' ? 'Morning' : 'Evening'}`;
 }
 
 async function apiFetchQueue(doctorId: string, shift: string, date: string) {
@@ -322,8 +323,19 @@ function StatsBar({ all, maxTokens, clinicName, timeRange }: {
       {/* Clinic + time info */}
       {(clinicName || timeRange) ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, paddingHorizontal: 2 }}>
-          {clinicName ? <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>🏥 {clinicName}</Text> : null}
-          {timeRange ? <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>· 🕐 {timeRange}</Text> : null}
+          {clinicName ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Feather name="home" size={10} color="rgba(255,255,255,0.4)" />
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>{clinicName}</Text>
+            </View>
+          ) : null}
+          {timeRange ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>·</Text>
+              <Feather name="clock" size={10} color="rgba(255,255,255,0.3)" />
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>{timeRange}</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       <View style={S.statsBar}>
@@ -393,7 +405,10 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
         >
           {busy
             ? <ActivityIndicator color="#FCA5A5" size="small" />
-            : <Text style={S.skipBtnTxt}>⏭  Skip</Text>}
+            : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+                <Feather name="skip-forward" size={13} color="#FCD34D" />
+                <Text style={S.skipBtnTxt}>Skip</Text>
+              </View>}
         </TouchableOpacity>
         <TouchableOpacity
           style={[S.doneBtn, busy && { opacity: 0.5 }]}
@@ -401,7 +416,10 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
         >
           {busy
             ? <ActivityIndicator color="#FFF" size="small" />
-            : <Text style={S.doneBtnTxt}>✓  Consulted & Call Next</Text>}
+            : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+                <Feather name="check" size={13} color="#FCD34D" />
+                <Text style={S.doneBtnTxt}>Consulted & Call Next</Text>
+              </View>}
         </TouchableOpacity>
       </View>
     </View>
@@ -443,16 +461,22 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
         >
           {busy
             ? <ActivityIndicator color={TEAL_LT} size="small" />
-            : <Text style={[S.sendNextTxt, isManualNext && { color: AMBER_LT }]}>
-                {isManualNext ? '⭐  Set as Next' : '▶  Send Next'}
-              </Text>}
+            : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+                <Feather name={isManualNext ? 'star' : 'play'} size={12} color={isManualNext ? AMBER_LT : TEAL_LT} />
+                <Text style={[S.sendNextTxt, isManualNext && { color: AMBER_LT }]}>
+                  {isManualNext ? 'Set as Next' : 'Send Next'}
+                </Text>
+              </View>}
         </TouchableOpacity>
         {tok.displayStatus !== 'skipped' ? (
           <TouchableOpacity
             style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
             onPress={onSkip} disabled={busy}
           >
-            <Text style={S.skipWaitTxt}>↷  Skip</Text>
+            <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+              <Feather name="corner-down-right" size={12} color={AMBER_LT} />
+              <Text style={S.skipWaitTxt}>Skip</Text>
+            </View>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -465,16 +489,19 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
           >
             {busy
               ? <ActivityIndicator color="#FCA5A5" size="small" />
-              : <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
-                  {isRefundable ? '↩  Cancel & Refund' : '↩  Cancel'}
-                </Text>}
+              : <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
+                  <Feather name="rotate-ccw" size={12} color={isRefundable ? '#FCA5A5' : '#FCA5A5'} />
+                  <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
+                    {isRefundable ? 'Cancel & Refund' : 'Cancel'}
+                  </Text>
+                </View>}
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[S.alertBtn, busy && { opacity: 0.5 }]}
           onPress={onSendAlert} disabled={busy}
         >
-          <Text style={S.alertBtnTxt}>🔔</Text>
+          <Feather name="bell" size={16} color="#F59E0B" />
         </TouchableOpacity>
       </View>
     </View>
@@ -488,8 +515,8 @@ type SerialRow = Token | GapRow;
 const STATUS_BADGE: Record<DisplayStatus, { label: string; color: string; bg: string }> = {
   consulting: { label: '● Consulting', color: AMBER,  bg: 'rgba(180,83,9,0.28)'   },
   waiting:    { label: '○ Waiting',    color: CYAN,   bg: 'rgba(22,78,99,0.35)'   },
-  done:       { label: '✓ Done',       color: GREEN,  bg: 'rgba(21,128,61,0.28)'  },
-  skipped:    { label: '↷ Skipped',    color: PURPLE, bg: 'rgba(109,40,217,0.22)' },
+  done:       { label: 'Done',    color: GREEN,  bg: 'rgba(21,128,61,0.28)'  },
+  skipped:    { label: 'Skipped', color: PURPLE, bg: 'rgba(109,40,217,0.22)' },
 };
 
 function AllSerialCard({ row }: { row: SerialRow }) {
@@ -587,9 +614,7 @@ function PastCard({ tok }: { tok: Token }) {
       <View style={[S.waitRow, { alignItems: 'center' }]}>
         <TokenChip token={tok.tokenNumber} type={tok.type} />
         <PatientInfo tok={tok} />
-        <Text style={{ color: isDone ? GREEN : AMBER, fontSize: 16, marginLeft: 6 }}>
-          {isDone ? '✓' : '↷'}
-        </Text>
+        <Feather name={isDone ? 'check' : 'corner-down-right'} size={16} color={isDone ? GREEN : AMBER} style={{ marginLeft: 6 }} />
       </View>
     </TouchableOpacity>
   );
@@ -801,7 +826,7 @@ export default function QueueScreen() {
               <Text style={S.walkInTxt}>＋</Text>
             </TouchableOpacity>
             <View style={S.bellBtn}>
-              <Text style={{ fontSize: 16 }}>🔔</Text>
+              <Feather name="bell" size={16} color="rgba(255,255,255,0.5)" />
             </View>
           </View>
         </View>
@@ -878,7 +903,7 @@ export default function QueueScreen() {
               {tab === 'all' ? (
                 allSerialRows.length === 0 ? (
                   <View style={S.emptyState}>
-                    <Text style={S.emptyStateIcon}>📋</Text>
+                    <Feather name="list" size={36} color="rgba(255,255,255,0.2)" style={{ marginBottom: 10 }} />
                     <Text style={S.emptyStateTxt}>No tokens issued yet for this shift</Text>
                   </View>
                 ) : (
@@ -891,9 +916,12 @@ export default function QueueScreen() {
                 )
               ) : tabPatients.length === 0 ? (
                 <View style={S.emptyState}>
-                  <Text style={S.emptyStateIcon}>
-                    {tab === 'consulted' ? '📋' : tab === 'skipped' ? '👍' : '✅'}
-                  </Text>
+                  <Feather
+                    name={tab === 'consulted' ? 'check-circle' : tab === 'skipped' ? 'corner-down-right' : 'clock'}
+                    size={36}
+                    color="rgba(255,255,255,0.2)"
+                    style={{ marginBottom: 10 }}
+                  />
                   <Text style={S.emptyStateTxt}>No patients in this category</Text>
                 </View>
               ) : (
@@ -929,7 +957,10 @@ export default function QueueScreen() {
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={S.modalSheet}>
               <View style={S.modalHandle} />
-              <Text style={S.modalTitle}>📅  Select Schedule</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Feather name="calendar" size={18} color={TEAL_LT} />
+                <Text style={S.modalTitle}>Select Schedule</Text>
+              </View>
               <Text style={S.modalSub}>Dates & shifts from your configured calendar</Text>
 
               {/* ── Date selector — real 30-day calendar ── */}
@@ -989,7 +1020,7 @@ export default function QueueScreen() {
                 if (isOff) {
                   return (
                     <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 16 }}>
-                      <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                      <Feather name="slash" size={28} color="#F87171" style={{ marginBottom: 8 }} />
                       <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>This day is marked as Holiday</Text>
                     </View>
                   );
@@ -1017,23 +1048,23 @@ export default function QueueScreen() {
                           ]}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <Text style={[S.shiftOptIcon, active && { opacity: 1 }, { fontSize: 16 }]}>
-                              {s === 'morning' ? '☀' : '☾'}
-                            </Text>
+                            <Feather name={s === 'morning' ? 'sun' : 'moon'} size={16} color={active ? (s === 'morning' ? '#FCD34D' : '#A5B4FC') : 'rgba(255,255,255,0.4)'} />
                             <Text style={[S.shiftOptLabel, active && { color: '#FFF' }]}>
                               {s === 'morning' ? 'Morning' : 'Evening'}
                             </Text>
                             {!enabled && <Text style={S.shiftOptOff}>Off</Text>}
                           </View>
                           {timeRange.trim() !== '–' && timeRange !== '' && (
-                            <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>
-                              🕐 {timeRange}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Feather name="clock" size={10} color={active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)'} />
+                              <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.3)', fontWeight: '600' }}>{timeRange}</Text>
+                            </View>
                           )}
                           {clinicName ? (
-                            <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500' }} numberOfLines={1}>
-                              🏥 {clinicName}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Feather name="home" size={10} color={active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'} />
+                              <Text style={{ fontSize: 10, color: active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', fontWeight: '500' }} numberOfLines={1}>{clinicName}</Text>
+                            </View>
                           ) : null}
                           {maxTok ? (
                             <Text style={{ fontSize: 10, color: active ? TEAL_LT : 'rgba(255,255,255,0.3)', fontWeight: '700', marginTop: 2 }}>
@@ -1056,7 +1087,10 @@ export default function QueueScreen() {
                   setShowSchedule(false);
                 }}
               >
-                <Text style={S.confirmBtnTxt}>✓  Open Queue</Text>
+                <View style={{flexDirection:'row',alignItems:'center',gap:7}}>
+                <Feather name="check" size={15} color="#FFF" />
+                <Text style={S.confirmBtnTxt}>Open Queue</Text>
+              </View>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -1081,7 +1115,7 @@ export default function QueueScreen() {
 
               {/* Patient info row */}
               <View style={S.alertPatRow}>
-                <Text style={S.alertPatIcon}>🔔</Text>
+                <Feather name="bell" size={26} color="#F59E0B" />
                 <View style={{ flex: 1 }}>
                   <Text style={S.alertPatName}>{alertTok?.patientName}</Text>
                   <Text style={S.alertPatPhone}>{alertTok?.patientPhone}</Text>
@@ -1110,7 +1144,10 @@ export default function QueueScreen() {
 
               {alertResult === 'sent' && (
                 <View style={S.alertSuccess}>
-                  <Text style={{ color: GREEN, fontWeight: '800', fontSize: 14 }}>✓  Alert sent!</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Feather name="check" size={14} color={GREEN} />
+                    <Text style={{ color: GREEN, fontWeight: '800', fontSize: 14 }}>Alert sent!</Text>
+                  </View>
                 </View>
               )}
               {alertResult === 'error' && (
@@ -1126,7 +1163,10 @@ export default function QueueScreen() {
               >
                 {alertSending
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={S.alertSendTxt}>🔔  Send Alert</Text>}
+                  : <View style={{flexDirection:'row',alignItems:'center',gap:7}}>
+                      <Feather name="bell" size={15} color="#FCD34D" />
+                      <Text style={S.alertSendTxt}>Send Alert</Text>
+                    </View>}
               </TouchableOpacity>
             </View>
           </TouchableOpacity>

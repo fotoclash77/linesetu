@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import * as ImagePicker from 'expo-image-picker';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { Feather } from '@expo/vector-icons';
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';
@@ -39,7 +40,7 @@ function TimePicker({ value, onChange, label }: { value: string; onChange: (v: s
         onPress={() => setOpen(true)}
       >
         <Text style={{ color: value ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '700', fontSize: 14 }}>{value || 'Select time'}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>🕐</Text>
+        <Feather name="clock" size={14} color="rgba(255,255,255,0.3)" />
       </TouchableOpacity>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setOpen(false)}>
@@ -72,18 +73,21 @@ interface ShiftSlot { startTime: string; endTime: string; maxTokens: number; cli
 interface ShiftFormProps {
   shift: 'morning' | 'evening';
   accentColor: string;
-  icon: string;
+  iconName: React.ComponentProps<typeof Feather>['name'];
   label: string;
   data: ShiftSlot;
   clinics: ClinicData[];
   onChange: (patch: Partial<ShiftSlot>) => void;
 }
-function ShiftForm({ shift, accentColor, icon, label, data, clinics, onChange }: ShiftFormProps) {
+function ShiftForm({ shift, accentColor, iconName, label, data, clinics, onChange }: ShiftFormProps) {
   const activeClinics = clinics.filter(c => c.active && c.name);
   const selectedClinicIdx = activeClinics.findIndex(c => c.name === data.clinicName);
   return (
     <View style={[styles.shiftCard, { marginTop: 10, borderColor: `${accentColor}40` }]}>
-      <Text style={[styles.shiftCardTitle, { color: accentColor, marginBottom: 10 }]}>{icon}  {label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <Feather name={iconName} size={16} color={accentColor} />
+        <Text style={[styles.shiftCardTitle, { color: accentColor }]}>{label}</Text>
+      </View>
 
       {/* Clinic selector buttons */}
       {activeClinics.length > 0 && (
@@ -244,9 +248,9 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 function SettingRow({
-  icon, iconBg, iconColor, label, sub, right, danger = false, last = false, onPress,
+  iconName, iconBg, iconColor, label, sub, right, danger = false, last = false, onPress,
 }: {
-  icon: string; iconBg: string; iconColor: string;
+  iconName: React.ComponentProps<typeof Feather>['name']; iconBg: string; iconColor: string;
   label: string; sub?: string; right?: React.ReactNode;
   danger?: boolean; last?: boolean; onPress?: () => void;
 }) {
@@ -254,7 +258,7 @@ function SettingRow({
   return (
     <Wrapper onPress={onPress} style={[styles.settingRow, !last && styles.settingRowBorder]}>
       <View style={[styles.settingIcon, { backgroundColor: iconBg, borderColor: `${iconColor}33` }]}>
-        <Text style={{ fontSize: 16, color: iconColor }}>{icon}</Text>
+        <Feather name={iconName} size={16} color={iconColor} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.settingLabel, danger && { color: '#F87171' }]}>{label}</Text>
@@ -269,7 +273,7 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <View style={styles.subHeader}>
       <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-        <Text style={styles.backBtnText}>←</Text>
+        <Feather name="chevron-left" size={22} color="#FFF" />
       </TouchableOpacity>
       <Text style={styles.subHeaderTitle}>{title}</Text>
     </View>
@@ -1075,7 +1079,7 @@ export default function SettingsScreen() {
                         <ShiftForm
                           shift="morning"
                           accentColor="#FCD34D"
-                          icon="☀"
+                          iconName="sun"
                           label="Morning Shift"
                           data={dayForm.morning}
                           clinics={clinics}
@@ -1086,7 +1090,7 @@ export default function SettingsScreen() {
                         <ShiftForm
                           shift="evening"
                           accentColor="#A5B4FC"
-                          icon="☾"
+                          iconName="moon"
                           label="Evening Shift"
                           data={dayForm.evening}
                           clinics={clinics}
@@ -1912,28 +1916,28 @@ export default function SettingsScreen() {
           {/* Doctor Profile */}
           <SectionLabel label="Doctor Profile" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="👤" iconBg="rgba(129,140,248,0.15)" iconColor="#818CF8" label="Manage Profile" sub="Name, qualifications, bio & photo" onPress={() => setSection('profile')} />
+            <SettingRow iconName="user" iconBg="rgba(129,140,248,0.15)" iconColor="#818CF8" label="Manage Profile" sub="Name, qualifications, bio & photo" onPress={() => setSection('profile')} />
           </View>
 
           {/* Practice */}
           <SectionLabel label="Practice" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="🏥" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Manage Clinics" sub={`${clinics.filter(c => c.active && c.name).length} clinics configured`} onPress={() => setSection('clinics')} />
-            <SettingRow icon="📅" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="Schedule & Shifts" sub="Shift timings, days off & max tokens" onPress={() => setSection('schedule')} />
-            <SettingRow icon="₹" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} last />
+            <SettingRow iconName="home" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Manage Clinics" sub={`${clinics.filter(c => c.active && c.name).length} clinics configured`} onPress={() => setSection('clinics')} />
+            <SettingRow iconName="calendar" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="Schedule & Shifts" sub="Shift timings, days off & max tokens" onPress={() => setSection('schedule')} />
+            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} last />
           </View>
 
           {/* Patient App */}
           <SectionLabel label="Patient App" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="📱" iconBg="rgba(99,102,241,0.12)" iconColor="#818CF8" label="Patient App Settings" sub="Booking, display & notifications" onPress={() => setSection('patientApp')} last />
+            <SettingRow iconName="smartphone" iconBg="rgba(99,102,241,0.12)" iconColor="#818CF8" label="Patient App Settings" sub="Booking, display & notifications" onPress={() => setSection('patientApp')} last />
           </View>
 
           {/* Bank */}
           <SectionLabel label="Bank & Payments" />
           <View style={styles.settingsGroup}>
             <SettingRow
-              icon="🏦" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT}
+              iconName="credit-card" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT}
               label="Bank Account"
               sub={
                 accountNumber
@@ -1945,7 +1949,7 @@ export default function SettingsScreen() {
               onPress={() => setSection('bank')}
             />
             <SettingRow
-              icon="💳" iconBg="rgba(129,140,248,0.12)" iconColor="#A5B4FC"
+              iconName="briefcase" iconBg="rgba(129,140,248,0.12)" iconColor="#A5B4FC"
               label="Payout Settings"
               sub={payoutEnabled ? `${payoutCycle} settlement · Active` : 'Payouts paused'}
               onPress={() => setSection('payout')}
@@ -1956,19 +1960,19 @@ export default function SettingsScreen() {
           {/* Notifications */}
           <SectionLabel label="Notifications" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="🔔" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="New Booking Alerts" sub="Notify when a token is booked"
+            <SettingRow iconName="bell" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="New Booking Alerts" sub="Notify when a token is booked"
               right={<Toggle on={notifBooking} onChange={() => {
                 const next = !notifBooking;
                 setNotifBooking(next);
                 updateDoctor({ notifications: { booking: next, emergency: notifEmergency, payout: notifPayout } } as any).catch(() => {});
               }} />} />
-            <SettingRow icon="⚠" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Emergency Alerts" sub="High-priority push notifications"
+            <SettingRow iconName="alert-triangle" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Emergency Alerts" sub="High-priority push notifications"
               right={<Toggle on={notifEmergency} onChange={() => {
                 const next = !notifEmergency;
                 setNotifEmergency(next);
                 updateDoctor({ notifications: { booking: notifBooking, emergency: next, payout: notifPayout } } as any).catch(() => {});
               }} />} />
-            <SettingRow icon="₹" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Payout Notifications" sub="Settlement & transfer updates"
+            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Payout Notifications" sub="Settlement & transfer updates"
               right={<Toggle on={notifPayout} onChange={() => {
                 const next = !notifPayout;
                 setNotifPayout(next);
@@ -1979,18 +1983,18 @@ export default function SettingsScreen() {
           {/* Support */}
           <SectionLabel label="Support & Legal" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="❓" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Help & Support" sub="Chat, call or raise a ticket" onPress={() => setSection('help')} />
-            <SettingRow icon="💬" iconBg="rgba(129,140,248,0.12)" iconColor="#818CF8" label="Send Feedback" sub="Help us improve LINESETU" onPress={() => { setFeedbackText(''); setFeedbackCategory('Feature Request'); setFeedbackSubmitted(false); setSection('feedback'); }} />
-            <SettingRow icon="★" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Rate the App" sub="Love the app? Leave a review" onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.linesetu.doctor').catch(() => {})} />
-            <SettingRow icon="📄" iconBg="rgba(255,255,255,0.07)" iconColor="rgba(255,255,255,0.4)" label="Terms & Privacy Policy" sub="v2.1.0 · Last updated Jan 2026" onPress={() => setSection('terms')} last />
+            <SettingRow iconName="help-circle" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Help & Support" sub="Chat, call or raise a ticket" onPress={() => setSection('help')} />
+            <SettingRow iconName="message-square" iconBg="rgba(129,140,248,0.12)" iconColor="#818CF8" label="Send Feedback" sub="Help us improve LINESETU" onPress={() => { setFeedbackText(''); setFeedbackCategory('Feature Request'); setFeedbackSubmitted(false); setSection('feedback'); }} />
+            <SettingRow iconName="star" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Rate the App" sub="Love the app? Leave a review" onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.linesetu.doctor').catch(() => {})} />
+            <SettingRow iconName="file-text" iconBg="rgba(255,255,255,0.07)" iconColor="rgba(255,255,255,0.4)" label="Terms & Privacy Policy" sub="v2.1.0 · Last updated Jan 2026" onPress={() => setSection('terms')} last />
           </View>
 
           {/* Account Actions */}
           <SectionLabel label="Account Actions" />
           <View style={styles.settingsGroup}>
-            <SettingRow icon="→" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Log Out" danger
+            <SettingRow iconName="log-out" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Log Out" danger
               right={<Text style={{ color: '#F87171', fontSize: 18 }}>›</Text>} onPress={() => setShowLogout(true)} />
-            <SettingRow icon="🗑" iconBg="rgba(239,68,68,0.08)" iconColor="rgba(239,68,68,0.55)" label="Delete Account" sub="Permanently remove your LINESETU account" danger
+            <SettingRow iconName="trash-2" iconBg="rgba(239,68,68,0.08)" iconColor="rgba(239,68,68,0.55)" label="Delete Account" sub="Permanently remove your LINESETU account" danger
               right={<Text style={{ color: 'rgba(239,68,68,0.45)', fontSize: 18 }}>›</Text>} last
               onPress={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }} />
           </View>
@@ -2006,7 +2010,7 @@ export default function SettingsScreen() {
             <View style={[styles.logoutSheet, { paddingBottom: 24 + 49 + insets.bottom }]}>
               <View style={styles.logoutHandle} />
               <View style={styles.logoutIconRow}>
-                <View style={styles.logoutIcon}><Text style={{ fontSize: 20, color: '#F87171' }}>→</Text></View>
+                <View style={styles.logoutIcon}><Feather name="log-out" size={20} color="#F87171" /></View>
                 <View>
                   <Text style={styles.logoutTitle}>Log Out?</Text>
                   <Text style={styles.logoutSub}>You'll need to sign in again to access your account.</Text>
