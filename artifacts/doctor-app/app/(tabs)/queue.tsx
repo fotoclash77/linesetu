@@ -230,25 +230,17 @@ function TokenChip({ token, type, large = false, amber = false }: { token: numbe
   );
 }
 
-// ─── Type Badge ──────────────────────────────────────────────────
-function TypeBadge({ type, source }: { type: string; source: string }) {
-  if (type === 'emergency') {
-    return (
-      <View style={[S.badge, { backgroundColor: '#B91C1C', borderColor: '#EF4444' }]}>
-        <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>🚨 EMERGENCY</Text>
-      </View>
-    );
-  }
-  if (source === 'walkin') {
-    return (
-      <View style={[S.badge, { backgroundColor: '#0F766E', borderColor: '#2DD4BF' }]}>
-        <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>WALK-IN</Text>
-      </View>
-    );
-  }
+// ─── Type Badge — always shows booking source (token chip already shows emergency) ──
+function TypeBadge({ source }: { type?: string; source: string }) {
+  const isWalkin = source === 'walkin';
   return (
-    <View style={[S.badge, { backgroundColor: '#15803D', borderColor: '#4ADE80' }]}>
-      <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>E-TOKEN</Text>
+    <View style={[S.badge, {
+      backgroundColor: isWalkin ? '#0F766E' : '#1D4ED8',
+      borderColor:     isWalkin ? '#2DD4BF' : '#60A5FA',
+    }]}>
+      <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>
+        {isWalkin ? 'WALK-IN' : 'E-TOKEN'}
+      </Text>
     </View>
   );
 }
@@ -297,10 +289,12 @@ function PatientInfo({ tok, large = false }: { tok: Token; large?: boolean }) {
 function StatsBar({ all, maxTokens, clinicName, timeRange }: {
   all: Token[]; maxTokens: number | null; clinicName: string; timeRange: string;
 }) {
-  const total   = all.filter(t => t.displayStatus !== 'skipped').length;
-  const waiting = all.filter(t => t.displayStatus === 'waiting').length;
-  const done    = all.filter(t => t.displayStatus === 'done').length;
-  const skipped = all.filter(t => t.displayStatus === 'skipped').length;
+  const total    = all.filter(t => t.displayStatus !== 'skipped').length;
+  const waiting  = all.filter(t => t.displayStatus === 'waiting').length;
+  const done     = all.filter(t => t.displayStatus === 'done').length;
+  const skipped  = all.filter(t => t.displayStatus === 'skipped').length;
+  const walkin   = all.filter(t => t.source === 'walkin').length;
+  const etoken   = all.filter(t => t.source !== 'walkin').length;
   const fillPct = maxTokens ? Math.min(Math.round((total / maxTokens) * 100), 100) : 0;
   const fillColor = fillPct >= 90 ? RED : fillPct >= 70 ? AMBER : TEAL_LT;
   const stats = [
@@ -337,6 +331,19 @@ function StatsBar({ all, maxTokens, clinicName, timeRange }: {
           </Text>
         </View>
       ) : null}
+
+      {/* Walk-in / E-Token real-time breakdown */}
+      {all.length > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', flex: 1 }}>Bookings</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#0F766E', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, borderWidth: 1, borderColor: '#2DD4BF' }}>
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>Walk-in  {walkin}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1D4ED8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, borderWidth: 1, borderColor: '#60A5FA' }}>
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>E-Token  {etoken}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
