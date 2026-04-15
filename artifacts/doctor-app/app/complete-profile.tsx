@@ -9,7 +9,9 @@ import { router } from 'expo-router';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
 import { useDoctor } from '../contexts/DoctorContext';
 
-const SPECIALIZATIONS = [
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+const FALLBACK_SPECIALIZATIONS = [
   'General Physician', 'Cardiologist', 'Dermatologist', 'Orthopedic Surgeon',
   'Gynecologist', 'Pediatrician', 'ENT Specialist', 'Neurologist',
   'Ophthalmologist', 'Dentist', 'Psychiatrist', 'Other',
@@ -37,6 +39,23 @@ export default function CompleteProfile() {
   const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [specList, setSpecList] = useState<string[]>(FALLBACK_SPECIALIZATIONS);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${BASE()}/api/specializations`);
+        if (res.ok) {
+          const data = await res.json();
+          if (active && Array.isArray(data.specializations) && data.specializations.length > 0) {
+            setSpecList(data.specializations);
+          }
+        }
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -131,7 +150,7 @@ export default function CompleteProfile() {
                 {/* Specialization */}
                 <Text style={[s.label, { marginTop: 18 }]}>Specialization <Text style={s.required}>*</Text></Text>
                 <View style={s.chipWrap}>
-                  {SPECIALIZATIONS.map(spec => (
+                  {specList.map(spec => (
                     <TouchableOpacity
                       key={spec}
                       style={[s.chip, specialization === spec && s.chipActive]}

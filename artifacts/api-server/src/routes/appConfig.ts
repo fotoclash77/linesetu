@@ -6,6 +6,15 @@ import {
 
 const router = Router();
 
+const DEFAULT_SPECIALIZATIONS = [
+  "General Physician", "Cardiologist", "Dermatologist", "Orthopedic Surgeon",
+  "Gynecologist", "Pediatrician", "ENT Specialist", "Neurologist",
+  "Ophthalmologist", "Dentist", "Psychiatrist", "Pulmonologist",
+  "Urologist", "Gastroenterologist", "Endocrinologist", "Nephrologist",
+  "Oncologist", "Rheumatologist", "Plastic Surgeon", "General Surgeon",
+  "Other",
+];
+
 const VALID_APP_IDS = ["doctor-app", "patient-app"] as const;
 type AppId = typeof VALID_APP_IDS[number];
 
@@ -62,6 +71,30 @@ router.patch("/app-config/:appId", async (req, res) => {
     }
     const updated = await getDoc(ref);
     res.json({ appId, ...updated.data() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/specializations", async (_req, res) => {
+  try {
+    const snap = await getDoc(doc(db, "appConfig", "specializations"));
+    if (snap.exists() && Array.isArray(snap.data().list)) {
+      return res.json({ specializations: snap.data().list });
+    }
+    await setDoc(doc(db, "appConfig", "specializations"), { list: DEFAULT_SPECIALIZATIONS, updatedAt: Timestamp.now() });
+    res.json({ specializations: DEFAULT_SPECIALIZATIONS });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/specializations", async (req, res) => {
+  try {
+    const { list } = req.body;
+    if (!Array.isArray(list)) return res.status(400).json({ error: "list must be an array" });
+    await setDoc(doc(db, "appConfig", "specializations"), { list, updatedAt: Timestamp.now() });
+    res.json({ specializations: list });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
