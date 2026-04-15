@@ -318,11 +318,6 @@ export default function FindDoctorsScreen() {
           <Text style={styles.resultsTitle}>
             {search ? "Search Results" : "Recommended for You"}
           </Text>
-          <Pressable style={styles.sortRow} onPress={openSort}>
-            <Feather name={currentSortOption.icon} size={11} color="#818CF8" />
-            <Text style={styles.sortTxt}>{currentSortOption.label}</Text>
-            <Feather name="chevron-down" size={11} color="rgba(129,140,248,0.5)" />
-          </Pressable>
         </View>
 
         {isLoading ? (
