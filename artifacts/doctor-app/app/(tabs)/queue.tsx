@@ -234,20 +234,20 @@ function TokenChip({ token, type, large = false, amber = false }: { token: numbe
 function TypeBadge({ type, source }: { type: string; source: string }) {
   if (type === 'emergency') {
     return (
-      <View style={[S.badge, { backgroundColor: 'rgba(239,68,68,0.65)', borderColor: 'rgba(239,68,68,0.9)' }]}>
+      <View style={[S.badge, { backgroundColor: '#B91C1C', borderColor: '#EF4444' }]}>
         <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>🚨 EMERGENCY</Text>
       </View>
     );
   }
   if (source === 'walkin') {
     return (
-      <View style={[S.badge, { backgroundColor: 'rgba(103,232,249,0.15)', borderColor: 'rgba(103,232,249,0.4)' }]}>
+      <View style={[S.badge, { backgroundColor: '#0F766E', borderColor: '#2DD4BF' }]}>
         <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>WALK-IN</Text>
       </View>
     );
   }
   return (
-    <View style={[S.badge, { backgroundColor: 'rgba(74,222,128,0.15)', borderColor: 'rgba(74,222,128,0.4)' }]}>
+    <View style={[S.badge, { backgroundColor: '#15803D', borderColor: '#4ADE80' }]}>
       <Text style={[S.badgeTxt, { color: '#FFFFFF' }]}>E-TOKEN</Text>
     </View>
   );
