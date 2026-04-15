@@ -414,7 +414,7 @@ export default function PaymentScreen() {
         setResultModal({
           visible: true,
           type: "adjusted",
-          message: booked.message || `Selected token unavailable. Assigned next available token: ${isEmergency ? `E${tokenNum}` : `#${tokenNum}`}.`,
+          message: booked.message || `Selected token unavailable. Assigned next available token: ${isEmergency ? `#E${tokenNum}` : `#${tokenNum}`}.`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
@@ -422,7 +422,7 @@ export default function PaymentScreen() {
         setResultModal({
           visible: true,
           type: "success",
-          message: booked.message || `Token booked successfully. Your token number is ${isEmergency ? `E${tokenNum}` : `#${tokenNum}`}.`,
+          message: booked.message || `Token booked successfully. Your token number is ${isEmergency ? `#E${tokenNum}` : `#${tokenNum}`}.`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
@@ -449,7 +449,7 @@ export default function PaymentScreen() {
     ? ["#DC2626", "#EF4444"]
     : ["#4F46E5", "#0EA5E9"];
 
-  const fmtToken = (n: number) => isEmergency ? `E${n}` : `#${n}`;
+  const fmtToken = (n: number) => isEmergency ? `#E${n}` : `#${n}`;
   const displayTokenNum = bookedTokenNum
     ? fmtToken(bookedTokenNum)
     : nextToken
@@ -685,7 +685,7 @@ export default function PaymentScreen() {
                                                   "Booking Confirmed!"}
             </Text>
             {resultModal.tokenNumber && resultModal.type !== "full" && resultModal.type !== "duplicate" && (
-              <Text style={modalStyles.tokenNum}>{isEmergency ? `E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
+              <Text style={modalStyles.tokenNum}>{isEmergency ? `#E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
             )}
             <Text style={modalStyles.message}>{resultModal.message}</Text>
             <Pressable style={[modalStyles.btn, {
