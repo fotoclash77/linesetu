@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform, Animated, Modal, RefreshControl,
+  ActivityIndicator, Platform, Animated, Modal, RefreshControl, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -82,6 +82,18 @@ async function apiRefund(id: string) {
   if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Refund failed'); }
   return r.json();
 }
+async function apiSendAlert(payload: {
+  tokenId: string; message: string; patientId: string;
+  phone: string; doctorId: string; doctorName: string;
+}) {
+  const r = await fetch(`${BASE()}/api/notifications/send-alert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Alert failed'); }
+  return r.json();
+}
 
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
@@ -95,6 +107,7 @@ interface MasterRow {
 
 interface Token {
   id: string; tokenNumber: number; patientName: string; patientPhone: string;
+  patientId?: string;
   type: 'normal' | 'emergency'; source: string; status: string;
   displayStatus: DisplayStatus; shift: string; calledAt?: any;
   age?: string; gender?: string; area?: string; visitType?: string;
@@ -110,6 +123,7 @@ function mapToken(t: any): Token {
     id: t.id, tokenNumber: t.tokenNumber ?? 0,
     patientName: t.patientName ?? 'Unknown',
     patientPhone: t.patientPhone ?? '',
+    patientId: t.patientId ?? undefined,
     type: t.type === 'emergency' ? 'emergency' : 'normal',
     source: t.source || '',
     status: t.status,
@@ -594,6 +608,10 @@ export default function QueueScreen() {
   const [busyId,       setBusy]       = useState<string | null>(null);
   const [manualNextId, setManualNext] = useState<string | null>(null);
   const [autoHandoffId, setAutoHandoffId] = useState<string | null>(null);
+  const [alertTok,     setAlertTok]   = useState<Token | null>(null);
+  const [alertMsg,     setAlertMsg]   = useState('');
+  const [alertSending, setAlertSending] = useState(false);
+  const [alertResult,  setAlertResult] = useState<'sent' | 'error' | null>(null);
   const upNextRef = useRef<string | undefined>(undefined);
   const docId = doctor?.id ?? '';
 
@@ -659,6 +677,30 @@ export default function QueueScreen() {
       console.warn('[Queue] Refund failed:', e?.message);
     }
     setBusy(null);
+  };
+  const openAlert = (tok: Token) => {
+    setAlertResult(null);
+    setAlertMsg((doctor as any)?.alertMessage ?? 'Your turn is coming soon. Please be ready!');
+    setAlertTok(tok);
+  };
+  const doSendAlert = async () => {
+    if (!alertTok || !alertMsg.trim()) return;
+    setAlertSending(true);
+    try {
+      await apiSendAlert({
+        tokenId:    alertTok.id,
+        message:    alertMsg.trim(),
+        patientId:  alertTok.patientId ?? alertTok.patientPhone,
+        phone:      alertTok.patientPhone,
+        doctorId:   docId,
+        doctorName: doctor?.name ?? '',
+      });
+      setAlertResult('sent');
+      setTimeout(() => { setAlertTok(null); setAlertResult(null); }, 1400);
+    } catch {
+      setAlertResult('error');
+    }
+    setAlertSending(false);
   };
 
   // ── Data (REST is primary; SSE is fallback before REST loads) ──────────────
@@ -868,7 +910,7 @@ export default function QueueScreen() {
                       isManualNext={tok.id === manualNextId}
                       isRefundable={isRefundable}
                       onSendNext={() => { setManualNext(tok.id); doCall(tok.id); }}
-                      onSendAlert={() => doCall(tok.id)}
+                      onSendAlert={() => openAlert(tok)}
                       onSkip={() => doSkipToken(tok.id)}
                       onRefund={() => isRefundable ? doRefund(tok.id) : doCancel(tok.id)}
                     />
@@ -1019,6 +1061,69 @@ export default function QueueScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* ── SEND ALERT MODAL ──────────────────────── */}
+      <Modal
+        visible={!!alertTok}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { if (!alertSending) setAlertTok(null); }}
+      >
+        <TouchableOpacity
+          style={S.modalOverlay}
+          activeOpacity={1}
+          onPress={() => { if (!alertSending) setAlertTok(null); }}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={S.modalSheet}>
+              <View style={S.modalHandle} />
+
+              {/* Patient info row */}
+              <View style={S.alertPatRow}>
+                <Text style={S.alertPatIcon}>🔔</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={S.alertPatName}>{alertTok?.patientName}</Text>
+                  <Text style={S.alertPatPhone}>{alertTok?.patientPhone}</Text>
+                </View>
+              </View>
+
+              <Text style={S.alertLabel}>MESSAGE  <Text style={{ color: alertMsg.length > 60 ? RED : 'rgba(255,255,255,0.3)' }}>{alertMsg.length}/60</Text></Text>
+              <TextInput
+                style={S.alertInput}
+                value={alertMsg}
+                onChangeText={t => setAlertMsg(t.slice(0, 60))}
+                placeholder="Type your message…"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                multiline
+                numberOfLines={3}
+                maxLength={60}
+                autoFocus
+              />
+
+              {alertResult === 'sent' && (
+                <View style={S.alertSuccess}>
+                  <Text style={{ color: GREEN, fontWeight: '800', fontSize: 14 }}>✓  Alert sent!</Text>
+                </View>
+              )}
+              {alertResult === 'error' && (
+                <View style={S.alertError}>
+                  <Text style={{ color: RED, fontWeight: '700', fontSize: 13 }}>Failed to send — try again</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[S.alertSendBtn, (alertSending || alertMsg.trim().length === 0) && { opacity: 0.5 }]}
+                onPress={doSendAlert}
+                disabled={alertSending || alertMsg.trim().length === 0}
+              >
+                {alertSending
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={S.alertSendTxt}>🔔  Send Alert</Text>}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1131,6 +1236,18 @@ const S = StyleSheet.create({
   skipWaitTxt:{ fontSize: 12, fontWeight: '800', color: AMBER_LT },
   alertBtn:   { width: 44, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' },
   alertBtnTxt:{ fontSize: 16 },
+
+  // Alert modal
+  alertPatRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20, backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(245,158,11,0.2)' },
+  alertPatIcon:  { fontSize: 26 },
+  alertPatName:  { fontSize: 15, fontWeight: '800', color: '#FFF' },
+  alertPatPhone: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
+  alertLabel:    { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.4)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 },
+  alertInput:    { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: 14, color: '#FFF', fontSize: 14, fontWeight: '600', minHeight: 88, textAlignVertical: 'top', marginBottom: 14 },
+  alertSuccess:  { backgroundColor: 'rgba(74,222,128,0.1)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.3)', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },
+  alertError:    { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },
+  alertSendBtn:  { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B45309', borderWidth: 1, borderColor: 'rgba(252,211,77,0.5)', shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12 },
+  alertSendTxt:  { fontSize: 15, fontWeight: '800', color: '#FCD34D', letterSpacing: 0.4 },
   refundBtn:  { marginTop: 8, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
   refundTxt:  { fontSize: 11, fontWeight: '800', color: '#FCA5A5', letterSpacing: 0.3 },
 

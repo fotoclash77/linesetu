@@ -116,4 +116,49 @@ router.post("/notifications/read-all", async (req, res) => {
   }
 });
 
+// POST /api/notifications/send-alert — write in-app notification + send SMS
+router.post("/notifications/send-alert", async (req, res) => {
+  try {
+    const { tokenId, message, patientId, phone, doctorId, doctorName } = req.body;
+    if (!patientId || !message) {
+      return res.status(400).json({ error: "patientId and message are required" });
+    }
+    const trimmed = String(message).slice(0, 60);
+
+    // 1. Write Firestore notification (patient app polls this)
+    const notif = await addDoc(collection(db, Collections.NOTIFICATIONS), {
+      patientId,
+      doctorId:   doctorId   ?? null,
+      doctorName: doctorName ?? null,
+      tokenId:    tokenId    ?? null,
+      type:       "alert",
+      title:      "Message from your doctor",
+      message:    trimmed,
+      read:       false,
+      createdAt:  Timestamp.now(),
+    });
+
+    // 2. Try SMS via Fast2SMS (India) — needs FAST2SMS_API_KEY secret
+    let smsStatus = "not_configured";
+    const fast2smsKey = process.env.FAST2SMS_API_KEY;
+    if (fast2smsKey && phone) {
+      try {
+        const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
+        const smsRes = await fetch(
+          `https://www.fast2sms.com/dev/bulkV2?authorization=${fast2smsKey}` +
+          `&message=${encodeURIComponent(trimmed)}&language=english&route=q&numbers=${cleanPhone}`,
+        );
+        const smsJson = await smsRes.json();
+        smsStatus = smsJson.return === true ? "sent" : "failed";
+      } catch {
+        smsStatus = "error";
+      }
+    }
+
+    res.json({ notificationId: notif.id, smsStatus });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
