@@ -9,7 +9,8 @@ import { Feather } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import * as Font from "expo-font";
+import React, { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -31,12 +32,12 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   document.head.appendChild(style);
 }
 
-// Eagerly start loading the Feather icon font on native at module-load time,
-// before any React component mounts. This ensures Font.isLoaded('feather')
-// returns true when icon components first check it, preventing box glyphs.
-if (Platform.OS !== "web") {
-  void Feather.loadFont();
-}
+// On native, load the Feather icon font from a local copy of the TTF file.
+// This bypasses any PNPM symlink resolution issues with @expo/vector-icons.
+const _featherFontReady =
+  Platform.OS !== "web"
+    ? Font.loadAsync({ feather: require("../assets/fonts/Feather.ttf") })
+    : Promise.resolve();
 
 const queryClient = new QueryClient();
 
@@ -86,8 +87,8 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...(Platform.OS !== "web" ? Feather.font : {}),
   });
+  const [featherReady, setFeatherReady] = useState(Platform.OS === "web");
   const forceUpdate = useForceUpdate();
 
   useEffect(() => {
@@ -95,12 +96,20 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (Platform.OS !== "web") {
+      _featherFontReady
+        .then(() => setFeatherReady(true))
+        .catch(() => setFeatherReady(true));
+    }
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && featherReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, featherReady]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if ((!fontsLoaded && !fontError) || !featherReady) return null;
 
   return (
     <SafeAreaProvider>
