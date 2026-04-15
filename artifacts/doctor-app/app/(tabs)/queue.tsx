@@ -798,8 +798,8 @@ export default function QueueScreen() {
                     : `${waitSorted.length} patients`}
                 </Text>
               </View>
-              {/* Tab bar — horizontal scroll so all labels fit on any screen size */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }} contentContainerStyle={S.tabBar}>
+              {/* Tab bar — equal-width tabs, no scrolling */}
+              <View style={S.tabBar}>
                 {TABS.map(t => {
                   const active = tab === t.key;
                   return (
@@ -822,7 +822,7 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </View>
             </View>
 
             {/* ── SCROLLABLE WAITING CARDS ───────────── */}
@@ -1115,8 +1115,8 @@ const S = StyleSheet.create({
   waitingCount: { fontSize: 12, fontWeight: '700', color: TEAL_LT, textAlign: 'center' },
 
   // Tabs
-  tabBar:     { flexDirection: 'row', gap: 6, paddingBottom: 2 },
-  tabItem:    { minWidth: 72, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', position: 'relative' },
+  tabBar:     { flexDirection: 'row', gap: 6, marginBottom: 4 },
+  tabItem:    { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', position: 'relative' },
   tabTxt:     { fontSize: 10, fontWeight: '800' },
   tabBadge:   { position: 'absolute', top: -6, right: -4, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tabBadgeTxt:{ fontSize: 9, fontWeight: '900' },
