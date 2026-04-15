@@ -488,7 +488,7 @@ export default function BookingScreen() {
 
         {/* Shift Cards — real from Firebase calendar */}
         <View style={styles.sectionPad}>
-            <Text style={styles.sectionLabel}>Available Shifts</Text>
+          <Text style={styles.sectionLabel}>Available Shifts</Text>
             {(!dayCfg || dayCfg?.off || shiftCards.length === 0) ? (
               <View style={calRowStyles.offDay}>
                 <Feather name="slash" size={28} color="#F87171" style={{ marginBottom: 8 }} />
@@ -523,8 +523,7 @@ export default function BookingScreen() {
                           <View>
                             <Text style={[styles.shiftLabel, { color: shift.color }]}>{shift.label} Shift</Text>
                             <Text style={styles.shiftTime}>{shift.startTime} – {shift.endTime}</Text>
-                          </View>
-                        </View>
+        </View>
                         <View style={{ alignItems: "flex-end", gap: 4 }}>
                           {isAlreadyBooked && (
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(245,158,11,0.15)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
@@ -571,8 +570,6 @@ export default function BookingScreen() {
               </View>
             )}
           </View>
-        </View>
-
         {/* Family Member */}
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Booking For</Text>
