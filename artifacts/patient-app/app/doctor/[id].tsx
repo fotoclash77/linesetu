@@ -142,7 +142,7 @@ export default function DoctorDetailScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad + 80 }} showsVerticalScrollIndicator={false}>
         {/* Hero Photo */}
         <View style={[styles.heroWrap, { marginTop: 12 }]}>
-          <Image source={doctor?.photo ? { uri: doctor.photo } : { uri: "https://ui-avatars.com/api/?name=Doctor&background=4F46E5&color=fff" }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
+          <Image source={{ uri: doctor?.photo || hint_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(hint_name ?? "Doctor")}&background=4F46E5&color=fff` }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
           <LinearGradient colors={["transparent", "rgba(10,14,26,0.95)"]} style={styles.heroGrad} />
 
           {/* Verified badge */}
@@ -162,10 +162,10 @@ export default function DoctorDetailScreen() {
 
         {/* Identity Card */}
         <View style={styles.identityCard}>
-          <Text style={styles.docName}>{doctor?.name ?? "Doctor"}</Text>
+          <Text style={styles.docName}>{doctor?.name || hint_name || "Doctor"}</Text>
           <View style={styles.identityRow}>
             <View style={styles.specBadge}>
-              <Text style={styles.specBadgeTxt}>{doctor?.specialization ?? ""}</Text>
+              <Text style={styles.specBadgeTxt}>{doctor?.specialization || hint_spec || ""}</Text>
             </View>
             <View style={styles.expBadge}>
               <Text style={styles.expBadgeTxt}>{doctor?.experience ?? 0} yrs exp</Text>
