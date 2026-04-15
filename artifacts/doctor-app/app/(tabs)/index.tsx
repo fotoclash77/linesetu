@@ -328,7 +328,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.headerDate}>{headerDate}</Text>
             <Text style={styles.headerTitle}>
-              Good {greetTime}, <Text style={styles.headerName}>{greetName}</Text>
+              Good {greetTime}, <Text style={styles.headerName}>Dr. {greetName}</Text>
             </Text>
           </View>
           <View style={styles.headerIcons}>
