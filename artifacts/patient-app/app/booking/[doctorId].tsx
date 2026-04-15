@@ -397,18 +397,6 @@ export default function BookingScreen() {
               <Text style={[styles.toggleTxt, tokenType === "emergency" && { color: "#F87171" }]}>Emergency</Text>
             </Pressable>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingHorizontal: 4 }}>
-            <Feather name="hash" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
-            <Text style={{ fontSize: 12, fontWeight: "700", color: isEmergency ? "#F87171" : "#67E8F9" }}>
-              {(() => {
-                const shiftKey = selectedShiftId ?? shiftCards[0]?.id ?? "morning";
-                const nextNum = (tokenCounts[shiftKey] ?? 0) + 1;
-                return isEmergency
-                  ? `Next available emergency token #E${nextNum}`
-                  : `Next available token #${nextNum}`;
-              })()}
-            </Text>
-          </View>
           <View style={styles.feePreviewCard}>
             <View style={styles.feePreviewRow}>
               <Feather name="monitor" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
@@ -426,6 +414,18 @@ export default function BookingScreen() {
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#A5B4FC", fontWeight: "700", fontSize: 15 }]}>₹{payableNow}</Text>
             </View>
             <Text style={styles.feePreviewNote}>+ ₹{clinicFee} consultation paid directly at clinic</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)", marginTop: 8, paddingTop: 8 }}>
+              <Feather name="hash" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: isEmergency ? "#F87171" : "#67E8F9" }}>
+                {(() => {
+                  const shiftKey = selectedShiftId ?? shiftCards[0]?.id ?? "morning";
+                  const nextNum = (tokenCounts[shiftKey] ?? 0) + 1;
+                  return isEmergency
+                    ? `Next available emergency token #E${nextNum}`
+                    : `Next available token #${nextNum}`;
+                })()}
+              </Text>
+            </View>
           </View>
         </View>
 
