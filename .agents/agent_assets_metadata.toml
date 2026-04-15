@@ -47,3 +47,9 @@ id = "_iFRNQ6K6aKSnaGIpWhpq"
 uri = "file://attached_assets/screenshots/patient-qr.png"
 type = "image"
 title = "Patient App — Scan in Expo Go"
+
+[[outputs]]
+id = "2OB8k75lRMcsP-m-_BJJ2"
+uri = "file://attached_assets/patient-app-qr.png"
+type = "image"
+title = "Patient App — Expo Go QR Code"
