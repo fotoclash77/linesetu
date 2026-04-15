@@ -135,8 +135,6 @@ export default function DoctorDetailScreen() {
     clinicConsultFee: doctorData?.clinicConsultFee,
     clinicEmergencyFee: doctorData?.clinicEmergencyFee,
     onlineBooking: doctorData ? (doctorData.onlineBooking !== false) : true,
-    showFee: doctorData?.showFee === true,
-
     results: Array.isArray(doctorData?.results) ? doctorData.results : [],
     showResults: doctorData ? (doctorData.showResults !== false) : false,
   };
@@ -256,8 +254,8 @@ export default function DoctorDetailScreen() {
           </View>
         )}
 
-        {/* Fee Breakdown — only shown when doctor enables "Show Fee" */}
-        {doctor.showFee && (<View style={styles.sectionCard}>
+        {/* Fee Breakdown — always shown when doctor data is loaded */}
+        {!isDemoId && !!doctorData && (<View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.rupee}>₹</Text>
             <Text style={styles.sectionTitle}>Fee Structure</Text>
