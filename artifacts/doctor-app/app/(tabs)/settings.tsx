@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking,
+  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -1120,6 +1120,20 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         style={styles.applyDayBtn}
                         onPress={() => {
+                          if (dayMode !== 'holiday') {
+                            const needsMorning = ['morning', 'both'].includes(dayMode);
+                            const needsEvening = ['evening', 'both'].includes(dayMode);
+                            const morningOk = !needsMorning || dayForm.morning.clinicName.trim() !== '';
+                            const eveningOk = !needsEvening || dayForm.evening.clinicName.trim() !== '';
+                            if (!morningOk || !eveningOk) {
+                              Alert.alert(
+                                'Select a Clinic',
+                                `Please select a clinic for the ${!morningOk && !eveningOk ? 'morning and evening shifts' : !morningOk ? 'morning shift' : 'evening shift'} before applying.`,
+                                [{ text: 'OK' }]
+                              );
+                              return;
+                            }
+                          }
                           setCalendarOverrides(prev => ({ ...prev, [selectedCalDate]: dayForm }));
                           setSelectedCalDate(null);
                         }}
