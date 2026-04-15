@@ -282,11 +282,13 @@ router.post("/tokens", async (req, res) => {
     const PLATFORM_FEE = 10;
     const isWalkinSource  = source === "walkin";
     const isEmergencyType = type === "emergency";
-    // Use the doctor's actual configured fee (fall back to platform defaults if not yet set)
+    // Use the doctor's actual configured fee (fall back to platform defaults only when unset/NaN)
+    const parsedEmergencyFee = Number(doctorData?.emergencyFee);
+    const parsedConsultFee   = Number(doctorData?.consultFee);
     const rawDoctorFee = isWalkinSource ? 0
       : isEmergencyType
-        ? (Number(doctorData?.emergencyFee) || 20)
-        : (Number(doctorData?.consultFee)   || 10);
+        ? (isNaN(parsedEmergencyFee) ? 20 : parsedEmergencyFee)
+        : (isNaN(parsedConsultFee)   ? 10 : parsedConsultFee);
     const doctorEarns = rawDoctorFee;
     const platformFee = isWalkinSource ? 0 : PLATFORM_FEE;
     const patientPaid = isWalkinSource ? 0 : doctorEarns + platformFee;
