@@ -85,7 +85,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...Feather.font,
+    ...(Platform.OS === 'web'
+      ? { feather: { uri: '/patient-app/Feather.ttf' } }
+      : Feather.font),
   });
   const forceUpdate = useForceUpdate();
 
