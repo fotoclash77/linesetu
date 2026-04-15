@@ -1,5 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 const BASE = () => {
   const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
@@ -21,28 +23,24 @@ const PatientNotifsContext = createContext<PatientNotifsContextType>({
 export function PatientNotifsProvider({ children }: { children: React.ReactNode }) {
   const { patient } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fetchUnread = useCallback(async () => {
-    if (!patient?.id) return;
-    try {
-      const res = await fetch(`${BASE()}/api/notifications/patient/${patient.id}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const count = (data.notifications as any[]).filter((n: any) => !n.read).length;
-      setUnreadCount(count);
-    } catch {
-      // network error — keep last count
-    }
-  }, [patient?.id]);
 
   useEffect(() => {
-    fetchUnread();
-    intervalRef.current = setInterval(fetchUnread, 30_000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchUnread]);
+    if (!patient?.id) {
+      setUnreadCount(0);
+      return;
+    }
+    const q = query(
+      collection(db, "notifications"),
+      where("patientId", "==", patient.id),
+      where("read", "==", false)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    }, () => {
+      setUnreadCount(0);
+    });
+    return () => unsub();
+  }, [patient?.id]);
 
   const markAllRead = useCallback(async () => {
     if (!patient?.id) return;
@@ -54,12 +52,11 @@ export function PatientNotifsProvider({ children }: { children: React.ReactNode 
       });
       setUnreadCount(0);
     } catch {
-      // ignore
     }
   }, [patient?.id]);
 
   return (
-    <PatientNotifsContext.Provider value={{ unreadCount, refresh: fetchUnread, markAllRead }}>
+    <PatientNotifsContext.Provider value={{ unreadCount, refresh: () => {}, markAllRead }}>
       {children}
     </PatientNotifsContext.Provider>
   );

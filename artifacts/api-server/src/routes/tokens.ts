@@ -414,15 +414,17 @@ router.post("/tokens", async (req, res) => {
       } catch (_) {}
     }
 
-    try {
-      await addDoc(collection(db, Collections.NOTIFICATIONS), {
-        doctorId, type: "token_booked",
-        title: "New E-Token Booked",
-        body: `${patientName} booked Token #${nextTokenNumber} for ${tokenDate} (${shift} shift).`,
-        tokenId: tokenRef.id, tokenNumber: nextTokenNumber,
-        patientName, read: false, createdAt: Timestamp.now(),
-      });
-    } catch (_) {}
+    if (!isWalkinSource) {
+      try {
+        await addDoc(collection(db, Collections.NOTIFICATIONS), {
+          doctorId, type: "token_booked",
+          title: "New E-Token Booked",
+          body: `${patientName} booked Token #${nextTokenNumber} for ${tokenDate} (${shift} shift).`,
+          tokenId: tokenRef.id, tokenNumber: nextTokenNumber,
+          patientName, read: false, createdAt: Timestamp.now(),
+        });
+      } catch (_) {}
+    }
 
     if (patientId && source !== "walkin") {
       try {

@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, writeBatch } from "firebase/firestore";
 
 const BASE = () => {
   const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
@@ -142,52 +144,68 @@ export default function NotificationsScreen() {
   const { refresh: refreshBell, markAllRead: markAllReadContext } = usePatientNotifs();
 
   const [filter, setFilter] = useState<NotifCategory>("all");
-  const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFS);
-  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch real notifications on mount
-  useEffect(() => {
-    if (!patient?.id) return;
-    setLoading(true);
-    fetch(`${BASE()}/api/notifications/patient/${patient.id}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.notifications?.length) {
-          const mapped: Notification[] = data.notifications.map((n: any) => ({
-            id: n.id,
-            type: n.type === "token_confirmed" ? "appointment" as const
-                : n.type === "token_cancelled" ? "appointment" as const
-                : "queue" as const,
-            title: n.title,
-            body: n.body,
-            time: relativeTime(n.createdAt),
-            read: n.read,
-            icon: n.type === "token_confirmed" ? "check-circle" as const
-                : n.type === "token_cancelled" ? "x-circle" as const
-                : "hash" as const,
-            iconColor: n.type === "token_confirmed" ? "#22C55E"
-                     : n.type === "token_cancelled" ? "#EF4444"
-                     : "#F59E0B",
-            iconBg: n.type === "token_confirmed" ? "rgba(34,197,94,0.15)"
-                  : n.type === "token_cancelled" ? "rgba(239,68,68,0.15)"
-                  : "rgba(245,158,11,0.15)",
-          }));
-          setNotifications(mapped);
-        } else {
-          setNotifications(SAMPLE_NOTIFS);
-        }
-      })
-      .catch(() => setNotifications(SAMPLE_NOTIFS))
-      .finally(() => setLoading(false));
-  }, [patient?.id]);
-
-  function relativeTime(ms: number): string {
+  function relativeTime(createdAt: any): string {
+    let ms: number;
+    if (createdAt && typeof createdAt.toMillis === "function") {
+      ms = createdAt.toMillis();
+    } else if (typeof createdAt === "number") {
+      ms = createdAt;
+    } else {
+      ms = Date.now();
+    }
     const diff = Date.now() - ms;
     if (diff < 60_000) return "just now";
     if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
     if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} hr ago`;
     return `${Math.floor(diff / 86_400_000)}d ago`;
   }
+
+  function mapNotif(n: any): Notification {
+    return {
+      id: n.id,
+      type: n.type === "token_confirmed" ? "appointment" as const
+          : n.type === "token_cancelled" ? "appointment" as const
+          : n.type === "token_refunded" ? "appointment" as const
+          : "queue" as const,
+      title: n.title,
+      body: n.body,
+      time: relativeTime(n.createdAt),
+      read: n.read,
+      icon: n.type === "token_confirmed" ? "check-circle" as const
+          : n.type === "token_cancelled" ? "x-circle" as const
+          : n.type === "token_refunded" ? "alert-circle" as const
+          : "hash" as const,
+      iconColor: n.type === "token_confirmed" ? "#22C55E"
+               : n.type === "token_cancelled" ? "#EF4444"
+               : n.type === "token_refunded" ? "#F59E0B"
+               : "#818CF8",
+      iconBg: n.type === "token_confirmed" ? "rgba(34,197,94,0.15)"
+            : n.type === "token_cancelled" ? "rgba(239,68,68,0.15)"
+            : n.type === "token_refunded" ? "rgba(245,158,11,0.15)"
+            : "rgba(129,140,248,0.15)",
+    };
+  }
+
+  useEffect(() => {
+    if (!patient?.id) { setLoading(false); return; }
+    setLoading(true);
+    const q = query(
+      collection(db, "notifications"),
+      where("patientId", "==", patient.id),
+      orderBy("createdAt", "desc")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const mapped = snap.docs.map(d => mapNotif({ id: d.id, ...d.data() }));
+      setNotifications(mapped);
+      setLoading(false);
+    }, () => {
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [patient?.id]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -200,18 +218,20 @@ export default function NotificationsScreen() {
   });
 
   async function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await markAllReadContext();
-    refreshBell();
+    if (!patient?.id) return;
+    try {
+      const unread = notifications.filter((n) => !n.read);
+      if (unread.length > 0) {
+        const batch = writeBatch(db);
+        unread.forEach((n) => batch.update(doc(db, "notifications", n.id), { read: true }));
+        await batch.commit();
+      }
+    } catch {}
   }
 
   async function markRead(id: string) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
     try {
-      await fetch(`${BASE()}/api/notifications/${id}/read`, { method: "PATCH" });
-      refreshBell();
+      await updateDoc(doc(db, "notifications", id), { read: true });
     } catch {}
   }
 
