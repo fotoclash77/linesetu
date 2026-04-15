@@ -414,18 +414,6 @@ export default function BookingScreen() {
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#A5B4FC", fontWeight: "700", fontSize: 15 }]}>₹{payableNow}</Text>
             </View>
             <Text style={styles.feePreviewNote}>+ ₹{clinicFee} consultation paid directly at clinic</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)", marginTop: 8, paddingTop: 8 }}>
-              <Feather name="hash" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
-              <Text style={{ fontSize: 12, fontWeight: "700", color: isEmergency ? "#F87171" : "#67E8F9" }}>
-                {(() => {
-                  const shiftKey = selectedShiftId ?? shiftCards[0]?.id ?? "morning";
-                  const nextNum = (tokenCounts[shiftKey] ?? 0) + 1;
-                  return isEmergency
-                    ? `Next available emergency token #E${nextNum}`
-                    : `Next available token #${nextNum}`;
-                })()}
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -565,6 +553,14 @@ export default function BookingScreen() {
                           <Text style={[styles.fillBarPct, { color: fillColor }]}>{fillPct}% full</Text>
                         </View>
                       </View>
+                      {!isFull && !isAlreadyBooked && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: isEmergency ? "rgba(239,68,68,0.08)" : "rgba(99,102,241,0.08)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5 }}>
+                          <Feather name="hash" size={10} color={isEmergency ? "#F87171" : "#67E8F9"} />
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: isEmergency ? "#F87171" : "#67E8F9" }}>
+                            {isEmergency ? `Next available emergency token #E${booked + 1}` : `Next available token #${booked + 1}`}
+                          </Text>
+                        </View>
+                      )}
                       <View style={styles.shiftMeta}>
                         <Feather name="home" size={10} color="rgba(255,255,255,0.3)" />
                         <Text style={styles.shiftMetaTxt} numberOfLines={1}>
