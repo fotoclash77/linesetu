@@ -6,7 +6,7 @@ import { pct } from "@/constants/design";
 import { AnimatedRing } from "@/components/AnimatedRing";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -22,16 +22,30 @@ import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 
 const isWeb = Platform.OS === "web";
 
-const SPECIALTIES = [
-  { icon: "heart" as const, label: "Cardiology", color: "#EF4444" },
-  { icon: "smile" as const, label: "Dentist", color: "#3B82F6" },
-  { icon: "eye" as const, label: "Eye Care", color: "#06B6D4" },
-  { icon: "activity" as const, label: "Pediatric", color: "#22C55E" },
-  { icon: "cpu" as const, label: "Neurology", color: "#8B5CF6" },
-  { icon: "anchor" as const, label: "Orthopedic", color: "#F97316" },
-  { icon: "mic" as const, label: "ENT", color: "#EC4899" },
-  { icon: "thermometer" as const, label: "General", color: "#F59E0B" },
-] as const;
+const SPEC_META: Record<string, { icon: React.ComponentProps<typeof Feather>["name"]; color: string }> = {
+  cardiology:    { icon: "heart",        color: "#EF4444" },
+  cardiologist:  { icon: "heart",        color: "#EF4444" },
+  dentist:       { icon: "smile",        color: "#3B82F6" },
+  dental:        { icon: "smile",        color: "#3B82F6" },
+  "eye care":    { icon: "eye",          color: "#06B6D4" },
+  ophthalmology: { icon: "eye",          color: "#06B6D4" },
+  pediatric:     { icon: "activity",     color: "#22C55E" },
+  pediatrics:    { icon: "activity",     color: "#22C55E" },
+  neurology:     { icon: "cpu",          color: "#8B5CF6" },
+  neurologist:   { icon: "cpu",          color: "#8B5CF6" },
+  orthopedic:    { icon: "anchor",       color: "#F97316" },
+  orthopedics:   { icon: "anchor",       color: "#F97316" },
+  ent:           { icon: "mic",          color: "#EC4899" },
+  general:       { icon: "thermometer",  color: "#F59E0B" },
+  dermatology:   { icon: "sun",          color: "#A855F7" },
+  dermatologist: { icon: "sun",          color: "#A855F7" },
+  gynecology:    { icon: "user",         color: "#EC4899" },
+  gynecologist:  { icon: "user",         color: "#EC4899" },
+  psychiatry:    { icon: "message-circle", color: "#6366F1" },
+  urology:       { icon: "shield",       color: "#14B8A6" },
+  gastroenterology: { icon: "clipboard", color: "#F97316" },
+};
+const SPEC_COLOR_POOL = ["#EF4444","#3B82F6","#06B6D4","#22C55E","#8B5CF6","#F97316","#EC4899","#F59E0B","#A855F7","#14B8A6"];
 
 
 interface DoctorItem {
@@ -304,6 +318,23 @@ export default function HomeScreen() {
   }));
   const doctors: DoctorItem[] = apiDoctors;
 
+  const specialties = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; color: string }[] = [];
+    for (const d of apiDoctors) {
+      const s = d.specialty?.trim();
+      if (!s) continue;
+      const key = s.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const meta = SPEC_META[key];
+      const color = meta?.color ?? SPEC_COLOR_POOL[result.length % SPEC_COLOR_POOL.length];
+      const icon = meta?.icon ?? ("plus-circle" as const);
+      result.push({ icon, label: s, color });
+    }
+    return result;
+  }, [apiDoctors]);
+
   const VALID_STATUSES = new Set<TokenItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
   const activeTokens: TokenItem[] = (tokenData?.tokens ?? [])
     .filter((t) => t.status === "waiting" || t.status === "in_consult")
@@ -429,14 +460,16 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <View style={styles.specGrid}>
-            {SPECIALTIES.map(({ icon, label, color }) => (
+            {specialties.length > 0 ? specialties.map(({ icon, label, color }) => (
               <Pressable key={label} style={styles.specItem} onPress={() => router.push({ pathname: "/find-doctors", params: { specialty: label } })}>
                 <View style={[styles.specIcon, { backgroundColor: color + "1A" }]}>
                   <Feather name={icon} size={17} color={color} />
                 </View>
                 <Text style={styles.specItemLabel}>{label}</Text>
               </Pressable>
-            ))}
+            )) : (
+              <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", width: "100%", paddingVertical: 16 }}>Loading specialties…</Text>
+            )}
           </View>
         </View>
       </ScrollView>
