@@ -3,7 +3,7 @@ const path = require('path');
 
 const PNPM_DIR = path.join(__dirname, '..', '..', '..', 'node_modules', '.pnpm');
 const OLD = "if (process.env.NODE_ENV !== 'development') {";
-const NEW = "if (true) { // LINESETU PATCH: enable base URL in dev mode";
+const NEW = "if (process.env.EXPO_OS === 'web' ? true : process.env.NODE_ENV !== 'development') { // LINESETU PATCH: web-only base URL in dev";
 const MARKER = "LINESETU PATCH";
 
 const FILES_TO_PATCH = [

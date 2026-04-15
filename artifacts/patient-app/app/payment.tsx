@@ -257,7 +257,7 @@ export default function PaymentScreen() {
   }
 
   function openRazorpayWeb(order: any, keyId: string) {
-    if (typeof window === "undefined") return;
+    if (Platform.OS !== "web") return;
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => {
