@@ -79,10 +79,12 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
         )}
       </View>
 
-      <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
-      <View style={styles.ratingRow}>
-        <Feather name="check-circle" size={10} color="#06B6D4" />
-        <Text style={styles.verifiedTxt}>Verified</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+        <View style={styles.ratingRow}>
+          <Feather name="check-circle" size={10} color="#06B6D4" />
+          <Text style={styles.verifiedTxt}>Verified</Text>
+        </View>
       </View>
       <View style={[styles.specBadge, { backgroundColor: accent + "18" }]}>
         <Text style={[styles.specText, { color: accent }]}>{doc.specialty}</Text>
@@ -491,8 +493,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, overflow: "hidden",
   },
   docPhoto: { width: 160, height: 160, borderRadius: 16, borderWidth: 2.5 },
-  docName: { fontSize: 13, fontWeight: "800", color: "#FFF", marginBottom: 3 },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 5 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
+  docName: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF" },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   ratingTxt: { fontSize: 11, fontWeight: "700", color: "#F59E0B" },
   ratingSlash: { fontSize: 10, color: "rgba(255,255,255,0.3)" },
   verifiedTxt: { fontSize: 10, fontWeight: "600", color: "#06B6D4" },
