@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform, ActivityIndicator,
   Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar } from 'react-native-calendars';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { Feather } from '@expo/vector-icons';
@@ -141,6 +141,7 @@ function buildMarkedDates(start: string, end: string) {
 // ─── Main Screen ──────────────────────────────────────────────
 export default function EarningsScreen() {
   const { doctor } = useDoctor();
+  const queryClient = useQueryClient();
   const [tab, setTab]       = useState<'earnings' | 'transactions' | 'payouts'>('earnings');
   const [period, setPeriod] = useState<Period>('Month');
 
@@ -170,12 +171,30 @@ export default function EarningsScreen() {
 
   const ranges = useMemo(() => dateRanges(), []);
 
+  // ── Real-time SSE: invalidate all earnings/balance/tx caches the moment
+  //    the server emits any token change (skip, cancel, refund, done).
+  useEffect(() => {
+    if (!doctor?.id || typeof EventSource === 'undefined') return;
+    const es = new EventSource(`${BASE()}/api/tokens/stream/${doctor.id}`);
+    es.onmessage = () => {
+      queryClient.invalidateQueries({ queryKey: ['doctor-earnings',     doctor.id] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-live',         doctor.id] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-transactions', doctor.id] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-payouts',      doctor.id] });
+    };
+    es.onerror = () => {
+      // SSE dropped — close cleanly; polling will bridge the gap
+      es.close();
+    };
+    return () => es.close();
+  }, [doctor?.id, queryClient]);
+
   const { data: rawEarnings = [], isLoading } = useQuery<EarningRecord[]>({
     queryKey: ['doctor-earnings', doctor?.id, ranges.fetchFrom],
     queryFn:  () => fetchEarnings(doctor!.id, ranges.fetchFrom),
     enabled:  !!doctor?.id,
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   // Fresh doctor data for pendingPayout + in-clinic fees
@@ -186,8 +205,8 @@ export default function EarningsScreen() {
       return res.json();
     },
     enabled:  !!doctor?.id,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   // Payout requests from Firebase
@@ -198,8 +217,8 @@ export default function EarningsScreen() {
       return res.json();
     },
     enabled:  !!doctor?.id && tab === 'payouts',
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   // Transactions tab state
@@ -211,9 +230,9 @@ export default function EarningsScreen() {
       const res = await fetch(`${BASE()}/api/doctors/${doctor!.id}/transactions`);
       return res.json();
     },
-    enabled:  !!doctor?.id && tab === 'transactions',
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    enabled:  !!doctor?.id,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
   const allTx: any[] = txData?.transactions ?? [];
