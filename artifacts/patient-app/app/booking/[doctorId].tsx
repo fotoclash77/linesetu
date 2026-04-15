@@ -354,7 +354,6 @@ export default function BookingScreen() {
         {/* Doctor Mini-Card */}
         <View style={styles.sectionPad}>
           <View style={styles.docMiniCard}>
-            <Image source={{ uri: docPhoto }} style={styles.docMiniPhoto} contentFit="cover" />
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <Text style={styles.docMiniName}>{docName}</Text>
