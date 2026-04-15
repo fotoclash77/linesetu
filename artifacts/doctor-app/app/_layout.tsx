@@ -73,7 +73,9 @@ export default function RootLayout() {
   const forceUpdate = useForceUpdate();
 
   useEffect(() => {
-    SplashScreen.preventAutoHideAsync().catch(() => {});
+    if (Platform.OS !== "web") {
+      SplashScreen.preventAutoHideAsync().catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
