@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   bookBtn: { borderRadius: 12, paddingVertical: 9, alignItems: "center", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6 },
   bookBtnTxt: { fontSize: 12, fontWeight: "700", color: "#FFF" },
 
-  specGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  specGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center" },
   specItem: { width: "22%", alignItems: "center", gap: 7, padding: 13, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
   specIcon: { width: 38, height: 38, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   specItemLabel: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.55)", textAlign: "center" },
