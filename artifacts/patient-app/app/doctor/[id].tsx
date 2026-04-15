@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getGetLiveQueueQueryOptions } from "@workspace/api-client-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -17,6 +17,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 const isWeb = Platform.OS === "web";
 
@@ -65,16 +67,49 @@ export default function DoctorDetailScreen() {
 
   const isDemoId = !id || id.startsWith("demo");
 
-  // Real-time Firebase listener — zero delay
+  // Real-time Firebase listener + REST API polling fallback
   const [doctorData, setDoctorData] = useState<any>(null);
+  const firestoreActive = useRef(false);
+
+  const fetchDoctorRest = useCallback(async () => {
+    if (isDemoId || !id) return;
+    try {
+      const res = await fetch(`${BASE_URL}/api/doctors/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDoctorData(data);
+      }
+    } catch {}
+  }, [id, isDemoId]);
+
   useEffect(() => {
     if (isDemoId || !id) return;
+
+    // Firebase real-time listener
     const ref = doc(db, "doctors", id);
-    const unsub = onSnapshot(ref, (snap) => {
-      if (snap.exists()) setDoctorData({ id: snap.id, ...snap.data() });
-    }, () => {});
-    return () => unsub();
-  }, [id, isDemoId]);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) {
+          firestoreActive.current = true;
+          setDoctorData({ id: snap.id, ...snap.data() });
+        }
+      },
+      () => {
+        // Firebase failed — fall through to REST polling
+        firestoreActive.current = false;
+        fetchDoctorRest();
+      }
+    );
+
+    // REST polling fallback every 15s — kicks in if Firestore socket drops
+    fetchDoctorRest();
+    const poll = setInterval(() => {
+      if (!firestoreActive.current) fetchDoctorRest();
+    }, 15_000);
+
+    return () => { unsub(); clearInterval(poll); };
+  }, [id, isDemoId, fetchDoctorRest]);
 
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
