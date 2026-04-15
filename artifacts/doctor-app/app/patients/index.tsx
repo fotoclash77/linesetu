@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, RefreshControl, Platform, Modal,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -220,7 +221,7 @@ function CalendarModal({
           <View style={CS.sheetHdr}>
             <Text style={CS.sheetTitle}>Select Date Range</Text>
             <TouchableOpacity onPress={onClose} style={CS.closeBtn}>
-              <Text style={CS.closeTxt}>✕</Text>
+              <Feather name="x" size={16} color="rgba(255,255,255,0.5)" />
             </TouchableOpacity>
           </View>
 
@@ -234,9 +235,12 @@ function CalendarModal({
           </ScrollView>
 
           {/* Picking hint */}
-          <Text style={CS.hint}>
-            {picking === 'start' ? '📅 Tap to set start date' : '📅 Tap to set end date'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
+            <Feather name="calendar" size={13} color="rgba(255,255,255,0.4)" />
+            <Text style={CS.hint}>
+              {picking === 'start' ? 'Tap to set start date' : 'Tap to set end date'}
+            </Text>
+          </View>
 
           {/* Selected range display */}
           {selStart && (
@@ -397,14 +401,14 @@ export default function PatientsScreen() {
           />
           {!!search && (
             <TouchableOpacity onPress={() => setSearch('')} style={S.searchClear}>
-              <Text style={S.searchClearTxt}>✕</Text>
+              <Feather name="x" size={14} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
           )}
         </View>
 
         {/* ── DATE RANGE PICKER BUTTON ── */}
         <TouchableOpacity style={S.rangeBtn} onPress={() => setCalOpen(true)} activeOpacity={0.75}>
-          <Text style={S.rangeIcon}>📅</Text>
+          <Feather name="calendar" size={15} color="rgba(255,255,255,0.5)" />
           <View style={{ flex:1 }}>
             <Text style={S.rangeBtnLabel}>Date Range</Text>
             <Text style={S.rangeBtnValue}>{rangeLabel}</Text>
@@ -415,7 +419,10 @@ export default function PatientsScreen() {
               style={S.rangeClearBtn}
               hitSlop={{ top:10, bottom:10, left:10, right:10 }}
             >
-              <Text style={S.rangeClearTxt}>Clear ✕</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Text style={S.rangeClearTxt}>Clear</Text>
+                <Feather name="x" size={11} color="rgba(255,255,255,0.4)" />
+              </View>
             </TouchableOpacity>
           )}
           <Text style={S.rangeChevron}>›</Text>

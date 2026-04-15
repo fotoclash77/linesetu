@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput,
   ViewStyle, Platform,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 
@@ -295,7 +296,10 @@ export default function ScheduleScreen() {
                 <View style={styles.tokenRow}>
                   {(['Morning','Both'] as ShiftType[]).includes(selectedConfig.shift) && (
                     <View style={styles.tokenItem}>
-                      <Text style={styles.tokenItemLabel}>☀ Morning</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Feather name="sun" size={11} color="rgba(255,255,255,0.6)" />
+                        <Text style={styles.tokenItemLabel}>Morning</Text>
+                      </View>
                       <Stepper
                         value={selectedConfig.morningMax}
                         min={1}
@@ -306,7 +310,10 @@ export default function ScheduleScreen() {
                   )}
                   {(['Evening','Both'] as ShiftType[]).includes(selectedConfig.shift) && (
                     <View style={styles.tokenItem}>
-                      <Text style={styles.tokenItemLabel}>☾ Evening</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Feather name="moon" size={11} color="rgba(255,255,255,0.6)" />
+                        <Text style={styles.tokenItemLabel}>Evening</Text>
+                      </View>
                       <Stepper
                         value={selectedConfig.eveningMax}
                         min={1}
@@ -364,7 +371,7 @@ export default function ScheduleScreen() {
           {upcoming7.length > 0 && (
             <View style={styles.glassCard}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionDot}>📅</Text>
+                <Feather name="calendar" size={13} color={TEAL_LT} />
                 <Text style={styles.sectionTitle}>Upcoming 7 Days</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>

@@ -539,10 +539,10 @@ interface GapRow { gap: true; tokenNumber: number; }
 type SerialRow = Token | GapRow;
 
 const STATUS_BADGE: Record<DisplayStatus, { label: string; color: string; bg: string }> = {
-  consulting: { label: '● Consulting', color: AMBER,  bg: 'rgba(180,83,9,0.28)'   },
-  waiting:    { label: '○ Waiting',    color: CYAN,   bg: 'rgba(22,78,99,0.35)'   },
-  done:       { label: 'Done',    color: GREEN,  bg: 'rgba(21,128,61,0.28)'  },
-  skipped:    { label: 'Skipped', color: PURPLE, bg: 'rgba(109,40,217,0.22)' },
+  consulting: { label: 'Consulting', color: AMBER,  bg: 'rgba(180,83,9,0.28)'   },
+  waiting:    { label: 'Waiting',    color: CYAN,   bg: 'rgba(22,78,99,0.35)'   },
+  done:       { label: 'Done',       color: GREEN,  bg: 'rgba(21,128,61,0.28)'  },
+  skipped:    { label: 'Skipped',    color: PURPLE, bg: 'rgba(109,40,217,0.22)' },
 };
 
 function AllSerialCard({ row }: { row: SerialRow }) {

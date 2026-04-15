@@ -130,7 +130,7 @@ export default function LiveQueueScreen() {
   const tokenStatus  = pos?.status ?? token?.status ?? "waiting";
   const shift        = token?.shift ?? "morning";
   const shiftLabel   = shift === "morning" ? "Morning Shift" : "Evening Shift";
-  const shiftIcon    = shift === "morning" ? "☀️" : "🌙";
+  const shiftIcon: React.ComponentProps<typeof Feather>["name"] = shift === "morning" ? "sun" : "moon";
 
   const doctorName    = doctor?.name ?? "Your Doctor";
   const clinicName    = doctor?.clinicName ?? "Clinic";
@@ -238,7 +238,7 @@ export default function LiveQueueScreen() {
           </Animated.View>
         </View>
         <View style={styles.headerBtn}>
-          <Text style={{ fontSize: 16 }}>🔔</Text>
+          <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
         </View>
       </View>
 
@@ -367,7 +367,10 @@ export default function LiveQueueScreen() {
                 <View style={styles.apptDetailRow}>
                   <Feather name="calendar" size={12} color="#22C55E" />
                   <Text style={styles.apptDetailLbl}>Shift</Text>
-                  <Text style={styles.apptDetailVal}>{shiftIcon} {shiftLabel}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Feather name={shiftIcon} size={11} color="rgba(255,255,255,0.7)" />
+                    <Text style={styles.apptDetailVal}>{shiftLabel}</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -438,7 +441,7 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.notifCard}>
             <View style={styles.notifHeader}>
-              <Text style={{ fontSize: 14 }}>🔔</Text>
+              <Feather name="bell" size={14} color="rgba(255,255,255,0.7)" />
               <Text style={styles.notifTitle}>Reminders Active</Text>
               <View style={{ flex: 1 }} />
               <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>Active</Text></View>
@@ -458,7 +461,7 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.shiftCard}>
             <View style={styles.shiftCardHeader}>
-              <Text style={{ fontSize: 12 }}>{shiftIcon}</Text>
+              <Feather name={shiftIcon} size={14} color="rgba(255,255,255,0.7)" />
               <Text style={styles.shiftCardTitle}>{shiftLabel} Details</Text>
             </View>
             <View style={styles.shiftDetail}>

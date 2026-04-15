@@ -315,7 +315,7 @@ export default function ProfileScreen() {
             <Feather name="edit-3" size={16} color="rgba(255,255,255,0.6)" />
           </Pressable>
           <Pressable style={[styles.headerIconBtn, { backgroundColor: "rgba(79,70,229,0.18)", borderColor: "rgba(99,102,241,0.35)" }]} onPress={() => router.push("/notifications")}>
-            <Text style={{ fontSize: 16 }}>🔔</Text>
+            <Feather name="bell" size={16} color="rgba(255,255,255,0.7)" />
             {unreadCount > 0 && <View style={styles.notifDot} />}
           </Pressable>
         </View>

@@ -43,10 +43,10 @@ const DEFAULT_PREFS: Preferences = {
   darkMode: true,
 };
 
-function SectionLabel({ label, icon }: { label: string; icon: string }) {
+function SectionLabel({ label, icon }: { label: string; icon: React.ComponentProps<typeof Feather>["name"] }) {
   return (
     <View style={styles.sectionRow}>
-      <Text style={styles.sectionEmoji}>{icon}</Text>
+      <Feather name={icon} size={13} color="rgba(255,255,255,0.45)" />
       <Text style={styles.sectionLabel}>{label}</Text>
     </View>
   );
@@ -144,7 +144,7 @@ export default function PreferencesScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Queue Alerts ── */}
-        <SectionLabel label="Queue Alerts" icon="🔔" />
+        <SectionLabel label="Queue Alerts" icon="bell" />
         <View style={styles.card}>
           <ToggleRow
             label="10 Tokens Left"
@@ -178,7 +178,7 @@ export default function PreferencesScreen() {
         </View>
 
         {/* ── SMS & Push ── */}
-        <SectionLabel label="SMS & Push Notifications" icon="📱" />
+        <SectionLabel label="SMS & Push Notifications" icon="smartphone" />
         <View style={styles.card}>
           <ToggleRow
             label="SMS Alerts"
@@ -198,7 +198,7 @@ export default function PreferencesScreen() {
         </View>
 
         {/* ── Sound & Vibration ── */}
-        <SectionLabel label="Sound & Vibration" icon="🔊" />
+        <SectionLabel label="Sound & Vibration" icon="volume-2" />
         <View style={styles.card}>
           <ToggleRow
             label="Alert Sound"
@@ -218,7 +218,7 @@ export default function PreferencesScreen() {
         </View>
 
         {/* ── Display ── */}
-        <SectionLabel label="Display" icon="🖥️" />
+        <SectionLabel label="Display" icon="monitor" />
         <View style={styles.card}>
           <ToggleRow
             label="Show Estimated Wait Time"

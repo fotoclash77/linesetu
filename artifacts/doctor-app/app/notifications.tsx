@@ -33,13 +33,13 @@ interface Notif {
 
 function typeCfg(type: NotifType) {
   switch (type) {
-    case 'token_booked':    return { icon: 'calendar'    as const, color: TEAL_LT, bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)', label: '📅 Booking'   };
-    case 'token_cancelled': return { icon: 'x-circle'    as const, color: ERROR,   bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)',  label: '✗ Skipped'    };
-    case 'payment':         return { icon: 'dollar-sign' as const, color: SUCCESS,  bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.25)',  label: '↗ Payment'   };
-    case 'reminder':        return { icon: 'clock'       as const, color: WARN,    bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)', label: '⏰ Reminder'   };
-    case 'system':          return { icon: 'info'        as const, color: CYAN,    bg: 'rgba(6,182,212,0.12)',   border: 'rgba(6,182,212,0.25)',  label: 'ℹ System'    };
-    case 'promo':           return { icon: 'zap'         as const, color: INDIGO,  bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.25)',label: '⚡ Update'    };
-    default:                return { icon: 'bell'        as const, color: TEAL_LT, bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)', label: '🔔 Notice'    };
+    case 'token_booked':    return { icon: 'calendar'    as const, color: TEAL_LT, bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)', label: 'Booking'   };
+    case 'token_cancelled': return { icon: 'x-circle'    as const, color: ERROR,   bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.25)',  label: 'Skipped'   };
+    case 'payment':         return { icon: 'dollar-sign' as const, color: SUCCESS,  bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.25)',  label: 'Payment'   };
+    case 'reminder':        return { icon: 'clock'       as const, color: WARN,    bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)', label: 'Reminder'  };
+    case 'system':          return { icon: 'info'        as const, color: CYAN,    bg: 'rgba(6,182,212,0.12)',   border: 'rgba(6,182,212,0.25)',  label: 'System'    };
+    case 'promo':           return { icon: 'zap'         as const, color: INDIGO,  bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.25)',label: 'Update'    };
+    default:                return { icon: 'bell'        as const, color: TEAL_LT, bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)', label: 'Notice'    };
   }
 }
 
@@ -65,9 +65,9 @@ function groupLabel(ts: number): 'today' | 'yesterday' | 'earlier' {
 }
 
 const GROUP_LABELS = {
-  today:     '📅 Today',
-  yesterday: '🗓 Yesterday',
-  earlier:   '🕐 Earlier',
+  today:     'Today',
+  yesterday: 'Yesterday',
+  earlier:   'Earlier',
 } as const;
 
 const POLL_MS = 30_000;
@@ -165,7 +165,7 @@ export default function NotificationsScreen() {
       ) : notifs.length === 0 ? (
         <View style={styles.emptyWrap}>
           <View style={styles.emptyIconWrap}>
-            <Text style={{ fontSize: 28 }}>🔔</Text>
+            <Feather name="bell" size={28} color="rgba(45,212,191,0.5)" />
           </View>
           <Text style={styles.emptyTitle}>All caught up!</Text>
           <Text style={styles.emptySub}>No notifications yet. They'll appear here when patients book tokens.</Text>

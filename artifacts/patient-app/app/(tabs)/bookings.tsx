@@ -367,7 +367,7 @@ export default function BookingsScreen() {
           <Text style={styles.headerSub}>{allBookings.length} appointments · family</Text>
         </View>
         <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>
-          <Text style={styles.bellIcon}>🔔</Text>
+          <Feather name="bell" size={18} color="rgba(255,255,255,0.7)" />
           {unreadCount > 0 && <View style={styles.bellDot} />}
         </Pressable>
       </View>

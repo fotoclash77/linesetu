@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, BackHandler, Platform, ActivityIndicator, KeyboardAvoidingView,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
@@ -19,7 +20,7 @@ const STEPS = ['Basic Info', 'About You'];
 function StepDot({ active, done }: { active: boolean; done: boolean }) {
   return (
     <View style={[s.dot, active && s.dotActive, done && s.dotDone]}>
-      {done && <Text style={s.dotCheck}>✓</Text>}
+      {done && <Feather name="check" size={10} color="#FFF" />}
     </View>
   );
 }

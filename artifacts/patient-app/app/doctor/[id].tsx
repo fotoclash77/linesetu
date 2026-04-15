@@ -226,8 +226,8 @@ export default function DoctorDetailScreen() {
           </View>
         )}
 
-        {/* Fee Breakdown */}
-        <View style={styles.sectionCard}>
+        {/* Fee Breakdown — only shown when doctor enables "Show Fee" */}
+        {doctor.showFee && (<View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.rupee}>₹</Text>
             <Text style={styles.sectionTitle}>Fee Structure</Text>
@@ -282,7 +282,7 @@ export default function DoctorDetailScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </View>)}
 
       </ScrollView>
 

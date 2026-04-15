@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, Animated, Alert,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
@@ -249,9 +250,15 @@ export default function LoginScreen() {
                     onPress={handleVerify}
                     disabled={!otpFilled || sending}
                   >
-                    <Text style={styles.ctaBtnText}>
-                      {sending ? 'Verifying…' : otpFilled ? '✓ Verify & Enter Dashboard' : 'Enter 6-digit OTP'}
-                    </Text>
+                    {otpFilled && !sending
+                      ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Feather name="check" size={14} color="#FFF" />
+                          <Text style={styles.ctaBtnText}>Verify & Enter Dashboard</Text>
+                        </View>
+                      : <Text style={styles.ctaBtnText}>
+                          {sending ? 'Verifying…' : 'Enter 6-digit OTP'}
+                        </Text>
+                    }
                   </TouchableOpacity>
                 </>
               )}

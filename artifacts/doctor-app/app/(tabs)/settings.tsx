@@ -225,7 +225,10 @@ function SpecPicker({ value, onChange, error }: {
           onPress={pickOther}
           style={[styles.specChip, showInput && styles.specChipOther]}
         >
-          <Text style={[styles.specChipText, showInput && { color: '#FCD34D' }]}>Other ✏</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={[styles.specChipText, showInput && { color: '#FCD34D' }]}>Other</Text>
+              <Feather name="edit-2" size={10} color={showInput ? '#FCD34D' : 'rgba(255,255,255,0.45)'} />
+            </View>
         </TouchableOpacity>
       </View>
       {showInput && (
@@ -767,7 +770,10 @@ export default function SettingsScreen() {
 
             {!!profileError && (
               <View style={{ marginBottom: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: 'rgba(239,68,68,0.08)' }}>
-                <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '700' }}>⚠ {profileError}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Feather name="alert-triangle" size={11} color="#F87171" />
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '700' }}>{profileError}</Text>
+                </View>
               </View>
             )}
 
@@ -810,7 +816,10 @@ export default function SettingsScreen() {
             >
               {profileSaving && !profileError
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{profileSaved ? '✓ Saved' : '💾 Save Profile'}</Text>}
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={profileSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{profileSaved ? 'Saved' : 'Save Profile'}</Text>
+                  </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -900,7 +909,10 @@ export default function SettingsScreen() {
             >
               {clinicSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{clinicSaved ? '✓ Saved' : '💾 Save Clinics'}</Text>}
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={clinicSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{clinicSaved ? 'Saved' : 'Save Clinics'}</Text>
+                  </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -960,7 +972,10 @@ export default function SettingsScreen() {
 
               return (
                 <View style={{ marginTop: 24 }}>
-                  <Text style={styles.calTitle}>📅  30-DAY SCHEDULE  ·  Tap date to configure</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                    <Feather name="calendar" size={13} color="rgba(255,255,255,0.5)" />
+                    <Text style={styles.calTitle}>30-DAY SCHEDULE  ·  Tap date to configure</Text>
+                  </View>
 
                   {/* DOW header */}
                   <View style={[styles.calDowRow, { marginTop: 12 }]}>
@@ -1035,20 +1050,23 @@ export default function SettingsScreen() {
                     <View style={styles.dayEditor}>
                       {/* Header */}
                       <View style={styles.dayEditorHeader}>
-                        <Text style={styles.dayEditorDate}>✏  {friendlyDate(selectedCalDate)}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Feather name="edit-2" size={12} color="rgba(255,255,255,0.6)" />
+                          <Text style={styles.dayEditorDate}>{friendlyDate(selectedCalDate)}</Text>
+                        </View>
                         <TouchableOpacity onPress={() => setSelectedCalDate(null)} style={styles.dayEditorClose}>
-                          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>✕</Text>
+                          <Feather name="x" size={14} color="rgba(255,255,255,0.4)" />
                         </TouchableOpacity>
                       </View>
 
                       {/* ── 4 SHIFT BUTTONS ── */}
                       <View style={styles.shiftBtnRow}>
                         {([
-                          { id: 'morning',  icon: '☀',  label: 'Morning',  bg: 'rgba(245,158,11,0.25)', border: '#F59E0B', txt: '#FCD34D' },
-                          { id: 'evening',  icon: '☾',  label: 'Evening',  bg: 'rgba(139,92,246,0.25)', border: '#7C3AED', txt: '#A5B4FC' },
-                          { id: 'both',     icon: '✓',  label: 'Both',     bg: 'rgba(13,148,136,0.25)', border: '#0D9488', txt: '#2DD4BF' },
-                          { id: 'holiday',  icon: '✕',  label: 'Holiday',  bg: 'rgba(239,68,68,0.22)',  border: '#DC2626', txt: '#F87171' },
-                        ] as { id: DayMode; icon: string; label: string; bg: string; border: string; txt: string }[]).map(btn => {
+                          { id: 'morning',  iconName: 'sun'   as const, label: 'Morning',  bg: 'rgba(245,158,11,0.25)', border: '#F59E0B', txt: '#FCD34D' },
+                          { id: 'evening',  iconName: 'moon'  as const, label: 'Evening',  bg: 'rgba(139,92,246,0.25)', border: '#7C3AED', txt: '#A5B4FC' },
+                          { id: 'both',     iconName: 'check' as const, label: 'Both',     bg: 'rgba(13,148,136,0.25)', border: '#0D9488', txt: '#2DD4BF' },
+                          { id: 'holiday',  iconName: 'x'     as const, label: 'Holiday',  bg: 'rgba(239,68,68,0.22)',  border: '#DC2626', txt: '#F87171' },
+                        ] as { id: DayMode; iconName: React.ComponentProps<typeof Feather>['name']; label: string; bg: string; border: string; txt: string }[]).map(btn => {
                           const active = dayMode === btn.id;
                           return (
                             <TouchableOpacity
@@ -1059,7 +1077,7 @@ export default function SettingsScreen() {
                                 active && { backgroundColor: btn.bg, borderColor: btn.border },
                               ]}
                             >
-                              <Text style={{ fontSize: 15, lineHeight: 18 }}>{btn.icon}</Text>
+                              <Feather name={btn.iconName} size={14} color={active ? btn.txt : 'rgba(255,255,255,0.4)'} />
                               <Text style={[styles.shiftModeBtnTxt, active && { color: btn.txt }]}>{btn.label}</Text>
                             </TouchableOpacity>
                           );
@@ -1069,7 +1087,7 @@ export default function SettingsScreen() {
                       {/* Holiday: no further config needed */}
                       {dayMode === 'holiday' && (
                         <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                          <Text style={{ fontSize: 26, marginBottom: 6 }}>🚫</Text>
+                          <Feather name="slash" size={26} color="#F87171" style={{ marginBottom: 6 }} />
                           <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>No appointments on this day</Text>
                         </View>
                       )}
@@ -1106,7 +1124,10 @@ export default function SettingsScreen() {
                           setSelectedCalDate(null);
                         }}
                       >
-                        <Text style={styles.applyDayBtnTxt}>✓  Apply to {friendlyDate(selectedCalDate)}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Feather name="check" size={13} color={TEAL_LT} />
+                          <Text style={styles.applyDayBtnTxt}>Apply to {friendlyDate(selectedCalDate)}</Text>
+                        </View>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -1130,7 +1151,10 @@ export default function SettingsScreen() {
                   >
                     {calSaving
                       ? <ActivityIndicator color="#FFF" size="small" />
-                      : <Text style={styles.saveBtnText}>{calSaved ? '✓ Saved' : '💾 Save 30-Day Schedule'}</Text>}
+                      : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Feather name={calSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                          <Text style={styles.saveBtnText}>{calSaved ? 'Saved' : 'Save 30-Day Schedule'}</Text>
+                        </View>}
                   </TouchableOpacity>
                 </View>
               );
@@ -1150,9 +1174,12 @@ export default function SettingsScreen() {
             <View style={styles.formCard}>
               <Text style={styles.formCardTitle}>FEE STRUCTURE</Text>
               <View style={styles.feeNote}>
-                <Text style={styles.feeNoteText}>
-                  ℹ Set your consultation rates. These drive your earnings rate card. Online payments use your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment is processed.
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                  <Feather name="info" size={12} color="rgba(255,255,255,0.35)" style={{ marginTop: 2 }} />
+                  <Text style={[styles.feeNoteText, { flex: 1 }]}>
+                    Set your consultation rates. These drive your earnings rate card. Online payments use your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment is processed.
+                  </Text>
+                </View>
               </View>
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>normal E-TOKEN FEE</Text>
@@ -1225,9 +1252,12 @@ export default function SettingsScreen() {
                 />
               </View>
               <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
-                <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)' }]}>
-                  ✓ Fees saved. Online tokens charge patients your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment required.
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                  <Feather name="check-circle" size={12} color="rgba(45,212,191,0.8)" style={{ marginTop: 2 }} />
+                  <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)', flex: 1 }]}>
+                    Fees saved. Online tokens charge patients your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment required.
+                  </Text>
+                </View>
               </View>
             </View>
             <TouchableOpacity
@@ -1248,7 +1278,10 @@ export default function SettingsScreen() {
             >
               {feeSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{feeSaved ? '✓ Saved' : '💾 Save Fee Structure'}</Text>}
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={feeSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{feeSaved ? 'Saved' : 'Save Fee Structure'}</Text>
+                  </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1306,7 +1339,10 @@ export default function SettingsScreen() {
             >
               {patientAppSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{patientAppSaved ? '✓ Settings Saved!' : '💾 Save Patient App Settings'}</Text>}
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={patientAppSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{patientAppSaved ? 'Settings Saved!' : 'Save Patient App Settings'}</Text>
+                  </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1386,7 +1422,10 @@ export default function SettingsScreen() {
             >
               {bankSaving
                 ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Bank Details'}</Text>}
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={bankSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{bankSaved ? 'Saved' : 'Save Bank Details'}</Text>
+                  </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1423,7 +1462,7 @@ export default function SettingsScreen() {
               </View>
             ) : (
               <TouchableOpacity style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: 'rgba(251,191,36,0.25)', backgroundColor: 'rgba(251,191,36,0.05)' }]} onPress={() => setSection('bank')}>
-                <Text style={{ fontSize: 20 }}>⚠️</Text>
+                <Feather name="alert-triangle" size={20} color="#FCD34D" />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#FCD34D' }}>No account linked</Text>
                   <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Tap to add bank account or UPI</Text>
@@ -1502,7 +1541,10 @@ export default function SettingsScreen() {
                 }
               }}
             >
-              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{bankSaved ? '✓ Saved' : 'Save Payout Settings'}</Text>}
+              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Feather name={bankSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                  <Text style={styles.saveBtnText}>{bankSaved ? 'Saved' : 'Save Payout Settings'}</Text>
+                </View>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1549,7 +1591,7 @@ export default function SettingsScreen() {
                 style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
               >
                 <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(103,232,249,0.12)' }]}>
-                  <Text style={{ fontSize: 18 }}>✉️</Text>
+                  <Feather name="mail" size={18} color="#67E8F9" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.helpContactLabel}>Email Support</Text>
@@ -1563,7 +1605,7 @@ export default function SettingsScreen() {
                 style={styles.helpContactRow}
               >
                 <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
-                  <Text style={{ fontSize: 18 }}>📞</Text>
+                  <Feather name="phone" size={18} color="#FBBF24" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.helpContactLabel}>Call Support</Text>
@@ -1825,14 +1867,20 @@ export default function SettingsScreen() {
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                   <Text style={styles.profileName}>{name}</Text>
-                  <Text style={{ fontSize: 16, color: TEAL_LT }}>✓</Text>
+                  <Feather name="check-circle" size={14} color={TEAL_LT} />
                 </View>
                 <Text style={styles.profileSpec}>{specialisation} · {qualifications}</Text>
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                   {doctor?.isAvailable !== false ? (
-                    <View style={styles.onlineBadge}><Text style={styles.onlineBadgeText}>● Available</Text></View>
+                    <View style={[styles.onlineBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#22C55E' }} />
+                      <Text style={styles.onlineBadgeText}>Available</Text>
+                    </View>
                   ) : (
-                    <View style={styles.unavailBadge}><Text style={styles.unavailBadgeText}>● Unavailable</Text></View>
+                    <View style={[styles.unavailBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' }} />
+                      <Text style={styles.unavailBadgeText}>Unavailable</Text>
+                    </View>
                   )}
                   <View style={styles.expBadge}><Text style={styles.expBadgeText}>{experience} yrs exp</Text></View>
                 </View>
@@ -1879,7 +1927,7 @@ export default function SettingsScreen() {
                   >
                     {deletingPhotoUrl === uri
                       ? <ActivityIndicator size={10} color="#FFF" />
-                      : <Text style={styles.galleryDeleteX}>✕</Text>}
+                      : <Feather name="x" size={12} color="#FFF" />}
                   </TouchableOpacity>
                 </View>
               ))}
@@ -1903,7 +1951,7 @@ export default function SettingsScreen() {
               <View style={styles.galleryErrorBanner}>
                 <Text style={styles.galleryErrorText}>{uploadError}</Text>
                 <TouchableOpacity onPress={() => setUploadError(null)}>
-                  <Text style={styles.galleryErrorDismiss}>✕</Text>
+                  <Feather name="x" size={14} color="rgba(255,255,255,0.6)" />
                 </TouchableOpacity>
               </View>
             )}
@@ -2056,7 +2104,7 @@ export default function SettingsScreen() {
                   'This cannot be reversed. You will need to re-register to use LINESETU again.',
                 ].map((line, i) => (
                   <View key={i} style={{ flexDirection: 'row', marginBottom: i < 3 ? 8 : 0 }}>
-                    <Text style={{ color: '#F87171', fontWeight: '900', fontSize: 12, marginRight: 8, marginTop: 1 }}>✕</Text>
+                    <Feather name="x" size={12} color="#F87171" style={{ marginRight: 8, marginTop: 1 }} />
                     <Text style={{ flex: 1, fontSize: 11, color: 'rgba(239,68,68,0.75)', lineHeight: 17, fontWeight: '500' }}>{line}</Text>
                   </View>
                 ))}

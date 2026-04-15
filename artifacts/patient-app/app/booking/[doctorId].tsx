@@ -493,7 +493,7 @@ export default function BookingScreen() {
             <Text style={styles.sectionLabel}>Available Shifts</Text>
             {(!dayCfg || dayCfg?.off || shiftCards.length === 0) ? (
               <View style={calRowStyles.offDay}>
-                <Text style={{ fontSize: 28, marginBottom: 8 }}>🚫</Text>
+                <Feather name="slash" size={28} color="#F87171" style={{ marginBottom: 8 }} />
                 <Text style={{ color: "#F87171", fontWeight: "700", fontSize: 13 }}>Doctor is off on this day</Text>
               </View>
             ) : (
