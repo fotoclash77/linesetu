@@ -235,7 +235,7 @@ function TokenChip({ token, type, large = false, amber = false }: { token: numbe
   const color  = amber ? AMBER_LT : isE ? RED      : TEAL_LT;
   const bg     = amber ? 'rgba(180,83,9,0.35)'   : isE ? 'rgba(239,68,68,0.18)'   : 'rgba(13,148,136,0.2)';
   const border = amber ? 'rgba(252,211,77,0.55)'  : isE ? 'rgba(239,68,68,0.4)'    : 'rgba(45,212,191,0.4)';
-  const label  = isE ? `E${String(token).padStart(2,'0')}` : `#${String(token).padStart(2,'0')}`;
+  const label  = isE ? `E${String(token).padStart(3,'0')}` : `#${String(token).padStart(3,'0')}`;
   return (
     <View style={[S.chip, large && S.chipLg, { backgroundColor: bg, borderColor: border }]}>
       <Text style={S.chipLabel}>TOKEN</Text>
@@ -498,7 +498,7 @@ function AllSerialCard({ row }: { row: SerialRow }) {
       <View style={[S.allRow, { opacity: 0.38, paddingVertical: 9 }]}>
         <View style={[S.chip, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
           <Text style={S.chipLabel}>TOKEN</Text>
-          <Text style={[S.chipNum, { color: 'rgba(255,255,255,0.2)' }]}>{`#${String(row.tokenNumber).padStart(2, '0')}`}</Text>
+          <Text style={[S.chipNum, { color: 'rgba(255,255,255,0.2)' }]}>{`#${String(row.tokenNumber).padStart(3, '0')}`}</Text>
         </View>
         <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.2)', marginLeft: 10, fontStyle: 'italic' }}>
           — Expired reservation

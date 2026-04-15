@@ -192,7 +192,7 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
             <Feather name="tag" size={9} color={isActive ? "#A5B4FC" : "rgba(255,255,255,0.3)"} />
-            <Text style={[styles.tokenNumTxt, { color: isActive ? "#A5B4FC" : "rgba(255,255,255,0.45)" }]}>#{booking.tokenNumber}</Text>
+            <Text style={[styles.tokenNumTxt, { color: isActive ? "#A5B4FC" : "rgba(255,255,255,0.45)" }]}>#{String(booking.tokenNumber).padStart(3,'0')}</Text>
           </View>
         </View>
       </View>
@@ -200,7 +200,7 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
       <View style={styles.bookingCardBody}>
         <View style={[styles.tokenBlock, isActive && styles.tokenBlockActive]}>
           <Text style={styles.tokenBlockLbl}>Token</Text>
-          <Text style={[styles.tokenBlockNum, { color: isActive ? "#FFF" : isSkipped ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.65)" }]}>#{booking.tokenNumber}</Text>
+          <Text style={[styles.tokenBlockNum, { color: isActive ? "#FFF" : isSkipped ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.65)" }]}>#{String(booking.tokenNumber).padStart(3,'0')}</Text>
           {isActive && <Text style={styles.tokenBlockYours}>YOURS</Text>}
         </View>
         <View style={{ flex: 1, gap: 5 }}>

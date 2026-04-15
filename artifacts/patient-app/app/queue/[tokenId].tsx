@@ -283,7 +283,7 @@ export default function LiveQueueScreen() {
               </LGradient>
             </View>
             <Text style={styles.heroConsultingTxt} numberOfLines={1}>
-              {current ? `Doctor is consulting Token #${current}` : "Queue not started yet"}
+              {current ? `Doctor is consulting Token #${String(current).padStart(3,'0')}` : "Queue not started yet"}
             </Text>
             <Text style={styles.heroDocName}>{doctorName}</Text>
           </View>
@@ -291,7 +291,7 @@ export default function LiveQueueScreen() {
           <View style={styles.heroTextRight}>
             <View style={styles.myTokenBlock}>
               <Text style={styles.myTokenLbl}>MY TOKEN</Text>
-              <Text style={styles.myTokenNum}>#{myToken}</Text>
+              <Text style={styles.myTokenNum}>#{String(myToken).padStart(3,'0')}</Text>
               <View style={[styles.statusChip, { backgroundColor: statusCfg.bg, borderColor: statusCfg.border }]}>
                 <Text style={[styles.statusChipTxt, { color: statusCfg.color }]}>{statusCfg.label}</Text>
               </View>
@@ -322,7 +322,7 @@ export default function LiveQueueScreen() {
         <View style={styles.sectionPad}>
           <View style={styles.statGrid}>
             {([
-              { label: "My Token",    val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
+              { label: "My Token",    val: `#${String(myToken).padStart(3,'0')}`, color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
               { label: "Clinic",      val: "Open",                   color: "#4ADE80", bg: "rgba(34,197,94,0.1)",    border: "rgba(34,197,94,0.25)",  icon: "home"     },
               { label: "Tokens Left", val: `${ahead}`,               color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "list"     },
               { label: "Est. Wait",   val: `~${waitMin}m`,           color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "clock"    },
@@ -349,8 +349,7 @@ export default function LiveQueueScreen() {
             </View>
             <View style={styles.apptBody}>
               <View style={[styles.apptTokenBox, { borderColor: statusCfg.border }]}>
-                <Text style={styles.apptTokenHash}>#</Text>
-                <Text style={[styles.apptTokenNum, { color: statusCfg.color }]}>{myToken}</Text>
+                <Text style={[styles.apptTokenNum, { color: statusCfg.color }]}>#{String(myToken).padStart(3,'0')}</Text>
                 <Text style={styles.apptTokenLbl}>Token</Text>
               </View>
               <View style={styles.apptDetails}>
