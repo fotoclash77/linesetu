@@ -588,7 +588,6 @@ export default function BookingScreen() {
                   onPress={() => { setSelectedMember(m); setExpandedMember(isExpanded ? null : m.id); }}
                 >
                   <View style={styles.memberCardTop}>
-                    <Image source={{ uri: m.avatar }} style={[styles.memberAvatar, { borderColor: m.color + "55" }]} contentFit="cover" />
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                         <Text style={styles.memberName}>{m.name}</Text>
