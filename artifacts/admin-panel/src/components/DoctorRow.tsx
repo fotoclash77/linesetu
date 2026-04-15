@@ -59,7 +59,6 @@ export function DoctorRow({ doctor }: Props) {
           </div>
         </td>
         <td className="px-4 py-3 text-sm text-gray-600">{doctor.phone}</td>
-        <td className="px-4 py-3 text-sm text-gray-500">{doctor.clinicName || "—"}</td>
         <td className="px-4 py-3">
           <span
             className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -124,7 +123,7 @@ export function DoctorRow({ doctor }: Props) {
 
       {showConfirm && (
         <tr>
-          <td colSpan={7} className="px-4 py-3 bg-red-50 border-b border-red-200">
+          <td colSpan={6} className="px-4 py-3 bg-red-50 border-b border-red-200">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-sm font-medium text-red-800">

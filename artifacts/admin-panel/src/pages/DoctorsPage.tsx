@@ -118,9 +118,6 @@ export default function DoctorsPage() {
                       Phone
                     </th>
                     <th className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Clinic
-                    </th>
-                    <th className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Approval
                     </th>
                     <th className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
