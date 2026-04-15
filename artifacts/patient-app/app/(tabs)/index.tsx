@@ -284,13 +284,15 @@ export default function HomeScreen() {
     id: d.id,
     name: d.name,
     specialty: d.specialization,
-    clinicName: d.clinicName ?? "Clinic",
+    clinicName: d.clinicName ?? "",
     accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
     rating: "4.8",
-    wait: formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins ?? 0)),
+    wait: d.estimatedWaitMins != null || d.waitMinutes != null || d.waitMins != null
+      ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
+      : "",
     token: 1,
-    exp: d.experience ? `${d.experience}` : "—",
-    patients: d.totalPatients ? `${d.totalPatients}+` : "—",
+    exp: d.experience != null ? `${d.experience}` : "",
+    patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
     photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
