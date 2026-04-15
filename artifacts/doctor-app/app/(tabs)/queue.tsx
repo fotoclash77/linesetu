@@ -503,12 +503,12 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
                 <Text style={S.skipWaitTxt}>Skip</Text>
               </View>
             </TouchableOpacity>
-          ) : (
+          ) : isRefundable ? (
             <TouchableOpacity
               style={[
                 S.refundBtn, { flex: 1, marginTop: 0 },
                 busy && { opacity: 0.5 },
-                isRefundable && { backgroundColor: 'rgba(248,113,113,0.15)', borderColor: 'rgba(248,113,113,0.35)' },
+                { backgroundColor: 'rgba(248,113,113,0.15)', borderColor: 'rgba(248,113,113,0.35)' },
               ]}
               onPress={onRefund} disabled={busy}
             >
@@ -516,12 +516,12 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
                 ? <ActivityIndicator color="#FCA5A5" size="small" />
                 : <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
                     <Feather name="rotate-ccw" size={12} color="#FCA5A5" />
-                    <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
+                    <Text style={[S.refundTxt, { color: '#FCA5A5' }]}>
                       Cancel & Refund
                     </Text>
                   </View>}
             </TouchableOpacity>
-          )}
+          ) : null}
           <TouchableOpacity
             style={[S.alertBtn, busy && { opacity: 0.5 }]}
             onPress={onSendAlert} disabled={busy}
@@ -965,7 +965,7 @@ export default function QueueScreen() {
                       onSendNext={() => { setManualNext(tok.id); doCall(tok.id); }}
                       onSendAlert={() => openAlert(tok)}
                       onSkip={() => doSkipToken(tok.id)}
-                      onRefund={() => isRefundable ? doRefund(tok.id) : doCancel(tok.id)}
+                      onRefund={() => doRefund(tok.id)}
                     />
                   );
                 })
