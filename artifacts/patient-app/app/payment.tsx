@@ -110,6 +110,7 @@ export default function PaymentScreen() {
   }, []);
 
   const [liveDoctorPhoto, setLiveDoctorPhoto] = useState("");
+  const [feeLabels, setFeeLabels] = useState({ normal: "Normal E-Token Fee", emergency: "Emergency E-Token Fee", platform: "Platform Fee" });
 
   useEffect(() => {
     if (!params.doctorId) return;
@@ -118,6 +119,11 @@ export default function PaymentScreen() {
       if (!snap.exists()) return;
       const data = snap.data() as any;
       if (data.profilePhoto || data.photo) setLiveDoctorPhoto(data.profilePhoto || data.photo);
+      setFeeLabels({
+        normal: data.consultFeeLabel || "Normal E-Token Fee",
+        emergency: data.emergencyFeeLabel || "Emergency E-Token Fee",
+        platform: data.platformFeeLabel || "Platform Fee",
+      });
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
       let resolvedClinicName = shiftCfg?.clinicName ?? "";
@@ -536,14 +542,14 @@ export default function PaymentScreen() {
           <Text style={styles.sectionLabel}>Fee Breakdown</Text>
           <View style={styles.feeCard}>
             <View style={styles.feeRow}>
-              <Feather name="monitor" size={12} color="#67E8F9" />
-              <Text style={styles.feeLbl}>E-Token Fee</Text>
-              <Text style={[styles.feeVal, { color: "#67E8F9" }]}>₹{eAppFee}</Text>
+              <Feather name="monitor" size={12} color={isEmergency ? "#EF4444" : "#67E8F9"} />
+              <Text style={styles.feeLbl}>{isEmergency ? feeLabels.emergency : feeLabels.normal}</Text>
+              <Text style={[styles.feeVal, { color: isEmergency ? "#EF4444" : "#67E8F9" }]}>₹{eAppFee}</Text>
             </View>
             <View style={styles.feeDivider} />
             <View style={styles.feeRow}>
               <Feather name="shield" size={12} color="#818CF8" />
-              <Text style={styles.feeLbl}>LINESETU Platform Fee</Text>
+              <Text style={styles.feeLbl}>{feeLabels.platform}</Text>
               <Text style={[styles.feeVal, { color: "#818CF8" }]}>₹{platformFee}</Text>
             </View>
             <View style={styles.feeDivider} />
