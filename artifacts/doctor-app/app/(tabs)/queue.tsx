@@ -497,10 +497,10 @@ function AllSerialCard({ row }: { row: SerialRow }) {
   const srcBd    = row.source === 'walkin' ? 'rgba(45,212,191,0.35)' : 'rgba(129,140,248,0.35)';
   const srcClr   = row.source === 'walkin' ? TEAL_LT : '#A5B4FC';
 
-  // Priority: emergency vs normal
-  const priBg  = isEmrg ? 'rgba(239,68,68,0.14)' : 'rgba(21,128,61,0.14)';
-  const priBd  = isEmrg ? 'rgba(239,68,68,0.32)' : 'rgba(74,222,128,0.28)';
-  const priClr = isEmrg ? '#F87171' : GREEN;
+  // Priority: emergency vs normal — white text for readable contrast on all devices
+  const priBg  = isEmrg ? 'rgba(239,68,68,0.55)' : 'rgba(21,128,61,0.45)';
+  const priBd  = isEmrg ? 'rgba(239,68,68,0.8)'  : 'rgba(74,222,128,0.6)';
+  const priClr = '#FFFFFF';
   const priLbl = isEmrg ? 'Emergency' : 'Normal';
 
   // Demographics
