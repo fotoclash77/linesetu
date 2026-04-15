@@ -17,9 +17,18 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
 import { useForceUpdate } from "../hooks/useForceUpdate";
+import { FEATHER_FONT_BASE64 } from "../constants/featherFontBase64";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+}
+
+// Inject Feather icon font on web via base64 data URL — no network request
+// needed, works through any proxy, guaranteed to match @expo/vector-icons usage.
+if (Platform.OS === "web" && typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = `@font-face { font-family: 'feather'; src: url('${FEATHER_FONT_BASE64}') format('truetype'); font-weight: normal; font-style: normal; }`;
+  document.head.appendChild(style);
 }
 
 const queryClient = new QueryClient();
@@ -70,7 +79,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...(Platform.OS === "web" ? { feather: require("../public/Feather.ttf") } : Feather.font),
+    ...(Platform.OS !== "web" ? Feather.font : {}),
   });
   const forceUpdate = useForceUpdate();
 
