@@ -107,7 +107,7 @@ export default function CompleteProfile() {
           {/* Card */}
           <View style={s.card}>
             <Text style={s.cardTitle}>
-              {step === 0 ? '👋 Welcome, Doctor!' : '🏥 Tell us more'}
+              {step === 0 ? 'Welcome, Doctor!' : 'Tell us more'}
             </Text>
             <Text style={s.cardSub}>
               {step === 0
@@ -207,7 +207,7 @@ export default function CompleteProfile() {
               <TouchableOpacity style={[s.btn, s.btnFlex, saving && s.btnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
                 {saving
                   ? <ActivityIndicator color="#000" size="small" />
-                  : <Text style={s.btnTxt}>Get Started 🚀</Text>}
+                  : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Feather name="arrow-right" size={14} color="#000" /><Text style={s.btnTxt}>Get Started</Text></View>}
               </TouchableOpacity>
             </View>
           )}

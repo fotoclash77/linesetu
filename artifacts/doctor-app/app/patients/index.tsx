@@ -389,7 +389,7 @@ export default function PatientsScreen() {
 
         {/* ── SEARCH BAR ── */}
         <View style={S.searchWrap}>
-          <Text style={S.searchIcon}>🔍</Text>
+          <Feather name="search" size={14} color="rgba(255,255,255,0.4)" />
           <TextInput
             style={S.searchInput}
             placeholder="Search by name or phone…"
@@ -502,7 +502,7 @@ export default function PatientsScreen() {
               {/* ── LIST ── */}
               {sorted.length === 0 ? (
                 <View style={S.empty}>
-                  <Text style={S.emptyIcon}>{search ? '🔍' : '📋'}</Text>
+                  <Feather name={search ? 'search' : 'clipboard'} size={36} color="rgba(255,255,255,0.3)" />
                   <Text style={S.emptyTxt}>
                     {search ? `No patients matching "${search}"` : 'No patients in this date range'}
                   </Text>

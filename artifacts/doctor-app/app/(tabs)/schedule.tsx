@@ -282,7 +282,7 @@ export default function ScheduleScreen() {
                         selectedConfig.clinic === key && styles.clinicBtnActive,
                       ]}
                     >
-                      <Text style={styles.clinicIcon}>🏥</Text>
+                      <Feather name="home" size={13} color="rgba(255,255,255,0.5)" />
                       <Text style={[
                         styles.clinicBtnText,
                         selectedConfig.clinic === key && styles.clinicBtnTextActive,
@@ -348,7 +348,7 @@ export default function ScheduleScreen() {
           {/* 30-day summary */}
           <View style={styles.glassCard}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionDot}>📊</Text>
+              <Feather name="bar-chart-2" size={14} color={TEAL_LT} />
               <Text style={styles.sectionTitle}>30-Day Summary</Text>
             </View>
             <View style={styles.summaryGrid}>

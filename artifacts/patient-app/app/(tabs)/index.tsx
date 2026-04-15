@@ -175,7 +175,7 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
   if (!token) {
     return (
       <View style={[styles.liveQueueCard, { alignItems: "center", justifyContent: "center", paddingVertical: 28 }]}>
-        <Text style={{ fontSize: 28, marginBottom: 8 }}>🏥</Text>
+        <Feather name="activity" size={28} color="rgba(255,255,255,0.4)" style={{ marginBottom: 8 }} />
         <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: "600" }}>No active token</Text>
         <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 4 }}>Book a token to track your queue</Text>
       </View>
@@ -318,7 +318,7 @@ export default function HomeScreen() {
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <View>
           <Text style={styles.greeting}>{greeting},</Text>
-          <Text style={styles.name}>Hello, {firstName} 👋</Text>
+          <Text style={styles.name}>Hello, {firstName}</Text>
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.bellBtn} onPress={() => router.push("/notifications")}>

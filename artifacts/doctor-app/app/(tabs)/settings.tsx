@@ -759,7 +759,7 @@ export default function SettingsScreen() {
                       style={{ width: '100%', height: '100%', borderRadius: 26 }}
                       resizeMode="cover"
                     />
-                  : <Text style={{ fontSize: 36, color: '#FFF' }}>⚕</Text>}
+                  : <Feather name="activity" size={28} color="#FFF" />}
               </View>
               <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
                 {profilePhotoLoading
@@ -1450,7 +1450,7 @@ export default function SettingsScreen() {
             {linkedAccount ? (
               <View style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
                 <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(45,212,191,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 18 }}>{accountNumber ? '🏦' : '💳'}</Text>
+                  <Feather name={accountNumber ? 'database' : 'credit-card'} size={18} color={TEAL_LT} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>{linkedAccount}</Text>
@@ -1577,7 +1577,7 @@ export default function SettingsScreen() {
                 style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
               >
                 <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
-                  <Text style={{ fontSize: 18 }}>💬</Text>
+                  <Feather name="message-circle" size={18} color="#4ADE80" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.helpContactLabel}>WhatsApp Support</Text>
@@ -1640,10 +1640,10 @@ export default function SettingsScreen() {
   // ── Send Feedback ────────────────────────────────────────────────────────
   if (section === 'feedback') {
     const categories = [
-      { label: '🐛  Bug Report', value: 'Bug Report' },
-      { label: '✨  Feature Request', value: 'Feature Request' },
-      { label: '💬  General', value: 'General' },
-      { label: '🎉  Compliment', value: 'Compliment' },
+      { label: 'Bug Report', value: 'Bug Report' },
+      { label: 'Feature Request', value: 'Feature Request' },
+      { label: 'General', value: 'General' },
+      { label: 'Compliment', value: 'Compliment' },
     ];
     const submitFeedback = async () => {
       if (!feedbackText.trim()) return;
@@ -1671,7 +1671,7 @@ export default function SettingsScreen() {
 
             {feedbackSubmitted ? (
               <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
-                <Text style={{ fontSize: 48, marginBottom: 16 }}>🎉</Text>
+                <Feather name="check-circle" size={48} color={TEAL_LT} style={{ marginBottom: 16 }} />
                 <Text style={{ fontSize: 20, fontWeight: '900', color: TEAL_LT, marginBottom: 10 }}>Thank you!</Text>
                 <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 22 }}>
                   Your feedback has been received. We read every submission and use them to make LINESETU better for doctors and patients.
@@ -1731,7 +1731,10 @@ export default function SettingsScreen() {
                 >
                   {feedbackSubmitting
                     ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={styles.saveBtnText}>📤  Submit Feedback</Text>}
+                    : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Feather name="send" size={13} color="#FFF" />
+                        <Text style={styles.saveBtnText}>Submit Feedback</Text>
+                      </View>}
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: 12, fontWeight: '500', lineHeight: 17 }}>
@@ -1860,7 +1863,7 @@ export default function SettingsScreen() {
                   <Image key={profilePhotoUrl} source={{ uri: profilePhotoUrl }} style={styles.avatarPlaceholder} resizeMode="cover" />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarEmoji}>⚕</Text>
+                    <Feather name="activity" size={28} color="rgba(255,255,255,0.5)" />
                   </View>
                 )}
               </View>
@@ -2087,7 +2090,7 @@ export default function SettingsScreen() {
               {/* Header */}
               <View style={styles.logoutIconRow}>
                 <View style={[styles.logoutIcon, { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }]}>
-                  <Text style={{ fontSize: 20 }}>🗑</Text>
+                  <Feather name="trash-2" size={20} color="#F87171" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.logoutTitle, { color: '#F87171' }]}>Delete Account</Text>

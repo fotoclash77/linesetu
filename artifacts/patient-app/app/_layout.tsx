@@ -5,6 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { Feather } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -84,6 +85,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    ...Feather.font,
   });
   const forceUpdate = useForceUpdate();
 
@@ -93,7 +95,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (Platform.OS !== "web" && !fontsLoaded && !fontError) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
