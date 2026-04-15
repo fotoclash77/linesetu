@@ -6,7 +6,9 @@ import { pct } from "@/constants/design";
 import { AnimatedRing } from "@/components/AnimatedRing";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
   Platform,
@@ -338,22 +340,27 @@ export default function HomeScreen() {
   }));
   const doctors: DoctorItem[] = apiDoctors;
 
+  const [fbSpecList, setFbSpecList] = useState<string[]>([]);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "appConfig", "specializations"), (snap) => {
+      const data = snap.data();
+      if (data && Array.isArray(data.list)) {
+        setFbSpecList(data.list.filter((s: string) => s !== "Other"));
+      }
+    });
+    return unsub;
+  }, []);
+
   const specialties = useMemo(() => {
-    const seen = new Set<string>();
-    const result: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; color: string }[] = [];
-    for (const d of apiDoctors) {
-      const s = d.specialty?.trim();
-      if (!s) continue;
+    const list = fbSpecList.length > 0 ? fbSpecList : [];
+    return list.map((s, i) => {
       const key = s.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
       const meta = SPEC_META[key];
-      const color = meta?.color ?? SPEC_COLOR_POOL[result.length % SPEC_COLOR_POOL.length];
-      const icon = meta?.icon ?? ("plus-circle" as const);
-      result.push({ icon, label: s, color });
-    }
-    return result;
-  }, [apiDoctors]);
+      const color = meta?.color ?? SPEC_COLOR_POOL[i % SPEC_COLOR_POOL.length];
+      const icon: React.ComponentProps<typeof Feather>["name"] = meta?.icon ?? "plus-circle";
+      return { icon, label: s, color };
+    });
+  }, [fbSpecList]);
 
   const VALID_STATUSES = new Set<TokenItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
   const activeTokens: TokenItem[] = (tokenData?.tokens ?? [])
