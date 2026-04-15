@@ -64,6 +64,7 @@ function formatWait(mins: number) {
 function DoctorCard({ doc }: { doc: DoctorItem }) {
   const { accent } = doc;
   const available = doc.isAvailable !== false;
+  const showWait = !!doc.wait;
   const navToDoctor = () => router.push({
     pathname: `/doctor/${doc.id}` as any,
     params: { hint_name: doc.name, hint_photo: doc.photo, hint_spec: doc.specialty, hint_clinic: doc.clinicName },
@@ -114,18 +115,18 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
         ))}
       </View>
 
-      {available ? (
+      {available && showWait ? (
         <View style={styles.liveRow}>
           <View style={styles.liveDot} />
           <Text style={styles.liveTxt}>Token #{doc.token} Live</Text>
-          <Text style={styles.waitSmall}>~{doc.wait}</Text>
+          <Text style={styles.waitSmall}>{doc.wait}</Text>
         </View>
-      ) : (
+      ) : !available ? (
         <View style={styles.unavailRow}>
           <Feather name="slash" size={9} color="#EF4444" />
           <Text style={styles.unavailTxt}>Not accepting patients</Text>
         </View>
-      )}
+      ) : null}
 
       <Pressable
         disabled={!available}
