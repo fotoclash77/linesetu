@@ -477,11 +477,12 @@ router.post("/tokens", async (req, res) => {
     }
 
     if (patientId && source !== "walkin") {
+      const drName = doctorData?.name ? `Dr. ${doctorData.name}` : "your doctor";
       try {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           patientId, type: "token_confirmed",
           title: "Booking Confirmed!",
-          body: `Your Token ${nextTokenLabel} has been booked for ${tokenDate} (${shift} shift).`,
+          body: `Your Token ${nextTokenLabel} with ${drName} has been booked for ${tokenDate} (${shift} shift).`,
           tokenId: tokenRef.id, tokenNumber: nextTokenNumber,
           read: false, createdAt: Timestamp.now(),
         });
@@ -753,12 +754,14 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
     const txRef       = doc(db, Collections.TRANSACTIONS, tokenId);
     const doctorRef   = doc(db, Collections.DOCTORS, token.doctorId);
     const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
-    const [txSnap, earningsSnap] = await Promise.all([
+    const [txSnap, earningsSnap, doctorSnapR] = await Promise.all([
       getDoc(txRef),
       getDoc(earningsRef),
+      getDoc(doctorRef),
     ]);
-    const storedEarns = txSnap.exists() ? (txSnap.data()?.amount ?? 0) : 0;
-    const isE         = token.type === "emergency";
+    const storedEarns    = txSnap.exists() ? (txSnap.data()?.amount ?? 0) : 0;
+    const isE            = token.type === "emergency";
+    const refundDrName   = doctorSnapR.exists() ? `Dr. ${(doctorSnapR.data() as any)?.name ?? ""}`.trim() : "your doctor";
 
     // Update token + transaction + reverse earnings in one batch
     const batch = writeBatch(db);
@@ -799,7 +802,7 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
           patientId: token.patientId,
           type: "token_refunded",
           title: "Token Cancelled & Refunded",
-          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} has been cancelled by the doctor. Your payment has been refunded and will reflect within 5-7 business days.`,
+          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} with ${refundDrName} has been cancelled. Your payment has been refunded and will reflect within 5-7 business days.`,
           tokenId,
           tokenNumber: token.tokenNumber,
           read: false,
@@ -831,15 +834,16 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
     const queueRef    = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
 
-    // Read transaction + earnings docs before batch (needed for conditional reversal)
+    // Read transaction + earnings + doctor docs before batch (needed for conditional reversal + name)
     const txRef       = doc(db, Collections.TRANSACTIONS, tokenId);
     const doctorRef   = doc(db, Collections.DOCTORS, token.doctorId);
     const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
-    const [txSnap, earningsSnap] = isOnlineToken
-      ? await Promise.all([getDoc(txRef), getDoc(earningsRef)])
-      : [null, null];
-    const storedEarns = txSnap?.exists() ? (txSnap.data()?.amount ?? 0) : 0;
-    const isE = token.type === "emergency";
+    const [txSnap, earningsSnap, cancelDoctorSnap] = isOnlineToken
+      ? await Promise.all([getDoc(txRef), getDoc(earningsRef), getDoc(doctorRef)])
+      : [null, null, await getDoc(doctorRef)];
+    const storedEarns  = txSnap?.exists() ? (txSnap.data()?.amount ?? 0) : 0;
+    const isE          = token.type === "emergency";
+    const cancelDrName = cancelDoctorSnap?.exists() ? `Dr. ${(cancelDoctorSnap.data() as any)?.name ?? ""}`.trim() : "your doctor";
 
     const batch = writeBatch(db);
     batch.update(tokenRef, { status: "cancelled", paymentStatus: "refunded" });
@@ -885,7 +889,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           patientId: token.patientId, type: "token_cancelled",
           title: "Booking Cancelled",
-          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} has been cancelled and your payment will be refunded.`,
+          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} with ${cancelDrName} has been cancelled and your payment will be refunded.`,
           tokenId, tokenNumber: token.tokenNumber,
           read: false, createdAt: Timestamp.now(),
         });
