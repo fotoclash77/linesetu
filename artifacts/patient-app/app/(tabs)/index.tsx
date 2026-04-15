@@ -7,7 +7,7 @@ import { AnimatedRing } from "@/components/AnimatedRing";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions, getGetPatientTokensQueryOptions } from "@workspace/api-client-react";
 import React, { useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
@@ -322,6 +322,20 @@ export default function HomeScreen() {
     enabled: !!patient?.id,
   });
 
+  // Real-time doctor photo map from Firebase
+  const [fbPhotoMap, setFbPhotoMap] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "doctors"), (snap) => {
+      const map = new Map<string, string>();
+      snap.forEach((d) => {
+        const photo = d.data()?.profilePhoto;
+        if (photo) map.set(d.id, photo);
+      });
+      setFbPhotoMap(map);
+    });
+    return () => unsub();
+  }, []);
+
   const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
     id: d.id,
     name: d.name,
@@ -335,7 +349,7 @@ export default function HomeScreen() {
     token: 1,
     exp: d.experience != null ? `${d.experience}` : "",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
-    photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
+    photo: fbPhotoMap.get(d.id) ?? d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
   const doctors: DoctorItem[] = apiDoctors;

@@ -4,7 +4,9 @@ import { router } from "expo-router";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import { useQuery } from "@tanstack/react-query";
 import { getGetPatientTokensQueryOptions, getListDoctorsQueryOptions } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
   Modal,
@@ -309,6 +311,20 @@ export default function BookingsScreen() {
     return m;
   }, [doctorsData]);
 
+  // Real-time doctor photo map from Firebase
+  const [fbPhotoMap, setFbPhotoMap] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "doctors"), (snap) => {
+      const map = new Map<string, string>();
+      snap.forEach((d) => {
+        const photo = d.data()?.profilePhoto;
+        if (photo) map.set(d.id, photo);
+      });
+      setFbPhotoMap(map);
+    });
+    return () => unsub();
+  }, []);
+
   const apiTokens = data?.tokens ?? [];
 
   const BOOKING_STATUSES = new Set<BookingItem["status"]>(["waiting", "in_consult", "done", "cancelled", "upcoming"]);
@@ -322,7 +338,7 @@ export default function BookingsScreen() {
         ? (t.status as BookingItem["status"])
         : "waiting" as const,
       doctor: doc?.name ?? t.doctorName ?? "Doctor",
-      doctorPhoto: doc?.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(doc?.name ?? "D")}&background=4F46E5&color=fff`,
+      doctorPhoto: fbPhotoMap.get(t.doctorId) ?? doc?.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(doc?.name ?? "D")}&background=4F46E5&color=fff`,
       specialty: doc?.specialization ?? "General",
       clinicName: doc?.clinicName ?? doc?.clinics?.[0]?.name ?? "Clinic",
       clinicLoc: doc?.clinicAddress ?? doc?.clinics?.[0]?.address ?? "",
