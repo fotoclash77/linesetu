@@ -5,11 +5,13 @@ import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getListDoctorsQueryOptions } from "@workspace/api-client-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
+  Animated,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -39,6 +41,21 @@ interface DoctorItem {
   isAvailable?: boolean;
 }
 
+
+const sortStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: "#141826", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: 40, paddingTop: 12, maxHeight: "80%" },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.15)", alignSelf: "center", marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: "800", color: "#FFF", letterSpacing: -0.3 },
+  subtitle: { fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: "500", marginTop: 2 },
+  option: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  optionActive: { backgroundColor: "rgba(99,102,241,0.18)", borderColor: "rgba(99,102,241,0.5)" },
+  optionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "rgba(99,102,241,0.12)", alignItems: "center", justifyContent: "center" },
+  optionIconActive: { backgroundColor: "#4F46E5" },
+  optionLabel: { fontSize: 14, fontWeight: "700", color: "rgba(255,255,255,0.7)" },
+  optionDesc: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 },
+  checkCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center" },
+});
 
 function DoctorListCard({ doc }: { doc: DoctorItem }) {
   const available = doc.isAvailable !== false;
@@ -120,6 +137,20 @@ export default function FindDoctorsScreen() {
   const [search, setSearch] = useState("");
   const [selectedSpec, setSelectedSpec] = useState(params.specialty ?? "All");
 
+  type SortKey = "default" | "name_az" | "name_za" | "wait" | "experience" | "patients" | "available";
+  const SORT_OPTIONS: { key: SortKey; label: string; icon: React.ComponentProps<typeof Feather>["name"]; desc: string }[] = [
+    { key: "default", label: "Recommended", icon: "trending-up", desc: "Best match for you" },
+    { key: "name_az", label: "Name (A → Z)", icon: "arrow-down", desc: "Alphabetical order" },
+    { key: "name_za", label: "Name (Z → A)", icon: "arrow-up", desc: "Reverse alphabetical" },
+    { key: "wait", label: "Shortest Wait", icon: "clock", desc: "Least wait time first" },
+    { key: "experience", label: "Most Experienced", icon: "award", desc: "Years of experience" },
+    { key: "patients", label: "Most Patients", icon: "users", desc: "Patient count" },
+    { key: "available", label: "Available First", icon: "check-circle", desc: "Online doctors first" },
+  ];
+  const [sortKey, setSortKey] = useState<SortKey>("default");
+  const [showSortModal, setShowSortModal] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
 
   const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
@@ -161,7 +192,7 @@ export default function FindDoctorsScreen() {
   }, [fbSpecList]);
 
   const filtered = useMemo(() => {
-    return allDoctors.filter((d) => {
+    const list = allDoctors.filter((d) => {
       const matchSpec = selectedSpec === "All" || d.specialty.toLowerCase() === selectedSpec.toLowerCase();
       const matchSearch = !search.trim() ||
         d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -169,7 +200,45 @@ export default function FindDoctorsScreen() {
         d.clinicName.toLowerCase().includes(search.toLowerCase());
       return matchSpec && matchSearch;
     });
-  }, [allDoctors, selectedSpec, search]);
+
+    const parseNum = (v: string) => {
+      const n = parseFloat(v.replace(/[^0-9.]/g, ""));
+      return isNaN(n) ? 0 : n;
+    };
+
+    switch (sortKey) {
+      case "name_az":
+        return [...list].sort((a, b) => a.name.localeCompare(b.name));
+      case "name_za":
+        return [...list].sort((a, b) => b.name.localeCompare(a.name));
+      case "wait":
+        return [...list].sort((a, b) => parseNum(a.wait) - parseNum(b.wait));
+      case "experience":
+        return [...list].sort((a, b) => parseNum(b.exp) - parseNum(a.exp));
+      case "patients":
+        return [...list].sort((a, b) => parseNum(b.patients) - parseNum(a.patients));
+      case "available":
+        return [...list].sort((a, b) => (b.isAvailable ? 1 : 0) - (a.isAvailable ? 1 : 0));
+      default:
+        return list;
+    }
+  }, [allDoctors, selectedSpec, search, sortKey]);
+
+  const currentSortOption = SORT_OPTIONS.find(o => o.key === sortKey) ?? SORT_OPTIONS[0];
+
+  const openSort = () => {
+    setShowSortModal(true);
+    Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+  const closeSort = () => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      setShowSortModal(false);
+    });
+  };
+  const pickSort = (key: SortKey) => {
+    setSortKey(key);
+    closeSort();
+  };
 
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
@@ -185,8 +254,8 @@ export default function FindDoctorsScreen() {
           <Text style={styles.headerTitle}>Find Doctors</Text>
           <Text style={styles.headerSub}>{filtered.length} available near you</Text>
         </View>
-        <Pressable style={styles.filterBtn}>
-          <Feather name="sliders" size={17} color="#818CF8" />
+        <Pressable style={[styles.filterBtn, sortKey !== "default" && { borderColor: "rgba(99,102,241,0.7)", backgroundColor: "rgba(99,102,241,0.22)" }]} onPress={openSort}>
+          <Feather name="sliders" size={17} color={sortKey !== "default" ? "#A5B4FC" : "#818CF8"} />
         </Pressable>
       </View>
 
@@ -249,12 +318,11 @@ export default function FindDoctorsScreen() {
           <Text style={styles.resultsTitle}>
             {search ? "Search Results" : "Recommended for You"}
           </Text>
-          {!search && (
-            <View style={styles.sortRow}>
-              <Feather name="trending-up" size={11} color="#818CF8" />
-              <Text style={styles.sortTxt}>Top Rated</Text>
-            </View>
-          )}
+          <Pressable style={styles.sortRow} onPress={openSort}>
+            <Feather name={currentSortOption.icon} size={11} color="#818CF8" />
+            <Text style={styles.sortTxt}>{currentSortOption.label}</Text>
+            <Feather name="chevron-down" size={11} color="rgba(129,140,248,0.5)" />
+          </Pressable>
         </View>
 
         {isLoading ? (
@@ -274,6 +342,45 @@ export default function FindDoctorsScreen() {
           filtered.map((doc) => <DoctorListCard key={doc.id} doc={doc} />)
         )}
       </ScrollView>
+
+      {showSortModal && (
+        <Modal transparent visible animationType="none" onRequestClose={closeSort}>
+          <Pressable style={sortStyles.overlay} onPress={closeSort}>
+            <Animated.View style={[sortStyles.sheet, { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]}>
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View style={sortStyles.handle} />
+                <Text style={sortStyles.title}>Sort Doctors</Text>
+                <Text style={sortStyles.subtitle}>Choose how to order the list</Text>
+                <View style={{ gap: 6, marginTop: 16 }}>
+                  {SORT_OPTIONS.map(opt => {
+                    const isActive = sortKey === opt.key;
+                    return (
+                      <Pressable
+                        key={opt.key}
+                        style={[sortStyles.option, isActive && sortStyles.optionActive]}
+                        onPress={() => pickSort(opt.key)}
+                      >
+                        <View style={[sortStyles.optionIcon, isActive && sortStyles.optionIconActive]}>
+                          <Feather name={opt.icon} size={15} color={isActive ? "#FFF" : "#818CF8"} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[sortStyles.optionLabel, isActive && { color: "#FFF" }]}>{opt.label}</Text>
+                          <Text style={sortStyles.optionDesc}>{opt.desc}</Text>
+                        </View>
+                        {isActive && (
+                          <View style={sortStyles.checkCircle}>
+                            <Feather name="check" size={12} color="#FFF" />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Pressable>
+            </Animated.View>
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 }
