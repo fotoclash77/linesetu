@@ -165,12 +165,10 @@ export default function BookingScreen() {
   const [queueLoading, setQueueLoading] = useState(false);
 
   // Doctor data from Firebase
-  const isDemoId = !doctorId || doctorId.startsWith("demo");
-
   // Patient's own existing tokens for duplicate detection
   const [myTokens, setMyTokens] = useState<any[]>([]);
   useEffect(() => {
-    if (!patient?.id || isDemoId) return;
+    if (!patient?.id || !doctorId) return;
     fetch(`${BASE}/api/patients/${patient.id}/tokens`)
       .then(r => r.json())
       .then(d => setMyTokens(d.tokens ?? []))
@@ -179,37 +177,40 @@ export default function BookingScreen() {
 
   // For selected date + selected member, which shifts are already booked?
   const alreadyBookedShifts: Record<string, boolean> = {};
-  if (!isDemoId) {
-    for (const tok of myTokens) {
-      if (tok.doctorId !== doctorId || tok.date !== selectedIso) continue;
-      if (tok.status !== "waiting" && tok.status !== "in_consult") continue;
-      const tokMember = tok.forMemberId ?? "self";
-      if (tokMember !== selectedMember.id) continue;
-      alreadyBookedShifts[tok.shift] = true;
-    }
+  for (const tok of myTokens) {
+    if (tok.doctorId !== doctorId || tok.date !== selectedIso) continue;
+    if (tok.status !== "waiting" && tok.status !== "in_consult") continue;
+    const tokMember = tok.forMemberId ?? "self";
+    if (tokMember !== selectedMember.id) continue;
+    alreadyBookedShifts[tok.shift] = true;
   }
 
   // Real-time Firebase listener for doctor data — zero delay
   const [doctorData, setDoctorData] = useState<any>(null);
   useEffect(() => {
-    if (isDemoId || !doctorId) return;
+    if (!doctorId) return;
     const ref = doc(db, "doctors", doctorId);
     const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) setDoctorData({ id: snap.id, ...snap.data() });
     }, () => {});
     return () => unsub();
-  }, [doctorId, isDemoId]);
+  }, [doctorId]);
 
-  const docName  = isDemoId ? "Dr. Ananya Sharma" : (doctorData?.name ?? hint_name ?? "Doctor");
-  const docSpec  = isDemoId ? "Cardiologist"      : (doctorData?.specialization ?? hint_spec ?? "");
+  const docName  = doctorData?.name ?? hint_name ?? "Doctor";
+  const docSpec  = doctorData?.specialization ?? hint_spec ?? "";
   const docPhoto = doctorData?.profilePhoto ?? hint_photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(docName)}&background=4F46E5&color=fff`;
-  const docAvail = isDemoId ? true : ((doctorData as any)?.isAvailable !== false);
+  const docAvail = (doctorData as any)?.isAvailable !== false;
 
   const calendar: Record<string, any> = (doctorData as any)?.calendar ?? {};
+  const feeLabels = {
+    normal: (doctorData as any)?.consultFeeLabel ?? "Normal E-Token Fee",
+    emergency: (doctorData as any)?.emergencyFeeLabel ?? "Emergency E-Token Fee",
+    platform: (doctorData as any)?.platformFeeLabel ?? "Platform Fee",
+  };
 
   // Live queue fetch with SSE + polling fallback for the selected date
   useEffect(() => {
-    if (isDemoId || !doctorId) {
+    if (!doctorId) {
       setQueueLoading(false);
       return;
     }
@@ -252,11 +253,11 @@ export default function BookingScreen() {
     poll();
     const iv = setInterval(poll, 10_000);
     return () => { active = false; clearInterval(iv); };
-  }, [doctorId, selectedIso, isDemoId]);
+  }, [doctorId, selectedIso]);
 
   // Derive shift cards for selected date from calendar
   const dayCfg = calendar[selectedIso] ?? null;
-  const shiftCards = isDemoId ? [] : buildShiftCards(dayCfg);
+  const shiftCards = buildShiftCards(dayCfg);
 
   const selectedShift = shiftCards.find(s => s.id === selectedShiftId) ?? null;
   const canBook = selectedShift !== null && !alreadyBookedShifts[selectedShiftId ?? ""];
@@ -303,7 +304,7 @@ export default function BookingScreen() {
   // Show spinner only when there's no hint data AND Firebase hasn't loaded yet
   // (direct URL access without navigation context)
   const hasHints = !!hint_name;
-  if (!doctorId || (!isDemoId && !doctorData && !hasHints)) {
+  if (!doctorId || (!doctorData && !hasHints)) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#67E8F9" />
@@ -316,7 +317,7 @@ export default function BookingScreen() {
     router.push({
       pathname: "/payment",
       params: {
-        doctorId: doctorId ?? "demo1",
+        doctorId: doctorId ?? "",
         doctorName: docName,
         doctorPhoto: docPhoto,
         doctorSpec: docSpec,
@@ -399,12 +400,12 @@ export default function BookingScreen() {
           <View style={styles.feePreviewCard}>
             <View style={styles.feePreviewRow}>
               <Feather name="monitor" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
-              <Text style={styles.feePreviewLbl}>E-Token Fee</Text>
+              <Text style={styles.feePreviewLbl}>{feeLabels.normal}</Text>
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#67E8F9" }]}>₹{eAppFee}</Text>
             </View>
             <View style={styles.feePreviewRow}>
               <Feather name="shield" size={12} color="#818CF8" />
-              <Text style={styles.feePreviewLbl}>Platform Fee</Text>
+              <Text style={styles.feePreviewLbl}>{feeLabels.platform}</Text>
               <Text style={[styles.feePreviewVal, { color: "#818CF8" }]}>₹{platformFee}</Text>
             </View>
             <View style={[styles.feePreviewRow, { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)", marginTop: 6, paddingTop: 8 }]}>
