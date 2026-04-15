@@ -539,9 +539,9 @@ export default function PaymentScreen() {
 
             {/* Token + Patient Row */}
             <View style={styles.tokenPatientRow}>
-              <View style={[styles.tokenBox, isEmergency && { borderColor: "rgba(239,68,68,0.5)", backgroundColor: "rgba(239,68,68,0.15)" }]}>
-                <Feather name="tag" size={12} color={isEmergency ? "#EF4444" : "#A5B4FC"} />
-                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#A5B4FC" }]}>{displayTokenNum}</Text>
+              <View style={[styles.tokenBox, isEmergency ? { borderColor: "rgba(239,68,68,0.5)", backgroundColor: "rgba(239,68,68,0.15)" } : { borderColor: "rgba(245,158,11,0.4)", backgroundColor: "rgba(245,158,11,0.12)" }]}>
+                <Feather name="tag" size={12} color={isEmergency ? "#EF4444" : "#F59E0B"} />
+                <Text style={[styles.tokenNum, { color: isEmergency ? "#EF4444" : "#F59E0B" }]}>{displayTokenNum}</Text>
               </View>
               <View style={styles.patientBox}>
                 <Feather name="user" size={12} color="rgba(255,255,255,0.4)" />
@@ -685,7 +685,7 @@ export default function PaymentScreen() {
                                                   "Booking Confirmed!"}
             </Text>
             {resultModal.tokenNumber && resultModal.type !== "full" && resultModal.type !== "duplicate" && (
-              <Text style={modalStyles.tokenNum}>{isEmergency ? `#E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
+              <Text style={[modalStyles.tokenNum, { color: isEmergency ? "#EF4444" : "#F59E0B" }]}>{isEmergency ? `#E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>
             )}
             <Text style={modalStyles.message}>{resultModal.message}</Text>
             <Pressable style={[modalStyles.btn, {
