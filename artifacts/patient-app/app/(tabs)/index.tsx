@@ -352,7 +352,7 @@ export default function HomeScreen() {
   }, []);
 
   const specialties = useMemo(() => {
-    const list = fbSpecList.length > 0 ? fbSpecList.slice(0, 6) : [];
+    const list = fbSpecList.length > 0 ? fbSpecList.slice(0, 8) : [];
     return list.map((s, i) => {
       const key = s.toLowerCase();
       const meta = SPEC_META[key];
