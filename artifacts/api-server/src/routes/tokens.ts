@@ -79,6 +79,10 @@ async function issueRefund(ctx: RefundContext): Promise<{ refundId: string | nul
 const RESERVATION_TTL_MS = 5 * 60 * 1000;
 const router = Router();
 
+function formatTokenLabel(tokenNumber: number, type?: string) {
+  return type === "emergency" ? `#E${tokenNumber}` : `#${tokenNumber}`;
+}
+
 export function countActiveReservations(pending: Record<string, { expiresAt: any }>, excludePatientId?: string): number {
   const now = Date.now();
   return Object.entries(pending).filter(([pid, r]) => {
@@ -390,6 +394,7 @@ router.post("/tokens", async (req, res) => {
     emitDoctorTokenChange(doctorId);
 
     const nextTokenNumber = resultTokenData.tokenNumber;
+    const nextTokenLabel = formatTokenLabel(nextTokenNumber, resultTokenData.type);
 
     // Create transaction record for online paid bookings (not walk-in)
     if (!isWalkinSource && paymentId && resultTokenData) {
@@ -419,7 +424,7 @@ router.post("/tokens", async (req, res) => {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           doctorId, type: "token_booked",
           title: "New E-Token Booked",
-          body: `${patientName} booked Token #${nextTokenNumber} for ${tokenDate} (${shift} shift).`,
+          body: `${patientName} booked Token ${nextTokenLabel} for ${tokenDate} (${shift} shift).`,
           tokenId: tokenRef.id, tokenNumber: nextTokenNumber,
           patientName, read: false, createdAt: Timestamp.now(),
         });
@@ -431,7 +436,7 @@ router.post("/tokens", async (req, res) => {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           patientId, type: "token_confirmed",
           title: "Booking Confirmed!",
-          body: `Your Token #${nextTokenNumber} has been booked for ${tokenDate} (${shift} shift).`,
+          body: `Your Token ${nextTokenLabel} has been booked for ${tokenDate} (${shift} shift).`,
           tokenId: tokenRef.id, tokenNumber: nextTokenNumber,
           read: false, createdAt: Timestamp.now(),
         });
@@ -753,7 +758,7 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
           patientId: token.patientId,
           type: "token_refunded",
           title: "Token Cancelled & Refunded",
-          body: `Your Token #${token.tokenNumber} has been cancelled by the doctor. Your payment has been refunded and will reflect within 5-7 business days.`,
+          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} has been cancelled by the doctor. Your payment has been refunded and will reflect within 5-7 business days.`,
           tokenId,
           tokenNumber: token.tokenNumber,
           read: false,
@@ -789,7 +794,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
       await addDoc(collection(db, Collections.NOTIFICATIONS), {
         doctorId: token.doctorId, type: "token_cancelled",
         title: "Token Cancelled",
-        body: `${token.patientName} (Token #${token.tokenNumber}) cancelled their appointment.`,
+        body: `${token.patientName} (${formatTokenLabel(token.tokenNumber, token.type)}) cancelled their appointment.`,
         tokenId: req.params.tokenId, tokenNumber: token.tokenNumber,
         patientName: token.patientName, read: false, createdAt: Timestamp.now(),
       });
@@ -799,7 +804,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
         await addDoc(collection(db, Collections.NOTIFICATIONS), {
           patientId: token.patientId, type: "token_cancelled",
           title: "Booking Cancelled",
-          body: `Your Token #${token.tokenNumber} has been cancelled and your payment will be refunded.`,
+          body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} has been cancelled and your payment will be refunded.`,
           tokenId: req.params.tokenId, tokenNumber: token.tokenNumber,
           read: false, createdAt: Timestamp.now(),
         });
