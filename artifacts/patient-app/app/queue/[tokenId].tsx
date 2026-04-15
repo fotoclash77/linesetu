@@ -105,14 +105,17 @@ export default function LiveQueueScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 16 + 64;
 
-  const { data: token, isLoading: tokenLoading } = useQuery({
-    queryKey: ["token", tokenId],
-    queryFn: () => fetchToken(tokenId!),
-    enabled: !!tokenId,
+  const validTokenId = tokenId && tokenId !== "demo" ? tokenId : undefined;
+
+  const { data: token, isLoading: tokenLoading, isError: tokenError } = useQuery({
+    queryKey: ["token", validTokenId],
+    queryFn: () => fetchToken(validTokenId!),
+    enabled: !!validTokenId,
     staleTime: 60_000,
+    retry: 1,
   });
 
-  const { pos, loading: posLoading } = useRealtimePosition(token?.doctorId, tokenId);
+  const { pos, loading: posLoading } = useRealtimePosition(token?.doctorId, validTokenId);
 
   const { data: doctor } = useQuery({
     queryKey: ["doctor", token?.doctorId],
@@ -210,7 +213,22 @@ export default function LiveQueueScreen() {
   const ringColor = isNear || isDone ? "#F59E0B" : "#4F46E5";
   const ringBase  = isNear ? "rgba(245,158,11,0.6)" : isDone ? "rgba(34,197,94,0.5)" : "rgba(99,102,241,0.5)";
 
-  // ── Loading state ─────────────────────────────────────────────
+  if (!validTokenId || tokenError || (!tokenLoading && !token)) {
+    return (
+      <View style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
+        <Feather name="inbox" size={48} color="rgba(255,255,255,0.15)" />
+        <Text style={{ color: "#FFF", marginTop: 16, fontSize: 16, fontWeight: "700" }}>No Active Queue</Text>
+        <Text style={{ color: "rgba(255,255,255,0.4)", marginTop: 6, fontSize: 13, textAlign: "center", paddingHorizontal: 40 }}>You don't have an active token right now. Book a token to track your queue here.</Text>
+        <Pressable
+          style={{ marginTop: 20, backgroundColor: "#4F46E5", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 }}
+          onPress={() => router.back()}
+        >
+          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (tokenLoading || posLoading) {
     return (
       <View style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
