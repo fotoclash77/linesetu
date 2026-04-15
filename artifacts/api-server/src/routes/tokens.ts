@@ -727,6 +727,7 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
     // Update token + transaction records in one batch
     const batch = writeBatch(db);
     batch.update(tokenRef, {
+      status: "cancelled",
       paymentStatus: "refunded",
       refundId: refundId ?? "",
       refundedAt: Timestamp.now(),
@@ -742,6 +743,22 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
     });
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
+
+    // Notify the patient in real-time
+    if (token.patientId) {
+      try {
+        await addDoc(collection(db, Collections.NOTIFICATIONS), {
+          patientId: token.patientId,
+          type: "token_refunded",
+          title: "Token Cancelled & Refunded",
+          body: `Your Token #${token.tokenNumber} has been cancelled by the doctor. Your payment has been refunded and will reflect within 5-7 business days.`,
+          tokenId,
+          tokenNumber: token.tokenNumber,
+          read: false,
+          createdAt: Timestamp.now(),
+        });
+      } catch (_) {}
+    }
 
     res.json({ id: tokenId, refunded: true, refundId });
   } catch (err: any) {
