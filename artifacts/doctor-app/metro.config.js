@@ -14,7 +14,15 @@ const origEnhanceMiddleware = config.server.enhanceMiddleware;
 config.server.enhanceMiddleware = (middleware, server) => {
   const base = origEnhanceMiddleware ? origEnhanceMiddleware(middleware, server) : middleware;
   return (req, res, next) => {
-    if (req.url === "/" || req.url === `${baseUrl}/` || req.url === `${baseUrl}`) {
+    const isHtml = req.url === "/" || req.url === `${baseUrl}/` || req.url === `${baseUrl}`;
+    if (req.url.startsWith(`${baseUrl}/`)) {
+      req.url = req.url.slice(baseUrl.length);
+      req.originalUrl = req.url;
+    } else if (req.url === baseUrl) {
+      req.url = "/";
+      req.originalUrl = "/";
+    }
+    if (isHtml) {
       const origWrite = res.write.bind(res);
       const origEnd = res.end.bind(res);
       let body = "";
@@ -22,8 +30,12 @@ config.server.enhanceMiddleware = (middleware, server) => {
       res.end = (chunk) => {
         if (chunk) body += chunk.toString();
         body = body.replace(
-          '<head>',
-          `<head><base href="${baseUrl}/">`
+          /src="\/node_modules\//g,
+          `src="${baseUrl}/node_modules/`
+        );
+        body = body.replace(
+          /src='\/node_modules\//g,
+          `src='${baseUrl}/node_modules/`
         );
         res.setHeader("content-length", Buffer.byteLength(body));
         origWrite(body);
