@@ -119,14 +119,19 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
         <View style={styles.liveRow}>
           <View style={styles.liveDot} />
           <Text style={styles.liveTxt}>Token #{doc.token} Live</Text>
-          <Text style={styles.waitSmall}>{doc.wait}</Text>
+          <Text style={styles.waitSmall}>~{doc.wait}</Text>
         </View>
       ) : !available ? (
         <View style={styles.unavailRow}>
           <Feather name="slash" size={9} color="#EF4444" />
           <Text style={styles.unavailTxt}>Not accepting patients</Text>
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.unavailRow}>
+          <Feather name="clock" size={9} color="#F59E0B" />
+          <Text style={styles.unavailTxt}>His live queue is yet not started</Text>
+        </View>
+      )}
 
       <Pressable
         disabled={!available}
