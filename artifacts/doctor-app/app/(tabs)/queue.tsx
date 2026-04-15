@@ -798,8 +798,8 @@ export default function QueueScreen() {
                     : `${waitSorted.length} patients`}
                 </Text>
               </View>
-              {/* Tab bar — equal-width tabs, no scrolling */}
-              <View style={S.tabBar}>
+              {/* Tab bar — horizontal scroll so labels never clip on narrow screens */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.tabBar}>
                 {TABS.map(t => {
                   const active = tab === t.key;
                   return (
@@ -822,7 +822,7 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
             </View>
 
             {/* ── SCROLLABLE WAITING CARDS ───────────── */}
