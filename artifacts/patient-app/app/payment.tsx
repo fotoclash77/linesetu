@@ -118,14 +118,20 @@ export default function PaymentScreen() {
       if (!snap.exists()) return;
       const data = snap.data() as any;
       if (data.profilePhoto || data.photo) setLiveDoctorPhoto(data.profilePhoto || data.photo);
-      if (data.phone) setLivePhone(data.phone);
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
+      let resolvedClinicName = shiftCfg?.clinicName ?? "";
       if (shiftCfg) {
-        if (shiftCfg.clinicName) setLiveClinic(shiftCfg.clinicName);
+        if (resolvedClinicName) setLiveClinic(resolvedClinicName);
         if (shiftCfg.startTime && shiftCfg.endTime)
           setLiveTime(`${shiftCfg.startTime} – ${shiftCfg.endTime}`);
-        if (shiftCfg.clinicPhone) setLivePhone(shiftCfg.clinicPhone);
+      }
+      const clinicsArr = Array.isArray(data.clinics) ? data.clinics : [];
+      const matchedClinic = clinicsArr.find((c: any) => c.name === resolvedClinicName && c.active !== false);
+      if (matchedClinic?.phone) {
+        setLivePhone(matchedClinic.phone);
+      } else if (shiftCfg?.clinicPhone) {
+        setLivePhone(shiftCfg.clinicPhone);
       }
     }, () => {});
     return () => unsub();
