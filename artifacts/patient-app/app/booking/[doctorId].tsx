@@ -476,14 +476,7 @@ export default function BookingScreen() {
             );
           })}
           {!isDemoId && (
-            <View style={calRowStyles.legend}>
-              {[{ color: "#2DD4BF", label: "Both" }, { color: "#FCD34D", label: "Morning" }, { color: "#A5B4FC", label: "Evening" }, { color: "#F87171", label: "Holiday" }].map(item => (
-                <View key={item.label} style={calRowStyles.legendItem}>
-                  <View style={[calRowStyles.legendDot, { backgroundColor: item.color }]} />
-                  <Text style={calRowStyles.legendTxt}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
+          
           )}
         </View>
 
