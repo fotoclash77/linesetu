@@ -1117,32 +1117,36 @@ export default function SettingsScreen() {
                       )}
 
                       {/* Apply Day button */}
-                      <TouchableOpacity
-                        style={styles.applyDayBtn}
-                        onPress={() => {
-                          if (dayMode !== 'holiday') {
-                            const needsMorning = ['morning', 'both'].includes(dayMode);
-                            const needsEvening = ['evening', 'both'].includes(dayMode);
-                            const morningOk = !needsMorning || dayForm.morning.clinicName.trim() !== '';
-                            const eveningOk = !needsEvening || dayForm.evening.clinicName.trim() !== '';
-                            if (!morningOk || !eveningOk) {
-                              Alert.alert(
-                                'Select a Clinic',
-                                `Please select a clinic for the ${!morningOk && !eveningOk ? 'morning and evening shifts' : !morningOk ? 'morning shift' : 'evening shift'} before applying.`,
-                                [{ text: 'OK' }]
-                              );
-                              return;
-                            }
-                          }
-                          setCalendarOverrides(prev => ({ ...prev, [selectedCalDate]: dayForm }));
-                          setSelectedCalDate(null);
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Feather name="check" size={13} color={TEAL_LT} />
-                          <Text style={styles.applyDayBtnTxt}>Apply to {friendlyDate(selectedCalDate)}</Text>
-                        </View>
-                      </TouchableOpacity>
+                      {(() => {
+                        const needsMorning = ['morning', 'both'].includes(dayMode);
+                        const needsEvening = ['evening', 'both'].includes(dayMode);
+                        const morningOk = !needsMorning || dayForm.morning.clinicName.trim() !== '';
+                        const eveningOk = !needsEvening || dayForm.evening.clinicName.trim() !== '';
+                        const canApply   = dayMode === 'holiday' || (morningOk && eveningOk);
+                        return (
+                          <TouchableOpacity
+                            style={[styles.applyDayBtn, !canApply && { opacity: 0.38, borderColor: 'rgba(45,212,191,0.3)' }]}
+                            activeOpacity={canApply ? 0.75 : 1}
+                            onPress={() => {
+                              if (!canApply) {
+                                Alert.alert(
+                                  'Select a Clinic',
+                                  `Please select a clinic for the ${!morningOk && !eveningOk ? 'morning and evening shifts' : !morningOk ? 'morning shift' : 'evening shift'} before applying.`,
+                                  [{ text: 'OK' }]
+                                );
+                                return;
+                              }
+                              setCalendarOverrides(prev => ({ ...prev, [selectedCalDate]: dayForm }));
+                              setSelectedCalDate(null);
+                            }}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                              <Feather name="check" size={13} color={canApply ? TEAL_LT : 'rgba(45,212,191,0.5)'} />
+                              <Text style={[styles.applyDayBtnTxt, !canApply && { color: 'rgba(45,212,191,0.5)' }]}>Apply to {friendlyDate(selectedCalDate)}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })()}
                     </View>
                   )}
 
