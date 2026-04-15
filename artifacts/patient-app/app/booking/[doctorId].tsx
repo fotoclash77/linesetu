@@ -400,7 +400,7 @@ export default function BookingScreen() {
           <View style={styles.feePreviewCard}>
             <View style={styles.feePreviewRow}>
               <Feather name="monitor" size={12} color={isEmergency ? "#F87171" : "#67E8F9"} />
-              <Text style={styles.feePreviewLbl}>{feeLabels.normal}</Text>
+              <Text style={styles.feePreviewLbl}>{isEmergency ? feeLabels.emergency : feeLabels.normal}</Text>
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#67E8F9" }]}>₹{eAppFee}</Text>
             </View>
             <View style={styles.feePreviewRow}>
