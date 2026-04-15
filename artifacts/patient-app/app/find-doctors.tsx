@@ -132,10 +132,12 @@ export default function FindDoctorsScreen() {
     clinicName: d.clinicName ?? "Clinic",
     accent: ACCENT_COLORS[i % ACCENT_COLORS.length],
     rating: "4.8",
-    wait: "~15 min",
+    wait: d.estimatedWaitMins != null || d.waitMinutes != null || d.waitMins != null
+      ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
+      : "—",
     token: Math.floor(Math.random() * 50) + 1,
-    exp: "10 yrs",
-    patients: "1K+",
+    exp: d.experience != null ? `${d.experience} yrs` : "—",
+    patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
     photo: d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
