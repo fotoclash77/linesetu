@@ -499,8 +499,8 @@ export default function PaymentScreen() {
               ))}
             </View>
 
-            {/* Slots remaining indicator */}
-            {remaining !== null && maxTokens !== null && (
+            {/* Slots remaining indicator — only show when some tokens are booked or queue is full */}
+            {remaining !== null && maxTokens !== null && (remaining < maxTokens || isFull) && (
               <View style={[styles.slotsBar, isFull && { borderColor: "rgba(239,68,68,0.4)", backgroundColor: "rgba(239,68,68,0.1)" }]}>
                 <View style={styles.slotsBarTrack}>
                   <View style={[styles.slotsBarFill, {
