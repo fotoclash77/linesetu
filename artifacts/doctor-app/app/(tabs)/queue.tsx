@@ -460,7 +460,7 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
   tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void;
   busy: boolean; isManualNext?: boolean; isRefundable?: boolean;
 }) {
-  const isCancelled = tok.displayStatus === 'cancelled' || tok.displayStatus === 'refunded';
+  const isCancelled = tok.status === 'cancelled' || tok.status === 'refunded';
   return (
     <View style={[S.waitCard, isManualNext && { borderColor: 'rgba(252,211,77,0.45)', backgroundColor: 'rgba(180,83,9,0.1)' }]}>
       <TouchableOpacity
