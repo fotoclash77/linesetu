@@ -362,11 +362,17 @@ function StatsBar({ all, maxTokens, clinicName, timeRange }: {
       {all.length > 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' }}>
           <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', flex: 1 }}>Bookings</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#0F766E', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, borderWidth: 1, borderColor: '#2DD4BF' }}>
-            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>Walk-in  {walkin}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(13,148,136,0.22)', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(45,212,191,0.45)' }}>
+            <Feather name="user-plus" size={10} color={TEAL_LT} />
+            <Text style={{ fontSize: 10, fontWeight: '800', color: TEAL_LT }}>Walk-in</Text>
+            <View style={{ width: 1, height: 10, backgroundColor: 'rgba(45,212,191,0.3)' }} />
+            <Text style={{ fontSize: 11, fontWeight: '900', color: '#FFF' }}>{walkin}</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1D4ED8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, borderWidth: 1, borderColor: '#60A5FA' }}>
-            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>E-Token  {etoken}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(99,102,241,0.2)', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(129,140,248,0.45)' }}>
+            <Feather name="smartphone" size={10} color="#A5B4FC" />
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#A5B4FC' }}>E-Token</Text>
+            <View style={{ width: 1, height: 10, backgroundColor: 'rgba(129,140,248,0.3)' }} />
+            <Text style={{ fontSize: 11, fontWeight: '900', color: '#FFF' }}>{etoken}</Text>
           </View>
         </View>
       )}
