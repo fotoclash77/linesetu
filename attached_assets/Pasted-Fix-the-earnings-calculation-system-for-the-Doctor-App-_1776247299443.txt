@@ -1,0 +1,78 @@
+Fix the earnings calculation system for the Doctor App and Patient App related to paid e-token bookings.
+
+ISSUE:
+When a patient books an e-token by paying the fee, the amount is NOT being reflected in the Earnings tab of the doctor. This must be corrected.
+
+REQUIREMENTS:
+
+1. Every successful paid e-token booking MUST be recorded as earnings.
+
+2. Apply platform fee logic:
+
+* Deduct a fixed ₹10 per e-token as "LINESETU Platform Fee"
+* Remaining amount = Doctor’s actual earning
+
+Example:
+If token fee = ₹100
+→ ₹10 = Platform Fee
+→ ₹90 = Doctor Earning
+
+3. Update Earnings Tab:
+
+* Show total earnings (after deduction)
+* Show platform fee deducted (separately or in breakdown)
+* Show per-transaction entries with:
+
+  * Patient name
+  * Token ID / number
+  * Amount paid
+  * Platform fee
+  * Net earning
+
+4. Ensure REAL-TIME UPDATE:
+
+* As soon as payment is successful, earning must reflect instantly
+* No delay or manual refresh dependency
+
+5. Add Transaction Classification:
+   Each transaction must be tagged as:
+
+* Completed (earning counted)
+* Refunded (excluded from earnings)
+* Cancelled / Skipped (if refunded by doctor, deduct from earnings)
+
+6. DOUBLE VALIDATION (VERY IMPORTANT):
+   Implement a 2-step verification system to avoid financial mismatch:
+
+* Step 1: Verify payment success from payment gateway
+* Step 2: Verify token is successfully created in master queue
+
+ONLY after both are successful:
+→ Add entry to earnings
+
+7. Data Integrity Rules:
+
+* Prevent duplicate earnings entries
+* Prevent counting failed or pending payments
+* Ensure idempotency (same transaction should not be counted twice)
+
+8. Add Separate Platform Earnings Tracking:
+
+* Maintain total platform earnings (₹10 per token)
+* Track independently from doctor earnings
+
+9. DO NOT CHANGE:
+
+* Booking flow
+* Payment flow
+* UI structure (only update earnings data display if needed)
+* Any existing working logic outside earnings
+
+10. Ensure:
+
+* Accurate calculations
+* No rounding errors
+* Scalable for future commission changes
+
+GOAL:
+Ensure every paid e-token is correctly reflected in earnings with proper platform fee deduction, with highly reliable, double-checked financial calculations to avoid any conflict or mismatch.
