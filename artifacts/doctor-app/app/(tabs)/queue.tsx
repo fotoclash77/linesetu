@@ -161,7 +161,8 @@ function useMasterQueue(doctorId: string, date: string) {
       if (active) setLoading(false);
     };
     fetchNow();
-    const iv = setInterval(fetchNow, 30_000);
+    // Poll every 5 s so new tokens appear within seconds regardless of SSE proxy behaviour
+    const iv = setInterval(fetchNow, 5_000);
     let es: any = null;
     if (typeof EventSource !== 'undefined') {
       es = new EventSource(`${BASE()}/api/tokens/stream/${doctorId}?date=${date}`);
@@ -651,12 +652,12 @@ export default function QueueScreen() {
   const { data: qData } = useQuery({
     queryKey: ['dq', docId, schedDate, shift],
     queryFn: () => apiFetchQueue(docId, shift, schedDate),
-    enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
+    enabled: !!docId, refetchInterval: 5000, staleTime: 3000, retry: 1,
   });
   const { data: aData, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['da', docId, schedDate],
     queryFn: () => apiFetchAll(docId, schedDate),
-    enabled: !!docId, refetchInterval: 30000, staleTime: 15000, retry: 1,
+    enabled: !!docId, refetchInterval: 5000, staleTime: 3000, retry: 1,
   });
   const { rows: masterRows } = useMasterQueue(docId, schedDate);
 

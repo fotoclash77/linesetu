@@ -250,7 +250,8 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     fetchStats();
-    const iv = setInterval(fetchStats, 30_000);
+    // 10 s so dashboard numbers stay fresh after new bookings
+    const iv = setInterval(fetchStats, 10_000);
     return () => clearInterval(iv);
   }, [fetchStats]);
 
