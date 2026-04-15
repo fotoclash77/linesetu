@@ -217,8 +217,10 @@ export default function EarningsScreen() {
   });
 
   const allTx: any[] = txData?.transactions ?? [];
+  // "earned" = booking recorded (awaiting consultation); "completed" = consultation done
+  const isEarningStatus = (s: string) => s === 'earned' || s === 'completed';
   const filteredTx = txFilter === 'earnings'
-    ? allTx.filter(t => t.status === 'earned')
+    ? allTx.filter(t => isEarningStatus(t.status))
     : txFilter === 'refunds'
       ? allTx.filter(t => t.status === 'refunded')
       : allTx;
@@ -229,8 +231,8 @@ export default function EarningsScreen() {
   }, []);
 
   const txSummary = useMemo(() => {
-    const todayEarned = allTx.filter(t => t.date === todayISO && t.status === 'earned').reduce((s, t) => s + (t.amount ?? 0), 0);
-    const totalEarnedTx = allTx.filter(t => t.status === 'earned').reduce((s, t) => s + (t.amount ?? 0), 0);
+    const todayEarned   = allTx.filter(t => t.date === todayISO && isEarningStatus(t.status)).reduce((s, t) => s + (t.amount ?? 0), 0);
+    const totalEarnedTx = allTx.filter(t => isEarningStatus(t.status)).reduce((s, t) => s + (t.amount ?? 0), 0);
     const totalRefunded = allTx.filter(t => t.status === 'refunded').reduce((s, t) => s + (t.amount ?? 0), 0);
     return { todayEarned, totalEarnedTx, totalRefunded };
   }, [allTx, todayISO]);
@@ -628,16 +630,23 @@ export default function EarningsScreen() {
                   </View>
                 ) : (
                   filteredTx.map((tx: any) => {
-                    const isRefund  = tx.status === 'refunded';
-                    const color     = isRefund ? '#F87171' : '#4ADE80';
-                    const bg        = isRefund ? 'rgba(248,113,113,0.12)' : 'rgba(74,222,128,0.12)';
-                    const border    = isRefund ? 'rgba(248,113,113,0.3)'  : 'rgba(74,222,128,0.3)';
-                    const iconName  = (isRefund ? 'rotate-ccw' : tx.type === 'emergency' ? 'alert-triangle' : 'check') as React.ComponentProps<typeof Feather>['name'];
-                    const tokenLabel = tx.tokenNumber ? `#${String(tx.tokenNumber).padStart(2, '0')}` : '—';
+                    const isRefund    = tx.status === 'refunded';
+                    const isCompleted = tx.status === 'completed';   // consultation done
+                    const color = isRefund ? '#F87171' : isCompleted ? '#4ADE80' : '#FCD34D';
+                    const bg    = isRefund ? 'rgba(248,113,113,0.12)' : isCompleted ? 'rgba(74,222,128,0.12)' : 'rgba(252,211,77,0.1)';
+                    const border = isRefund ? 'rgba(248,113,113,0.3)' : isCompleted ? 'rgba(74,222,128,0.3)' : 'rgba(252,211,77,0.3)';
+                    const iconName = (isRefund ? 'rotate-ccw' : tx.tokenType === 'emergency' ? 'alert-triangle' : isCompleted ? 'check-circle' : 'clock') as React.ComponentProps<typeof Feather>['name'];
+                    const isEmergencyTx = tx.tokenType === 'emergency';
+                    const tokenLabel = tx.tokenNumber
+                      ? (isEmergencyTx ? `#E${String(tx.tokenNumber).padStart(2,'0')}` : `#${String(tx.tokenNumber).padStart(2,'0')}`)
+                      : '—';
                     const dateStr   = tx.date
                       ? new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
                       : '—';
-                    const shiftLabel = tx.shift === 'evening' ? 'Eve' : 'Morn';
+                    const shiftLabel   = tx.shift === 'evening' ? 'Eve' : 'Morn';
+                    const badgeLabel   = isRefund ? 'Refunded' : isCompleted ? 'Completed' : 'Pending';
+                    const platformFee  = tx.platformFee ?? 0;
+                    const patientPaid  = tx.patientPaid ?? ((tx.amount ?? 0) + platformFee);
                     return (
                       <View key={tx.id} style={[styles.payoutRow, { paddingVertical: 12 }]}>
                         <View style={[styles.payoutIcon, { backgroundColor: bg, borderRadius: 12 }]}>
@@ -659,10 +668,15 @@ export default function EarningsScreen() {
                             <Text style={{ color: 'rgba(255,255,255,0.18)', fontSize: 10 }}>·</Text>
                             <Text style={styles.payoutNote}>{shiftLabel}</Text>
                           </View>
+                          {!isRefund && platformFee > 0 && (
+                            <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', marginTop: 2 }}>
+                              Patient paid {fmtFull(patientPaid)} · Platform fee {fmtFull(platformFee)}
+                            </Text>
+                          )}
                         </View>
                         <View style={[styles.payoutStatusBadge, { backgroundColor: bg, borderColor: border }]}>
                           <Text style={[styles.payoutStatusText, { color }]}>
-                            {isRefund ? 'Refunded' : 'Earned'}
+                            {badgeLabel}
                           </Text>
                         </View>
                       </View>

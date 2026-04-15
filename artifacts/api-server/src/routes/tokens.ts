@@ -626,13 +626,17 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     // Earnings are credited at booking time (POST /api/tokens).
     // done-route only marks the token/transaction complete — no balance change here.
     const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
+
+    // Guard: only update tx if it exists (legacy records or rare POST-path failure may lack it)
+    const txSnap = isOnlineToken ? await getDoc(txRef) : null;
+
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
 
-    // Mark transaction as "completed" so the Earnings tab can show the correct status badge.
-    if (isOnlineToken) {
+    // Mark transaction as "completed" so the Earnings tab shows the correct status badge.
+    if (isOnlineToken && txSnap?.exists()) {
       batch.update(txRef, { status: "completed", updatedAt: Timestamp.now() });
     }
 
@@ -807,18 +811,52 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
 // PATCH /api/tokens/:tokenId/cancel
 router.patch("/tokens/:tokenId/cancel", async (req, res) => {
   try {
-    const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
+    const tokenId   = req.params.tokenId;
+    const tokenRef  = doc(db, Collections.TOKENS, tokenId);
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
-    const token    = tokenSnap.data();
-    const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+    const token       = tokenSnap.data();
+    const queueRef    = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+    const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
+
+    // Read transaction + earnings docs before batch (needed for conditional reversal)
+    const txRef       = doc(db, Collections.TRANSACTIONS, tokenId);
+    const doctorRef   = doc(db, Collections.DOCTORS, token.doctorId);
+    const earningsRef = doc(db, Collections.DOCTORS, token.doctorId, "earnings", token.date);
+    const [txSnap, earningsSnap] = isOnlineToken
+      ? await Promise.all([getDoc(txRef), getDoc(earningsRef)])
+      : [null, null];
+    const storedEarns = txSnap?.exists() ? (txSnap.data()?.amount ?? 0) : 0;
+    const isE = token.type === "emergency";
+
     const batch = writeBatch(db);
     batch.update(tokenRef, { status: "cancelled", paymentStatus: "refunded" });
     batch.update(queueRef, {
       totalBooked: increment(-1),
-      waitingTokenIds: arrayRemove(req.params.tokenId),
+      waitingTokenIds: arrayRemove(tokenId),
       updatedAt: Timestamp.now(),
     });
+
+    // Reverse earnings credited at booking time for online paid tokens
+    if (isOnlineToken && storedEarns > 0) {
+      if (txSnap?.exists()) {
+        batch.update(txRef, {
+          status:        "refunded",
+          paymentStatus: "refunded",
+          updatedAt:     Timestamp.now(),
+        });
+      }
+      batch.update(doctorRef, { pendingPayout: increment(-storedEarns) });
+      if (earningsSnap?.exists()) {
+        batch.update(earningsRef, {
+          totalTokens:     increment(-1),
+          tokensNormal:    increment(isE ? 0 : -1),
+          tokensEmergency: increment(isE ? -1 : 0),
+          earned:          increment(-storedEarns),
+        });
+      }
+    }
+
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
     try {
@@ -826,7 +864,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
         doctorId: token.doctorId, type: "token_cancelled",
         title: "Token Cancelled",
         body: `${token.patientName} (${formatTokenLabel(token.tokenNumber, token.type)}) cancelled their appointment.`,
-        tokenId: req.params.tokenId, tokenNumber: token.tokenNumber,
+        tokenId, tokenNumber: token.tokenNumber,
         patientName: token.patientName, read: false, createdAt: Timestamp.now(),
       });
     } catch (_) {}
@@ -836,12 +874,12 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
           patientId: token.patientId, type: "token_cancelled",
           title: "Booking Cancelled",
           body: `Your Token ${formatTokenLabel(token.tokenNumber, token.type)} has been cancelled and your payment will be refunded.`,
-          tokenId: req.params.tokenId, tokenNumber: token.tokenNumber,
+          tokenId, tokenNumber: token.tokenNumber,
           read: false, createdAt: Timestamp.now(),
         });
       } catch (_) {}
     }
-    res.json({ id: req.params.tokenId, status: "cancelled" });
+    res.json({ id: tokenId, status: "cancelled" });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
