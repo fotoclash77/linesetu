@@ -183,7 +183,10 @@ export default function DoctorDetailScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           {([
-            { label: "Patients",   val: (() => { const raw = String(doctor.totalPatients ?? doctor.patients ?? ''); return raw ? (raw.endsWith('+') ? raw : `${raw}+`) : '—'; })(), color: "#818CF8", icon: "users"    },
+            { label: "Patients",   val: (() => {
+              const raw = String(doctor.totalPatients ?? doctor.patients ?? "");
+              return raw ? `${raw.replace(/\+$/, "")}+` : "—";
+            })(), color: "#818CF8", icon: "users"    },
             { label: "Experience", val: `${doctor.experience} yrs`, color: "#06B6D4", icon: "activity" },
             { label: "Avg Wait",   val: doctor.avgWait,  color: "#22C55E", icon: "clock"    },
           ] as Array<{ label: string; val: string; color: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, icon }) => (
