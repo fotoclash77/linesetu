@@ -20,19 +20,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const isWeb = Platform.OS === "web";
 
-const SPECIALTIES = [
-  { label: "All", color: "#818CF8" },
-  { label: "Cardiology", color: "#EF4444" },
-  { label: "Dentist", color: "#3B82F6" },
-  { label: "Eye Care", color: "#06B6D4" },
-  { label: "Pediatric", color: "#22C55E" },
-  { label: "Neurology", color: "#8B5CF6" },
-  { label: "Orthopedic", color: "#F97316" },
-  { label: "ENT", color: "#EC4899" },
-  { label: "General", color: "#F59E0B" },
-  { label: "Dermatology", color: "#3B82F6" },
-];
-
 const ACCENT_COLORS = ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E", "#F97316", "#EC4899", "#06B6D4", "#F59E0B"];
 
 interface DoctorItem {
@@ -153,9 +140,23 @@ export default function FindDoctorsScreen() {
 
   const allDoctors = apiDoctors;
 
+  // Build specialty chips dynamically from real doctor data
+  const specialtyChips = useMemo(() => {
+    const seen = new Set<string>();
+    const chips: { label: string; color: string }[] = [{ label: "All", color: "#818CF8" }];
+    apiDoctors.forEach((d) => {
+      const s = d.specialty?.trim();
+      if (s && !seen.has(s)) {
+        seen.add(s);
+        chips.push({ label: s, color: ACCENT_COLORS[(chips.length - 1) % ACCENT_COLORS.length] });
+      }
+    });
+    return chips;
+  }, [apiDoctors]);
+
   const filtered = useMemo(() => {
     return allDoctors.filter((d) => {
-      const matchSpec = selectedSpec === "All" || d.specialty.toLowerCase().includes(selectedSpec.toLowerCase());
+      const matchSpec = selectedSpec === "All" || d.specialty.toLowerCase() === selectedSpec.toLowerCase();
       const matchSearch = !search.trim() ||
         d.name.toLowerCase().includes(search.toLowerCase()) ||
         d.specialty.toLowerCase().includes(search.toLowerCase()) ||
@@ -210,7 +211,7 @@ export default function FindDoctorsScreen() {
         contentContainerStyle={styles.chipsRow}
         style={styles.chipsScroll}
       >
-        {SPECIALTIES.map(({ label, color }) => {
+        {specialtyChips.map(({ label, color }) => {
           const isActive = selectedSpec === label;
           return (
             <Pressable
