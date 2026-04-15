@@ -91,10 +91,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
 
       <View style={styles.listRight}>
         {available ? (
-          <View style={styles.liveWaitBadge}>
-            <View style={styles.greenPulse} />
-            <Text style={styles.liveWaitTxt}>{doc.wait}</Text>
-          </View>
+          <View style={{ height: 28 }} />
         ) : (
           <View style={styles.unavailWaitBadge}>
             <Text style={styles.unavailWaitTxt}>Offline</Text>
