@@ -1099,6 +1099,13 @@ export default function QueueScreen() {
                 maxLength={60}
                 autoFocus
               />
+              {/* Read-only doctor name suffix preview */}
+              <View style={S.alertSuffix}>
+                <Text style={S.alertSuffixTxt}>
+                  {`-${doctor?.name?.startsWith('Dr.') ? doctor?.name : `Dr. ${doctor?.name ?? ''}`}`}
+                </Text>
+                <Text style={S.alertSuffixHint}>auto-appended to SMS</Text>
+              </View>
 
               {alertResult === 'sent' && (
                 <View style={S.alertSuccess}>
@@ -1246,6 +1253,9 @@ const S = StyleSheet.create({
   alertInput:    { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: 14, color: '#FFF', fontSize: 14, fontWeight: '600', minHeight: 88, textAlignVertical: 'top', marginBottom: 14 },
   alertSuccess:  { backgroundColor: 'rgba(74,222,128,0.1)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.3)', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },
   alertError:    { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12 },
+  alertSuffix:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 14 },
+  alertSuffixTxt:{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' },
+  alertSuffixHint:{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: '600' },
   alertSendBtn:  { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#B45309', borderWidth: 1, borderColor: 'rgba(252,211,77,0.5)', shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12 },
   alertSendTxt:  { fontSize: 15, fontWeight: '800', color: '#FCD34D', letterSpacing: 0.4 },
   refundBtn:  { marginTop: 8, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },

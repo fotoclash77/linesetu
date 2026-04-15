@@ -144,9 +144,14 @@ router.post("/notifications/send-alert", async (req, res) => {
     if (fast2smsKey && phone) {
       try {
         const cleanPhone = String(phone).replace(/\D/g, "").slice(-10);
+        // Append doctor name to SMS (non-editable, fetched from account)
+        const drName = doctorName
+          ? (String(doctorName).startsWith("Dr.") ? doctorName : `Dr. ${doctorName}`)
+          : null;
+        const smsBody = drName ? `${trimmed}\n-${drName}` : trimmed;
         const smsRes = await fetch(
           `https://www.fast2sms.com/dev/bulkV2?authorization=${fast2smsKey}` +
-          `&message=${encodeURIComponent(trimmed)}&language=english&route=q&numbers=${cleanPhone}`,
+          `&message=${encodeURIComponent(smsBody)}&language=english&route=q&numbers=${cleanPhone}`,
         );
         const smsJson = await smsRes.json();
         smsStatus = smsJson.return === true ? "sent" : "failed";
