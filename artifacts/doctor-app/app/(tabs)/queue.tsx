@@ -85,7 +85,7 @@ async function apiRefund(id: string) {
 
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
-type TabKey = 'all' | 'normal' | 'skipped' | 'consulted';
+type TabKey = 'all' | 'normal' | 'emergency' | 'skipped' | 'consulted';
 
 interface MasterRow {
   id: string; tokenNumber: number; patientName: string;
@@ -698,12 +698,14 @@ export default function QueueScreen() {
   const TABS: { key: TabKey; label: string; color: string; count: number }[] = [
     { key: 'all',       label: 'All',       color: CYAN,   count: highestIssued || all.length },
     { key: 'normal',    label: 'Normal',    color: GREEN,  count: normalList.length  },
+    { key: 'emergency', label: 'Emergency', color: RED,    count: emergList.length   },
     { key: 'skipped',   label: 'Skipped',   color: AMBER,  count: skippedList.length },
     { key: 'consulted', label: 'Consulted', color: PURPLE, count: doneList.length    },
   ];
 
   const tabPatients: Token[] = (() => {
     if (tab === 'normal')    return normalList;
+    if (tab === 'emergency') return emergList;
     if (tab === 'skipped')   return skippedList;
     if (tab === 'consulted') return doneList;
     return [];
@@ -789,8 +791,8 @@ export default function QueueScreen() {
                     : `${waitSorted.length} patients`}
                 </Text>
               </View>
-              {/* Tab bar */}
-              <View style={S.tabBar}>
+              {/* Tab bar — horizontal scroll so all labels fit on any screen size */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }} contentContainerStyle={S.tabBar}>
                 {TABS.map(t => {
                   const active = tab === t.key;
                   return (
@@ -813,7 +815,7 @@ export default function QueueScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
             </View>
 
             {/* ── SCROLLABLE WAITING CARDS ───────────── */}
@@ -1106,8 +1108,8 @@ const S = StyleSheet.create({
   waitingCount: { fontSize: 12, fontWeight: '700', color: TEAL_LT, textAlign: 'center' },
 
   // Tabs
-  tabBar:     { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  tabItem:    { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', position: 'relative' },
+  tabBar:     { flexDirection: 'row', gap: 6, paddingBottom: 2 },
+  tabItem:    { minWidth: 72, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', position: 'relative' },
   tabTxt:     { fontSize: 10, fontWeight: '800' },
   tabBadge:   { position: 'absolute', top: -6, right: -4, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tabBadgeTxt:{ fontSize: 9, fontWeight: '900' },
