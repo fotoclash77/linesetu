@@ -65,7 +65,7 @@ export default function PaymentScreen() {
   const shift       = (params.shift      ?? "morning").toLowerCase();
   const clinic      = params.clinic      ?? "Clinic";
   const time        = params.time        ?? "";
-  const patientName = params.patientName ?? patient?.name ?? "Patient";
+  const patientName = params.patientName ?? patient?.name ?? "";
   const tokenType   = (params.tokenType  ?? "normal") as "normal" | "emergency";
   const isEmergency = tokenType === "emergency";
   const payableNow  = Number(params.payableNow ?? "20");
