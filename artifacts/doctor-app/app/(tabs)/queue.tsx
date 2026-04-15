@@ -545,17 +545,11 @@ function AllSerialCard({ row }: { row: SerialRow }) {
   const badge  = STATUS_BADGE[row.displayStatus];
   const isEmrg = row.type === 'emergency';
 
-  // Source: how they booked
+  // Source: how they booked — outlined style
   const srcLabel = row.source === 'walkin' ? 'Walk-in' : 'E-Token';
-  const srcBg    = row.source === 'walkin' ? 'rgba(13,148,136,0.18)' : 'rgba(99,102,241,0.18)';
-  const srcBd    = row.source === 'walkin' ? 'rgba(45,212,191,0.35)' : 'rgba(129,140,248,0.35)';
+  const srcBg    = row.source === 'walkin' ? 'rgba(13,148,136,0.10)' : 'rgba(99,102,241,0.10)';
+  const srcBd    = row.source === 'walkin' ? 'rgba(45,212,191,0.55)' : 'rgba(129,140,248,0.55)';
   const srcClr   = row.source === 'walkin' ? TEAL_LT : '#A5B4FC';
-
-  // Priority: emergency vs normal — white text for readable contrast on all devices
-  const priBg  = isEmrg ? 'rgba(239,68,68,0.55)' : 'rgba(21,128,61,0.45)';
-  const priBd  = isEmrg ? 'rgba(239,68,68,0.8)'  : 'rgba(74,222,128,0.6)';
-  const priClr = '#FFFFFF';
-  const priLbl = isEmrg ? 'Emergency' : 'Normal';
 
   // Demographics
   const genderStr =
@@ -592,13 +586,14 @@ function AllSerialCard({ row }: { row: SerialRow }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
           {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>{demo}</Text> : null}
           {demo ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text> : null}
-          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: srcBg, borderWidth: 1, borderColor: srcBd }}>
+          <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: srcBg, borderWidth: 1, borderColor: srcBd }}>
             <Text style={{ fontSize: 9, fontWeight: '800', color: srcClr }}>{srcLabel}</Text>
           </View>
-          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text>
-          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: priBg, borderWidth: 1, borderColor: priBd }}>
-            <Text style={{ fontSize: 9, fontWeight: '800', color: priClr }}>{priLbl}</Text>
-          </View>
+          {isEmrg && (
+            <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.55)' }}>
+              <Text style={{ fontSize: 9, fontWeight: '800', color: '#F87171' }}>Emergency</Text>
+            </View>
+          )}
           {!!row.visitType && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</Text>}
           <VisitTypePill vt={row.visitType} />
         </View>
