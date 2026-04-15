@@ -64,7 +64,7 @@ function formatWait(mins: number) {
 function DoctorCard({ doc }: { doc: DoctorItem }) {
   const { accent } = doc;
   const available = doc.isAvailable !== false;
-  const showWait = !!doc.wait;
+  const showWait = !!doc.wait && doc.wait !== "~";
   const navToDoctor = () => router.push({
     pathname: `/doctor/${doc.id}` as any,
     params: { hint_name: doc.name, hint_photo: doc.photo, hint_spec: doc.specialty, hint_clinic: doc.clinicName },
@@ -295,7 +295,7 @@ export default function HomeScreen() {
     rating: "4.8",
     wait: d.estimatedWaitMins != null || d.waitMinutes != null || d.waitMins != null
       ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
-      : "",
+      : "~",
     token: 1,
     exp: d.experience != null ? `${d.experience}` : "",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
