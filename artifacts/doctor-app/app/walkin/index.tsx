@@ -203,7 +203,7 @@ export default function AddWalkinScreen() {
       }
       const data = await res.json();
       setBookedName(trimmedName);
-      setBookedToken(`#${String(data.tokenNumber).padStart(3,'0')}`);
+      setBookedToken(`#${data.tokenNumber}`);
       setShowSuccess(true);
     } catch (e: any) {
       setBookingError(e.message || 'Network error');
@@ -436,8 +436,8 @@ export default function AddWalkinScreen() {
               queue.map((t) => {
                 const isE = t.type === 'emergency';
                 const tokenDisp = isE
-                  ? `E${String(t.tokenNumber).padStart(3, '0')}`
-                  : `#${String(t.tokenNumber).padStart(3, '0')}`;
+                  ? `E${String(t.tokenNumber).padStart(2, '0')}`
+                  : `#${String(t.tokenNumber).padStart(2, '0')}`;
 
                 // Status badge
                 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {

@@ -259,7 +259,7 @@ export default function PatientDetailScreen() {
 
             {/* ── BOOKING DETAILS ── */}
             <Section title="Booking Details" icon="🎟" accent={TEAL_LT}>
-              <Row icon="🎟" label="Token Number"  value={tok.type === 'emergency' ? `E${String(tok.tokenNumber).padStart(3,'0')}` : `#${String(tok.tokenNumber).padStart(3,'0')}`}/>
+              <Row icon="🎟" label="Token Number"  value={`#${tok.tokenNumber}`}/>
               <Row icon="📆" label="Date"          value={tok.date}/>
               <Row icon="🌅" label="Shift"         value={capitalize(tok.shift)}/>
               <Row icon="📡" label="Source"        value={isWalkin ? 'Walk-in (Clinic)' : 'Online (Patient App)'}
@@ -267,6 +267,7 @@ export default function PatientDetailScreen() {
               <Row icon="⚡" label="Priority"      value={capitalize(tok.type)}
                    valueColor={isEmerg ? '#F87171' : '#4ADE80'}/>
               <Row icon="🕐" label="Booked At"     value={fmtTs(tok.bookedAt)}/>
+              <Row icon="🆔" label="Token ID"      value={tok.id}/>
             </Section>
 
             {/* ── STATUS TIMELINE ── */}
@@ -302,10 +303,7 @@ export default function PatientDetailScreen() {
 
             {/* ── RAW DATA BADGE ── */}
             <View style={S.rawBadge}>
-              <Text style={S.rawBadgeTxt}>
-                Booking: {tok.type === 'emergency' ? `E${String(tok.tokenNumber).padStart(3,'0')}` : `#${String(tok.tokenNumber).padStart(3,'0')}`}
-                {'  ·  Ref: '}{tok.id.slice(0,8)}…
-              </Text>
+              <Text style={S.rawBadgeTxt}>Record ID: {tok.id}</Text>
             </View>
 
           </ScrollView>

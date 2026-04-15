@@ -109,7 +109,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       {available ? (
         <View style={styles.liveRow}>
           <View style={styles.liveDot} />
-          <Text style={styles.liveTxt}>Token #{String(doc.token ?? 0).padStart(3,'0')} Live</Text>
+          <Text style={styles.liveTxt}>Token #{doc.token} Live</Text>
           <Text style={styles.waitSmall}>~{doc.wait}</Text>
         </View>
       ) : (
@@ -205,7 +205,7 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
             <Feather name="hash" size={9} color="#818CF8" />
             <Text style={styles.queueStatLblTxt}>MY TOKEN</Text>
           </View>
-          <Text style={[styles.queueStatNum, { color: "#A5B4FC" }]}>#{String(myToken).padStart(3,'0')}</Text>
+          <Text style={[styles.queueStatNum, { color: "#A5B4FC" }]}>{myToken}</Text>
           <Text style={styles.queueStatSub}>Your number</Text>
         </View>
         <View style={[styles.queueStatBox, { backgroundColor: queueStarted ? "rgba(6,182,212,0.12)" : "rgba(252,211,77,0.06)", borderColor: queueStarted ? "rgba(6,182,212,0.3)" : "rgba(252,211,77,0.2)", overflow: "visible" }]}>
