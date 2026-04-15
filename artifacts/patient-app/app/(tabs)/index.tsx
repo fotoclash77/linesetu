@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, overflow: "hidden",
   },
   docPhoto: { width: 160, height: 160, borderRadius: 16, borderWidth: 2.5 },
-  photoBadgeWrap: { position: "absolute", top: 8, right: 8, zIndex: 2 },
+  photoBadgeWrap: { position: "absolute", top: 12, right: 12, zIndex: 2 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
   docName: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF" },
   verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "rgba(10,14,26,0.58)", borderRadius: 999, paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(6,182,212,0.16)" },
