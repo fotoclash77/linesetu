@@ -85,7 +85,7 @@ async function apiRefund(id: string) {
 
 // ─── Types ───────────────────────────────────────────────────────
 type DisplayStatus = 'consulting' | 'waiting' | 'done' | 'skipped';
-type TabKey = 'all' | 'normal' | 'emergency' | 'skipped' | 'consulted';
+type TabKey = 'all' | 'normal' | 'skipped' | 'consulted';
 
 interface MasterRow {
   id: string; tokenNumber: number; patientName: string;
@@ -698,14 +698,12 @@ export default function QueueScreen() {
   const TABS: { key: TabKey; label: string; color: string; count: number }[] = [
     { key: 'all',       label: 'All',       color: CYAN,   count: highestIssued || all.length },
     { key: 'normal',    label: 'Normal',    color: GREEN,  count: normalList.length  },
-    { key: 'emergency', label: 'Emergency', color: RED,    count: emergList.length   },
     { key: 'skipped',   label: 'Skipped',   color: AMBER,  count: skippedList.length },
     { key: 'consulted', label: 'Consulted', color: PURPLE, count: doneList.length    },
   ];
 
   const tabPatients: Token[] = (() => {
     if (tab === 'normal')    return normalList;
-    if (tab === 'emergency') return emergList;
     if (tab === 'skipped')   return skippedList;
     if (tab === 'consulted') return doneList;
     return [];
