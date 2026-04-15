@@ -668,9 +668,10 @@ export default function EarningsScreen() {
                             <Text style={{ color: 'rgba(255,255,255,0.18)', fontSize: 10 }}>·</Text>
                             <Text style={styles.payoutNote}>{shiftLabel}</Text>
                           </View>
-                          {!isRefund && platformFee > 0 && (
+                          {platformFee > 0 && (
                             <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', marginTop: 2 }}>
                               Patient paid {fmtFull(patientPaid)} · Platform fee {fmtFull(platformFee)}
+                              {isRefund ? ' (refunded)' : ''}
                             </Text>
                           )}
                         </View>

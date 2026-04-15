@@ -282,10 +282,10 @@ router.post("/tokens", async (req, res) => {
     const PLATFORM_FEE = 10;
     const isWalkinSource  = source === "walkin";
     const isEmergencyType = type === "emergency";
-    // Use the doctor's actual configured fee (fall back to safe defaults if not yet set)
+    // Use the doctor's actual configured fee (fall back to platform defaults if not yet set)
     const rawDoctorFee = isWalkinSource ? 0
       : isEmergencyType
-        ? (Number(doctorData?.emergencyFee) || 30)
+        ? (Number(doctorData?.emergencyFee) || 20)
         : (Number(doctorData?.consultFee)   || 10);
     const doctorEarns = rawDoctorFee;
     const platformFee = isWalkinSource ? 0 : PLATFORM_FEE;
@@ -820,6 +820,12 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token       = tokenSnap.data();
+
+    // Idempotency guard — already cancelled, nothing to reverse again
+    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
+      return res.json({ id: tokenId, status: "cancelled", idempotent: true });
+    }
+
     const queueRef    = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
 
