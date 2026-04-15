@@ -91,10 +91,6 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       <View style={[styles.specBadge, { backgroundColor: accent + "18" }]}>
         <Text style={[styles.specText, { color: accent }]}>{doc.specialty}</Text>
       </View>
-      <View style={styles.clinicRow}>
-        <Feather name="home" size={9} color="rgba(255,255,255,0.3)" />
-        <Text style={styles.clinicName} numberOfLines={1}>{doc.clinicName || "Clinic"}</Text>
-      </View>
 
       <View style={styles.docStats}>
         {[
