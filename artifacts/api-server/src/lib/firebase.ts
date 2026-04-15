@@ -54,6 +54,7 @@ export const Collections = {
   NOTIFICATIONS:   "notifications",
   FAILED_BOOKINGS: "failedBookings",
   TRANSACTIONS:    "transactions",
+  META:            "meta",
 } as const;
 
 export function queueDocId(doctorId: string, date: string, shift: "morning" | "evening") {

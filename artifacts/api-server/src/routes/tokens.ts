@@ -263,11 +263,12 @@ router.post("/tokens", async (req, res) => {
       } catch { /* non-fatal — token still books without demographics */ }
     }
 
-    const tokenDate  = date || todayDate();
-    const queueId    = queueDocId(doctorId, tokenDate, shift);
-    const queueRef   = doc(db, Collections.QUEUES, queueId);
-    const tokenRef   = doc(collection(db, Collections.TOKENS));
-    const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
+    const tokenDate    = date || todayDate();
+    const queueId      = queueDocId(doctorId, tokenDate, shift);
+    const queueRef     = doc(db, Collections.QUEUES, queueId);
+    const tokenRef     = doc(collection(db, Collections.TOKENS));
+    const doctorRef    = doc(db, Collections.DOCTORS, doctorId);
+    const counterRef   = doc(db, Collections.META, "counters");
     const doctorSnap = await getDoc(doctorRef);
     const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
     const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
@@ -283,9 +284,11 @@ router.post("/tokens", async (req, res) => {
     let autoAdjusted = false;
 
     await runTransaction(db, async (txn) => {
-      const queueSnap = await txn.get(queueRef);
-      const queueData = queueSnap.exists() ? queueSnap.data() : {} as any;
-      const pending   = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any; tokenNumber?: number }>;
+      const queueSnap   = await txn.get(queueRef);
+      const counterSnap = await txn.get(counterRef);
+      const queueData   = queueSnap.exists() ? queueSnap.data() : {} as any;
+      const nextSerial  = ((counterSnap.exists() ? counterSnap.data()?.bookingSerial : 0) ?? 0) + 1;
+      const pending     = (queueData.pendingReservations ?? {}) as Record<string, { expiresAt: any; tokenNumber?: number }>;
 
       const currentBooked   = (queueData.totalBooked as number) ?? 0;
       const currentNextToken = (queueData.nextTokenNumber as number) ?? 0;
@@ -334,6 +337,7 @@ router.post("/tokens", async (req, res) => {
       const nowTs = Timestamp.now();
       const tokenData = {
         tokenNumber: nextTokenNumber,
+        bookingSerial: nextSerial,
         doctorId, patientId: patientId || null, patientName,
         patientPhone: patientPhone || "",
         type, source, status: "waiting",
@@ -351,6 +355,7 @@ router.post("/tokens", async (req, res) => {
       };
 
       txn.set(tokenRef, tokenData);
+      txn.set(counterRef, { bookingSerial: nextSerial }, { merge: true });
 
       const queueUpdate: Record<string, any> = {
         ...queueTokenUpdate, // includes nextTokenNumber only for non-reserved bookings

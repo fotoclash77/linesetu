@@ -267,7 +267,7 @@ export default function PatientDetailScreen() {
               <Row icon="⚡" label="Priority"      value={capitalize(tok.type)}
                    valueColor={isEmerg ? '#F87171' : '#4ADE80'}/>
               <Row icon="🕐" label="Booked At"     value={fmtTs(tok.bookedAt)}/>
-              <Row icon="🆔" label="Token ID"      value={tok.id}/>
+              <Row icon="🆔" label="Booking ID"    value={tok.bookingSerial ? `#${String(tok.bookingSerial).padStart(4,'0')}` : `#${tok.id.slice(0,6).toUpperCase()}`}/>
             </Section>
 
             {/* ── STATUS TIMELINE ── */}
@@ -303,7 +303,9 @@ export default function PatientDetailScreen() {
 
             {/* ── RAW DATA BADGE ── */}
             <View style={S.rawBadge}>
-              <Text style={S.rawBadgeTxt}>Record ID: {tok.id}</Text>
+              <Text style={S.rawBadgeTxt}>
+                Booking {tok.bookingSerial ? `#${String(tok.bookingSerial).padStart(4,'0')}` : `#${tok.id.slice(0,6).toUpperCase()}`}
+              </Text>
             </View>
 
           </ScrollView>
