@@ -22,31 +22,6 @@ const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 const isWeb = Platform.OS === "web";
 
-const DEMO_PHOTO = require("../../assets/images/demo-doctor.jpg");
-
-const SAMPLE_DOCTOR = {
-  id: "demo1",
-  name: "Dr. Ananya Sharma",
-  specialization: "Cardiologist",
-  clinicName: "HeartCare Clinic",
-  location: "Andheri West, Mumbai",
-  experience: 12,
-  rating: "4.9",
-  patients: "4.2K+",
-  avgWait: "~25 min",
-  photo: "https://randomuser.me/api/portraits/women/44.jpg",
-  available: true,
-  about: "Dr. Ananya Sharma is a board-certified Cardiologist with over 12 years of experience in diagnosing and treating cardiovascular conditions. She specializes in preventive cardiology, heart failure management, and non-invasive cardiac imaging. Committed to patient-centered care, she ensures every patient understands their diagnosis and treatment plan.",
-  showResults: true,
-  results: [
-    "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80",
-    "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&q=80",
-    "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=400&q=80",
-  ],
-};
-
-
-
 export default function DoctorDetailScreen() {
   const insets = useSafeAreaInsets();
   const {
@@ -65,14 +40,12 @@ export default function DoctorDetailScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 20 + 64;
 
-  const isDemoId = !id || id.startsWith("demo");
-
   // Real-time Firebase listener + REST API polling fallback
   const [doctorData, setDoctorData] = useState<any>(null);
   const firestoreActive = useRef(false);
 
   const fetchDoctorRest = useCallback(async () => {
-    if (isDemoId || !id) return;
+    if (!id) return;
     try {
       const res = await fetch(`${BASE_URL}/api/doctors/${id}`);
       if (res.ok) {
@@ -80,10 +53,10 @@ export default function DoctorDetailScreen() {
         setDoctorData(data);
       }
     } catch {}
-  }, [id, isDemoId]);
+  }, [id]);
 
   useEffect(() => {
-    if (isDemoId || !id) return;
+    if (!id) return;
 
     // Firebase real-time listener
     const ref = doc(db, "doctors", id);
@@ -109,44 +82,40 @@ export default function DoctorDetailScreen() {
     }, 15_000);
 
     return () => { unsub(); clearInterval(poll); };
-  }, [id, isDemoId, fetchDoctorRest]);
+  }, [id, fetchDoctorRest]);
 
   const { data: queueData } = useQuery(getGetLiveQueueQueryOptions(id ?? ""));
 
-  // Use route hint params as instant initial data while Firebase loads —
-  // prevents any flash of demo content and eliminates the loading spinner
-  const hasHints = !!hint_name;
-  const doctor = isDemoId ? SAMPLE_DOCTOR : {
-    ...SAMPLE_DOCTOR,
-    id: doctorData?.id ?? id ?? "demo1",
-    name: doctorData?.name ?? hint_name ?? SAMPLE_DOCTOR.name,
-    specialization: doctorData?.specialization ?? hint_spec ?? SAMPLE_DOCTOR.specialization,
-    clinicName: doctorData?.clinicName ?? hint_clinic ?? SAMPLE_DOCTOR.clinicName,
-    location: SAMPLE_DOCTOR.location,
-    available: doctorData ? (doctorData.isAvailable !== false) : true,
-    experience: doctorData?.experience ?? SAMPLE_DOCTOR.experience,
-    about: doctorData?.bio || doctorData?.about || SAMPLE_DOCTOR.about,
-    patients: doctorData?.totalPatients || SAMPLE_DOCTOR.patients,
-    qualifications: doctorData?.qualifications || "",
-    photo: doctorData?.profilePhoto ?? hint_photo ?? SAMPLE_DOCTOR.photo,
-    consultFee: doctorData?.consultFee,
-    emergencyFee: doctorData?.emergencyFee,
-    walkinFee: doctorData?.walkinFee,
-    clinicConsultFee: doctorData?.clinicConsultFee,
-    clinicEmergencyFee: doctorData?.clinicEmergencyFee,
-    onlineBooking: doctorData ? (doctorData.onlineBooking !== false) : true,
-    results: Array.isArray(doctorData?.results) ? doctorData.results : [],
-    showResults: doctorData ? (doctorData.showResults !== false) : false,
-  };
+  const doctor = doctorData ? {
+    id: doctorData.id ?? id,
+    name: doctorData.name ?? hint_name ?? "Doctor",
+    specialization: doctorData.specialization ?? hint_spec ?? "",
+    clinicName: doctorData.clinicName ?? hint_clinic ?? "",
+    location: doctorData.location ?? "",
+    available: doctorData.isAvailable !== false,
+    experience: doctorData.experience ?? 0,
+    about: doctorData.bio || doctorData.about || "",
+    patients: doctorData.totalPatients || "",
+    qualifications: doctorData.qualifications || "",
+    photo: doctorData.profilePhoto ?? hint_photo ?? "",
+    consultFee: doctorData.consultFee,
+    emergencyFee: doctorData.emergencyFee,
+    walkinFee: doctorData.walkinFee,
+    clinicConsultFee: doctorData.clinicConsultFee,
+    clinicEmergencyFee: doctorData.clinicEmergencyFee,
+    onlineBooking: doctorData.onlineBooking !== false,
+    results: Array.isArray(doctorData.results) ? doctorData.results : [],
+    showResults: doctorData.showResults !== false,
+  } : null;
 
-  const isAvailable = doctor.available;
+  const isAvailable = doctor?.available ?? false;
 
-  const currentToken = queueData?.currentToken ?? 47;
-  const queueCount = queueData?.totalBooked ?? 14;
+  const currentToken = queueData?.currentToken ?? 0;
+  const queueCount = queueData?.totalBooked ?? 0;
 
   // Only show spinner if no hints were passed AND Firebase hasn't responded yet
   // (e.g. direct URL navigation without list context)
-  if (!isDemoId && !doctorData && !hasHints) {
+  if (!id || (!doctorData && !hint_name)) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator size="large" color="#67E8F9" />
@@ -173,7 +142,7 @@ export default function DoctorDetailScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad + 80 }} showsVerticalScrollIndicator={false}>
         {/* Hero Photo */}
         <View style={[styles.heroWrap, { marginTop: 12 }]}>
-          <Image source={doctor.id === "demo1" ? DEMO_PHOTO : { uri: doctor.photo }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
+          <Image source={doctor?.photo ? { uri: doctor.photo } : { uri: "https://ui-avatars.com/api/?name=Doctor&background=4F46E5&color=fff" }} style={styles.heroImg} contentFit="cover" contentPosition="top" />
           <LinearGradient colors={["transparent", "rgba(10,14,26,0.95)"]} style={styles.heroGrad} />
 
           {/* Verified badge */}
@@ -193,17 +162,17 @@ export default function DoctorDetailScreen() {
 
         {/* Identity Card */}
         <View style={styles.identityCard}>
-          <Text style={styles.docName}>{doctor.name}</Text>
+          <Text style={styles.docName}>{doctor?.name ?? "Doctor"}</Text>
           <View style={styles.identityRow}>
             <View style={styles.specBadge}>
-              <Text style={styles.specBadgeTxt}>{doctor.specialization}</Text>
+              <Text style={styles.specBadgeTxt}>{doctor?.specialization ?? ""}</Text>
             </View>
             <View style={styles.expBadge}>
-              <Text style={styles.expBadgeTxt}>{doctor.experience} yrs exp</Text>
+              <Text style={styles.expBadgeTxt}>{doctor?.experience ?? 0} yrs exp</Text>
             </View>
           </View>
-          {!!(doctor as any).qualifications && (
-            <Text style={styles.qualTxt}>{(doctor as any).qualifications}</Text>
+          {!!doctor?.qualifications && (
+            <Text style={styles.qualTxt}>{doctor.qualifications}</Text>
           )}
 
         </View>
@@ -212,11 +181,11 @@ export default function DoctorDetailScreen() {
         <View style={styles.statsRow}>
           {([
             { label: "Patients",   val: (() => {
-              const raw = String(doctor.totalPatients ?? doctor.patients ?? "");
+              const raw = String(doctor?.totalPatients ?? doctor?.patients ?? "");
               return raw ? `${raw.replace(/\+$/, "")}+` : "—";
             })(), color: "#818CF8", icon: "users"    },
-            { label: "Experience", val: `${doctor.experience} yrs`, color: "#06B6D4", icon: "activity" },
-            { label: "Avg Wait",   val: doctor.avgWait,  color: "#22C55E", icon: "clock"    },
+            { label: "Experience", val: `${doctor?.experience ?? 0} yrs`, color: "#06B6D4", icon: "activity" },
+            { label: "Avg Wait",   val: "—",  color: "#22C55E", icon: "clock"    },
           ] as Array<{ label: string; val: string; color: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, icon }) => (
             <View key={label} style={styles.statTile}>
               <View style={[styles.statIcon, { backgroundColor: color + "18" }]}>
@@ -234,18 +203,18 @@ export default function DoctorDetailScreen() {
             <Feather name="user" size={15} color="#818CF8" />
             <Text style={styles.sectionTitle}>About Me</Text>
           </View>
-          <Text style={styles.aboutTxt}>{(doctor as any).about ?? "No bio available."}</Text>
+          <Text style={styles.aboutTxt}>{doctor?.about ?? "No bio available."}</Text>
         </View>
 
         {/* My Results */}
-        {(doctor as any).showResults && (doctor as any).results?.length > 0 && (
+        {doctor?.showResults && doctor.results?.length > 0 && (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <Feather name="image" size={15} color="#06B6D4" />
               <Text style={styles.sectionTitle}>My Results</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 4 }}>
-              {((doctor as any).results as string[]).map((uri: string, i: number) => (
+              {doctor.results.map((uri: string, i: number) => (
                 <View key={i} style={styles.resultImgWrap}>
                   <Image source={{ uri }} style={styles.resultImg} contentFit="cover" />
                 </View>
@@ -255,7 +224,7 @@ export default function DoctorDetailScreen() {
         )}
 
         {/* Fee Breakdown — always shown when doctor data is loaded */}
-        {!isDemoId && !!doctorData && (<View style={styles.sectionCard}>
+        {!!doctorData && (<View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.rupee}>₹</Text>
             <Text style={styles.sectionTitle}>Fee Structure</Text>
@@ -266,35 +235,35 @@ export default function DoctorDetailScreen() {
                 icon: "monitor" as const,
                 label: "Normal E-Token Fee",
                 sub: "Book online via LINESETU — skip the queue",
-                amount: `₹${(doctor as any).consultFee ?? 0}`,
+                amount: `₹${doctor?.consultFee ?? 0}`,
                 color: "#67E8F9", bg: "rgba(6,182,212,0.1)", border: "rgba(6,182,212,0.25)",
               },
               {
                 icon: "alert-circle" as const,
                 label: "Emergency E-Token Fee",
                 sub: "Priority online token via LINESETU — no waiting in queue",
-                amount: `₹${(doctor as any).emergencyFee ?? 0}`,
+                amount: `₹${doctor?.emergencyFee ?? 0}`,
                 color: "#FBBF24", bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.28)",
               },
               {
                 icon: "check-circle" as const,
                 label: "Walk-In Fee",
                 sub: "Come early at clinic to collect your token",
-                amount: `₹${(doctor as any).walkinFee ?? 0}`,
+                amount: `₹${doctor?.walkinFee ?? 0}`,
                 color: "#A78BFA", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.28)",
               },
               {
                 icon: "home" as const,
                 label: "Consultation at Clinic",
                 sub: "Pay directly at the clinic during your visit",
-                amount: `₹${(doctor as any).clinicConsultFee ?? 0}`,
+                amount: `₹${doctor?.clinicConsultFee ?? 0}`,
                 color: "#34D399", bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.25)",
               },
               {
                 icon: "zap" as const,
                 label: "Emergency Consultation at Clinic",
                 sub: "Urgent in-clinic visit — priority access",
-                amount: `₹${(doctor as any).clinicEmergencyFee ?? 0}`,
+                amount: `₹${doctor?.clinicEmergencyFee ?? 0}`,
                 color: "#FB7185", bg: "rgba(251,113,133,0.08)", border: "rgba(251,113,133,0.25)",
               },
             ].map(({ icon, label, sub, amount, color, bg, border }) => (
@@ -316,12 +285,12 @@ export default function DoctorDetailScreen() {
 
       {/* Bottom CTA */}
       <View style={[styles.bottomCta, { paddingBottom: bottomPad }]}>
-        {isAvailable && (doctor as any).onlineBooking !== false ? (
+        {isAvailable && doctor?.onlineBooking !== false ? (
           <Pressable
             style={styles.bookBtn}
             onPress={() => router.push({
-              pathname: `/booking/${id ?? "demo1"}` as any,
-              params: { hint_name: doctor.name, hint_photo: doctor.photo, hint_spec: doctor.specialization, hint_clinic: doctor.clinicName },
+              pathname: `/booking/${id}` as any,
+              params: { hint_name: doctor?.name ?? "", hint_photo: doctor?.photo ?? "", hint_spec: doctor?.specialization ?? "", hint_clinic: doctor?.clinicName ?? "" },
             })}
           >
             <LinearGradient colors={["#4F46E5", "#6366F1", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
