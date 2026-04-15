@@ -585,7 +585,7 @@ export default function BookingScreen() {
                 <Pressable
                   key={m.id}
                   style={[styles.memberCard, isSelected && styles.memberCardSelected]}
-                  onPress={() => { setSelectedMember(m); setExpandedMember(isExpanded ? null : m.id); }}
+                  onPress={() => setSelectedMember(m)}
                 >
                   <View style={styles.memberCardTop}>
                     <View style={{ flex: 1 }}>
@@ -597,27 +597,8 @@ export default function BookingScreen() {
                       </View>
                       <Text style={styles.memberSub}>{m.age} yrs · {m.blood} · {m.gender}</Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      {isSelected && <Feather name="check-circle" size={17} color="#4F46E5" />}
-                      <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={14} color="rgba(255,255,255,0.3)" />
-                    </View>
+                    {isSelected && <Feather name="check-circle" size={17} color="#4F46E5" />}
                   </View>
-                  {isExpanded && (
-                    <View style={styles.memberExpanded}>
-                      {[
-                        { icon: "phone" as const,    label: "Phone",       val: m.phone },
-                        { icon: "droplet" as const,  label: "Blood Group", val: m.blood },
-                        { icon: "user" as const,     label: "Gender",      val: m.gender },
-                        { icon: "calendar" as const, label: "Age",         val: `${m.age} years` },
-                      ].map(row => (
-                        <View key={row.label} style={styles.memberExpandedRow}>
-                          <Feather name={row.icon} size={11} color="rgba(255,255,255,0.3)" />
-                          <Text style={styles.memberExpandedLbl}>{row.label}</Text>
-                          <Text style={styles.memberExpandedVal}>{row.val}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
                 </Pressable>
               );
             })}
