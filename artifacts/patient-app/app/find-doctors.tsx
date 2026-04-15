@@ -87,11 +87,6 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
           <Text style={[styles.specChipTxt, { color: doc.accent }]}>{doc.specialty}</Text>
         </View>
 
-        <View style={styles.listClinicRow}>
-          <Feather name="map-pin" size={10} color="rgba(255,255,255,0.35)" />
-          <Text style={styles.listClinicTxt} numberOfLines={1}>{doc.clinicName}</Text>
-        </View>
-
         <View style={styles.listStats}>
           <View style={styles.listStat}>
             <Feather name="briefcase" size={10} color="rgba(255,255,255,0.4)" />
