@@ -1,12 +1,10 @@
 import { FeatherIcon as Feather } from "@/components/FeatherIcon";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import type { Href } from "expo-router";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -36,7 +34,6 @@ const RELATION_COLORS: Record<string, string> = {
   Wife: "#EC4899", Husband: "#3B82F6", Mother: "#F59E0B", Father: "#10B981",
   Son: "#06B6D4", Daughter: "#8B5CF6", Brother: "#EF4444", Sister: "#F97316", Other: "#818CF8",
 };
-const FAM_STORAGE_KEY = "linesetu_family";
 
 interface FamilyMember {
   id: string;
@@ -87,35 +84,10 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     title: "Account",
     items: [
-      { icon: "log-out", label: "Sign Out",       sub: "Log out of your account",         color: "#F59E0B", route: null, badge: null, liveIndicator: false, danger: false },
+      { icon: "log-out", label: "Sign Out", sub: "Log out of your account", color: "#F59E0B", route: null, badge: null, liveIndicator: false, danger: false },
     ],
   },
 ];
-
-async function pickSquareImage(): Promise<string | null> {
-  if (Platform.OS === "web") {
-    await new Promise<void>((resolve) =>
-      Alert.alert(
-        "Use a square (1:1) photo",
-        "For best results, please select a photo that is already square. Non-square photos may appear cropped or distorted in the circular display.",
-        [{ text: "OK, got it", onPress: () => resolve() }]
-      )
-    );
-  }
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== "granted") {
-    Alert.alert("Permission needed", "Please allow photo library access to upload images.");
-    return null;
-  }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.85,
-  });
-  if (!result.canceled && result.assets[0]) return result.assets[0].uri;
-  return null;
-}
 
 function ChipSelector({ options, value, onChange, color = "#818CF8" }: {
   options: string[]; value: string; onChange: (v: string) => void; color?: string;
@@ -171,35 +143,41 @@ export default function ProfileScreen() {
   const name     = patient?.name      ?? "Rahul Sharma";
   const phone    = patient?.phone     ?? "+91 98765 43210";
   const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const [avatarError, setAvatarError] = useState(false);
   const [showSignOut, setShowSignOut] = useState(false);
 
-
-  // ── Family members ──────────────────────────────────────
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
-    { id: "wife",   name: "Priya Sharma",   relation: "Wife",   age: "29", blood: "A+",  phone: "+91 9876543211", avatar: "https://randomuser.me/api/portraits/women/26.jpg" },
-    { id: "mother", name: "Sunita Sharma",  relation: "Mother", age: "58", blood: "O+",  phone: "+91 9876543212", avatar: "https://randomuser.me/api/portraits/women/55.jpg" },
-    { id: "father", name: "Ramesh Sharma",  relation: "Father", age: "62", blood: "B+",  phone: "+91 9876543213", avatar: "https://randomuser.me/api/portraits/men/58.jpg"   },
-  ]);
+  // ── Family members — live from Firestore ─────────────────
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [showFamily, setShowFamily] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(FAM_STORAGE_KEY).then(raw => {
-      if (raw) { try { setFamilyMembers(JSON.parse(raw)); } catch {} }
+    if (!patient?.id) return;
+    const ref = doc(db, "patients", patient.id);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.data() as any;
+      const members: FamilyMember[] = Array.isArray(data?.familyMembers)
+        ? data.familyMembers.map((f: any, i: number) => ({
+            id:       f.id       ?? `fam-${i}`,
+            name:     f.name     ?? "",
+            relation: f.relation ?? "Other",
+            age:      f.age      ?? "",
+            blood:    f.blood    ?? "",
+            phone:    f.phone    ?? "",
+            avatar:   f.avatar   ?? f.photo ?? "",
+            address:  f.address  ?? "",
+            area:     f.area     ?? "",
+          }))
+        : [];
+      setFamilyMembers(members);
     });
-  }, []);
+    return () => unsub();
+  }, [patient?.id]);
 
   const persistFamily = async (members: FamilyMember[]) => {
-    setFamilyMembers(members);
-    // Write AsyncStorage first (always succeeds offline)
-    await AsyncStorage.setItem(FAM_STORAGE_KEY, JSON.stringify(members));
-    // Write Firestore — retry once on failure so a transient error doesn't silently drop members
-    if (patient?.id) {
-      const write = () => setDoc(doc(db, "patients", patient.id), { familyMembers: members }, { merge: true });
+    if (!patient?.id) return;
+    const write = () => setDoc(doc(db, "patients", patient.id), { familyMembers: members }, { merge: true });
+    try { await write(); } catch {
       try { await write(); } catch {
-        try { await write(); } catch (err: any) {
-          Alert.alert("Sync Warning", "Saved locally but could not sync to cloud. Changes will sync when connection is restored.");
-        }
+        Alert.alert("Sync Warning", "Could not sync to cloud. Please try again.");
       }
     }
   };
@@ -213,7 +191,6 @@ export default function ProfileScreen() {
 
   // ── Edit Profile Modal ───────────────────────────────────
   const [editVisible, setEditVisible] = useState(false);
-  const [ePhoto,   setEPhoto]   = useState<string | undefined>(undefined);
   const [eName,    setEName]    = useState("");
   const [eAge,     setEAge]     = useState("");
   const [eBlood,   setEBlood]   = useState("");
@@ -224,7 +201,6 @@ export default function ProfileScreen() {
   const [saving,   setSaving]   = useState(false);
 
   const openEditProfile = () => {
-    setEPhoto(patient?.profilePhoto);
     setEName(patient?.name ?? "");
     setEAge(patient?.age ?? "");
     setEBlood(patient?.blood ?? "");
@@ -232,28 +208,26 @@ export default function ProfileScreen() {
     setEEmail(patient?.email ?? "");
     setEAddress(patient?.address ?? "");
     setEArea(patient?.area ?? "");
-    setAvatarError(false);
     setEditVisible(true);
   };
 
   const saveProfile = async () => {
-    if (!eName.trim())    { Alert.alert("Name required",            "Please enter your full name.");         return; }
-    if (!eEmail.trim())   { Alert.alert("Email required",           "Please enter your email address.");     return; }
-    if (!eAge.trim())     { Alert.alert("Age required",             "Please enter your age.");               return; }
-    if (!eGender)         { Alert.alert("Gender required",          "Please select your gender.");           return; }
-    if (!eBlood)          { Alert.alert("Blood group required",     "Please select your blood group.");      return; }
-    if (!eArea.trim())    { Alert.alert("Area required",            "Please enter your area / locality.");   return; }
-    if (!eAddress.trim()) { Alert.alert("Address required",         "Please enter your complete address.");  return; }
+    if (!eName.trim())    { Alert.alert("Name required",        "Please enter your full name.");       return; }
+    if (!eEmail.trim())   { Alert.alert("Email required",       "Please enter your email address.");   return; }
+    if (!eAge.trim())     { Alert.alert("Age required",         "Please enter your age.");              return; }
+    if (!eGender)         { Alert.alert("Gender required",      "Please select your gender.");          return; }
+    if (!eBlood)          { Alert.alert("Blood group required", "Please select your blood group.");     return; }
+    if (!eArea.trim())    { Alert.alert("Area required",        "Please enter your area / locality."); return; }
+    if (!eAddress.trim()) { Alert.alert("Address required",     "Please enter your complete address."); return; }
     setSaving(true);
-    await updatePatient({ name: eName.trim(), age: eAge, blood: eBlood, gender: eGender, email: eEmail, profilePhoto: ePhoto, address: eAddress, area: eArea });
+    await updatePatient({ name: eName.trim(), age: eAge, blood: eBlood, gender: eGender, email: eEmail, address: eAddress, area: eArea });
     setSaving(false);
     setEditVisible(false);
   };
 
   // ── Family Member Modal ──────────────────────────────────
-  const [famVisible,   setFamVisible]   = useState(false);
-  const [editingMem,   setEditingMem]   = useState<FamilyMember | null>(null);
-  const [mPhoto,   setMPhoto]   = useState<string | undefined>(undefined);
+  const [famVisible,    setFamVisible]   = useState(false);
+  const [editingMem,    setEditingMem]   = useState<FamilyMember | null>(null);
   const [mName,    setMName]    = useState("");
   const [mRelation,setMRelation]= useState("Wife");
   const [mAge,     setMAge]     = useState("");
@@ -265,33 +239,37 @@ export default function ProfileScreen() {
 
   const openAddMember = () => {
     setEditingMem(null);
-    setMPhoto(undefined); setMName(""); setMRelation("Wife");
+    setMName(""); setMRelation("Wife");
     setMAge(""); setMBlood(""); setMPhone(""); setMArea(""); setMAddress("");
     setFamVisible(true);
   };
 
   const openEditMember = (m: FamilyMember) => {
     setEditingMem(m);
-    setMPhoto(m.avatar); setMName(m.name); setMRelation(m.relation);
+    setMName(m.name); setMRelation(m.relation);
     setMAge(m.age); setMBlood(m.blood); setMPhone(m.phone);
     setMArea(m.area ?? ""); setMAddress(m.address ?? "");
     setFamVisible(true);
   };
 
   const saveMember = async () => {
-    if (!mName.trim())    { Alert.alert("Name required",        "Please enter the member's full name.");    return; }
-    if (!mRelation)       { Alert.alert("Relation required",    "Please select the relation.");             return; }
-    if (!mAge.trim())     { Alert.alert("Age required",         "Please enter the member's age.");          return; }
-    if (!mBlood)          { Alert.alert("Blood group required", "Please select the blood group.");          return; }
-    if (!mPhone.trim())   { Alert.alert("Phone required",       "Please enter the member's phone number."); return; }
-    if (!mArea.trim())    { Alert.alert("Area required",        "Please enter the member's area.");         return; }
+    if (!mName.trim())    { Alert.alert("Name required",        "Please enter the member's full name.");     return; }
+    if (!mRelation)       { Alert.alert("Relation required",    "Please select the relation.");               return; }
+    if (!mAge.trim())     { Alert.alert("Age required",         "Please enter the member's age.");            return; }
+    if (!mBlood)          { Alert.alert("Blood group required", "Please select the blood group.");            return; }
+    if (!mPhone.trim())   { Alert.alert("Phone required",       "Please enter the member's phone number.");  return; }
+    if (!mArea.trim())    { Alert.alert("Area required",        "Please enter the member's area.");           return; }
     if (!mAddress.trim()) { Alert.alert("Address required",     "Please enter the member's complete address."); return; }
     setMSaving(true);
     const member: FamilyMember = {
-      id: editingMem?.id ?? Date.now().toString(),
-      name: mName.trim(), relation: mRelation, age: mAge,
-      blood: mBlood, phone: mPhone, avatar: mPhoto,
-      area: mArea.trim(), address: mAddress.trim(),
+      id:       editingMem?.id ?? Date.now().toString(),
+      name:     mName.trim(),
+      relation: mRelation,
+      age:      mAge,
+      blood:    mBlood,
+      phone:    mPhone,
+      area:     mArea.trim(),
+      address:  mAddress.trim(),
     };
     const updated = editingMem
       ? familyMembers.map(m => m.id === editingMem.id ? member : m)
@@ -300,8 +278,6 @@ export default function ProfileScreen() {
     setMSaving(false);
     setFamVisible(false);
   };
-
-  const photoDisplay = ePhoto ?? patient?.profilePhoto;
 
   return (
     <View style={styles.container}>
@@ -328,22 +304,16 @@ export default function ProfileScreen() {
           <LinearGradient colors={["rgba(99,102,241,0.45)", "rgba(6,182,212,0.22)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.userCard}>
             <View style={styles.cardGlowOrb} />
             <View style={styles.userCardRow}>
-              <Pressable style={{ position: "relative" }} onPress={async () => {
-                const uri = await pickSquareImage();
-                if (uri) { await updatePatient({ profilePhoto: uri }); setAvatarError(false); }
-              }}>
-                {!avatarError && (patient?.profilePhoto) ? (
-                  <Image source={{ uri: patient.profilePhoto }} style={styles.userAvatarPhoto} contentFit="cover" onError={() => setAvatarError(true)} />
+              <View style={{ position: "relative" }}>
+                {patient?.profilePhoto ? (
+                  <Image source={{ uri: patient.profilePhoto }} style={styles.userAvatarPhoto} contentFit="cover" />
                 ) : (
                   <View style={[styles.userAvatarPhoto, styles.userAvatarInitials]}>
                     <Text style={styles.initialsText}>{initials}</Text>
                   </View>
                 )}
-                <View style={styles.cameraBtn}>
-                  <Feather name="camera" size={11} color="#FFF" />
-                </View>
                 <View style={styles.onlineIndicator} />
-              </Pressable>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{name}</Text>
                 <View style={styles.phoneRow}>
@@ -373,7 +343,6 @@ export default function ProfileScreen() {
                 <Text style={styles.verifiedTxt}>Edit</Text>
               </Pressable>
             </View>
-
           </LinearGradient>
         </View>
 
@@ -396,7 +365,7 @@ export default function ProfileScreen() {
           {showFamily && (
             <View style={styles.familyList}>
               {/* Self */}
-              <Pressable style={styles.familyCard} onPress={openEditProfile}>
+              <View style={styles.familyCard}>
                 <LinearGradient colors={["#4F46E5", "#06B6D4"]} style={styles.familyCardAvatar}>
                   <Text style={styles.familyAvatarTxt}>{initials}</Text>
                 </LinearGradient>
@@ -406,11 +375,17 @@ export default function ProfileScreen() {
                     <View style={styles.selfBadge}><Text style={styles.selfBadgeTxt}>Self</Text></View>
                   </View>
                   <Text style={styles.familyCardSub}>
-                    {[patient?.age ? `${patient.age} yrs` : "32 yrs", patient?.blood ?? "O+", phone].filter(Boolean).join(" · ")}
+                    {[patient?.age ? `${patient.age} yrs` : null, patient?.blood, phone].filter(Boolean).join(" · ")}
                   </Text>
                 </View>
-                <Feather name="edit-3" size={13} color="rgba(255,255,255,0.3)" />
-              </Pressable>
+              </View>
+
+              {familyMembers.length === 0 && (
+                <View style={styles.emptyFamilyHint}>
+                  <Feather name="users" size={16} color="rgba(129,140,248,0.4)" />
+                  <Text style={styles.emptyFamilyTxt}>No family members added yet</Text>
+                </View>
+              )}
 
               {familyMembers.map(m => {
                 const color = RELATION_COLORS[m.relation] ?? "#818CF8";
@@ -519,30 +494,6 @@ export default function ProfileScreen() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-                {/* Photo */}
-                <View style={styles.modalPhotoRow}>
-                  <Pressable style={styles.modalPhotoWrap} onPress={async () => {
-                    const uri = await pickSquareImage();
-                    if (uri) setEPhoto(uri);
-                  }}>
-                    {ePhoto ? (
-                      <Image source={{ uri: ePhoto }} style={styles.modalPhoto} contentFit="cover" />
-                    ) : (
-                      <View style={[styles.modalPhoto, styles.modalPhotoPlaceholder]}>
-                        <Text style={styles.modalPhotoInitials}>{initials}</Text>
-                      </View>
-                    )}
-                    <View style={styles.modalCameraOverlay}>
-                      <Feather name="camera" size={18} color="#FFF" />
-                      <Text style={styles.modalCameraTxt}>Change Photo</Text>
-                    </View>
-                  </Pressable>
-                  <View style={styles.photoHintBox}>
-                    <Feather name="alert-circle" size={11} color="#F59E0B" />
-                    <Text style={styles.modalPhotoHint}>Please upload a square (1:1) photo for best results</Text>
-                  </View>
-                </View>
-
                 <FieldBlock label="Full Name" required>
                   <TextInput style={styles.textInput} value={eName} onChangeText={setEName} placeholder="Enter your name" placeholderTextColor="rgba(255,255,255,0.25)" />
                 </FieldBlock>
@@ -608,30 +559,6 @@ export default function ProfileScreen() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-                {/* Photo */}
-                <View style={styles.modalPhotoRow}>
-                  <Pressable style={styles.modalPhotoWrap} onPress={async () => {
-                    const uri = await pickSquareImage();
-                    if (uri) setMPhoto(uri);
-                  }}>
-                    {mPhoto ? (
-                      <Image source={{ uri: mPhoto }} style={styles.modalPhoto} contentFit="cover" />
-                    ) : (
-                      <View style={[styles.modalPhoto, styles.modalPhotoPlaceholder]}>
-                        <Feather name="user" size={32} color="rgba(255,255,255,0.3)" />
-                      </View>
-                    )}
-                    <View style={styles.modalCameraOverlay}>
-                      <Feather name="camera" size={18} color="#FFF" />
-                      <Text style={styles.modalCameraTxt}>Upload Photo</Text>
-                    </View>
-                  </Pressable>
-                  <View style={styles.photoHintBox}>
-                    <Feather name="alert-circle" size={11} color="#F59E0B" />
-                    <Text style={styles.modalPhotoHint}>Please upload a square (1:1) photo for best results</Text>
-                  </View>
-                </View>
-
                 <FieldBlock label="Full Name" required>
                   <TextInput style={styles.textInput} value={mName} onChangeText={setMName} placeholder="Member's name" placeholderTextColor="rgba(255,255,255,0.25)" />
                 </FieldBlock>
@@ -722,7 +649,6 @@ const styles = StyleSheet.create({
   userAvatarPhoto:    { width: 64, height: 64, borderRadius: 16, borderWidth: 2, borderColor: "rgba(99,102,241,0.45)" },
   userAvatarInitials: { backgroundColor: "rgba(79,70,229,0.35)", alignItems: "center", justifyContent: "center" },
   initialsText:       { fontSize: 22, fontWeight: "700", color: "#A5B4FC", letterSpacing: 1 },
-  cameraBtn:          { position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: 8, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#0A0E1A" },
   onlineIndicator:    { position: "absolute", top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: "#0A0E1A" },
   userName:           { fontSize: 18, fontWeight: "900", color: "#FFF", letterSpacing: -0.3 },
   phoneRow:           { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
@@ -757,6 +683,8 @@ const styles = StyleSheet.create({
   familyCardSub:       { fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: "600" },
   relationBadge:       { borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
   relationBadgeTxt:    { fontSize: 8, fontWeight: "700" },
+  emptyFamilyHint:     { flexDirection: "row", alignItems: "center", gap: 8, padding: 14, borderRadius: 14, backgroundColor: "rgba(129,140,248,0.06)", borderWidth: 1, borderColor: "rgba(129,140,248,0.14)", borderStyle: "dashed" },
+  emptyFamilyTxt:      { fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: "600" },
 
   menuSection:      { paddingHorizontal: 20, marginBottom: 16 },
   menuSectionTitle: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 },
@@ -776,30 +704,19 @@ const styles = StyleSheet.create({
   footer:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingBottom: 10, paddingTop: 6 },
   footerTxt: { fontSize: 10, color: "rgba(255,255,255,0.2)", fontWeight: "500" },
 
-  // Modal
-  modalOverlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalSheet:         { backgroundColor: "#111827", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 10, maxHeight: "90%", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  modalHandle:        { width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.15)", alignSelf: "center", marginBottom: 16 },
-  modalHeader:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  modalTitle:         { fontSize: 18, fontWeight: "900", color: "#FFF" },
-
-  modalPhotoRow:        { alignItems: "center", marginBottom: 24 },
-  modalPhotoWrap:       { position: "relative", marginBottom: 8 },
-  modalPhoto:           { width: 100, height: 100, borderRadius: 16, borderWidth: 2, borderColor: "rgba(99,102,241,0.5)" },
-  modalPhotoPlaceholder:{ backgroundColor: "rgba(79,70,229,0.2)", alignItems: "center", justifyContent: "center" },
-  modalPhotoInitials:   { fontSize: 32, fontWeight: "800", color: "#A5B4FC" },
-  modalCameraOverlay:   { position: "absolute", bottom: 0, left: 0, right: 0, height: 36, borderBottomLeftRadius: 14, borderBottomRightRadius: 14, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5 },
-  modalCameraTxt:       { fontSize: 10, fontWeight: "700", color: "#FFF" },
-  photoHintBox:         { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4 },
-  modalPhotoHint:       { fontSize: 10, color: "#F59E0B", fontWeight: "600", flex: 1 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalSheet:   { backgroundColor: "#111827", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 10, maxHeight: "90%", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  modalHandle:  { width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.15)", alignSelf: "center", marginBottom: 16 },
+  modalHeader:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  modalTitle:   { fontSize: 18, fontWeight: "900", color: "#FFF" },
 
   fieldBlock:    { marginBottom: 18 },
   fieldLabel:    { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 0.8 },
   fieldRequired: { fontSize: 13, fontWeight: "900", color: "#EF4444", lineHeight: 16 },
-  textInput:   { backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: "#FFF", fontWeight: "600" },
+  textInput:     { backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: "#FFF", fontWeight: "600" },
 
-  chip:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
-  chipTxt:     { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.45)" },
+  chip:    { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  chipTxt: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.45)" },
 
   saveBtn:    { marginTop: 8, backgroundColor: "#4F46E5", borderRadius: 16, paddingVertical: 15, alignItems: "center" },
   saveBtnTxt: { fontSize: 15, fontWeight: "800", color: "#FFF", letterSpacing: 0.3 },
