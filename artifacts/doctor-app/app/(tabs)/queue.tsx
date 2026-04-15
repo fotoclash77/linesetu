@@ -460,6 +460,7 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
   tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void;
   busy: boolean; isManualNext?: boolean; isRefundable?: boolean;
 }) {
+  const isCancelled = tok.displayStatus === 'cancelled' || tok.displayStatus === 'refunded';
   return (
     <View style={[S.waitCard, isManualNext && { borderColor: 'rgba(252,211,77,0.45)', backgroundColor: 'rgba(180,83,9,0.1)' }]}>
       <TouchableOpacity
@@ -471,56 +472,58 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
         <PatientInfo tok={tok} />
         <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, marginLeft: 4 }}>›</Text>
       </TouchableOpacity>
-      <View style={S.waitBtns}>
-        <TouchableOpacity
-          style={[S.sendNextBtn, busy && { opacity: 0.5 }]}
-          onPress={onSendNext} disabled={busy}
-        >
-          {busy
-            ? <ActivityIndicator color={TEAL_LT} size="small" />
-            : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
-                <Feather name={isManualNext ? 'star' : 'play'} size={12} color={isManualNext ? AMBER_LT : TEAL_LT} />
-                <Text style={[S.sendNextTxt, isManualNext && { color: AMBER_LT }]}>
-                  {isManualNext ? 'Set as Next' : 'Send Next'}
-                </Text>
-              </View>}
-        </TouchableOpacity>
-        {tok.displayStatus !== 'skipped' ? (
+      {!isCancelled && (
+        <View style={S.waitBtns}>
           <TouchableOpacity
-            style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
-            onPress={onSkip} disabled={busy}
-          >
-            <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
-              <Feather name="corner-down-right" size={12} color={AMBER_LT} />
-              <Text style={S.skipWaitTxt}>Skip</Text>
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[
-              S.refundBtn, { flex: 1, marginTop: 0 },
-              busy && { opacity: 0.5 },
-              isRefundable && { backgroundColor: 'rgba(248,113,113,0.15)', borderColor: 'rgba(248,113,113,0.35)' },
-            ]}
-            onPress={onRefund} disabled={busy}
+            style={[S.sendNextBtn, busy && { opacity: 0.5 }]}
+            onPress={onSendNext} disabled={busy}
           >
             {busy
-              ? <ActivityIndicator color="#FCA5A5" size="small" />
-              : <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
-                  <Feather name="rotate-ccw" size={12} color={isRefundable ? '#FCA5A5' : '#FCA5A5'} />
-                  <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
-                    Cancel & Refund
+              ? <ActivityIndicator color={TEAL_LT} size="small" />
+              : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+                  <Feather name={isManualNext ? 'star' : 'play'} size={12} color={isManualNext ? AMBER_LT : TEAL_LT} />
+                  <Text style={[S.sendNextTxt, isManualNext && { color: AMBER_LT }]}>
+                    {isManualNext ? 'Set as Next' : 'Send Next'}
                   </Text>
                 </View>}
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[S.alertBtn, busy && { opacity: 0.5 }]}
-          onPress={onSendAlert} disabled={busy}
-        >
-          <Feather name="bell" size={16} color="#F59E0B" />
-        </TouchableOpacity>
-      </View>
+          {tok.displayStatus !== 'skipped' ? (
+            <TouchableOpacity
+              style={[S.skipWaitBtn, busy && { opacity: 0.5 }]}
+              onPress={onSkip} disabled={busy}
+            >
+              <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+                <Feather name="corner-down-right" size={12} color={AMBER_LT} />
+                <Text style={S.skipWaitTxt}>Skip</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                S.refundBtn, { flex: 1, marginTop: 0 },
+                busy && { opacity: 0.5 },
+                isRefundable && { backgroundColor: 'rgba(248,113,113,0.15)', borderColor: 'rgba(248,113,113,0.35)' },
+              ]}
+              onPress={onRefund} disabled={busy}
+            >
+              {busy
+                ? <ActivityIndicator color="#FCA5A5" size="small" />
+                : <View style={{flexDirection:'row',alignItems:'center',gap:4}}>
+                    <Feather name="rotate-ccw" size={12} color="#FCA5A5" />
+                    <Text style={[S.refundTxt, isRefundable && { color: '#FCA5A5' }]}>
+                      Cancel & Refund
+                    </Text>
+                  </View>}
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[S.alertBtn, busy && { opacity: 0.5 }]}
+            onPress={onSendAlert} disabled={busy}
+          >
+            <Feather name="bell" size={16} color="#F59E0B" />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
