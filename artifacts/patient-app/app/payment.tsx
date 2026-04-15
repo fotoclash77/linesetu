@@ -21,7 +21,6 @@ import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const RNEventSource = typeof EventSource !== "undefined" ? EventSource : EventSourcePolyfill;
-const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? "";
 
 const isWeb = Platform.OS === "web";
 
@@ -74,6 +73,7 @@ export default function PaymentScreen() {
   const eAppFee     = isEmergency ? 20 : 10;
   const platformFee = 10;
 
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [loading, setLoading] = useState(false);
   const [rzpVisible, setRzpVisible] = useState(false);
   const [rzpOrder, setRzpOrder] = useState<{ id: string; amount: number; currency: string } | null>(null);
@@ -99,6 +99,15 @@ export default function PaymentScreen() {
     tokenNumber?: number;
     tokenId?: string;
   }>({ visible: false, type: "success", message: "" });
+
+  // Fetch Razorpay public key from the API server (avoids needing EXPO_PUBLIC_RAZORPAY_KEY_ID)
+  useEffect(() => {
+    const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+    fetch(`${BASE}/api/razorpay/config`)
+      .then(r => r.json())
+      .then(d => { if (d.keyId) setRazorpayKeyId(d.keyId); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!params.doctorId) return;
@@ -171,6 +180,20 @@ export default function PaymentScreen() {
 
   async function handlePay() {
     if (isFull) return;
+    // If the key isn't loaded yet, attempt a quick re-fetch before failing
+    let activeKeyId = razorpayKeyId;
+    if (!activeKeyId) {
+      try {
+        const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+        const cfgRes = await fetch(`${BASE}/api/razorpay/config`);
+        const cfgData = await cfgRes.json();
+        if (cfgData.keyId) { setRazorpayKeyId(cfgData.keyId); activeKeyId = cfgData.keyId; }
+      } catch (_) {}
+    }
+    if (!activeKeyId) {
+      setResultModal({ visible: true, type: "full", message: "Payment gateway not ready. Please check your connection and try again." });
+      return;
+    }
     setLoading(true);
     try {
       // Step 1: soft-lock a token number before touching payment
@@ -219,7 +242,7 @@ export default function PaymentScreen() {
       const order = await res.json();
       setRzpOrder(order);
       if (isWeb) {
-        openRazorpayWeb(order);
+        openRazorpayWeb(order, activeKeyId);
       } else {
         setRzpVisible(true);
       }
@@ -233,13 +256,13 @@ export default function PaymentScreen() {
     }
   }
 
-  function openRazorpayWeb(order: any) {
+  function openRazorpayWeb(order: any, keyId: string) {
     if (typeof window === "undefined") return;
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => {
       const rzp = new (window as any).Razorpay({
-        key: RAZORPAY_KEY_ID,
+        key: keyId,
         amount: order.amount,
         currency: order.currency,
         order_id: order.id,
@@ -287,6 +310,7 @@ export default function PaymentScreen() {
           date,
           shift,
           type: tokenType,
+          visitType,
           forMemberId: params.patientId ?? "self",
           paymentId,
           orderId,
@@ -577,7 +601,7 @@ export default function PaymentScreen() {
         <RazorpayCheckout
           visible={rzpVisible}
           options={{
-            keyId: RAZORPAY_KEY_ID,
+            keyId: razorpayKeyId,
             orderId: rzpOrder.id,
             amount: rzpOrder.amount,
             currency: rzpOrder.currency,

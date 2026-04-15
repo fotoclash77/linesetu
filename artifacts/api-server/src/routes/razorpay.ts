@@ -10,6 +10,11 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
+// GET /api/razorpay/config — returns public key so client never needs EXPO_PUBLIC_RAZORPAY_KEY_ID
+router.get("/config", (_req, res) => {
+  res.json({ keyId: process.env.RAZORPAY_KEY_ID ?? "" });
+});
+
 router.post("/create-order", async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
