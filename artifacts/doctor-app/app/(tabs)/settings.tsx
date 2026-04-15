@@ -1316,7 +1316,6 @@ export default function SettingsScreen() {
             <View style={styles.formCard}>
               <Text style={styles.formCardTitle}>FEATURES</Text>
               {[
-                { label: 'Online Booking', sub: 'Allow patients to book tokens online', val: onlineBooking, set: setOnlineBooking },
                 { label: 'Emergency Tokens', sub: 'Allow emergency token requests', val: emergencyTokens, set: setEmergencyTokens },
                 { label: 'Show Wait Time', sub: 'Display estimated wait time', val: showWaitTime, set: setShowWaitTime },
                 { label: 'Show Queue Position', sub: 'Show patient\'s current position', val: showPosition, set: setShowPosition },
