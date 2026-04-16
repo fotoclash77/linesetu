@@ -544,14 +544,6 @@ export default function LiveQueueScreen() {
                   <Text style={styles.apptDetailLbl}>Est. Wait</Text>
                   <Text style={styles.apptDetailVal}>~{waitMin} min</Text>
                 </View>
-                <View style={styles.apptDetailRow}>
-                  <Feather name="calendar" size={12} color="#22C55E" />
-                  <Text style={styles.apptDetailLbl}>Shift</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Feather name={shiftIcon} size={11} color="rgba(255,255,255,0.7)" />
-                    <Text style={styles.apptDetailVal}>{shiftLabel}</Text>
-                  </View>
-                </View>
               </View>
             </View>
             <View style={styles.apptDoctorRow}>
