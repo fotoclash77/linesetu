@@ -141,6 +141,8 @@ export default function AddWalkinScreen() {
   }, [doctor?.id, selectedDate, selectedShift]);
 
   const isEmerg = tokenType === 'Emergency';
+  const normalFee = (doctor as any)?.walkinFee ?? 0;
+  const emergFee = (doctor as any)?.walkinFee ?? 0;
   const maxTokenInQueue = queue.reduce((m, t) => Math.max(m, t.tokenNumber ?? 0), 0);
   const nextTokenPreview = maxTokenInQueue + 1;
 
@@ -319,7 +321,7 @@ export default function AddWalkinScreen() {
                 >
                   <Feather name={isE ? 'zap' : 'check'} size={18} color={active ? (isE ? '#F87171' : TEAL_LT) : 'rgba(255,255,255,0.3)'} />
                   <Text style={[styles.tokenTypeBtnText, active && { color: '#FFF' }]}>{t}</Text>
-                  <Text style={[styles.tokenTypeBtnFree, { color: active ? (isE ? '#FCA5A5' : TEAL_LT) : 'rgba(255,255,255,0.2)' }]}>FREE</Text>
+                  <Text style={[styles.tokenTypeBtnFree, { color: active ? (isE ? '#FCA5A5' : TEAL_LT) : 'rgba(255,255,255,0.2)' }]}>{isE ? (emergFee > 0 ? `₹${emergFee}` : 'FREE') : (normalFee > 0 ? `₹${normalFee}` : 'FREE')}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -439,7 +441,7 @@ export default function AddWalkinScreen() {
                       ? (isHoliday ? 'Holiday — Cannot Book' : 'Shift Not Scheduled')
                       : isShiftFull
                       ? 'Shift Full — No More Tokens'
-                      : `Book ${tokenType} Token — FREE`}
+                      : `Book ${tokenType} Token${isEmerg ? (emergFee > 0 ? ` — ₹${emergFee}` : '') : (normalFee > 0 ? ` — ₹${normalFee}` : '')}`}
                   </Text>
                 </View>}
           </TouchableOpacity>
