@@ -442,7 +442,7 @@ export default function SettingsScreen() {
   });
   const [clinicSaving, setClinicSaving] = useState(false);
   const [clinicSaved, setClinicSaved] = useState(false);
-  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; phone?: boolean; maps?: boolean }>({});
+  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; phone?: boolean; maps?: boolean; state?: boolean; district?: boolean }>({});
 
   // Schedule state — seeded from doctor.shifts
   const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
@@ -1402,6 +1402,19 @@ export default function SettingsScreen() {
               onPress={async () => {
                 setFeeSaving(true); setFeeSaved(false);
                 try {
+                  const invalidClinic = clinics.find(c => !c.name.trim() || !c.address.trim() || !c.phone.trim() || !c.maps.trim() || !c.state.trim() || !c.district.trim());
+                  if (invalidClinic) {
+                    setClinicFieldErrors({
+                      name: !invalidClinic.name.trim(),
+                      address: !invalidClinic.address.trim(),
+                      phone: !invalidClinic.phone.trim(),
+                      maps: !invalidClinic.maps.trim(),
+                      state: !invalidClinic.state.trim(),
+                      district: !invalidClinic.district.trim(),
+                    });
+                    setClinicSaving(false);
+                    return;
+                  }
                   await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0, clinicConsultFee: Number(clinicConsultFee) || 0, clinicEmergencyFee: Number(clinicEmergencyFee) || 0 } as any);
                   setFeeSaved(true);
                   setTimeout(() => {
