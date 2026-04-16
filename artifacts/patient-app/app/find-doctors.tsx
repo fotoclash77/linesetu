@@ -39,8 +39,7 @@ interface DoctorItem {
   photo: string;
   accent: string;
   isAvailable?: boolean;
-  district?: string;
-  state?: string;
+  locations?: { district: string; state: string }[];
 }
 
 
@@ -95,12 +94,16 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
           <Text style={[styles.specChipTxt, { color: doc.accent }]}>{doc.specialty}</Text>
         </View>
 
-        {!!(doc.district || doc.state) && (
-          <View style={styles.locationRow}>
-            <Feather name="map-pin" size={9} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.locationTxt} numberOfLines={1}>
-              {[doc.district, doc.state].filter(Boolean).join(", ")}
-            </Text>
+        {!!(doc.locations?.length) && (
+          <View style={{ gap: 2, marginBottom: 2 }}>
+            {doc.locations.map((loc, i) => (
+              <View key={i} style={styles.locationRow}>
+                <Feather name="map-pin" size={9} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.locationTxt} numberOfLines={1}>
+                  {[loc.district, loc.state].filter(Boolean).join(", ")}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -191,8 +194,7 @@ export default function FindDoctorsScreen() {
     token: Math.floor(Math.random() * 50) + 1,
     exp: d.experience != null ? `${d.experience} yrs` : "—",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
-    district: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return ''; const active = cs.find((c: any) => c.active && c.name?.trim()) ?? cs[0]; return active?.district || ''; })(),
-    state: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return ''; const active = cs.find((c: any) => c.active && c.name?.trim()) ?? cs[0]; return active?.state || ''; })(),
+    locations: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return []; const actives = cs.filter((c: any) => c.active && c.name?.trim() && (c.state || c.district)); return actives.length ? actives.map((c: any) => ({ district: c.district || '', state: c.state || '' })) : (cs[0] && (cs[0].state || cs[0].district) ? [{ district: cs[0].district || '', state: cs[0].state || '' }] : []); })(),
     photo: fbPhotoMap.get(d.id) ?? d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
