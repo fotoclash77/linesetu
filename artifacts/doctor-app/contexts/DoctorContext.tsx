@@ -112,11 +112,13 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
           setDoctor(null);
           return;
         }
-        const fresh = data.isAvailable !== false;
         setDoctor(prev => {
           if (!prev) return prev;
-          if (prev.isAvailable === fresh) return prev;
-          const updated = { ...prev, isAvailable: fresh };
+          const freshAvail = data.isAvailable !== false;
+          const freshActive = data.isActive !== false;
+          const freshApproved = data.isApproved !== false;
+          if (prev.isAvailable === freshAvail && (prev as any).isActive === freshActive && (prev as any).isApproved === freshApproved) return prev;
+          const updated = { ...prev, isAvailable: freshAvail, isActive: freshActive, isApproved: freshApproved };
           AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
           return updated;
         });

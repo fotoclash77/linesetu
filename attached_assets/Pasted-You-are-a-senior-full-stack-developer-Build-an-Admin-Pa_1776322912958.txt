@@ -1,0 +1,186 @@
+You are a senior full-stack developer.
+
+Build an **Admin Panel (Web App)** for LINESETU and connect it in real-time with both:
+
+- Patient Mobile App
+- Doctor Mobile App
+
+Use:
+- React (Web) + Tailwind CSS
+- Firebase Authentication
+- Cloud Firestore (real-time listeners)
+
+⚠️ This is a REAL FEATURE, not just UI.
+
+---
+
+# 🎯 CORE REQUIREMENT
+
+Create an Admin Panel where admin can:
+
+👉 View ALL doctors (existing + new)  
+👉 Approve / Hide / Delete doctors  
+👉 Changes must reflect **instantly in real-time** across:
+- Patient App
+- Doctor App
+
+---
+
+# 🧱 FIRESTORE STRUCTURE
+
+Collection: users/{userId}
+
+Fields:
+
+- name
+- phone
+- role ("doctor" | "patient" | "admin")
+- isApproved (true | false)
+- isActive (true | false)
+- isDeleted (true | false)
+- createdAt
+
+---
+
+# 🔁 LOGIC RULES
+
+## 1. APPROVE DOCTOR
+
+When admin clicks "Approve":
+
+- isApproved = true
+- Doctor becomes visible in Patient App
+
+---
+
+## 2. HIDE DOCTOR
+
+When admin clicks "Hide":
+
+- isActive = false
+
+👉 Doctor must be hidden from:
+- Patient app doctor listing
+- Search results
+- Booking flow
+
+👉 Applies to:
+- All users (new + old)
+
+---
+
+## 3. DELETE DOCTOR
+
+When admin clicks "Delete":
+
+- isDeleted = true
+
+👉 Doctor must:
+- Not appear anywhere in Patient App
+- Not appear in Doctor App login (optional restriction)
+- Be fully removed from listings
+
+---
+
+# 📱 PATIENT APP INTEGRATION
+
+Modify patient app queries:
+
+ONLY show doctors where:
+
+- role == "doctor"
+- isApproved == true
+- isActive == true
+- isDeleted == false
+
+👉 This ensures real-time control from admin
+
+---
+
+# 📡 REAL-TIME SYNC
+
+Use Firestore real-time listeners:
+
+- Any change from admin panel must instantly reflect in:
+  - Patient App UI
+  - Doctor App (if needed)
+
+No refresh required.
+
+---
+
+# 💻 ADMIN PANEL UI
+
+## Page: Doctors Management
+
+Display list of all doctors:
+
+Each row/card should include:
+
+- Doctor Name
+- Phone
+- Status:
+  - Approved / Not Approved
+  - Active / Hidden
+
+---
+
+## ACTION BUTTONS PER DOCTOR
+
+- Approve
+- Hide / Unhide (toggle)
+- Delete
+
+👉 Buttons must:
+- Update Firestore instantly
+- Reflect changes in real-time apps
+
+---
+
+# ⚡ FILTERS (OPTIONAL BUT GOOD)
+
+- All Doctors
+- Approved
+- Pending Approval
+- Hidden
+- Deleted
+
+---
+
+# ⚠️ EDGE CASES
+
+- Prevent showing deleted doctors anywhere
+- Prevent approving already approved doctors
+- Confirm before delete
+- Handle real-time UI updates properly
+
+---
+
+# 🧠 PERFORMANCE
+
+- Use indexed queries
+- Avoid multiple listeners
+- Paginate if needed
+
+---
+
+# 📁 CODE STRUCTURE
+
+- /admin-panel
+  - pages/DoctorsPage.jsx
+  - components/DoctorCard.jsx
+  - services/adminService.js
+  - hooks/useDoctors.js
+
+---
+
+# 🎯 FINAL GOAL
+
+👉 Admin has full control over doctor visibility  
+👉 Any action reflects instantly across apps  
+👉 No manual sync required  
+👉 Clean, scalable SaaS-ready system  
+
+---
+
+Build production-ready working feature with real-time Firebase integration.

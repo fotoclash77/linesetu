@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useDoctors } from "../hooks/useDoctors";
 import { DoctorRow } from "../components/DoctorRow";
 
-type FilterTab = "all" | "pending" | "approved" | "hidden";
+type FilterTab = "all" | "pending" | "approved" | "hidden" | "deleted";
 
 export default function DoctorsPage() {
   const { doctors, loading } = useDoctors();
@@ -11,9 +11,11 @@ export default function DoctorsPage() {
 
   const filtered = useMemo(() => {
     let list = doctors;
-    if (tab === "pending") list = list.filter((d) => !d.isApproved);
-    if (tab === "approved") list = list.filter((d) => d.isApproved && d.isActive);
-    if (tab === "hidden") list = list.filter((d) => !d.isActive);
+    if (tab === "all") list = list.filter((d) => !d.isDeleted);
+    if (tab === "pending") list = list.filter((d) => !d.isApproved && !d.isDeleted);
+    if (tab === "approved") list = list.filter((d) => d.isApproved && d.isActive && !d.isDeleted);
+    if (tab === "hidden") list = list.filter((d) => !d.isActive && !d.isDeleted);
+    if (tab === "deleted") list = list.filter((d) => d.isDeleted);
     if (search.trim()) {
       const s = search.toLowerCase();
       list = list.filter(
@@ -28,10 +30,11 @@ export default function DoctorsPage() {
 
   const counts = useMemo(
     () => ({
-      all: doctors.length,
-      pending: doctors.filter((d) => !d.isApproved).length,
-      approved: doctors.filter((d) => d.isApproved && d.isActive).length,
-      hidden: doctors.filter((d) => !d.isActive).length,
+      all: doctors.filter((d) => !d.isDeleted).length,
+      pending: doctors.filter((d) => !d.isApproved && !d.isDeleted).length,
+      approved: doctors.filter((d) => d.isApproved && d.isActive && !d.isDeleted).length,
+      hidden: doctors.filter((d) => !d.isActive && !d.isDeleted).length,
+      deleted: doctors.filter((d) => d.isDeleted).length,
     }),
     [doctors]
   );
@@ -41,6 +44,7 @@ export default function DoctorsPage() {
     { key: "pending", label: "Pending" },
     { key: "approved", label: "Approved" },
     { key: "hidden", label: "Hidden" },
+    { key: "deleted", label: "Deleted" },
   ];
 
   return (
@@ -62,11 +66,12 @@ export default function DoctorsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-5 gap-4 mb-6">
           <StatCard label="Total Doctors" value={counts.all} color="gray" />
           <StatCard label="Pending Approval" value={counts.pending} color="yellow" />
           <StatCard label="Active & Approved" value={counts.approved} color="green" />
-          <StatCard label="Hidden" value={counts.hidden} color="red" />
+          <StatCard label="Hidden" value={counts.hidden} color="orange" />
+          <StatCard label="Deleted" value={counts.deleted} color="red" />
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -155,12 +160,13 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  color: "gray" | "yellow" | "green" | "red";
+  color: "gray" | "yellow" | "green" | "orange" | "red";
 }) {
   const colors = {
     gray: "bg-white border-gray-200 text-gray-900",
     yellow: "bg-yellow-50 border-yellow-200 text-yellow-800",
     green: "bg-green-50 border-green-200 text-green-800",
+    orange: "bg-orange-50 border-orange-200 text-orange-800",
     red: "bg-red-50 border-red-200 text-red-800",
   };
 

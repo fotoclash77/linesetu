@@ -54,18 +54,23 @@ The patient app requires a patch to expo-router's `getPathFromState-forks.js`, `
 
 ### Admin Panel (artifacts/admin-panel)
 React+Vite web app for admin doctor lifecycle management.
-- Real-time Firestore `onSnapshot` listener on `doctors` collection (client-side filtering, no composite index needed)
-- Stat cards: Total Doctors, Pending Approval, Active & Approved, Hidden
-- Filter tabs: All, Pending, Approved, Hidden + search by name/phone/specialty
-- Actions: Approve, Hide/Unhide, Delete (with confirmation modal)
+- Real-time Firestore `onSnapshot` listener on `doctors` collection (includes deleted doctors for admin visibility)
+- Stat cards: Total Doctors, Pending Approval, Active & Approved, Hidden, Deleted
+- Filter tabs: All, Pending, Approved, Hidden, Deleted + search by name/phone/specialty
+- Actions: Approve, Hide/Unhide, Delete (with confirmation modal); deleted doctors show "Removed" with greyed-out styling
+- DoctorRow shows all active clinic locations (state/district) from clinics array
 - API routes at `/api/admin/doctors/:id/{approve,hide,unhide}` (POST) and `DELETE /api/admin/doctors/:id`
 - Vite proxy forwards `/api` requests to api-server on port 8080
-- Doctor lifecycle: new doctors start with `isApproved:false, isDeleted:false`; deleted doctors filtered out client-side; `GET /api/doctors` filters by `isApproved !== false`; doctor-app auto-logouts if `isDeleted` detected
+
+### Real-time Admin Sync
+- Admin actions (approve/hide/delete) update Firestore → `onSnapshot` in patient app filters out hidden/deleted/unapproved doctors instantly
+- Doctor app polls every 15s and syncs `isActive`, `isApproved`, `isAvailable`; auto-logout on `isDeleted`
+- Patient app home screen + find-doctors both use Firebase `onSnapshot` to track doctor status fields in real-time
+- Doctor lifecycle: new doctors start with `isApproved:false, isDeleted:false`; `GET /api/doctors` server-side filters by `isActive==true`, `isApproved!==false`, `!isDeleted`
 
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.
 - 7 screens: Login, Dashboard, Master Queue, Earnings, Schedule (within Queue), Settings, Add Walk-in
-- No backend — all data is static/mock
+- Uses REST API polling + SSE for real-time data
 - Uses react-native-svg for sparkline charts
-- Registered manually (createArtifact "expo" blocked by one-mobile-app limit); artifact.toml written via bash
-- PORT hardcoded to 20117 via `${PORT:-20117}` default in package.json dev script
+- PORT 20119 via `${PORT:-20119}` default in package.json dev script

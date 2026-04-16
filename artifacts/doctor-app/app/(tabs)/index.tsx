@@ -324,6 +324,25 @@ export default function DashboardScreen() {
         <View style={styles.glowTop}/>
         <View style={styles.glowRight}/>
 
+        {(doctor as any)?.isActive === false && (
+          <View style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 12, padding: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Feather name="alert-triangle" size={14} color="#EF4444" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FCA5A5', fontSize: 12, fontWeight: '700' }}>Account Hidden by Admin</Text>
+              <Text style={{ color: 'rgba(252,165,165,0.6)', fontSize: 10, marginTop: 2 }}>Your profile is currently hidden from patients. Contact admin for assistance.</Text>
+            </View>
+          </View>
+        )}
+        {(doctor as any)?.isApproved === false && (
+          <View style={{ backgroundColor: 'rgba(251,191,36,0.12)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', borderRadius: 12, padding: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Feather name="clock" size={14} color="#FBBF24" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FDE68A', fontSize: 12, fontWeight: '700' }}>Pending Admin Approval</Text>
+              <Text style={{ color: 'rgba(253,230,138,0.6)', fontSize: 10, marginTop: 2 }}>Your profile is under review. You will be visible to patients once approved.</Text>
+            </View>
+          </View>
+        )}
+
         {/* ── HEADER ── */}
         <View style={styles.header}>
           <View>

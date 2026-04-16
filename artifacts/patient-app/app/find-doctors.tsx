@@ -167,21 +167,31 @@ export default function FindDoctorsScreen() {
 
   const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
 
-  // Real-time doctor photo map from Firebase
-  const [fbPhotoMap, setFbPhotoMap] = useState<Map<string, string>>(new Map());
+  const [fbDoctorMap, setFbDoctorMap] = useState<Map<string, { photo: string; isActive: boolean; isApproved: boolean; isDeleted: boolean }>>(new Map());
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "doctors"), (snap) => {
-      const map = new Map<string, string>();
+      const map = new Map<string, { photo: string; isActive: boolean; isApproved: boolean; isDeleted: boolean }>();
       snap.forEach((d) => {
-        const photo = d.data()?.profilePhoto;
-        if (photo) map.set(d.id, photo);
+        const data = d.data() ?? {};
+        map.set(d.id, {
+          photo: data.profilePhoto || "",
+          isActive: data.isActive !== false,
+          isApproved: data.isApproved !== false,
+          isDeleted: !!data.isDeleted,
+        });
       });
-      setFbPhotoMap(map);
+      setFbDoctorMap(map);
     });
     return () => unsub();
   }, []);
 
-  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? []).map((d: any, i: number) => ({
+  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? [])
+    .filter((d: any) => {
+      const fb = fbDoctorMap.get(d.id);
+      if (!fb) return fbDoctorMap.size === 0;
+      return fb.isActive && fb.isApproved && !fb.isDeleted;
+    })
+    .map((d: any, i: number) => ({
     id: d.id,
     name: d.name,
     specialty: d.specialization,
@@ -195,7 +205,7 @@ export default function FindDoctorsScreen() {
     exp: d.experience != null ? `${d.experience} yrs` : "—",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
     locations: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return []; const actives = cs.filter((c: any) => c.active && c.name?.trim() && (c.state || c.district)); return actives.length ? actives.map((c: any) => ({ district: c.district || '', state: c.state || '' })) : (cs[0] && (cs[0].state || cs[0].district) ? [{ district: cs[0].district || '', state: cs[0].state || '' }] : []); })(),
-    photo: fbPhotoMap.get(d.id) ?? d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
+    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
 

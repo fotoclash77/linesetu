@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db, collection, onSnapshot, query, where } from "../lib/firebase";
+import { db, collection, onSnapshot } from "../lib/firebase";
 
 export interface Doctor {
   id: string;
@@ -15,6 +15,7 @@ export interface Doctor {
   createdAt: any;
   state?: string;
   district?: string;
+  clinics?: { name: string; active: boolean; state?: string; district?: string }[];
 }
 
 export function useDoctors() {
@@ -38,8 +39,7 @@ export function useDoctors() {
           isDeleted: false,
           isAvailable: false,
           ...d.data(),
-        }))
-        .filter((d) => !d.isDeleted) as Doctor[];
+        })) as Doctor[];
       list.sort((a, b) => {
         const aTime = a.createdAt?.seconds ?? 0;
         const bTime = b.createdAt?.seconds ?? 0;
