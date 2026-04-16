@@ -465,42 +465,6 @@ export default function LiveQueueScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
 
-        {/* Doctor & Clinic Card */}
-        <View style={styles.sectionPad}>
-          <View style={styles.clinicCard}>
-            {/* Top row: name + maps */}
-            <View style={styles.clinicCardHeader}>
-              <Feather name="home" size={13} color="#67E8F9" />
-              <Text style={styles.clinicCardName} numberOfLines={1}>{clinicName}</Text>
-              {(!!liveClinicMaps || !!clinicAddress) && (
-                <Pressable
-                  style={styles.mapsBtn}
-                  onPress={() => Linking.openURL(liveClinicMaps || `https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
-                >
-                  <Feather name="navigation" size={11} color="#4285F4" />
-                  <Text style={styles.mapsBtnTxt}>Maps</Text>
-                </Pressable>
-              )}
-            </View>
-            {/* Address / District / State */}
-            {(!!clinicAddress || !!liveClinicDistrict || !!liveClinicState) && (
-              <View style={styles.clinicCardRow}>
-                <Feather name="map-pin" size={10} color="rgba(255,255,255,0.3)" />
-                <Text style={styles.clinicCardMeta} numberOfLines={2}>
-                  {[clinicAddress, liveClinicDistrict, liveClinicState].filter(Boolean).join(", ")}
-                </Text>
-              </View>
-            )}
-            {/* Shift + timing */}
-            <View style={styles.clinicCardRow}>
-              <Feather name={shiftIcon} size={10} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.clinicCardMeta}>
-                {shiftLabel}{liveShiftTiming ? `  ·  ${liveShiftTiming}` : ""}
-              </Text>
-            </View>
-          </View>
-        </View>
-
         {/* Pulsing Hero */}
         <View style={styles.heroSection}>
           <View style={styles.heroTextLeft}>
@@ -607,6 +571,41 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
+        {/* Clinic Details Card */}
+        <View style={styles.sectionPad}>
+          <View style={styles.clinicCard}>
+            {/* Top row: name + maps */}
+            <View style={styles.clinicCardHeader}>
+              <Feather name="home" size={13} color="#67E8F9" />
+              <Text style={styles.clinicCardName} numberOfLines={1}>{clinicName}</Text>
+              {(!!liveClinicMaps || !!clinicAddress) && (
+                <Pressable
+                  style={styles.mapsBtn}
+                  onPress={() => Linking.openURL(liveClinicMaps || `https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
+                >
+                  <Feather name="navigation" size={11} color="#4285F4" />
+                  <Text style={styles.mapsBtnTxt}>Maps</Text>
+                </Pressable>
+              )}
+            </View>
+            {/* Address / District / State */}
+            {(!!clinicAddress || !!liveClinicDistrict || !!liveClinicState) && (
+              <View style={styles.clinicCardRow}>
+                <Feather name="map-pin" size={10} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.clinicCardMeta} numberOfLines={2}>
+                  {[clinicAddress, liveClinicDistrict, liveClinicState].filter(Boolean).join(", ")}
+                </Text>
+              </View>
+            )}
+            {/* Shift + timing */}
+            <View style={styles.clinicCardRow}>
+              <Feather name={shiftIcon} size={10} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.clinicCardMeta}>
+                {shiftLabel}{liveShiftTiming ? `  ·  ${liveShiftTiming}` : ""}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         {/* Alert Banners */}
         {isNext && !isDone && (
