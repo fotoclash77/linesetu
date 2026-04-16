@@ -140,9 +140,9 @@ export default function ProfileScreen() {
   const topPad    = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
-  const name     = patient?.name      ?? "Rahul Sharma";
-  const phone    = patient?.phone     ?? "+91 98765 43210";
-  const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const name     = patient?.name      ?? "";
+  const phone    = patient?.phone     ?? "";
+  const initials = name ? name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
   const [showSignOut, setShowSignOut] = useState(false);
 
   // ── Family members — live from Firestore ─────────────────
@@ -315,11 +315,19 @@ export default function ProfileScreen() {
                 <View style={styles.onlineIndicator} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{name}</Text>
-                <View style={styles.phoneRow}>
-                  <Feather name="phone" size={11} color="rgba(255,255,255,0.5)" />
-                  <Text style={styles.phoneText}>{phone}</Text>
-                </View>
+                {name ? (
+                  <Text style={styles.userName}>{name}</Text>
+                ) : (
+                  <Pressable onPress={openEditProfile}>
+                    <Text style={styles.userNameHint}>Enter your full name</Text>
+                  </Pressable>
+                )}
+                {phone ? (
+                  <View style={styles.phoneRow}>
+                    <Feather name="phone" size={11} color="rgba(255,255,255,0.5)" />
+                    <Text style={styles.phoneText}>{phone}</Text>
+                  </View>
+                ) : null}
                 {patient?.email ? (
                   <View style={styles.memberSince}>
                     <Feather name="mail" size={10} color="#818CF8" />
@@ -371,7 +379,11 @@ export default function ProfileScreen() {
                 </LinearGradient>
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={styles.familyCardName}>{name}</Text>
+                    {name ? (
+                      <Text style={styles.familyCardName}>{name}</Text>
+                    ) : (
+                      <Text style={styles.familyCardNameHint}>Enter your full name</Text>
+                    )}
                     <View style={styles.selfBadge}><Text style={styles.selfBadgeTxt}>Self</Text></View>
                   </View>
                   <Text style={styles.familyCardSub}>
@@ -651,6 +663,7 @@ const styles = StyleSheet.create({
   initialsText:       { fontSize: 22, fontWeight: "700", color: "#A5B4FC", letterSpacing: 1 },
   onlineIndicator:    { position: "absolute", top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: "#0A0E1A" },
   userName:           { fontSize: 18, fontWeight: "900", color: "#FFF", letterSpacing: -0.3 },
+  userNameHint:       { fontSize: 15, fontWeight: "600", color: "rgba(255,255,255,0.3)", fontStyle: "italic", letterSpacing: 0 },
   phoneRow:           { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
   phoneText:          { fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: "600" },
   memberSince:        { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
@@ -678,6 +691,7 @@ const styles = StyleSheet.create({
   familyAvatarTxt:     { fontSize: 14, fontWeight: "800", color: "#FFF" },
   familyCardImgAvatar: { width: 38, height: 38, borderRadius: 10, borderWidth: 2 },
   familyCardName:      { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  familyCardNameHint:  { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.3)", fontStyle: "italic" },
   selfBadge:           { backgroundColor: "rgba(99,102,241,0.2)", borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
   selfBadgeTxt:        { fontSize: 8, fontWeight: "700", color: "#818CF8" },
   familyCardSub:       { fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: "600" },
