@@ -77,7 +77,10 @@ router.get("/queues/:doctorId/position/:tokenId", async (req, res) => {
     const queue             = queueSnap.data();
     const currentToken      = queue.currentToken as number;
     const myToken           = token.tokenNumber as number;
-    const position          = Math.max(0, myToken - currentToken);
+    const waitingNums       = Array.isArray(queue.waitingTokenNumbers) ? (queue.waitingTokenNumbers as number[]) : [];
+    const position          = waitingNums.length > 0
+      ? waitingNums.filter(n => n < myToken).length
+      : Math.max(0, myToken - currentToken - (currentToken > 0 ? 1 : 0));
     const estimatedWaitMins = position * 7;
 
     res.json({
@@ -194,7 +197,10 @@ router.get("/queues/:doctorId/position/:tokenId/stream", async (req, res) => {
       const queue = queueSnap.data();
       const currentToken = queue.currentToken as number;
       const myToken = token.tokenNumber as number;
-      const position = Math.max(0, myToken - currentToken);
+      const waitingNums = Array.isArray(queue.waitingTokenNumbers) ? (queue.waitingTokenNumbers as number[]) : [];
+      const position = waitingNums.length > 0
+        ? waitingNums.filter(n => n < myToken).length
+        : Math.max(0, myToken - currentToken - (currentToken > 0 ? 1 : 0));
       const estimatedWaitMins = position * 7;
 
       res.write(`data: ${JSON.stringify({
