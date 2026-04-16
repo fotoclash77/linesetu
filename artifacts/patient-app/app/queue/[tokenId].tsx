@@ -410,25 +410,6 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
-        {/* Stat Tiles */}
-        <View style={styles.sectionPad}>
-          <View style={styles.statGrid}>
-            {([
-              { label: "My Token",    val: `#${myToken}`,           color: "#A5B4FC", bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.3)",  icon: "hash"     },
-              { label: "Tokens Left", val: `${ahead}`,               color: "#67E8F9", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.25)",  icon: "list"     },
-              { label: "Est. Wait",   val: `~${waitMin}m`,           color: "#F59E0B", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)", icon: "clock"    },
-            ] as Array<{ label: string; val: string; color: string; bg: string; border: string; icon: React.ComponentProps<typeof Feather>["name"] }>).map(({ label, val, color, bg, border, icon }) => (
-              <View key={label} style={[styles.statTile, { backgroundColor: bg, borderColor: border }]}>
-                <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
-                  <Feather name={icon} size={14} color={color} />
-                </View>
-                <Text style={[styles.statVal, { color }]}>{val}</Text>
-                <Text style={styles.statLbl}>{label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
         {/* Your Appointment Card */}
         <View style={styles.sectionPad}>
           <View style={styles.apptCard}>
