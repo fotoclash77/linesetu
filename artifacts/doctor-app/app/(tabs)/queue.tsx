@@ -69,12 +69,8 @@ async function apiFetchAll(doctorId: string, date: string) {
   return r.json();
 }
 async function apiCall(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/call`,   { method: 'PATCH' }); }
-async function apiDone(id: string, callNextId?: string) {
-  await fetch(`${BASE()}/api/tokens/${id}/done`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ callNextId: callNextId ?? null }),
-  });
+async function apiDone(id: string) {
+  await fetch(`${BASE()}/api/tokens/${id}/done`, { method: 'PATCH' });
 }
 async function apiSkip(id: string)   { await fetch(`${BASE()}/api/tokens/${id}/skip`,   { method: 'PATCH' }); }
 async function apiCancel(id: string) { await fetch(`${BASE()}/api/tokens/${id}/cancel`, { method: 'PATCH' }); }
@@ -702,7 +698,7 @@ export default function QueueScreen() {
   const doDone = async (id: string) => {
     setBusy(id);
     try {
-      await apiDone(id, undefined); // mark done only — doctor must manually press Send Next
+      await apiDone(id);
       setManualNext(null);
       setAutoHandoffId(null);
       await inv();

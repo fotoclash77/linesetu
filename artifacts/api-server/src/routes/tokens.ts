@@ -634,10 +634,10 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
   }
 });
 
-// PATCH /api/tokens/:tokenId/done
+// PATCH /api/tokens/:tokenId/done  — mark token consulted only.
+// Calling the next patient is always done via PATCH /tokens/:id/call (Send Next button).
 router.patch("/tokens/:tokenId/done", async (req, res) => {
   try {
-    const { callNextId } = req.body || {};
     const tokenRef  = doc(db, Collections.TOKENS, req.params.tokenId);
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
@@ -645,28 +645,12 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const txRef    = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
 
-    let nextToken: any = null;
-    let nextRef: any   = null;
-    if (callNextId && callNextId !== req.params.tokenId) {
-      nextRef = doc(db, Collections.TOKENS, callNextId);
-      const nextSnap = await getDoc(nextRef);
-      if (nextSnap.exists()) nextToken = nextSnap.data();
-    }
-
     // Earnings are credited at booking time (POST /api/tokens).
     // done-route only marks the token/transaction complete — no balance change here.
     const isOnlineToken = token.source !== "walkin" && (token.patientPaid ?? 0) > 0;
 
     // Guard: only update tx if it exists (legacy records or rare POST-path failure may lack it)
     const txSnap = isOnlineToken ? await getDoc(txRef) : null;
-
-    // Read current waitingTokenNumbers to derive new list after calling next
-    let newWaiting: number[] | null = null;
-    if (nextToken) {
-      const queueSnap = await getDoc(queueRef);
-      const prevWaiting: number[] = (queueSnap.exists() ? (queueSnap.data() as any).waitingTokenNumbers : null) ?? [];
-      newWaiting = prevWaiting.filter((n: number) => n !== nextToken.tokenNumber);
-    }
 
     const batch = writeBatch(db);
 
@@ -678,30 +662,10 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       batch.update(txRef, { status: "completed", updatedAt: Timestamp.now() });
     }
 
-    if (nextToken && nextRef) {
-      const nextQueueRef = doc(db, Collections.QUEUES, queueDocId(nextToken.doctorId, nextToken.date, nextToken.shift));
-      batch.update(nextRef, { status: "in_consult", calledAt: Timestamp.now() });
-      batch.update(nextQueueRef, {
-        currentToken: nextToken.tokenNumber,
-        currentTokenType: nextToken.type || "normal",
-        waitingTokenIds: arrayRemove(callNextId),
-        waitingTokenNumbers: arrayRemove(nextToken.tokenNumber),
-        updatedAt: Timestamp.now(),
-      });
-    }
-
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
 
-    res.json({
-      id: req.params.tokenId, status: "done",
-      calledNext: nextToken ? { id: callNextId, status: "in_consult" } : null,
-    });
-
-    // Send push reminders when queue advances (fire-and-forget)
-    if (nextToken && newWaiting !== null) {
-      sendQueueReminders(nextToken.doctorId, nextToken.date, nextToken.shift, newWaiting).catch(() => {});
-    }
+    res.json({ id: req.params.tokenId, status: "done" });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
