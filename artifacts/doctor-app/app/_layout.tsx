@@ -8,10 +8,11 @@ import {
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
@@ -27,8 +28,15 @@ function RootLayoutNav() {
   const { doctor, isLoading } = useDoctor();
   const qc = useQueryClient();
   const prevDoctorIdRef = useRef<string | null | undefined>(undefined);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   const doctorId = doctor?.id ?? null;
+
+  useEffect(() => {
+    AsyncStorage.getItem("hasSeenOnboarding_doctor").then((val) => {
+      setHasSeenOnboarding(val === "true");
+    });
+  }, []);
 
   // Clear the entire query cache whenever the logged-in doctor account changes
   useEffect(() => {
@@ -39,7 +47,7 @@ function RootLayoutNav() {
   }, [doctorId]);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && hasSeenOnboarding !== null) {
       if (doctorId) {
         if (doctor?.profileCompleted) {
           router.replace("/(tabs)");
@@ -47,14 +55,19 @@ function RootLayoutNav() {
           router.replace("/complete-profile");
         }
       } else {
-        router.replace("/login");
+        if (!hasSeenOnboarding) {
+          router.replace("/onboarding");
+        } else {
+          router.replace("/login");
+        }
       }
     }
-  }, [doctorId, doctor?.profileCompleted, isLoading]);
+  }, [doctorId, doctor?.profileCompleted, isLoading, hasSeenOnboarding]);
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#070B14" } }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="onboarding" />
       <Stack.Screen name="login" />
       <Stack.Screen name="complete-profile" />
       <Stack.Screen name="(tabs)" />

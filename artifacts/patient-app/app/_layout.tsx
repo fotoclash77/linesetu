@@ -8,8 +8,9 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -37,9 +38,16 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const { patient, isLoading } = useAuth();
   const segments = useSegments();
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!isLoading) {
+    AsyncStorage.getItem("hasSeenOnboarding_patient").then((val) => {
+      setHasSeenOnboarding(val === "true");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading && hasSeenOnboarding !== null) {
       if (patient) {
         if (patient.profileCompleted) {
           router.replace("/(tabs)");
@@ -47,18 +55,24 @@ function RootLayoutNav() {
           router.replace("/complete-profile");
         }
       } else {
-        router.replace("/login");
+        if (!hasSeenOnboarding) {
+          router.replace("/onboarding");
+        } else {
+          router.replace("/login");
+        }
       }
     }
-  }, [patient?.id, patient?.profileCompleted, isLoading]);
+  }, [patient?.id, patient?.profileCompleted, isLoading, hasSeenOnboarding]);
 
   const hideNav = isLoading || !patient ||
     segments[0] === "login" ||
+    segments[0] === "onboarding" ||
     segments[0] === "complete-profile";
 
   return (
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#0A0E1A" } }}>
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="complete-profile" />
         <Stack.Screen name="(tabs)" />
