@@ -1,43 +1,36 @@
-const AUTH_KEY    = process.env.MSG91_AUTH_KEY    ?? "";
-const SENDER_ID   = process.env.MSG91_SENDER_ID   ?? "LNSETU";
-const TEMPLATE_ID = process.env.MSG91_TEMPLATE_ID ?? "";
-const ROUTE       = "4"; // transactional
-
-if (!process.env.MSG91_SENDER_ID) {
-  console.warn("[SMS] MSG91_SENDER_ID not set — defaulting to 'LNSETU'. Set the secret for production.");
-}
+const API_KEY = process.env.FAST2SMS_API_KEY ?? "";
 
 function normalize(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("91") && digits.length === 12) return digits;
-  if (digits.length === 10) return `91${digits}`;
+  if (digits.startsWith("91") && digits.length === 12) return digits.slice(2);
+  if (digits.length === 10) return digits;
   return digits;
 }
 
 export async function sendSMS(phone: string, message: string): Promise<void> {
-  if (!AUTH_KEY) {
-    console.warn("[SMS] MSG91_AUTH_KEY not set — skipping SMS");
-    return;
-  }
-  if (!TEMPLATE_ID) {
-    console.warn("[SMS] MSG91_TEMPLATE_ID not set — skipping SMS");
+  if (!API_KEY) {
+    console.warn("[SMS] FAST2SMS_API_KEY not set — skipping SMS");
     return;
   }
   const to = normalize(phone);
-  if (to.length !== 12) {
-    console.warn(`[SMS] Invalid phone number (expected 12 digits after normalisation): ${phone}`);
+  if (to.length !== 10) {
+    console.warn(`[SMS] Invalid phone number (expected 10 digits): ${phone}`);
     return;
   }
   try {
-    const url = new URL("https://api.msg91.com/api/v2/sendsms");
-    url.searchParams.set("authkey",     AUTH_KEY);
-    url.searchParams.set("mobiles",     to);
-    url.searchParams.set("message",     message);
-    url.searchParams.set("sender",      SENDER_ID);
-    url.searchParams.set("route",       ROUTE);
-    url.searchParams.set("DLT_TE_ID",  TEMPLATE_ID);
-
-    const res = await fetch(url.toString(), { method: "GET" });
+    const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        "authorization": API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        route: "q",
+        numbers: to,
+        message,
+        flash: 0,
+      }),
+    });
     const body = await res.text();
     console.log(`[SMS] Sent to ${to}: ${body}`);
   } catch (err: any) {

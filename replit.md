@@ -76,14 +76,12 @@ When a walk-in or e-token is booked, the API server sends a confirmation SMS to 
 - SMS content: token label (`#1` / `#E1`), doctor name, clinic name & address, date/shift, `-LineSetu App` footer.
 - SMS is fire-and-forget — never delays or fails the booking API response.
 
-Required secrets (set in Replit Secrets):
-| Secret | Description |
+Required env var (already set in Replit):
+| Variable | Description |
 |---|---|
-| `MSG91_AUTH_KEY` | MSG91 API authentication key |
-| `MSG91_SENDER_ID` | 6-char sender ID registered with MSG91 (default: `LNSETU`) |
-| `MSG91_TEMPLATE_ID` | DLT-approved template ID (required by TRAI for transactional SMS in India) |
+| `FAST2SMS_API_KEY` | Fast2SMS API key from fast2sms.com dashboard |
 
-Provider: [MSG91](https://msg91.com) — route 4 (transactional). Register at msg91.com, create a transactional route, register a DLT template, and copy all three values. If any of the three secrets are absent the SMS is skipped silently (a warning is logged).
+Provider: [Fast2SMS](https://fast2sms.com) — quick route (`q`), no DLT template required. If the key is absent the SMS is skipped silently (a warning is logged). Phone numbers are normalised to 10 digits before sending.
 
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.
