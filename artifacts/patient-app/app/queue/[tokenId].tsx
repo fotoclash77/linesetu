@@ -500,7 +500,9 @@ export default function LiveQueueScreen() {
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={styles.heroCore}
               >
-                <Animated.Text style={[styles.heroCoreNum, slideUpStyle]}>{current || "–"}</Animated.Text>
+                <Animated.Text style={[styles.heroCoreNum, slideUpStyle, current ? { fontSize: 24, letterSpacing: 0 } : {}]}>
+                  {current ? (liveCurrentTokenType === "emergency" ? `#E${current}` : `#${current}`) : "–"}
+                </Animated.Text>
                 <Text style={styles.heroCoreLabel}>Current</Text>
               </LGradient>
             </View>
@@ -508,7 +510,9 @@ export default function LiveQueueScreen() {
               {doctorName.startsWith("Dr") ? doctorName : `Dr. ${doctorName}`}
             </Text>
             <Text style={styles.heroConsultingTxt} numberOfLines={1}>
-              {current ? `Doctor is consulting Token #${current}` : "Queue not started yet"}
+              {current
+                ? `Doctor is consulting Token ${liveCurrentTokenType === "emergency" ? `#E${current}` : `#${current}`}`
+                : "Queue not started yet"}
             </Text>
           </View>
 
