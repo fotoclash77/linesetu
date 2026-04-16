@@ -350,7 +350,7 @@ export default function EarningsScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>My Earnings</Text>
-            <Text style={styles.headerSub}>{doctor?.name ?? 'Doctor'} · LINESETU</Text>
+            <Text style={styles.headerSub}>{doctor?.name ? (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`) : 'Doctor'} · LINESETU</Text>
           </View>
         </View>
 

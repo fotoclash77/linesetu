@@ -2022,7 +2022,7 @@ export default function SettingsScreen() {
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                  <Text style={styles.profileName}>{name}</Text>
+                  <Text style={styles.profileName}>{name.startsWith('Dr.') ? name : `Dr. ${name}`}</Text>
                   <Feather name="check-circle" size={14} color={TEAL_LT} />
                 </View>
                 <Text style={styles.profileSpec}>{specialisation} · {qualifications}</Text>
