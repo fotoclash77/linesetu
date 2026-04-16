@@ -14,6 +14,8 @@ export interface PatientUser {
   email?: string;
   address?: string;
   area?: string;
+  state?: string;
+  district?: string;
   profileCompleted?: boolean;
 }
 
