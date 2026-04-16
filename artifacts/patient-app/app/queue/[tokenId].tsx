@@ -172,6 +172,7 @@ export default function LiveQueueScreen() {
   // ── Real-time queue position from Firestore (zero delay) ──────
   const [liveCurrentToken, setLiveCurrentToken] = useState<number | null>(null);
   const [liveTotalWaiting, setLiveTotalWaiting] = useState<number | null>(null);
+  const [liveWaitingNumbers, setLiveWaitingNumbers] = useState<number[] | null>(null);
 
   useEffect(() => {
     if (!token?.doctorId || !token?.date || !token?.shift) return;
@@ -182,6 +183,10 @@ export default function LiveQueueScreen() {
       const data = snap.data() as any;
       setLiveCurrentToken(data.currentToken ?? 0);
       setLiveTotalWaiting(data.waitingTokenIds?.length ?? 0);
+      // waitingTokenNumbers is maintained by the API — only active (non-cancelled/done) tokens
+      if (Array.isArray(data.waitingTokenNumbers)) {
+        setLiveWaitingNumbers(data.waitingTokenNumbers as number[]);
+      }
     }, () => {});
     return () => unsub();
   }, [token?.doctorId, token?.date, token?.shift]);
@@ -204,7 +209,11 @@ export default function LiveQueueScreen() {
   const myToken      = token?.tokenNumber ?? 0;
   // Live from Firestore onSnapshot — zero delay, no polling
   const current      = liveCurrentToken ?? pos?.currentToken ?? 0;
-  const ahead        = Math.max(0, myToken - current);
+  // Use accurate waitingTokenNumbers (excludes cancelled/skipped) if available
+  // Falls back to simple subtraction for old queue docs without the field
+  const ahead = liveWaitingNumbers !== null
+    ? liveWaitingNumbers.filter(n => n < myToken).length
+    : Math.max(0, myToken - current);
   const waitMin      = ahead * liveAvgMin;
   const totalWaiting = liveTotalWaiting ?? pos?.totalWaiting ?? 0;
   // Priority: live Firestore > SSE/polling > static token data

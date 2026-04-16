@@ -197,6 +197,7 @@ router.post("/tokens/reserve", async (req, res) => {
           totalBooked: 0,
           doneCount: 0,
           waitingTokenIds: [],
+          waitingTokenNumbers: [],
           pendingReservations: { [patientId]: reservationEntry },
           updatedAt: nowTs,
         });
@@ -382,6 +383,7 @@ router.post("/tokens", async (req, res) => {
         ...queueTokenUpdate, // includes nextTokenNumber only for non-reserved bookings
         totalBooked: increment(1),
         waitingTokenIds: arrayUnion(tokenRef.id),
+        waitingTokenNumbers: arrayUnion(nextTokenNumber),
         updatedAt: nowTs,
       };
       // Remove reservation entry (valid or stale) atomically during booking
@@ -400,6 +402,7 @@ router.post("/tokens", async (req, res) => {
           totalBooked: 1,
           doneCount: 0,
           waitingTokenIds: [tokenRef.id],
+          waitingTokenNumbers: [nextTokenNumber],
           pendingReservations: {},
           updatedAt: nowTs,
         });
@@ -609,6 +612,7 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     batch.update(queueRef, {
       currentToken: token.tokenNumber,
       waitingTokenIds: arrayRemove(req.params.tokenId),
+      waitingTokenNumbers: arrayRemove(token.tokenNumber),
       updatedAt: Timestamp.now(),
     });
     await batch.commit();
@@ -661,6 +665,7 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       batch.update(nextQueueRef, {
         currentToken: nextToken.tokenNumber,
         waitingTokenIds: arrayRemove(callNextId),
+        waitingTokenNumbers: arrayRemove(nextToken.tokenNumber),
         updatedAt: Timestamp.now(),
       });
     }
@@ -715,7 +720,7 @@ router.patch("/tokens/:tokenId/skip", async (req, res) => {
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const batch = writeBatch(db);
     batch.update(tokenRef, { status: "skipped", skippedAt: Timestamp.now() });
-    batch.update(queueRef, { waitingTokenIds: arrayRemove(req.params.tokenId), updatedAt: Timestamp.now() });
+    batch.update(queueRef, { waitingTokenIds: arrayRemove(req.params.tokenId), waitingTokenNumbers: arrayRemove(token.tokenNumber), updatedAt: Timestamp.now() });
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
     res.json({ id: req.params.tokenId, status: "skipped" });
@@ -858,6 +863,7 @@ router.patch("/tokens/:tokenId/cancel", async (req, res) => {
     batch.update(queueRef, {
       totalBooked: increment(-1),
       waitingTokenIds: arrayRemove(tokenId),
+      waitingTokenNumbers: arrayRemove(token.tokenNumber),
       updatedAt: Timestamp.now(),
     });
 
