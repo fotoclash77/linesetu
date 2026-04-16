@@ -3,6 +3,10 @@ const SENDER_ID   = process.env.MSG91_SENDER_ID   ?? "LNSETU";
 const TEMPLATE_ID = process.env.MSG91_TEMPLATE_ID ?? "";
 const ROUTE       = "4"; // transactional
 
+if (!process.env.MSG91_SENDER_ID) {
+  console.warn("[SMS] MSG91_SENDER_ID not set — defaulting to 'LNSETU'. Set the secret for production.");
+}
+
 function normalize(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("91") && digits.length === 12) return digits;
@@ -20,8 +24,8 @@ export async function sendSMS(phone: string, message: string): Promise<void> {
     return;
   }
   const to = normalize(phone);
-  if (to.length < 10) {
-    console.warn(`[SMS] Invalid phone number: ${phone}`);
+  if (to.length !== 12) {
+    console.warn(`[SMS] Invalid phone number (expected 12 digits after normalisation): ${phone}`);
     return;
   }
   try {
