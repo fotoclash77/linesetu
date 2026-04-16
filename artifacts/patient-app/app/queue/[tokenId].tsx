@@ -626,16 +626,6 @@ export default function LiveQueueScreen() {
                     <Text style={styles.feeLineLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
                     <Text style={[styles.feeLineValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{feeClinicConsult}</Text>
                   </View>
-                  {feeWalkin > 0 && (
-                    <>
-                      <View style={styles.feeDivider} />
-                      <View style={styles.feeLineRow}>
-                        <Feather name="log-in" size={11} color="#2DD4BF" />
-                        <Text style={styles.feeLineLblSub}>Walk-in Fee</Text>
-                        <Text style={[styles.feeLineValClinic, { color: "#2DD4BF" }]}>₹{feeWalkin}</Text>
-                      </View>
-                    </>
-                  )}
                 </>
               )}
 
