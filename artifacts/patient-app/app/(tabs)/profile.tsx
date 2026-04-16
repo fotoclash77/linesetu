@@ -334,6 +334,10 @@ export default function ProfileScreen() {
                     <Text style={[styles.memberSinceTxt, { color: "#A5B4FC" }]}>{patient.email}</Text>
                   </View>
                 ) : null}
+                <View style={styles.memberSince}>
+                  <Feather name="shield" size={10} color="#4ADE80" />
+                  <Text style={styles.memberSinceTxt}>Member since Jan 2025</Text>
+                </View>
                 {(patient?.blood || patient?.age) ? (
                   <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
                     {patient?.blood ? <View style={styles.infoBadge}><Text style={styles.infoBadgeTxt}>{patient.blood}</Text></View> : null}
