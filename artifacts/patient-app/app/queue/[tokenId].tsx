@@ -132,6 +132,7 @@ export default function LiveQueueScreen() {
   // ── Real-time clinic name from Firestore ──────────────────────
   const [liveClinicName, setLiveClinicName] = useState("");
   const [liveClinicAddress, setLiveClinicAddress] = useState("");
+  const [liveClinicMaps, setLiveClinicMaps] = useState("");
 
   useEffect(() => {
     if (!token?.doctorId) return;
@@ -146,16 +147,18 @@ export default function LiveQueueScreen() {
       const calClinicName = shiftCfg?.clinicName ?? "";
       if (calClinicName) {
         setLiveClinicName(calClinicName);
-        // Find matching clinic for address
+        // Find matching clinic for address + maps link
         const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const matched = clinicsArr.find((c: any) => c.name === calClinicName && c.active !== false);
         setLiveClinicAddress(matched?.address ?? shiftCfg?.clinicAddress ?? "");
+        setLiveClinicMaps(matched?.maps ?? "");
       } else {
         // Fallback: first active clinic
         const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const first = clinicsArr.find((c: any) => c.active !== false);
         setLiveClinicName(first?.name ?? data.clinicName ?? "Clinic");
         setLiveClinicAddress(first?.address ?? data.clinicAddress ?? "");
+        setLiveClinicMaps(first?.maps ?? "");
       }
     }, () => {});
     return () => unsub();
@@ -319,10 +322,10 @@ export default function LiveQueueScreen() {
                 <Text style={styles.shiftLoc}>{clinicAddress ? `${clinicAddress} · ` : ""}{shiftLabel}</Text>
               </View>
             </View>
-            {!!clinicAddress && (
+            {(!!liveClinicMaps || !!clinicAddress) && (
               <Pressable
                 style={styles.mapsBtn}
-                onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
+                onPress={() => Linking.openURL(liveClinicMaps || `https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
               >
                 <Feather name="navigation" size={11} color="#4285F4" />
                 <Text style={styles.mapsBtnTxt}>Maps</Text>
