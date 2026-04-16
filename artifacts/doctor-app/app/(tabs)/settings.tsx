@@ -19,7 +19,7 @@ const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms';
 
 interface ClinicData {
-  name: string; address: string; phone: string; maps: string; active: boolean;
+  name: string; address: string; phone: string; maps: string; active: boolean; state: string; district: string;
 }
 
 // ── Time options: every 15 min from 06:00 to 22:45 ──────────────────
@@ -412,8 +412,6 @@ export default function SettingsScreen() {
     return p.startsWith('+91') ? p.slice(3).trim() : p;
   });
   const [bio, setBio] = useState(() => doctor?.bio ?? '');
-  const [doctorState, setDoctorState] = useState(() => (doctor as any)?.state ?? '');
-  const [doctorDistrict, setDoctorDistrict] = useState(() => (doctor as any)?.district ?? '');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -431,13 +429,11 @@ export default function SettingsScreen() {
       const p: string = doctor.phone ?? '';
       setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
       setBio(doctor.bio ?? '');
-      setDoctorState((doctor as any).state ?? '');
-      setDoctorDistrict((doctor as any).district ?? '');
     }
   }, [doctor]);
 
   // Clinics state — seeded from Firebase via doctor.clinics
-  const EMPTY_CLINIC: ClinicData = { name: '', address: '', phone: '', maps: '', active: false };
+  const EMPTY_CLINIC: ClinicData = { name: '', address: '', phone: '', maps: '', active: false, state: '', district: '' };
   const [activeClinic, setActiveClinic] = useState(0);
   const [clinics, setClinics] = useState<ClinicData[]>(() => {
     const saved = (doctor as any)?.clinics as ClinicData[] | undefined;
@@ -818,7 +814,7 @@ export default function SettingsScreen() {
         } as any).catch(() => {});
       }
     } else if (section === 'clinics') {
-      updateDoctor({ clinics: clinics as any, state: doctorState, district: doctorDistrict } as any).catch(() => {});
+      updateDoctor({ clinics: clinics as any } as any).catch(() => {});
     } else if (section === 'schedule') {
       updateDoctor({ calendar: calendarOverrides as any }).catch(() => {});
     } else if (section === 'fees') {
@@ -989,17 +985,16 @@ export default function SettingsScreen() {
                 {clinicFieldErrors.phone && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
               </View>
               <Field label="Google Maps Link" value={clinic.maps} onChange={v => { updateClinic(activeClinic, { maps: v }); setClinicFieldErrors(e => ({ ...e, maps: false })); }} keyboardType="url" required error={clinicFieldErrors.maps} />
-            </View>
-
-            <View style={styles.formCard}>
-              <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
-              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 12 }}>Shown to patients when they search for doctors</Text>
-              <LocationPicker
-                selectedState={doctorState}
-                selectedDistrict={doctorDistrict}
-                onStateChange={setDoctorState}
-                onDistrictChange={setDoctorDistrict}
-              />
+              <View style={{ marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 12 }}>
+                <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 4, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 10 }}>Shown to patients when they search for doctors</Text>
+                <LocationPicker
+                  selectedState={clinic.state ?? ''}
+                  selectedDistrict={clinic.district ?? ''}
+                  onStateChange={v => updateClinic(activeClinic, { state: v, district: '' })}
+                  onDistrictChange={v => updateClinic(activeClinic, { district: v })}
+                />
+              </View>
             </View>
 
             <TouchableOpacity
@@ -1020,7 +1015,7 @@ export default function SettingsScreen() {
                 setClinicFieldErrors({});
                 setClinicSaving(true); setClinicSaved(false);
                 try {
-                  await updateDoctor({ clinics: clinics as any, state: doctorState, district: doctorDistrict } as any);
+                  await updateDoctor({ clinics: clinics as any } as any);
                   setClinicSaved(true);
                   setTimeout(() => {
                     setClinicSaved(false);
