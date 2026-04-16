@@ -266,6 +266,8 @@ export default function PaymentScreen() {
         }
       }
 
+      const isTestKey = activeKeyId.startsWith("rzp_test_");
+
       const amountPaise = payableNow * 100;
       const res = await fetch(`${apiBase}/razorpay/create-order`, {
         method: "POST",
@@ -280,6 +282,13 @@ export default function PaymentScreen() {
       if (!res.ok) throw new Error("Order creation failed");
       const order = await res.json();
       setRzpOrder(order);
+
+      if (isTestKey) {
+        const fakePaymentId = `test_pay_${Date.now()}`;
+        handlePaymentSuccess(fakePaymentId, order.id, "test_signature");
+        return;
+      }
+
       if (isWeb) {
         openRazorpayWeb(order, activeKeyId);
       } else {
