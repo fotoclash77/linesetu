@@ -457,11 +457,12 @@ function NoConsultation({ nextTok }: { nextTok?: Token }) {
 }
 
 // ─── Waiting Card ────────────────────────────────────────────────
-function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isManualNext, isRefundable }: {
+function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isManualNext, isRefundable, consultingActive }: {
   tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void;
-  busy: boolean; isManualNext?: boolean; isRefundable?: boolean;
+  busy: boolean; isManualNext?: boolean; isRefundable?: boolean; consultingActive?: boolean;
 }) {
   const isCancelled = tok.status === 'cancelled' || tok.status === 'refunded';
+  const sendNextDisabled = busy || !!consultingActive;
   return (
     <View style={[S.waitCard, isManualNext && { borderColor: 'rgba(252,211,77,0.45)', backgroundColor: 'rgba(180,83,9,0.1)' }]}>
       <TouchableOpacity
@@ -482,15 +483,19 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
       {!isCancelled && (
         <View style={S.waitBtns}>
           <TouchableOpacity
-            style={[S.sendNextBtn, busy && { opacity: 0.5 }]}
-            onPress={onSendNext} disabled={busy}
+            style={[S.sendNextBtn, sendNextDisabled && { opacity: 0.4 }]}
+            onPress={onSendNext} disabled={sendNextDisabled}
           >
             {busy
               ? <ActivityIndicator color={TEAL_LT} size="small" />
               : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
-                  <Feather name={isManualNext ? 'star' : 'play'} size={12} color={isManualNext ? AMBER_LT : TEAL_LT} />
-                  <Text style={[S.sendNextTxt, isManualNext && { color: AMBER_LT }]}>
-                    {isManualNext ? 'Set as Next' : 'Send Next'}
+                  <Feather
+                    name={consultingActive ? 'clock' : isManualNext ? 'star' : 'play'}
+                    size={12}
+                    color={consultingActive ? 'rgba(255,255,255,0.35)' : isManualNext ? AMBER_LT : TEAL_LT}
+                  />
+                  <Text style={[S.sendNextTxt, isManualNext && !consultingActive && { color: AMBER_LT }, consultingActive && { color: 'rgba(255,255,255,0.35)' }]}>
+                    {consultingActive ? 'In Consultation' : isManualNext ? 'Set as Next' : 'Send Next'}
                   </Text>
                 </View>}
           </TouchableOpacity>
@@ -963,6 +968,7 @@ export default function QueueScreen() {
                       busy={busyId === tok.id}
                       isManualNext={tok.id === manualNextId}
                       isRefundable={isRefundable}
+                      consultingActive={!!consulting}
                       onSendNext={() => { setManualNext(tok.id); doCall(tok.id); }}
                       onSendAlert={() => openAlert(tok)}
                       onSkip={() => doSkipToken(tok.id)}
