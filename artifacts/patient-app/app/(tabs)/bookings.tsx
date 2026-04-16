@@ -55,6 +55,12 @@ interface BookingItem extends TokenItem {
   patientPaid: number;
   amount?: number;
   consultFee: number;
+  doctorEarns?: number;
+  platformFee?: number;
+  clinicConsultFee?: number;
+  walkinFee?: number;
+  payAtClinic?: number;
+  totalVisitCost?: number;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -237,9 +243,21 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
       </View>
 
       <View style={styles.paymentRow}>
-        <Text style={styles.paymentTxt}>₹{booking.patientPaid} paid</Text>
+        <View style={styles.paymentPaidGroup}>
+          <Feather name="check-circle" size={10} color="#4ADE80" />
+          <Text style={styles.paymentTxt}>₹{booking.patientPaid} paid</Text>
+        </View>
+        {(booking.payAtClinic ?? booking.consultFee) > 0 && (
+          <>
+            <Text style={styles.paymentDot}>·</Text>
+            <View style={styles.paymentClinicGroup}>
+              <Feather name="home" size={10} color="#F59E0B" />
+              <Text style={styles.paymentAtClinic}>₹{booking.payAtClinic ?? booking.consultFee} at clinic</Text>
+            </View>
+          </>
+        )}
         <Text style={styles.paymentDot}>·</Text>
-        <Text style={styles.paymentAtClinic}>₹{booking.consultFee} at clinic</Text>
+        <Text style={styles.paymentTotal}>₹{booking.totalVisitCost ?? (booking.patientPaid + (booking.payAtClinic ?? booking.consultFee))} total</Text>
       </View>
 
       <View style={styles.cardCta}>
@@ -348,8 +366,14 @@ export default function BookingsScreen() {
       visitType: "first" as const,
       memberId: t.memberId ?? "self",
       ahead: t.queuePosition ?? 0,
-      patientPaid: t.amount ?? 20,
-      consultFee: doc?.fee ?? 500,
+      patientPaid: t.patientPaid ?? t.amount ?? 20,
+      consultFee: t.clinicConsultFee ?? doc?.fee ?? 500,
+      doctorEarns: t.doctorEarns,
+      platformFee: t.platformFee,
+      clinicConsultFee: t.clinicConsultFee,
+      walkinFee: t.walkinFee,
+      payAtClinic: t.payAtClinic,
+      totalVisitCost: t.totalVisitCost,
     };
   });
 
@@ -524,10 +548,13 @@ const styles = StyleSheet.create({
   waitChip: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: "rgba(245,158,11,0.12)", borderWidth: 1, borderColor: "rgba(245,158,11,0.2)" },
   waitChipTxt: { fontSize: 10, fontWeight: "700", color: "#FCD34D" },
 
-  paymentRow: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 14, marginBottom: 0, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  paymentRow: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 14, marginBottom: 0, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", flexWrap: "wrap" },
+  paymentPaidGroup: { flexDirection: "row", alignItems: "center", gap: 4 },
+  paymentClinicGroup: { flexDirection: "row", alignItems: "center", gap: 4 },
   paymentTxt: { fontSize: 10, fontWeight: "700", color: "#4ADE80" },
   paymentDot: { color: "rgba(255,255,255,0.15)", fontSize: 10 },
-  paymentAtClinic: { fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: "600" },
+  paymentAtClinic: { fontSize: 10, color: "#F59E0B", fontWeight: "600" },
+  paymentTotal: { fontSize: 10, color: "rgba(255,255,255,0.55)", fontWeight: "700" },
 
   cardCta: { padding: 10, paddingHorizontal: 14, paddingTop: 8 },
   viewQueueCta: { height: 38, borderRadius: 12, backgroundColor: "#16A34A", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, shadowColor: "rgba(34,197,94,0.35)", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 12, elevation: 6 },

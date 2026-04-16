@@ -33,6 +33,9 @@ const AVG_MIN_PER_TOKEN = 7;
 interface TokenData {
   id: string; tokenNumber: number; doctorId: string;
   patientName: string; date: string; shift: string; status: string; type: string;
+  patientPaid?: number; doctorEarns?: number; platformFee?: number;
+  clinicConsultFee?: number; walkinFee?: number; payAtClinic?: number; totalVisitCost?: number;
+  paymentId?: string; paymentStatus?: string;
 }
 
 interface PositionData {
@@ -139,6 +142,16 @@ export default function LiveQueueScreen() {
   const clinicName    = doctor?.clinicName ?? "Clinic";
   const clinicAddress = doctor?.clinicAddress ?? "";
   const specialization = doctor?.specialization ?? "OPD";
+
+  const isEmergency   = token?.type === "emergency";
+  const feePayNow     = token?.patientPaid ?? 0;
+  const feeDoctorEarns = token?.doctorEarns ?? 0;
+  const feePlatform   = token?.platformFee ?? 0;
+  const feeClinicConsult = token?.clinicConsultFee ?? 0;
+  const feeWalkin     = token?.walkinFee ?? 0;
+  const feePayAtClinic = token?.payAtClinic ?? (feeClinicConsult + feeWalkin);
+  const feeTotalVisit  = token?.totalVisitCost ?? (feePayNow + feePayAtClinic);
+  const hasFeeData    = feePayNow > 0 || feePayAtClinic > 0;
 
   const isDone = tokenStatus === "in_consult" || tokenStatus === "done";
   const isNear = !isDone && ahead > 0 && ahead <= 3;
@@ -409,6 +422,78 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
+        {/* Fee Breakdown */}
+        {hasFeeData && (
+          <View style={styles.sectionPad}>
+            <View style={styles.feeCard}>
+              <View style={styles.feeHeader}>
+                <Feather name="file-text" size={13} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.feeHeaderTitle}>Payment Summary</Text>
+                {token?.paymentStatus === "paid" && (
+                  <View style={styles.feePaidBadge}>
+                    <Feather name="check-circle" size={9} color="#4ADE80" />
+                    <Text style={styles.feePaidBadgeTxt}>Paid</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.feeGroupRow}>
+                <Feather name="credit-card" size={10} color="#67E8F9" />
+                <Text style={styles.feeGroupLbl}>Paid Online</Text>
+              </View>
+              <View style={styles.feeLineRow}>
+                <Feather name="monitor" size={11} color={isEmergency ? "#EF4444" : "#67E8F9"} />
+                <Text style={styles.feeLineLbl}>{isEmergency ? "Emergency E-Token Fee" : "E-Token Fee"}</Text>
+                <Text style={[styles.feeLineVal, { color: isEmergency ? "#EF4444" : "#67E8F9" }]}>₹{feeDoctorEarns}</Text>
+              </View>
+              <View style={styles.feeDivider} />
+              <View style={styles.feeLineRow}>
+                <Feather name="shield" size={11} color="#818CF8" />
+                <Text style={styles.feeLineLbl}>Platform Fee</Text>
+                <Text style={[styles.feeLineVal, { color: "#818CF8" }]}>₹{feePlatform}</Text>
+              </View>
+              <View style={styles.feeSubtotalRow}>
+                <Text style={styles.feeSubtotalLbl}>Paid Online</Text>
+                <Text style={[styles.feeSubtotalVal, isEmergency && { color: "#F87171" }]}>₹{feePayNow}</Text>
+              </View>
+
+              {feePayAtClinic > 0 && (
+                <>
+                  <View style={styles.feeSectionDivider} />
+                  <View style={styles.feeGroupRow}>
+                    <Feather name="home" size={10} color="#F59E0B" />
+                    <Text style={[styles.feeGroupLbl, { color: "#F59E0B" }]}>Pay at Clinic</Text>
+                  </View>
+                  <View style={styles.feeLineRow}>
+                    <Feather name="activity" size={11} color="rgba(255,255,255,0.4)" />
+                    <Text style={styles.feeLineLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
+                    <Text style={[styles.feeLineValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{feeClinicConsult}</Text>
+                  </View>
+                  {feeWalkin > 0 && (
+                    <>
+                      <View style={styles.feeDivider} />
+                      <View style={styles.feeLineRow}>
+                        <Feather name="log-in" size={11} color="#2DD4BF" />
+                        <Text style={styles.feeLineLblSub}>Walk-in Fee</Text>
+                        <Text style={[styles.feeLineValClinic, { color: "#2DD4BF" }]}>₹{feeWalkin}</Text>
+                      </View>
+                    </>
+                  )}
+                </>
+              )}
+
+              <View style={styles.feeSectionDivider} />
+              <View style={styles.feeTotalRow}>
+                <View>
+                  <Text style={styles.feeTotalLbl}>Total Visit Cost</Text>
+                  <Text style={styles.feeTotalHint}>Online + Clinic</Text>
+                </View>
+                <Text style={[styles.feeTotalVal, isEmergency && { color: "#F87171" }]}>₹{feeTotalVisit}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Alert Banners */}
         {isNext && !isDone && (
           <View style={styles.sectionPad}>
@@ -600,4 +685,26 @@ const styles = StyleSheet.create({
   shiftCardTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
   shiftDetail: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   shiftDetailTxt: { fontSize: 11, color: "rgba(255,255,255,0.4)" },
+
+  feeCard: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
+  feeHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  feeHeaderTitle: { fontSize: 13, fontWeight: "800", color: "#FFF", flex: 1 },
+  feePaidBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: "rgba(34,197,94,0.3)" },
+  feePaidBadgeTxt: { fontSize: 9, fontWeight: "700", color: "#4ADE80" },
+  feeGroupRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  feeGroupLbl: { fontSize: 10, fontWeight: "700", color: "#67E8F9", textTransform: "uppercase", letterSpacing: 0.8 },
+  feeLineRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  feeLineLbl: { flex: 1, fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.75)" },
+  feeLineVal: { fontSize: 14, fontWeight: "800" },
+  feeLineLblSub: { flex: 1, fontSize: 12, color: "rgba(255,255,255,0.4)", fontWeight: "500" },
+  feeLineValClinic: { fontSize: 14, color: "#F59E0B", fontWeight: "700" },
+  feeDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)" },
+  feeSubtotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.03)" },
+  feeSubtotalLbl: { flex: 1, fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.6)" },
+  feeSubtotalVal: { fontSize: 16, fontWeight: "800", color: "#A5B4FC" },
+  feeSectionDivider: { height: 1.5, backgroundColor: "rgba(255,255,255,0.08)", marginHorizontal: 14 },
+  feeTotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "rgba(255,255,255,0.03)" },
+  feeTotalLbl: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  feeTotalHint: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "500", marginTop: 1 },
+  feeTotalVal: { fontSize: 22, fontWeight: "900", color: "#A5B4FC", marginLeft: "auto" },
 });

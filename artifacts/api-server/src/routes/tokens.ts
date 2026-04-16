@@ -293,6 +293,13 @@ router.post("/tokens", async (req, res) => {
     const platformFee = isWalkinSource ? 0 : PLATFORM_FEE;
     const patientPaid = isWalkinSource ? 0 : doctorEarns + platformFee;
 
+    const parsedClinicConsultFee = Number(isEmergencyType ? doctorData?.clinicEmergencyFee : doctorData?.clinicConsultFee);
+    const clinicConsultFee = isNaN(parsedClinicConsultFee) ? 0 : parsedClinicConsultFee;
+    const parsedWalkinFee = Number(doctorData?.walkinFee);
+    const walkinFee = isNaN(parsedWalkinFee) ? 0 : parsedWalkinFee;
+    const payAtClinic = clinicConsultFee + walkinFee;
+    const totalVisitCost = patientPaid + payAtClinic;
+
     let resultTokenData: any = null;
     let autoAdjusted = false;
 
@@ -357,6 +364,7 @@ router.post("/tokens", async (req, res) => {
         forMemberId: forMemberId || "self",
         date: tokenDate, shift,
         patientPaid, doctorEarns, platformFee,
+        clinicConsultFee, walkinFee, payAtClinic, totalVisitCost,
         paymentId: paymentId || "",
         paymentStatus: paymentId ? "paid" : "pending",
         bookedAt: nowTs,
