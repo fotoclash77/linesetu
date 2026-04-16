@@ -766,8 +766,9 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
     if (token.source === "walkin") {
       return res.status(400).json({ error: "Walk-in tokens cannot be refunded online" });
     }
-    if (token.status !== "skipped") {
-      return res.status(400).json({ error: "Only skipped tokens can be refunded by the doctor" });
+    const refundableStatuses = ["skipped", "waiting"];
+    if (!refundableStatuses.includes(token.status)) {
+      return res.status(400).json({ error: "Only waiting or skipped tokens can be cancelled and refunded" });
     }
     // Idempotent — already refunded
     if (token.paymentStatus === "refunded") {
@@ -777,15 +778,22 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
       return res.status(400).json({ error: "No online payment found for this token" });
     }
 
-    // Issue Razorpay refund
+    // Issue Razorpay refund (bypass for test-mode payments)
     let refundId: string | null = null;
-    try {
-      const refund = await razorpay.payments.refund(token.paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
-      refundId = refund.id;
-      console.log(`[Tokens] Doctor refund issued: refundId=${refundId} tokenId=${tokenId}`);
-    } catch (e: any) {
-      console.error(`[Tokens] Doctor refund failed for tokenId=${tokenId}:`, e?.message);
-      return res.status(502).json({ error: "Refund via payment gateway failed. Please try again." });
+    const isTestPayment = token.paymentId.startsWith("test_pay_") &&
+      process.env.RAZORPAY_KEY_ID?.startsWith("rzp_test_");
+    if (isTestPayment) {
+      refundId = `test_rfnd_${Date.now()}`;
+      console.log(`[Tokens] TEST-MODE doctor refund (bypassed): refundId=${refundId} tokenId=${tokenId}`);
+    } else {
+      try {
+        const refund = await razorpay.payments.refund(token.paymentId, {} as Parameters<typeof razorpay.payments.refund>[1]);
+        refundId = refund.id;
+        console.log(`[Tokens] Doctor refund issued: refundId=${refundId} tokenId=${tokenId}`);
+      } catch (e: any) {
+        console.error(`[Tokens] Doctor refund failed for tokenId=${tokenId}:`, e?.message);
+        return res.status(502).json({ error: "Refund via payment gateway failed. Please try again." });
+      }
     }
 
     // Transaction document uses tokenId as doc ID (idempotent writes at booking).
@@ -809,6 +817,16 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
       refundId: refundId ?? "",
       refundedAt: Timestamp.now(),
     });
+
+    // If the token was still in the waiting queue, remove it
+    if (token.status === "waiting") {
+      const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+      batch.update(queueRef, {
+        waitingTokenIds:     arrayRemove(tokenId),
+        waitingTokenNumbers: arrayRemove(token.tokenNumber),
+        updatedAt:           Timestamp.now(),
+      });
+    }
     if (txSnap.exists()) {
       batch.update(txRef, {
         type:          "refund",
