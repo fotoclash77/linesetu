@@ -25,7 +25,7 @@ router.post("/patients", async (req, res) => {
     }
 
     const data = {
-      name: name || "Patient",
+      name: name || "",
       phone,
       profilePhoto: "",
       fcmToken: "",

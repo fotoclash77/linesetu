@@ -68,7 +68,7 @@ router.post("/auth/verify-otp", async (req, res) => {
     }
 
     const data = {
-      name: name || "Patient",
+      name: name || "",
       phone: key,
       profilePhoto: "",
       fcmToken: "",

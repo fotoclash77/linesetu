@@ -32,7 +32,8 @@ export default function CompleteProfile() {
   const insets = useSafeAreaInsets();
   const { patient, updatePatient } = useAuth();
 
-  const [name, setName] = useState(patient?.name ?? "");
+  const rawName = patient?.name ?? "";
+  const [name, setName] = useState(rawName === "Patient" ? "" : rawName);
   const [gender, setGender] = useState(patient?.gender ?? "");
   const [age, setAge] = useState(patient?.age ?? "");
   const [blood, setBlood] = useState(patient?.blood ?? "");
