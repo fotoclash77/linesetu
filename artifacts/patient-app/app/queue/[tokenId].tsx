@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   mapsBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(66,133,244,0.18)", borderWidth: 1, borderColor: "rgba(66,133,244,0.35)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   mapsBtnTxt: { fontSize: 11, fontWeight: "700", color: "#4285F4" },
 
-  tokenTypeBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, marginTop: 6, marginBottom: 2 },
+  tokenTypeBadge: { flexDirection: "row", alignItems: "center", alignSelf: "center", justifyContent: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, marginBottom: 2 },
   tokenTypeBadgeNormal: { backgroundColor: "rgba(34,197,94,0.12)", borderColor: "rgba(34,197,94,0.3)" },
   tokenTypeBadgeEmergency: { backgroundColor: "rgba(239,68,68,0.12)", borderColor: "rgba(239,68,68,0.3)" },
   tokenTypeBadgeSkipped: { backgroundColor: "rgba(245,158,11,0.12)", borderColor: "rgba(245,158,11,0.3)" },
