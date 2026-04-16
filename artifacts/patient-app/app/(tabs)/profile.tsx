@@ -342,10 +342,6 @@ export default function ProfileScreen() {
                   </View>
                 ) : null}
               </View>
-              <Pressable onPress={openEditProfile} style={styles.verifiedBadge}>
-                <Feather name="edit-2" size={10} color="#A5B4FC" />
-                <Text style={styles.verifiedTxt}>Edit</Text>
-              </Pressable>
             </View>
           </LinearGradient>
         </View>
