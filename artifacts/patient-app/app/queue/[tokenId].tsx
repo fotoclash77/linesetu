@@ -374,7 +374,7 @@ export default function LiveQueueScreen() {
           <View style={styles.progressSection}>
             <View style={styles.progressLabelRow}>
               <Text style={styles.progressLbl}>{ahead} token{ahead !== 1 ? "s" : ""} ahead of you</Text>
-              <Text style={styles.progressRight}>~{waitMin} min wait</Text>
+            <Text style={styles.progressRight}>~{waitMin} min</Text>
             </View>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: pct(Math.max(5, progPct)) }]}>
