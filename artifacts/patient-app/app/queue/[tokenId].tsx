@@ -129,10 +129,11 @@ export default function LiveQueueScreen() {
     staleTime: 120_000,
   });
 
-  // ── Real-time clinic name from Firestore ──────────────────────
+  // ── Real-time clinic name + avgConsultMins from Firestore ────
   const [liveClinicName, setLiveClinicName] = useState("");
   const [liveClinicAddress, setLiveClinicAddress] = useState("");
   const [liveClinicMaps, setLiveClinicMaps] = useState("");
+  const [liveAvgMin, setLiveAvgMin] = useState(AVG_MIN_PER_TOKEN);
 
   useEffect(() => {
     if (!token?.doctorId) return;
@@ -142,18 +143,22 @@ export default function LiveQueueScreen() {
       const data = snap.data() as any;
       const date = token?.date ?? "";
       const shift = token?.shift ?? "";
-      // Try calendar entry first (shift-specific clinic)
+      // Capture avg consult time (minutes per patient)
       const shiftCfg = data.calendar?.[date]?.[shift];
+      const avgMin =
+        shiftCfg?.avgConsultMins ??
+        data.avgConsultMins ??
+        AVG_MIN_PER_TOKEN;
+      setLiveAvgMin(Number(avgMin) || AVG_MIN_PER_TOKEN);
+      // Clinic name from shift config or first active clinic
       const calClinicName = shiftCfg?.clinicName ?? "";
       if (calClinicName) {
         setLiveClinicName(calClinicName);
-        // Find matching clinic for address + maps link
         const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const matched = clinicsArr.find((c: any) => c.name === calClinicName && c.active !== false);
         setLiveClinicAddress(matched?.address ?? shiftCfg?.clinicAddress ?? "");
         setLiveClinicMaps(matched?.maps ?? "");
       } else {
-        // Fallback: first active clinic
         const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const first = clinicsArr.find((c: any) => c.active !== false);
         setLiveClinicName(first?.name ?? data.clinicName ?? "Clinic");
@@ -164,12 +169,30 @@ export default function LiveQueueScreen() {
     return () => unsub();
   }, [token?.doctorId, token?.date, token?.shift]);
 
+  // ── Real-time queue position from Firestore (zero delay) ──────
+  const [liveCurrentToken, setLiveCurrentToken] = useState<number | null>(null);
+  const [liveTotalWaiting, setLiveTotalWaiting] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!token?.doctorId || !token?.date || !token?.shift) return;
+    const queueId = `${token.doctorId}_${token.date}_${token.shift}`;
+    const ref = doc(db, "queues", queueId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      setLiveCurrentToken(data.currentToken ?? 0);
+      setLiveTotalWaiting(data.waitingTokenIds?.length ?? 0);
+    }, () => {});
+    return () => unsub();
+  }, [token?.doctorId, token?.date, token?.shift]);
+
   // ── Derived values ────────────────────────────────────────────
   const myToken      = token?.tokenNumber ?? 0;
-  const current      = pos?.currentToken  ?? 0;
-  const ahead        = pos?.position      ?? 0;
-  const waitMin      = pos?.estimatedWaitMins ?? ahead * AVG_MIN_PER_TOKEN;
-  const totalWaiting = pos?.totalWaiting  ?? 0;
+  // Live from Firestore onSnapshot — zero delay, no polling
+  const current      = liveCurrentToken ?? pos?.currentToken ?? 0;
+  const ahead        = Math.max(0, myToken - current);
+  const waitMin      = ahead * liveAvgMin;
+  const totalWaiting = liveTotalWaiting ?? pos?.totalWaiting ?? 0;
   const tokenStatus  = pos?.status ?? token?.status ?? "waiting";
   const shift        = token?.shift ?? "morning";
   const shiftLabel   = shift === "morning" ? "Morning Shift" : "Evening Shift";
