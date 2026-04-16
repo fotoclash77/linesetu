@@ -99,7 +99,7 @@ export default function PaymentScreen() {
     : (liveClinicConsultFee ?? paramConsultFee);
   const walkinFee = liveWalkinFee ?? paramWalkinFee;
   const payableNow = eAppFee + platformFee;
-  const payAtClinic = consultFee + walkinFee;
+  const payAtClinic = consultFee;
   const totalVisitCost = payableNow + payAtClinic;
 
   // Real-time next token via SSE
@@ -596,16 +596,6 @@ export default function PaymentScreen() {
               <Text style={styles.feeLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
               <Text style={[styles.feeValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{consultFee}</Text>
             </View>
-            {walkinFee > 0 && (
-              <>
-                <View style={styles.feeDivider} />
-                <View style={styles.feeRow}>
-                  <Feather name="log-in" size={12} color="#2DD4BF" />
-                  <Text style={styles.feeLblSub}>Walk-in Fee</Text>
-                  <Text style={[styles.feeValClinic, { color: "#2DD4BF" }]}>₹{walkinFee}</Text>
-                </View>
-              </>
-            )}
 
             <View style={styles.feeSectionDivider} />
 
