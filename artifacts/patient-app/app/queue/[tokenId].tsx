@@ -250,8 +250,9 @@ export default function LiveQueueScreen() {
   const [selectedReminders, setSelectedReminders] = useState<number[]>([10, 5, 1, 0]);
   const [reminderBanner, setReminderBanner] = useState<string | null>(null);
   const [feeExpanded, setFeeExpanded] = useState(false);
-  const lastTriggeredRef = useRef<Set<number>>(new Set());
-  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTriggeredRef   = useRef<Set<number>>(new Set());
+  const bannerTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reminderInitRef    = useRef(false);
 
   // Load saved thresholds from Firestore token doc
   useEffect(() => {
@@ -344,6 +345,17 @@ export default function LiveQueueScreen() {
   useEffect(() => {
     if (myToken === 0 || liveWaitingNumbers === null) return;
     const triggered = lastTriggeredRef.current;
+
+    // On first load, silently mark all thresholds already below current
+    // count so we only alert when the count actually crosses a threshold.
+    if (!reminderInitRef.current) {
+      reminderInitRef.current = true;
+      for (const threshold of selectedReminders) {
+        if (ahead <= threshold) triggered.add(threshold);
+      }
+      return;
+    }
+
     // Check each selected threshold
     for (const threshold of selectedReminders) {
       if (!triggered.has(threshold) && ahead <= threshold) {
