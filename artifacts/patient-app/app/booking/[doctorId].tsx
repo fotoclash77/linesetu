@@ -333,6 +333,7 @@ export default function BookingScreen() {
         tokenType,
         payableNow: `${payableNow}`,
         consultFee: `${clinicFee}`,
+        walkinFee: `${walkinFee}`,
       },
     });
   }

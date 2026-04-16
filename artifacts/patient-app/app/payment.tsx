@@ -55,6 +55,7 @@ export default function PaymentScreen() {
     tokenType?: string;
     payableNow?: string;
     consultFee?: string;
+    walkinFee?: string;
   }>();
 
   const doctorName  = params.doctorName  ?? "Doctor";
@@ -70,6 +71,7 @@ export default function PaymentScreen() {
   const isEmergency = tokenType === "emergency";
   const paramPayableNow = Number(params.payableNow ?? "20");
   const paramConsultFee = Number(params.consultFee ?? "0");
+  const paramWalkinFee = Number(params.walkinFee ?? "0");
 
   const [razorpayKeyId, setRazorpayKeyId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -86,6 +88,7 @@ export default function PaymentScreen() {
   const [liveClinicConsultFee, setLiveClinicConsultFee] = useState<number | null>(null);
   const [liveClinicEmergencyFee, setLiveClinicEmergencyFee] = useState<number | null>(null);
   const [livePlatformFee, setLivePlatformFee] = useState<number | null>(null);
+  const [liveWalkinFee, setLiveWalkinFee] = useState<number | null>(null);
 
   const eAppFee = isEmergency
     ? (liveEmergencyFee ?? paramPayableNow - 10)
@@ -94,6 +97,7 @@ export default function PaymentScreen() {
   const consultFee = isEmergency
     ? (liveClinicEmergencyFee ?? paramConsultFee)
     : (liveClinicConsultFee ?? paramConsultFee);
+  const walkinFee = liveWalkinFee ?? paramWalkinFee;
   const payableNow = eAppFee + platformFee;
 
   // Real-time next token via SSE
@@ -141,6 +145,7 @@ export default function PaymentScreen() {
       if (data.clinicConsultFee != null) setLiveClinicConsultFee(Number(data.clinicConsultFee));
       if (data.clinicEmergencyFee != null) setLiveClinicEmergencyFee(Number(data.clinicEmergencyFee));
       if (data.platformFee != null) setLivePlatformFee(Number(data.platformFee));
+      if (data.walkinFee != null) setLiveWalkinFee(Number(data.walkinFee));
       const calEntry = data.calendar?.[date];
       const shiftCfg = calEntry?.[shift];
       let resolvedClinicName = shiftCfg?.clinicName ?? "";
@@ -575,6 +580,16 @@ export default function PaymentScreen() {
               <Text style={styles.feeLblSub}>{isEmergency ? "Emergency Consult (at clinic)" : "Consultation (at clinic)"}</Text>
               <Text style={[styles.feeValSub, isEmergency && { color: "#FCA5A5" }]}>₹{consultFee}</Text>
             </View>
+            {walkinFee > 0 && (
+              <>
+                <View style={styles.feeDivider} />
+                <View style={styles.feeRow}>
+                  <Feather name="log-in" size={12} color="#2DD4BF" />
+                  <Text style={styles.feeLblSub}>Walk-in Fee at Clinic</Text>
+                  <Text style={[styles.feeValSub, { color: "#2DD4BF" }]}>₹{walkinFee}</Text>
+                </View>
+              </>
+            )}
             <View style={[styles.feeDivider, { borderColor: "rgba(255,255,255,0.12)" }]} />
             <View style={styles.feeTotalRow}>
               <Text style={styles.feeTotalLbl}>Pay Now</Text>
