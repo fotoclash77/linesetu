@@ -991,9 +991,11 @@ export default function SettingsScreen() {
                 <LocationPicker
                   selectedState={clinic.state ?? ''}
                   selectedDistrict={clinic.district ?? ''}
-                  onStateChange={v => updateClinic(activeClinic, { state: v, district: '' })}
-                  onDistrictChange={v => updateClinic(activeClinic, { district: v })}
+                  onStateChange={v => { updateClinic(activeClinic, { state: v, district: '' }); setClinicFieldErrors(e => ({ ...e, state: false, district: false })); }}
+                  onDistrictChange={v => { updateClinic(activeClinic, { district: v }); setClinicFieldErrors(e => ({ ...e, district: false })); }}
                 />
+                {clinicFieldErrors.state && <Text style={{ fontSize: 10, color: '#F87171', fontWeight: '700', marginTop: 5 }}>State is required</Text>}
+                {clinicFieldErrors.district && !clinicFieldErrors.state && <Text style={{ fontSize: 10, color: '#F87171', fontWeight: '700', marginTop: 5 }}>District is required</Text>}
               </View>
             </View>
 
@@ -1007,6 +1009,8 @@ export default function SettingsScreen() {
                   address: !clinic.address?.trim(),
                   phone: phone.length < 10,
                   maps: !clinic.maps?.trim(),
+                  state: !clinic.state?.trim(),
+                  district: !clinic.district?.trim(),
                 };
                 if (Object.values(errors).some(Boolean)) {
                   setClinicFieldErrors(errors);
