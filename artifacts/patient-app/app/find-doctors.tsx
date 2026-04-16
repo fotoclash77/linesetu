@@ -76,7 +76,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       />
       <View style={styles.listInfo}>
         <View style={styles.listNameRow}>
-          <Text style={styles.listName} numberOfLines={1}>{doc.name}</Text>
+          <Text style={styles.listName} numberOfLines={1}>{doc.name.startsWith("Dr") ? doc.name : `Dr. ${doc.name}`}</Text>
           {available ? (
             <View style={styles.verifiedBadge}>
               <Feather name="check-circle" size={11} color="#06B6D4" />
