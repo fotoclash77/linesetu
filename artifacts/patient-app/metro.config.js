@@ -52,6 +52,10 @@ const origEnhanceMiddleware = config.server.enhanceMiddleware;
 config.server.enhanceMiddleware = (middleware, server) => {
   const base = origEnhanceMiddleware ? origEnhanceMiddleware(middleware, server) : middleware;
   return (req, res, next) => {
+    // Strip /patient-app prefix from incoming requests (shared proxy forwards them with prefix intact)
+    if (req.url && (req.url === BASE || req.url.startsWith(BASE + "/") || req.url.startsWith(BASE + "?"))) {
+      req.url = req.url.slice(BASE.length) || "/";
+    }
     const urlNoQuery = (req.url || "").split("?")[0];
     const isHtml =
       urlNoQuery === "/" ||

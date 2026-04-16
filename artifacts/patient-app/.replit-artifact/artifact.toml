@@ -3,7 +3,6 @@ previewPath = "/patient-app/"
 title = "LINESETU Patient App"
 version = "1.0.0"
 id = "artifacts/patient-app"
-router = "expo-domain"
 
 [[integratedSkills]]
 name = "expo"
