@@ -133,6 +133,9 @@ export default function LiveQueueScreen() {
   const [liveClinicName, setLiveClinicName] = useState("");
   const [liveClinicAddress, setLiveClinicAddress] = useState("");
   const [liveClinicMaps, setLiveClinicMaps] = useState("");
+  const [liveClinicDistrict, setLiveClinicDistrict] = useState("");
+  const [liveClinicState, setLiveClinicState] = useState("");
+  const [liveShiftTiming, setLiveShiftTiming] = useState("");
   const [liveAvgMin, setLiveAvgMin] = useState(AVG_MIN_PER_TOKEN);
 
   useEffect(() => {
@@ -150,20 +153,29 @@ export default function LiveQueueScreen() {
         data.avgConsultMins ??
         AVG_MIN_PER_TOKEN;
       setLiveAvgMin(Number(avgMin) || AVG_MIN_PER_TOKEN);
-      // Clinic name from shift config or first active clinic
+
+      // Shift timing — from config or default by shift name
+      const startTime = shiftCfg?.startTime ?? (shift === "morning" ? "10:00 AM" : "4:00 PM");
+      const endTime   = shiftCfg?.endTime   ?? (shift === "morning" ? "2:00 PM"  : "8:00 PM");
+      setLiveShiftTiming(`${startTime} – ${endTime}`);
+
+      // Clinic name, address, district, state from shift config or first active clinic
       const calClinicName = shiftCfg?.clinicName ?? "";
+      const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
       if (calClinicName) {
         setLiveClinicName(calClinicName);
-        const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const matched = clinicsArr.find((c: any) => c.name === calClinicName && c.active !== false);
         setLiveClinicAddress(matched?.address ?? shiftCfg?.clinicAddress ?? "");
         setLiveClinicMaps(matched?.maps ?? "");
+        setLiveClinicDistrict(matched?.district ?? data.district ?? "");
+        setLiveClinicState(matched?.state ?? data.state ?? "");
       } else {
-        const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
         const first = clinicsArr.find((c: any) => c.active !== false);
         setLiveClinicName(first?.name ?? data.clinicName ?? "Clinic");
         setLiveClinicAddress(first?.address ?? data.clinicAddress ?? "");
         setLiveClinicMaps(first?.maps ?? "");
+        setLiveClinicDistrict(first?.district ?? data.district ?? "");
+        setLiveClinicState(first?.state ?? data.state ?? "");
       }
     }, () => {});
     return () => unsub();
@@ -453,25 +465,39 @@ export default function LiveQueueScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
 
-        {/* Doctor & Clinic Strip */}
+        {/* Doctor & Clinic Card */}
         <View style={styles.sectionPad}>
-          <View style={styles.shiftStrip}>
-            <View style={styles.shiftLeft}>
-              <Feather name="home" size={12} color="#67E8F9" />
-              <View>
-                <Text style={styles.shiftClinic}>{clinicName}</Text>
-                <Text style={styles.shiftLoc}>{clinicAddress ? `${clinicAddress} · ` : ""}{shiftLabel}</Text>
-              </View>
+          <View style={styles.clinicCard}>
+            {/* Top row: name + maps */}
+            <View style={styles.clinicCardHeader}>
+              <Feather name="home" size={13} color="#67E8F9" />
+              <Text style={styles.clinicCardName} numberOfLines={1}>{clinicName}</Text>
+              {(!!liveClinicMaps || !!clinicAddress) && (
+                <Pressable
+                  style={styles.mapsBtn}
+                  onPress={() => Linking.openURL(liveClinicMaps || `https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
+                >
+                  <Feather name="navigation" size={11} color="#4285F4" />
+                  <Text style={styles.mapsBtnTxt}>Maps</Text>
+                </Pressable>
+              )}
             </View>
-            {(!!liveClinicMaps || !!clinicAddress) && (
-              <Pressable
-                style={styles.mapsBtn}
-                onPress={() => Linking.openURL(liveClinicMaps || `https://maps.google.com/?q=${encodeURIComponent(clinicAddress)}`)}
-              >
-                <Feather name="navigation" size={11} color="#4285F4" />
-                <Text style={styles.mapsBtnTxt}>Maps</Text>
-              </Pressable>
+            {/* Address / District / State */}
+            {(!!clinicAddress || !!liveClinicDistrict || !!liveClinicState) && (
+              <View style={styles.clinicCardRow}>
+                <Feather name="map-pin" size={10} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.clinicCardMeta} numberOfLines={2}>
+                  {[clinicAddress, liveClinicDistrict, liveClinicState].filter(Boolean).join(", ")}
+                </Text>
+              </View>
             )}
+            {/* Shift + timing */}
+            <View style={styles.clinicCardRow}>
+              <Feather name={shiftIcon} size={10} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.clinicCardMeta}>
+                {shiftLabel}{liveShiftTiming ? `  ·  ${liveShiftTiming}` : ""}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -774,10 +800,11 @@ const styles = StyleSheet.create({
 
   sectionPad: { paddingHorizontal: 20, marginBottom: 14 },
 
-  shiftStrip: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(6,182,212,0.1)", borderWidth: 1, borderColor: "rgba(6,182,212,0.25)" },
-  shiftLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  shiftClinic: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  shiftLoc: { fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 },
+  clinicCard: { borderRadius: 18, backgroundColor: "rgba(6,182,212,0.08)", borderWidth: 1, borderColor: "rgba(6,182,212,0.22)", paddingHorizontal: 14, paddingTop: 13, paddingBottom: 12, gap: 7 },
+  clinicCardHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  clinicCardName: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF", letterSpacing: 0.2 },
+  clinicCardRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  clinicCardMeta: { fontSize: 11, color: "rgba(255,255,255,0.45)", flex: 1, lineHeight: 15 },
   mapsBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(66,133,244,0.18)", borderWidth: 1, borderColor: "rgba(66,133,244,0.35)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   mapsBtnTxt: { fontSize: 11, fontWeight: "700", color: "#4285F4" },
 
