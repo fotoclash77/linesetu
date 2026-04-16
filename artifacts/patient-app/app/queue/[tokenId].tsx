@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
 
   apptCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" },
 
-  amberCard: { borderRadius: 20, backgroundColor: "rgba(6,182,212,0.22)", borderWidth: 1.5, borderColor: "rgba(245,158,11,0.3)", overflow: "hidden" },
+  amberCard: { borderRadius: 20, backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1.5, borderColor: "rgba(245,158,11,0.3)", overflow: "hidden" },
   amberCardHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
   amberCardTitle: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF", letterSpacing: 0.2 },
   amberProgressSection: { paddingHorizontal: 16, paddingBottom: 14 },
