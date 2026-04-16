@@ -19,7 +19,7 @@ const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms';
 
 interface ClinicData {
-  name: string; address: string; city: string; phone: string; maps: string; active: boolean;
+  name: string; address: string; phone: string; maps: string; active: boolean;
 }
 
 // ── Time options: every 15 min from 06:00 to 22:45 ──────────────────
@@ -107,7 +107,6 @@ function ShiftForm({ shift, accentColor, iconName, label, data, clinics, onChang
                 }}
               >
                 <Text style={{ fontSize: 12, fontWeight: '700', color: selectedClinicIdx === i ? accentColor : 'rgba(255,255,255,0.5)' }}>{c.name}</Text>
-                {c.city ? <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500' }}>{c.city}</Text> : null}
               </TouchableOpacity>
             ))}
           </View>
@@ -438,7 +437,7 @@ export default function SettingsScreen() {
   }, [doctor]);
 
   // Clinics state — seeded from Firebase via doctor.clinics
-  const EMPTY_CLINIC: ClinicData = { name: '', address: '', city: '', phone: '', maps: '', active: false };
+  const EMPTY_CLINIC: ClinicData = { name: '', address: '', phone: '', maps: '', active: false };
   const [activeClinic, setActiveClinic] = useState(0);
   const [clinics, setClinics] = useState<ClinicData[]>(() => {
     const saved = (doctor as any)?.clinics as ClinicData[] | undefined;
@@ -447,7 +446,7 @@ export default function SettingsScreen() {
   });
   const [clinicSaving, setClinicSaving] = useState(false);
   const [clinicSaved, setClinicSaved] = useState(false);
-  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; city?: boolean; phone?: boolean; maps?: boolean }>({});
+  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; phone?: boolean; maps?: boolean }>({});
 
   // Schedule state — seeded from doctor.shifts
   const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
@@ -970,7 +969,6 @@ export default function SettingsScreen() {
               </View>
               <Field label="Clinic Name" value={clinic.name} onChange={v => { updateClinic(activeClinic, { name: v }); setClinicFieldErrors(e => ({ ...e, name: false })); }} required error={clinicFieldErrors.name} />
               <Field label="Address" value={clinic.address} onChange={v => { updateClinic(activeClinic, { address: v }); setClinicFieldErrors(e => ({ ...e, address: false })); }} required error={clinicFieldErrors.address} />
-              <Field label="City" value={clinic.city} onChange={v => { updateClinic(activeClinic, { city: v }); setClinicFieldErrors(e => ({ ...e, city: false })); }} required error={clinicFieldErrors.city} />
               <View style={styles.field}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
                   <Text style={styles.fieldLabel}>CLINIC PHONE</Text>
@@ -1012,7 +1010,6 @@ export default function SettingsScreen() {
                 const errors = {
                   name: !clinic.name?.trim(),
                   address: !clinic.address?.trim(),
-                  city: !clinic.city?.trim(),
                   phone: phone.length < 10,
                   maps: !clinic.maps?.trim(),
                 };
