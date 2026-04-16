@@ -80,9 +80,10 @@ Required secrets (set in Replit Secrets):
 | Secret | Description |
 |---|---|
 | `MSG91_AUTH_KEY` | MSG91 API authentication key |
-| `MSG91_SENDER_ID` | 6-char sender ID (default: `LNSETU`) |
+| `MSG91_SENDER_ID` | 6-char sender ID registered with MSG91 (default: `LNSETU`) |
+| `MSG91_TEMPLATE_ID` | DLT-approved template ID (required by TRAI for transactional SMS in India) |
 
-Provider: [MSG91](https://msg91.com) — route 4 (transactional). Register at msg91.com, create a transactional route, and copy the auth key.
+Provider: [MSG91](https://msg91.com) — route 4 (transactional). Register at msg91.com, create a transactional route, register a DLT template, and copy all three values. If any of the three secrets are absent the SMS is skipped silently (a warning is logged).
 
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.
