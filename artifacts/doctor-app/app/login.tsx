@@ -7,32 +7,10 @@ import { FeatherIcon as Feather } from "../components/FeatherIcon";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
 import { useDoctor } from '../contexts/DoctorContext';
-import { auth, signInWithPhoneNumber } from '../lib/firebase';
-import type { ConfirmationResult } from '../lib/firebase';
-
-const isWeb = Platform.OS === 'web';
-
 function getApiBase() {
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
   if (domain) return `https://${domain}`;
   return 'http://localhost:8080';
-}
-
-// Lazy web reCAPTCHA verifier — no extra package needed
-let recaptchaVerifier: any = null;
-function getRecaptchaVerifier() {
-  if (!isWeb) return null;
-  if (recaptchaVerifier) return recaptchaVerifier;
-  const { RecaptchaVerifier } = require('firebase/auth');
-  const containerId = 'recaptcha-container-doctor';
-  let el = document.getElementById(containerId);
-  if (!el) {
-    el = document.createElement('div');
-    el.id = containerId;
-    document.body.appendChild(el);
-  }
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' });
-  return recaptchaVerifier;
 }
 
 const STATUS_ICONS = [0.4, 0.65, 0.9, 1];
@@ -85,7 +63,6 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
   const otpInputRef = useRef<TextInput>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -102,21 +79,14 @@ export default function LoginScreen() {
     setError('');
     setSending(true);
     try {
-      if (isWeb) {
-        // Web: Firebase Phone Auth with invisible reCAPTCHA
-        const verifier = getRecaptchaVerifier();
-        const result = await signInWithPhoneNumber(auth, `+91${phone}`, verifier);
-        setConfirmationResult(result);
-      } else {
-        // Native: API-based OTP via Fast2SMS
-        const resp = await fetch(`${getApiBase()}/api/auth/doctor/send-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: `+91${phone}` }),
-        });
-        if (!resp.ok) throw new Error('Failed to send OTP');
-        await resp.json();
-      }
+      // API-based OTP via Fast2SMS (web + native, no reCAPTCHA)
+      const resp = await fetch(`${getApiBase()}/api/auth/doctor/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91${phone}` }),
+      });
+      if (!resp.ok) throw new Error('Failed to send OTP');
+      await resp.json();
       setStep('otp');
       setTimer(30);
       setTimeout(() => otpInputRef.current?.focus(), 100);
@@ -125,7 +95,6 @@ export default function LoginScreen() {
       if (msg.includes('too-many-requests')) setError('Too many attempts. Please wait and try again.');
       else if (msg.includes('invalid-phone-number')) setError('Invalid phone number. Please check and try again.');
       else setError('Could not send OTP. Try again.');
-      recaptchaVerifier = null;
     } finally {
       setSending(false);
     }
@@ -135,7 +104,6 @@ export default function LoginScreen() {
     if (sending) return;
     setOtp('');
     setTimer(0);
-    recaptchaVerifier = null;
     await handleSendOtp();
   };
 
@@ -144,22 +112,15 @@ export default function LoginScreen() {
     setError('');
     setSending(true);
     try {
-      if (isWeb && confirmationResult) {
-        // Web: Firebase verifies the OTP
-        const credential = await confirmationResult.confirm(otp);
-        const verifiedPhone = credential.user.phoneNumber || `+91${phone}`;
-        await loginWithFirebase(verifiedPhone);
-      } else {
-        // Native: server verifies the OTP
-        const resp = await fetch(`${getApiBase()}/api/auth/doctor/verify-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: `+91${phone}`, otp }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Verification failed');
-        await loginWithFirebase(`+91${phone}`);
-      }
+      // Server verifies the OTP (web + native)
+      const resp = await fetch(`${getApiBase()}/api/auth/doctor/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91${phone}`, otp }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Verification failed');
+      await loginWithFirebase(`+91${phone}`);
     } catch (e: any) {
       const msg = e?.message ?? '';
       if (msg.includes('invalid-verification-code') || msg.includes('code-expired'))
@@ -200,7 +161,7 @@ export default function LoginScreen() {
               {/* Step indicator */}
               <View style={styles.stepRow}>
                 {step === 'otp' && (
-                  <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); setConfirmationResult(null); recaptchaVerifier = null; }} style={styles.backBtn}>
+                  <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); }} style={styles.backBtn}>
                     <Feather name="arrow-left" size={18} color="rgba(255,255,255,0.7)" />
                   </TouchableOpacity>
                 )}
@@ -241,9 +202,7 @@ export default function LoginScreen() {
                   )}
                   <View style={styles.infoBox}>
                     <Text style={styles.infoText}>
-                      {isWeb
-                        ? 'OTP will be sent via Firebase SMS to your clinic-registered number. For doctor access only.'
-                        : 'OTP will be sent via SMS to your clinic-registered number. For doctor access only.'}
+                      OTP will be sent via SMS to your clinic-registered number. For doctor access only.
                     </Text>
                   </View>
                   {!!error && <Text style={styles.errorText}>{error}</Text>}
@@ -258,13 +217,6 @@ export default function LoginScreen() {
 
               {step === 'otp' && (
                 <>
-                  {isWeb && (
-                    <View style={styles.firebaseBadge}>
-                      <Feather name="shield" size={11} color={TEAL_LT} />
-                      <Text style={styles.firebaseBadgeTxt}>Verified by Firebase · Google</Text>
-                    </View>
-                  )}
-
                   <TextInput
                     ref={otpInputRef}
                     style={styles.hiddenInput}
@@ -366,8 +318,6 @@ const styles = StyleSheet.create({
   phoneHint: { fontSize: 10, color: 'rgba(245,158,11,0.8)', fontWeight: '600', marginBottom: 8, paddingLeft: 4 },
   infoBox: { backgroundColor: 'rgba(13,148,136,0.1)', borderWidth: 1, borderColor: 'rgba(13,148,136,0.2)', borderRadius: 12, padding: 12, marginBottom: 20 },
   infoText: { fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16.5, fontWeight: '500' },
-  firebaseBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(13,148,136,0.1)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 16 },
-  firebaseBadgeTxt: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
   ctaBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL },
   ctaBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.07)' },
   ctaBtnText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
