@@ -581,7 +581,27 @@ export default function ProfileScreen() {
                 </FieldBlock>
 
                 <FieldBlock label="Phone Number" required>
-                  <TextInput style={styles.textInput} value={mPhone} onChangeText={setMPhone} placeholder="+91 XXXXX XXXXX" placeholderTextColor="rgba(255,255,255,0.25)" keyboardType="phone-pad" />
+                  <View style={{ position: "relative" }}>
+                    <TextInput
+                      style={[styles.textInput, { paddingRight: 52 }]}
+                      value={mPhone}
+                      onChangeText={(t) => setMPhone(t.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="10-digit number"
+                      placeholderTextColor="rgba(255,255,255,0.25)"
+                      keyboardType="number-pad"
+                      maxLength={10}
+                    />
+                    <View style={{ position: "absolute", right: 12, top: 0, bottom: 0, justifyContent: "center" }}>
+                      <Text style={{ fontSize: 11, color: mPhone.length === 10 ? "#4ADE80" : "rgba(255,255,255,0.35)", fontWeight: "600" }}>
+                        {mPhone.length}/10
+                      </Text>
+                    </View>
+                  </View>
+                  {mPhone.length > 0 && mPhone.length < 10 && (
+                    <Text style={{ fontSize: 11, color: "#EF4444", marginTop: 4, marginLeft: 2 }}>
+                      Must be exactly 10 digits
+                    </Text>
+                  )}
                 </FieldBlock>
 
                 <FieldBlock label="Area / Locality" required>
