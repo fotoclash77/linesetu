@@ -352,9 +352,6 @@ export default function EarningsScreen() {
             <Text style={styles.headerTitle}>My Earnings</Text>
             <Text style={styles.headerSub}>{doctor?.name ?? 'Doctor'} · LINESETU</Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: 7 }}>
-            <View style={styles.iconBtn}><Feather name="download" size={18} color="#FFF" /></View>
-          </View>
         </View>
 
         {/* Balance Hero */}
