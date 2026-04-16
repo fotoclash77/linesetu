@@ -71,11 +71,11 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="patients"
-        options={{ href: null }}
+        options={{ href: null, tabBarButton: () => null }}
       />
       <Tabs.Screen
         name="patients/[id]"
-        options={{ href: null }}
+        options={{ href: null, tabBarButton: () => null }}
       />
       <Tabs.Screen
         name="earnings"
