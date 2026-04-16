@@ -61,6 +61,7 @@ interface BookingItem extends TokenItem {
   walkinFee?: number;
   payAtClinic?: number;
   totalVisitCost?: number;
+  paymentStatus?: string;
 }
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -68,7 +69,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   in_consult: { label: "Active",    color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
   upcoming:   { label: "Upcoming",  color: "#67E8F9", bg: "rgba(6,182,212,0.15)",   border: "rgba(6,182,212,0.35)"  },
   done:       { label: "Completed", color: "#A5B4FC", bg: "rgba(99,102,241,0.14)",  border: "rgba(99,102,241,0.3)"  },
-  cancelled:  { label: "Skipped",   color: "#F59E0B", bg: "rgba(245,158,11,0.14)",  border: "rgba(245,158,11,0.3)"  },
+  cancelled:  { label: "Cancelled", color: "#F87171", bg: "rgba(239,68,68,0.14)",   border: "rgba(239,68,68,0.3)"   },
 };
 
 interface MemberItem {
@@ -163,6 +164,7 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
   const cfg = STATUS_CFG[booking.status] ?? STATUS_CFG.waiting;
   const isActive = booking.status === "waiting" || booking.status === "in_consult";
   const isSkipped = booking.status === "cancelled";
+  const isRefunded = booking.status === "cancelled" && booking.paymentStatus === "refunded";
   const member = members.find(m => m.id === booking.memberId) ?? MEMBER_SELF_DEFAULT;
   const waitMin = booking.ahead != null ? Math.round(booking.ahead * 2.5) : null;
 
@@ -242,23 +244,32 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
         </View>
       </View>
 
-      <View style={styles.paymentRow}>
-        <View style={styles.paymentPaidGroup}>
-          <Feather name="check-circle" size={10} color="#4ADE80" />
-          <Text style={styles.paymentTxt}>₹{booking.patientPaid} paid</Text>
+      {isRefunded ? (
+        <View style={[styles.paymentRow, { gap: 6 }]}>
+          <Feather name="rotate-ccw" size={10} color="#F87171" />
+          <Text style={[styles.paymentTxt, { color: "#F87171" }]}>₹{booking.patientPaid} refunded</Text>
+          <Text style={[styles.paymentDot, { color: "rgba(248,113,113,0.4)" }]}>·</Text>
+          <Text style={[styles.paymentAtClinic, { color: "rgba(248,113,113,0.6)" }]}>reflects within 5–7 days</Text>
         </View>
-        {(booking.payAtClinic ?? booking.consultFee) > 0 && (
-          <>
-            <Text style={styles.paymentDot}>·</Text>
-            <View style={styles.paymentClinicGroup}>
-              <Feather name="home" size={10} color="#F59E0B" />
-              <Text style={styles.paymentAtClinic}>₹{booking.payAtClinic ?? booking.consultFee} at clinic</Text>
-            </View>
-          </>
-        )}
-        <Text style={styles.paymentDot}>·</Text>
-        <Text style={styles.paymentTotal}>₹{booking.totalVisitCost ?? (booking.patientPaid + (booking.payAtClinic ?? booking.consultFee))} total</Text>
-      </View>
+      ) : (
+        <View style={styles.paymentRow}>
+          <View style={styles.paymentPaidGroup}>
+            <Feather name="check-circle" size={10} color="#4ADE80" />
+            <Text style={styles.paymentTxt}>₹{booking.patientPaid} paid</Text>
+          </View>
+          {(booking.payAtClinic ?? booking.consultFee) > 0 && (
+            <>
+              <Text style={styles.paymentDot}>·</Text>
+              <View style={styles.paymentClinicGroup}>
+                <Feather name="home" size={10} color="#F59E0B" />
+                <Text style={styles.paymentAtClinic}>₹{booking.payAtClinic ?? booking.consultFee} at clinic</Text>
+              </View>
+            </>
+          )}
+          <Text style={styles.paymentDot}>·</Text>
+          <Text style={styles.paymentTotal}>₹{booking.totalVisitCost ?? (booking.patientPaid + (booking.payAtClinic ?? booking.consultFee))} total</Text>
+        </View>
+      )}
 
       <View style={styles.cardCta}>
         {isActive ? (
@@ -374,6 +385,7 @@ export default function BookingsScreen() {
       walkinFee: t.walkinFee,
       payAtClinic: t.payAtClinic,
       totalVisitCost: t.totalVisitCost,
+      paymentStatus: t.paymentStatus,
     };
   });
 

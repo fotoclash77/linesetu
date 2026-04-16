@@ -668,6 +668,20 @@ export default function LiveQueueScreen() {
             </View>
           </View>
         )}
+        {isCancelled && (
+          <View style={styles.sectionPad}>
+            <View style={[styles.alertBannerBlue, { backgroundColor: "rgba(239,68,68,0.12)", borderColor: "rgba(239,68,68,0.35)" }]}>
+              <Feather name="x-circle" size={15} color="#F87171" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.alertTitle, { color: "#F87171" }]}>Token Cancelled by Doctor</Text>
+                {token?.paymentStatus === "refunded"
+                  ? <Text style={styles.alertBody}>Your payment has been refunded and will reflect within 5–7 business days.</Text>
+                  : <Text style={styles.alertBody}>Your appointment has been cancelled. Contact the clinic for further assistance.</Text>
+                }
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* In-app reminder banner */}
         {reminderBanner && (
@@ -693,6 +707,12 @@ export default function LiveQueueScreen() {
                   <View style={styles.feePaidBadge}>
                     <Feather name="check-circle" size={9} color="#4ADE80" />
                     <Text style={styles.feePaidBadgeTxt}>Paid</Text>
+                  </View>
+                )}
+                {token?.paymentStatus === "refunded" && !feeExpanded && (
+                  <View style={[styles.feePaidBadge, { backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)" }]}>
+                    <Feather name="rotate-ccw" size={9} color="#F87171" />
+                    <Text style={[styles.feePaidBadgeTxt, { color: "#F87171" }]}>Refunded</Text>
                   </View>
                 )}
                 <View style={{ flex: 1 }} />
@@ -752,6 +772,12 @@ export default function LiveQueueScreen() {
                     <View style={[styles.feePaidBadge, { alignSelf: "flex-start", marginTop: 8, marginHorizontal: 14, marginBottom: 6 }]}>
                       <Feather name="check-circle" size={9} color="#4ADE80" />
                       <Text style={styles.feePaidBadgeTxt}>Paid</Text>
+                    </View>
+                  )}
+                  {token?.paymentStatus === "refunded" && (
+                    <View style={[styles.feePaidBadge, { alignSelf: "flex-start", marginTop: 8, marginHorizontal: 14, marginBottom: 6, backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)" }]}>
+                      <Feather name="rotate-ccw" size={9} color="#F87171" />
+                      <Text style={[styles.feePaidBadgeTxt, { color: "#F87171" }]}>Refunded</Text>
                     </View>
                   )}
                 </>
