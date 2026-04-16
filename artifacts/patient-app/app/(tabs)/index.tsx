@@ -164,12 +164,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
           <Feather name="slash" size={9} color="#EF4444" />
           <Text style={styles.unavailTxt}>Not accepting patients</Text>
         </View>
-      ) : (
-        <View style={styles.unavailRow}>
-          <Feather name="clock" size={9} color="#F59E0B" />
-          <Text style={styles.unavailTxt}>Live queue is yet not started</Text>
-        </View>
-      )}
+      ) : null}
 
       <Pressable
         disabled={!available}
@@ -239,11 +234,6 @@ function LiveQueueCard({ token, doctorName }: { token: TokenItem | undefined; do
       <View style={styles.liveQueueHeader}>
         <View style={[styles.greenDot, !queueStarted && { backgroundColor: "#FCD34D" }]} />
         <Text style={styles.liveQueueLbl}>Live Queue</Text>
-        {!queueStarted && (
-          <View style={{ marginLeft: 6, backgroundColor: "rgba(252,211,77,0.12)", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(252,211,77,0.3)" }}>
-            <Text style={{ fontSize: 9, fontWeight: "700", color: "#FCD34D" }}>Queue not started yet</Text>
-          </View>
-        )}
         <View style={{ flex: 1 }} />
         <View style={styles.liveQueueDocChip}>
           <Feather name="radio" size={10} color="#818CF8" />
