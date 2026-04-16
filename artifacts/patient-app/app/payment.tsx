@@ -211,7 +211,7 @@ export default function PaymentScreen() {
       } catch (_) {}
     };
     poll();
-    const iv = setInterval(poll, 5_000);
+    const iv = setInterval(poll, 3_000);
     return () => { active = false; clearInterval(iv); };
   }, [params.doctorId, date, shift]);
 
@@ -529,8 +529,8 @@ export default function PaymentScreen() {
               ))}
             </View>
 
-            {/* Slots remaining indicator — only show when some tokens are booked or queue is full */}
-            {remaining !== null && maxTokens !== null && (remaining < maxTokens || isFull) && (
+            {/* Slots remaining indicator — always show when data is loaded */}
+            {remaining !== null && maxTokens !== null && (
               <View style={[styles.slotsBar, isFull && { borderColor: "rgba(239,68,68,0.4)", backgroundColor: "rgba(239,68,68,0.1)" }]}>
                 <View style={styles.slotsBarTrack}>
                   <View style={[styles.slotsBarFill, {
