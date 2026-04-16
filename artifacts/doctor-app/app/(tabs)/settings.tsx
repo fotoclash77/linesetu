@@ -1712,7 +1712,7 @@ export default function SettingsScreen() {
                 style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
               >
                 <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
-                  <Feather name="message-circle" size={18} color="#4ADE80" />
+                  <Feather name="help-circle" size={18} color="#4ADE80" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.helpContactLabel}>WhatsApp Support</Text>
@@ -1726,7 +1726,7 @@ export default function SettingsScreen() {
                 style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
               >
                 <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(103,232,249,0.12)' }]}>
-                  <Feather name="mail" size={18} color="#67E8F9" />
+                  <Feather name="send" size={18} color="#67E8F9" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.helpContactLabel}>Email Support</Text>
