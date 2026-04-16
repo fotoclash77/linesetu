@@ -5,7 +5,7 @@ import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -240,44 +240,7 @@ export default function LiveQueueScreen() {
     })();
   }, [validTokenId]);
 
-  // ── Reminder thresholds (saved to token doc in Firestore) ─────
-  const REMINDER_OPTIONS = [
-    { label: "10 tokens left", value: 10 },
-    { label: "5 tokens left",  value: 5  },
-    { label: "1 token left",   value: 1  },
-    { label: "Your turn",      value: 0  },
-  ];
-  const [selectedReminders, setSelectedReminders] = useState<number[]>([10, 5, 1, 0]);
-  const [reminderBanner, setReminderBanner] = useState<string | null>(null);
   const [feeExpanded, setFeeExpanded] = useState(false);
-  const lastTriggeredRef   = useRef<Set<number>>(new Set());
-  const bannerTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevAheadRef       = useRef<number | null>(null);
-
-  // Load saved thresholds from Firestore token doc
-  useEffect(() => {
-    if (!validTokenId) return;
-    const ref = doc(db, "tokens", validTokenId);
-    const unsub = onSnapshot(ref, (snap) => {
-      if (!snap.exists()) return;
-      const data = snap.data() as any;
-      if (Array.isArray(data.reminderThresholds)) {
-        setSelectedReminders(data.reminderThresholds as number[]);
-      }
-    }, () => {});
-    return () => unsub();
-  }, [validTokenId]);
-
-  const toggleReminder = useCallback(async (value: number) => {
-    if (!validTokenId) return;
-    const next = selectedReminders.includes(value)
-      ? selectedReminders.filter(v => v !== value)
-      : [...selectedReminders, value];
-    setSelectedReminders(next);
-    try {
-      await updateDoc(doc(db, "tokens", validTokenId), { reminderThresholds: next });
-    } catch (_) {}
-  }, [validTokenId, selectedReminders]);
 
   // ── Derived values ────────────────────────────────────────────
   const myToken      = token?.tokenNumber ?? 0;
@@ -341,37 +304,6 @@ export default function LiveQueueScreen() {
     cancelled:  { label: "Cancelled",         color: "#F87171", bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.4)"   },
   }[status];
 
-  // ── In-app reminder banner triggered by live ahead count ──────
-  useEffect(() => {
-    if (myToken === 0 || liveWaitingNumbers === null) return;
-    const triggered = lastTriggeredRef.current;
-    const prev      = prevAheadRef.current;
-
-    // First real data point — record it silently, no banner.
-    if (prev === null) {
-      prevAheadRef.current = ahead;
-      return;
-    }
-
-    prevAheadRef.current = ahead;
-
-    // Only alert when the count actually decreased (crossed a threshold).
-    if (ahead >= prev) return;
-
-    for (const threshold of selectedReminders) {
-      // Fire only when we cross the threshold from above: prev was above it, now at/below.
-      if (!triggered.has(threshold) && ahead <= threshold && prev > threshold) {
-        triggered.add(threshold);
-        const msg = threshold === 0
-          ? "It's your turn! Head to the clinic now."
-          : `Only ${threshold} patient${threshold === 1 ? "" : "s"} ahead of you. Get ready!`;
-        setReminderBanner(msg);
-        if (bannerTimer.current) clearTimeout(bannerTimer.current);
-        bannerTimer.current = setTimeout(() => setReminderBanner(null), 5000);
-        break;
-      }
-    }
-  }, [ahead, selectedReminders, myToken, liveWaitingNumbers]);
 
   // ── Animations ────────────────────────────────────────────────
   const ring1 = useSharedValue(1);
@@ -697,16 +629,6 @@ export default function LiveQueueScreen() {
           </View>
         )}
 
-        {/* In-app reminder banner */}
-        {reminderBanner && (
-          <View style={styles.sectionPad}>
-            <Pressable style={styles.reminderBanner} onPress={() => setReminderBanner(null)}>
-              <Feather name="bell" size={14} color="#FDE68A" />
-              <Text style={styles.reminderBannerTxt}>{reminderBanner}</Text>
-              <Feather name="x" size={12} color="rgba(253,230,138,0.6)" />
-            </Pressable>
-          </View>
-        )}
 
 
         {/* Payment Summary — collapsible, at the bottom */}
@@ -919,8 +841,6 @@ const styles = StyleSheet.create({
   notifTokenChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   notifTokenChipTxt: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
 
-  reminderBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(217,119,6,0.2)", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "rgba(245,158,11,0.4)" },
-  reminderBannerTxt: { flex: 1, fontSize: 12, fontWeight: "600", color: "#FDE68A", lineHeight: 17 },
 
   feeCard: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
   feeHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
