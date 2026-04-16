@@ -115,9 +115,7 @@ export default function LoginScreen() {
           body: JSON.stringify({ phone: `+91${phone}` }),
         });
         if (!resp.ok) throw new Error('Failed to send OTP');
-        const data = await resp.json();
-        // Dev convenience: auto-fill OTP if returned
-        if (data.devOtp) setOtp(String(data.devOtp));
+        await resp.json();
       }
       setStep('otp');
       setTimer(30);

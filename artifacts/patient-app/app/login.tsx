@@ -79,12 +79,7 @@ export default function LoginScreen() {
           body: JSON.stringify({ phone: fullPhone }),
         });
         if (!resp.ok) throw new Error("Failed to send OTP");
-        const data = await resp.json();
-        // Dev convenience: auto-fill OTP if returned
-        if (data.devOtp) {
-          const digits = String(data.devOtp).split("");
-          setOtp([...digits, ...Array(6).fill("")].slice(0, 6));
-        }
+        await resp.json();
       }
       setStep("otp");
     } catch (e: any) {
