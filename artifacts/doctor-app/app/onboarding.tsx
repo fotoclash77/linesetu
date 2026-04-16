@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -33,20 +34,13 @@ function SplashSlide() {
       {/* Glow orb */}
       <View style={styles.glowOrb} />
 
-      {/* Logo rings */}
-      <View style={styles.outerRing}>
-        <View style={styles.innerRing}>
-          <LinearGradient
-            colors={["#0D9488", "#0F766E"]}
-            style={styles.logoCore}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          >
-            {/* Cross icon */}
-            <View style={styles.crossH} />
-            <View style={styles.crossV} />
-          </LinearGradient>
-        </View>
-        <View style={styles.orbitDot} />
+      {/* Logo image */}
+      <View style={styles.logoWrap}>
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
       </View>
 
       {/* Brand */}
@@ -421,43 +415,22 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     top: "20%",
   },
-  outerRing: {
+  logoWrap: {
     width: 140,
     height: 140,
-    borderRadius: 70,
-    borderWidth: 1,
-    borderColor: "rgba(45,212,191,0.2)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 24,
+    shadowColor: "#0D9488",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  innerRing: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(13,148,136,0.12)",
-  },
-  logoCore: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  crossH: { position: "absolute", width: 36, height: 8, borderRadius: 4, backgroundColor: "white" },
-  crossV: { position: "absolute", width: 8, height: 36, borderRadius: 4, backgroundColor: "white" },
-  orbitDot: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#2DD4BF",
+  logoImg: {
+    width: 132,
+    height: 132,
+    borderRadius: 30,
   },
   brandName: {
     fontSize: 34,
