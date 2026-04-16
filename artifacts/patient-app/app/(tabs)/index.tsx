@@ -449,15 +449,22 @@ export default function HomeScreen() {
         {/* Quick Links */}
         <View style={styles.quickLinksRow}>
           {[
-            { icon: "calendar" as const, label: "Book Token", color: "#4F46E5", glow: "rgba(79,70,229,0.3)", onPress: () => router.push("/find-doctors") },
-            { icon: "list" as const, label: "My Queue", color: "#06B6D4", glow: "rgba(6,182,212,0.3)", onPress: () => activeToken?.id ? router.push(`/queue/${activeToken.id}` as any) : router.push("/(tabs)/bookings") },
-            { icon: "user-plus" as const, label: "Add Family", color: "#22C55E", glow: "rgba(34,197,94,0.3)", onPress: () => router.push("/(tabs)/profile") },
-            { icon: "grid" as const, label: "Scan QR", color: "#F59E0B", glow: "rgba(245,158,11,0.3)", onPress: () => {} },
-          ].map(({ icon, label, color, glow, onPress }) => (
-            <Pressable key={label} style={styles.quickLink} onPress={onPress}>
-              <View style={[styles.quickIcon, { backgroundColor: color + "1A", borderColor: color + "33",
-                shadowColor: glow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 4 }]}>
-                <Feather name={icon} size={18} color={color} />
+            { icon: "calendar" as const, label: "Book Token", color: "#4F46E5", glow: "rgba(79,70,229,0.3)", onPress: () => router.push("/find-doctors"), comingSoon: false },
+            { icon: "list" as const, label: "My Queue", color: "#06B6D4", glow: "rgba(6,182,212,0.3)", onPress: () => activeToken?.id ? router.push(`/queue/${activeToken.id}` as any) : router.push("/(tabs)/bookings"), comingSoon: false },
+            { icon: "user-plus" as const, label: "Add Family", color: "#22C55E", glow: "rgba(34,197,94,0.3)", onPress: () => router.push("/(tabs)/profile"), comingSoon: false },
+            { icon: "grid" as const, label: "Scan QR", color: "#F59E0B", glow: "rgba(245,158,11,0.3)", onPress: () => {}, comingSoon: true },
+          ].map(({ icon, label, color, glow, onPress, comingSoon }) => (
+            <Pressable key={label} style={[styles.quickLink, comingSoon && { opacity: 0.6 }]} onPress={comingSoon ? undefined : onPress}>
+              <View style={{ position: "relative" }}>
+                <View style={[styles.quickIcon, { backgroundColor: color + "1A", borderColor: color + "33",
+                  shadowColor: glow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 4 }]}>
+                  <Feather name={icon} size={18} color={color} />
+                </View>
+                {comingSoon && (
+                  <View style={styles.comingSoonBadge}>
+                    <Text style={styles.comingSoonTxt}>Coming soon</Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.quickLabel}>{label}</Text>
             </Pressable>
@@ -560,6 +567,8 @@ const styles = StyleSheet.create({
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   quickLabel: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.65)", textAlign: "center" },
+  comingSoonBadge: { position: "absolute" as const, bottom: -4, left: -6, right: -6, backgroundColor: "rgba(245,158,11,0.85)", borderRadius: 4, paddingVertical: 1, paddingHorizontal: 3, alignItems: "center" as const },
+  comingSoonTxt: { fontSize: 6, fontWeight: "700" as const, color: "#FFF", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   sectionPad: { paddingHorizontal: 20, marginBottom: 22 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
