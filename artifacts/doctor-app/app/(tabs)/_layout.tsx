@@ -2,7 +2,6 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { fireSettingsReset } from "./_settingsResetBridge";
-import { TEAL_LT } from "../../constants/theme";
 
 function HomeIcon({ color }: { color: string }) {
   return <Feather name="home" size={22} color={color} />;
@@ -22,8 +21,6 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: TEAL_LT,
-        tabBarInactiveTintColor: INACTIVE,
         tabBarStyle: { display: "none" },
         sceneContainerStyle: { backgroundColor: "#070B14" },
       }}
