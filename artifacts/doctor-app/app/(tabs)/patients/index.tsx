@@ -3,13 +3,13 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, RefreshControl, Platform, Modal,
 } from 'react-native';
-import { FeatherIcon as Feather } from "../../components/FeatherIcon";
+import { FeatherIcon as Feather } from "../../../components/FeatherIcon";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar } from 'react-native-calendars';
-import { BG, TEAL } from '../../constants/theme';
-import { useDoctor } from '../../contexts/DoctorContext';
+import { BG, TEAL } from '../../../constants/theme';
+import { useDoctor } from '../../../contexts/DoctorContext';
 
 const isWeb = Platform.OS === 'web';
 const BASE  = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;

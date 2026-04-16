@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { FeatherIcon as Feather } from "../../components/FeatherIcon";
-import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { FeatherIcon as Feather } from "../../../components/FeatherIcon";
+import { BG, TEAL, TEAL_LT } from '../../../constants/theme';
 
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
