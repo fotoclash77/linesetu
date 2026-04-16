@@ -500,56 +500,58 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
-        {/* Progress Bar */}
+        {/* Amber Queue Status Card — progress + appointment */}
         <View style={styles.sectionPad}>
-          <View style={styles.progressSection}>
-            <View style={styles.progressLabelRow}>
-              <Text style={styles.progressLbl}>{ahead} token{ahead !== 1 ? "s" : ""} ahead of you</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: pct(Math.max(5, progPct)) }]}>
-                <LinearGradient colors={["#4F46E5", "#06B6D4"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
-              </View>
-              <View style={[styles.youMarker, { left: "95%" as any }]}>
-                <View style={styles.youDot} />
-                <Text style={styles.youLabel}>YOU</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Your Appointment Card */}
-        <View style={styles.sectionPad}>
-          <View style={styles.apptCard}>
-            <View style={styles.apptHeader}>
-              <Text style={styles.apptTitle}>Your Appointment</Text>
+          <View style={styles.amberCard}>
+            {/* Card header label */}
+            <View style={styles.amberCardHeader}>
+              <Feather name="activity" size={13} color="#F59E0B" />
+              <Text style={styles.amberCardTitle}>Your Appointment</Text>
               <View style={[styles.apptStatusBadge, { backgroundColor: statusCfg.bg, borderColor: statusCfg.border }]}>
                 <Text style={[styles.apptStatusTxt, { color: statusCfg.color }]}>{statusCfg.label}</Text>
               </View>
             </View>
-            <View style={styles.apptBody}>
-              <View style={styles.apptDetails}>
-                <View style={styles.apptDetailRow}>
-                  <Feather name="users" size={12} color="#818CF8" />
-                  <Text style={styles.apptDetailLbl}>Ahead</Text>
-                  <Text style={styles.apptDetailVal}>{ahead} patient{ahead !== 1 ? "s" : ""}</Text>
+
+            {/* Progress Bar */}
+            <View style={styles.amberProgressSection}>
+              <View style={styles.progressLabelRow}>
+                <Text style={styles.progressLbl}>{ahead} token{ahead !== 1 ? "s" : ""} ahead of you</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: pct(Math.max(5, progPct)) }]}>
+                  <LinearGradient colors={["#F59E0B", "#FBBF24"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
                 </View>
-                <View style={styles.apptDetailRow}>
-                  <Feather name="clock" size={12} color="#06B6D4" />
-                  <Text style={styles.apptDetailLbl}>Est. Wait</Text>
-                  <Text style={styles.apptDetailVal}>~{waitMin} min</Text>
+                <View style={[styles.youMarker, { left: "95%" as any }]}>
+                  <View style={[styles.youDot, { backgroundColor: "#F59E0B" }]} />
+                  <Text style={styles.youLabel}>YOU</Text>
                 </View>
               </View>
             </View>
-            <View style={styles.apptDoctorRow}>
+
+            {/* Stats row */}
+            <View style={styles.amberStatsRow}>
+              <View style={styles.amberStatBox}>
+                <Feather name="users" size={14} color="#F59E0B" />
+                <Text style={styles.amberStatVal}>{ahead}</Text>
+                <Text style={styles.amberStatLbl}>Ahead</Text>
+              </View>
+              <View style={styles.amberStatDivider} />
+              <View style={styles.amberStatBox}>
+                <Feather name="clock" size={14} color="#F59E0B" />
+                <Text style={styles.amberStatVal}>~{waitMin}</Text>
+                <Text style={styles.amberStatLbl}>Min Wait</Text>
+              </View>
+            </View>
+
+            {/* Doctor row */}
+            <View style={styles.amberDoctorRow}>
               <View style={styles.apptDoctorAvatar}>
                 <Feather name="user" size={14} color="#818CF8" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.apptDoctorName}>{doctorName}</Text>
                 <Text style={styles.apptDoctorSpec}>{specialization}{clinicName ? ` · ${clinicName}` : ""}</Text>
               </View>
-              <View style={{ flex: 1 }} />
               <View style={styles.apptVerifiedBadge}>
                 <Feather name="check-circle" size={11} color="#22C55E" />
                 <Text style={styles.apptVerifiedTxt}>Verified</Text>
@@ -829,6 +831,17 @@ const styles = StyleSheet.create({
   statLbl: { fontSize: 8, color: "rgba(255,255,255,0.35)", fontWeight: "600", textAlign: "center" },
 
   apptCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" },
+
+  amberCard: { borderRadius: 20, backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1.5, borderColor: "rgba(245,158,11,0.3)", overflow: "hidden" },
+  amberCardHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  amberCardTitle: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF", letterSpacing: 0.2 },
+  amberProgressSection: { paddingHorizontal: 16, paddingBottom: 14 },
+  amberStatsRow: { flexDirection: "row", alignItems: "stretch", borderTopWidth: 1, borderTopColor: "rgba(245,158,11,0.15)" },
+  amberStatBox: { flex: 1, alignItems: "center", gap: 4, paddingVertical: 14 },
+  amberStatVal: { fontSize: 22, fontWeight: "800", color: "#FFF" },
+  amberStatLbl: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: 0.5 },
+  amberStatDivider: { width: 1, backgroundColor: "rgba(245,158,11,0.15)", marginVertical: 10 },
+  amberDoctorRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "rgba(245,158,11,0.15)" },
   apptHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   apptTitle: { fontSize: 13, fontWeight: "800", color: "#FFF" },
   apptStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
