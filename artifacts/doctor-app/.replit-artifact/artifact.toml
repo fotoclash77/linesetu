@@ -12,7 +12,7 @@ version = "1.0.0"
 [[services]]
 ensurePreviewReachable = "/status"
 name = "expo"
-paths = [ "/doctor-app/", "/node_modules/", "/_expo/", "/__metro/" ]
+paths = [ "/doctor-app/" ]
 localPort = 20119
 
 [services.development]
