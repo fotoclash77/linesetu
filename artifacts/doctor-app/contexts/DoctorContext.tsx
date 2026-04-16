@@ -44,6 +44,8 @@ export interface DoctorUser {
   alertMessage?: string;
   results?: string[];
   showResults?: boolean;
+  state?: string;
+  district?: string;
   bankAccount?: {
     accountType?: 'bank' | 'upi';
     accountHolderName?: string;
@@ -171,6 +173,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       showResults: data.showResults !== false,
       walkinFee: data.walkinFee != null ? Number(data.walkinFee) : undefined,
       bankAccount: data.bankAccount ?? undefined,
+      state: data.state ?? '',
+      district: data.district ?? '',
     };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);

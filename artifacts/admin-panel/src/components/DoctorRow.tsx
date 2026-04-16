@@ -55,6 +55,11 @@ export function DoctorRow({ doctor }: Props) {
             <div>
               <div className="font-medium text-gray-900 text-sm">{doctor.name}</div>
               <div className="text-xs text-gray-500">{doctor.specialization}</div>
+              {(doctor.district || doctor.state) && (
+                <div className="text-xs text-teal-600 mt-0.5">
+                  📍 {[doctor.district, doctor.state].filter(Boolean).join(", ")}
+                </div>
+              )}
             </div>
           </div>
         </td>

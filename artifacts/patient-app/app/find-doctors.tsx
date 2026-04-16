@@ -39,6 +39,8 @@ interface DoctorItem {
   photo: string;
   accent: string;
   isAvailable?: boolean;
+  district?: string;
+  state?: string;
 }
 
 
@@ -92,6 +94,15 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
         <View style={[styles.specChip, { backgroundColor: doc.accent + "18" }]}>
           <Text style={[styles.specChipTxt, { color: doc.accent }]}>{doc.specialty}</Text>
         </View>
+
+        {!!(doc.district || doc.state) && (
+          <View style={styles.locationRow}>
+            <Feather name="map-pin" size={9} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.locationTxt} numberOfLines={1}>
+              {[doc.district, doc.state].filter(Boolean).join(", ")}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.listStats}>
           <View style={styles.listStat}>
@@ -180,6 +191,8 @@ export default function FindDoctorsScreen() {
     token: Math.floor(Math.random() * 50) + 1,
     exp: d.experience != null ? `${d.experience} yrs` : "—",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
+    district: (d as any).district ?? '',
+    state: (d as any).state ?? '',
     photo: fbPhotoMap.get(d.id) ?? d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
@@ -442,6 +455,8 @@ const styles = StyleSheet.create({
   listStat: { flexDirection: "row", alignItems: "center", gap: 3 },
   listStatTxt: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.55)" },
   listStatDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "rgba(255,255,255,0.15)" },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
+  locationTxt: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "500", flexShrink: 1 },
 
   listRight: { alignItems: "center", gap: 10, marginLeft: 10 },
   liveWaitBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.1)", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },

@@ -13,6 +13,8 @@ export interface Doctor {
   isDeleted: boolean;
   isAvailable: boolean;
   createdAt: any;
+  state?: string;
+  district?: string;
 }
 
 export function useDoctors() {

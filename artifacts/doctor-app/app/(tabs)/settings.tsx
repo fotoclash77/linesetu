@@ -11,6 +11,7 @@ import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';
+import { INDIA_STATES } from '../../constants/indiaLocations';
 
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -246,6 +247,115 @@ function SpecPicker({ value, onChange, error }: {
   );
 }
 
+function LocationPicker({
+  selectedState, selectedDistrict,
+  onStateChange, onDistrictChange,
+}: {
+  selectedState: string; selectedDistrict: string;
+  onStateChange: (s: string) => void; onDistrictChange: (d: string) => void;
+}) {
+  const [modal, setModal] = useState<'state' | 'district' | null>(null);
+  const [search, setSearch] = useState('');
+
+  const districts = INDIA_STATES.find(s => s.name === selectedState)?.districts ?? [];
+
+  const stateList = search
+    ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+    : INDIA_STATES;
+  const districtList = search
+    ? districts.filter(d => d.toLowerCase().includes(search.toLowerCase()))
+    : districts;
+
+  const openState = () => { setSearch(''); setModal('state'); };
+  const openDistrict = () => { if (!selectedState) return; setSearch(''); setModal('district'); };
+  const close = () => { setModal(null); setSearch(''); };
+
+  const pickState = (name: string) => {
+    onStateChange(name);
+    onDistrictChange('');
+    close();
+  };
+  const pickDistrict = (name: string) => {
+    onDistrictChange(name);
+    close();
+  };
+
+  return (
+    <View>
+      {/* State selector */}
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>STATE</Text>
+        <TouchableOpacity
+          style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }]}
+          onPress={openState}
+        >
+          <Text style={{ color: selectedState ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '600', fontSize: 14 }}>
+            {selectedState || 'Select state'}
+          </Text>
+          <Feather name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+        </TouchableOpacity>
+      </View>
+
+      {/* District selector */}
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>DISTRICT</Text>
+        <TouchableOpacity
+          style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, opacity: selectedState ? 1 : 0.45 }]}
+          onPress={openDistrict}
+        >
+          <Text style={{ color: selectedDistrict ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '600', fontSize: 14 }}>
+            {selectedDistrict || (selectedState ? 'Select district' : 'Select state first')}
+          </Text>
+          <Feather name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal */}
+      <Modal visible={!!modal} transparent animationType="fade" onRequestClose={close}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={close}>
+          <TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#0D1321', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', width: 300, maxHeight: 480, overflow: 'hidden' }}>
+            <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: '#2DD4BF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                {modal === 'state' ? 'Select State / UT' : `Districts — ${selectedState}`}
+              </Text>
+              <TouchableOpacity onPress={close}>
+                <Feather name="x" size={16} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            </View>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+              <TextInput
+                style={{ height: 36, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingHorizontal: 12, color: '#FFF', fontSize: 13, fontWeight: '500' }}
+                placeholder={modal === 'state' ? 'Search state...' : 'Search district...'}
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                value={search}
+                onChangeText={setSearch}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={modal === 'state' ? stateList.map(s => s.name) : districtList}
+              keyExtractor={item => item}
+              renderItem={({ item }) => {
+                const isSelected = modal === 'state' ? item === selectedState : item === selectedDistrict;
+                return (
+                  <TouchableOpacity
+                    onPress={() => modal === 'state' ? pickState(item) : pickDistrict(item)}
+                    style={{ paddingHorizontal: 16, paddingVertical: 13, backgroundColor: isSelected ? 'rgba(45,212,191,0.15)' : 'transparent', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' }}
+                  >
+                    <Text style={{ color: isSelected ? '#2DD4BF' : 'rgba(255,255,255,0.75)', fontWeight: isSelected ? '800' : '500', fontSize: 14 }}>{item}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', padding: 20, fontSize: 13 }}>No results</Text>}
+              keyboardShouldPersistTaps="handled"
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
 function SectionLabel({ label }: { label: string }) {
   return <Text style={styles.sectionLabel}>{label}</Text>;
 }
@@ -303,6 +413,8 @@ export default function SettingsScreen() {
     return p.startsWith('+91') ? p.slice(3).trim() : p;
   });
   const [bio, setBio] = useState(() => doctor?.bio ?? '');
+  const [doctorState, setDoctorState] = useState(() => (doctor as any)?.state ?? '');
+  const [doctorDistrict, setDoctorDistrict] = useState(() => (doctor as any)?.district ?? '');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -320,6 +432,8 @@ export default function SettingsScreen() {
       const p: string = doctor.phone ?? '';
       setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
       setBio(doctor.bio ?? '');
+      setDoctorState((doctor as any).state ?? '');
+      setDoctorDistrict((doctor as any).district ?? '');
     }
   }, [doctor]);
 
@@ -673,7 +787,9 @@ export default function SettingsScreen() {
         totalPatients: patientsTotal.trim(),
         phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
         bio: bio.trim(),
-      });
+        state: doctorState,
+        district: doctorDistrict,
+      } as any);
       setProfileSaved(true);
       setTimeout(() => {
         setProfileSaved(false);
@@ -702,7 +818,9 @@ export default function SettingsScreen() {
           totalPatients: patientsTotal.trim(),
           phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
           bio: bio.trim(),
-        }).catch(() => {});
+          state: doctorState,
+          district: doctorDistrict,
+        } as any).catch(() => {});
       }
     } else if (section === 'clinics') {
       updateDoctor({ clinics: clinics as any }).catch(() => {});
@@ -803,6 +921,16 @@ export default function SettingsScreen() {
                 {profileFieldErrors.mobile && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
               </View>
               <Field label="About / Bio" value={bio} onChange={setBio} multiline required error={profileFieldErrors.bio} />
+            </View>
+
+            <View style={styles.formCard}>
+              <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
+              <LocationPicker
+                selectedState={doctorState}
+                selectedDistrict={doctorDistrict}
+                onStateChange={setDoctorState}
+                onDistrictChange={setDoctorDistrict}
+              />
             </View>
 
             <View style={{ paddingHorizontal: 6, marginBottom: 8 }}>
