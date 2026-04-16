@@ -1,13 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Animated, Alert,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { FeatherIcon as Feather } from "../components/FeatherIcon";
-import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BG, TEAL, TEAL_LT } from '../constants/theme';
 import { useDoctor } from '../contexts/DoctorContext';
+import { auth, signInWithPhoneNumber } from '../lib/firebase';
+import type { ConfirmationResult } from '../lib/firebase';
+
+const isWeb = Platform.OS === 'web';
+
+function getApiBase() {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}`;
+  return 'http://localhost:8080';
+}
+
+// Lazy web reCAPTCHA verifier — no extra package needed
+let recaptchaVerifier: any = null;
+function getRecaptchaVerifier() {
+  if (!isWeb) return null;
+  if (recaptchaVerifier) return recaptchaVerifier;
+  const { RecaptchaVerifier } = require('firebase/auth');
+  const containerId = 'recaptcha-container-doctor';
+  let el = document.getElementById(containerId);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = containerId;
+    document.body.appendChild(el);
+  }
+  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' });
+  return recaptchaVerifier;
+}
 
 const STATUS_ICONS = [0.4, 0.65, 0.9, 1];
 
@@ -50,7 +76,7 @@ function OtpBox({ value, focused }: { value: string; focused: boolean }) {
 }
 
 export default function LoginScreen() {
-  const { loginWithOtp } = useDoctor();
+  const { loginWithFirebase } = useDoctor();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -59,7 +85,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
   const otpInputRef = useRef<TextInput>(null);
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -76,25 +102,43 @@ export default function LoginScreen() {
     setError('');
     setSending(true);
     try {
-      const res = await fetch(`https://${domain}/api/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+91${phone}` }),
-      });
-      if (!res.ok) throw new Error('Failed to send OTP');
-      const data = await res.json();
+      if (isWeb) {
+        // Web: Firebase Phone Auth with invisible reCAPTCHA
+        const verifier = getRecaptchaVerifier();
+        const result = await signInWithPhoneNumber(auth, `+91${phone}`, verifier);
+        setConfirmationResult(result);
+      } else {
+        // Native: API-based OTP via Fast2SMS
+        const resp = await fetch(`${getApiBase()}/api/auth/doctor/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: `+91${phone}` }),
+        });
+        if (!resp.ok) throw new Error('Failed to send OTP');
+        const data = await resp.json();
+        // Dev convenience: auto-fill OTP if returned
+        if (data.devOtp) setOtp(String(data.devOtp));
+      }
       setStep('otp');
       setTimer(30);
-      if (data.devOtp) {
-        setOtp(String(data.devOtp));
-        setOtpFocus(5);
-      }
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (e: any) {
-      setError(e.message || 'Could not send OTP. Try again.');
+      const msg = e?.message ?? '';
+      if (msg.includes('too-many-requests')) setError('Too many attempts. Please wait and try again.');
+      else if (msg.includes('invalid-phone-number')) setError('Invalid phone number. Please check and try again.');
+      else setError('Could not send OTP. Try again.');
+      recaptchaVerifier = null;
     } finally {
       setSending(false);
     }
+  };
+
+  const handleResendOtp = async () => {
+    if (sending) return;
+    setOtp('');
+    setTimer(0);
+    recaptchaVerifier = null;
+    await handleSendOtp();
   };
 
   const handleVerify = async () => {
@@ -102,9 +146,27 @@ export default function LoginScreen() {
     setError('');
     setSending(true);
     try {
-      await loginWithOtp(`+91${phone}`, otp);
+      if (isWeb && confirmationResult) {
+        // Web: Firebase verifies the OTP
+        const credential = await confirmationResult.confirm(otp);
+        const verifiedPhone = credential.user.phoneNumber || `+91${phone}`;
+        await loginWithFirebase(verifiedPhone);
+      } else {
+        // Native: server verifies the OTP
+        const resp = await fetch(`${getApiBase()}/api/auth/doctor/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: `+91${phone}`, otp }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Verification failed');
+        await loginWithFirebase(`+91${phone}`);
+      }
     } catch (e: any) {
-      setError(e.message || 'Verification failed. Try again.');
+      const msg = e?.message ?? '';
+      if (msg.includes('invalid-verification-code') || msg.includes('code-expired'))
+        setError('Invalid or expired OTP. Please try again.');
+      else setError(msg || 'Verification failed. Try again.');
     } finally {
       setSending(false);
     }
@@ -118,10 +180,7 @@ export default function LoginScreen() {
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.kav}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.kav}>
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Branding */}
             <View style={styles.brand}>
@@ -143,26 +202,19 @@ export default function LoginScreen() {
               {/* Step indicator */}
               <View style={styles.stepRow}>
                 {step === 'otp' && (
-                  <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); }} style={styles.backBtn}>
+                  <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); setConfirmationResult(null); recaptchaVerifier = null; }} style={styles.backBtn}>
                     <Feather name="arrow-left" size={18} color="rgba(255,255,255,0.7)" />
                   </TouchableOpacity>
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>
-                    {step === 'phone' ? 'Welcome, Doctor' : 'Verify OTP'}
-                  </Text>
+                  <Text style={styles.cardTitle}>{step === 'phone' ? 'Welcome, Doctor' : 'Verify OTP'}</Text>
                   <Text style={styles.cardSub}>
-                    {step === 'phone'
-                      ? 'Enter your registered mobile number'
-                      : `6-digit OTP sent to +91 ${phone}`}
+                    {step === 'phone' ? 'Enter your registered mobile number' : `6-digit OTP sent to +91 ${phone}`}
                   </Text>
                 </View>
                 <View style={styles.stepDots}>
                   {[0, 1].map(i => (
-                    <View key={i} style={[
-                      styles.stepDot,
-                      (step === 'phone' ? i === 0 : i === 1) && styles.stepDotActive,
-                    ]} />
+                    <View key={i} style={[styles.stepDot, (step === 'phone' ? i === 0 : i === 1) && styles.stepDotActive]} />
                   ))}
                 </View>
               </View>
@@ -189,19 +241,15 @@ export default function LoginScreen() {
                   {phone.length > 0 && phone.length < 10 && (
                     <Text style={styles.phoneHint}>{10 - phone.length} more digits needed</Text>
                   )}
-
                   <View style={styles.infoBox}>
                     <Text style={styles.infoText}>
-                      OTP will be sent to your clinic-registered number. For doctor access only.
+                      {isWeb
+                        ? 'OTP will be sent via Firebase SMS to your clinic-registered number. For doctor access only.'
+                        : 'OTP will be sent via SMS to your clinic-registered number. For doctor access only.'}
                     </Text>
                   </View>
-
                   {!!error && <Text style={styles.errorText}>{error}</Text>}
-                  <TouchableOpacity
-                    style={[styles.ctaBtn, !phoneValid && styles.ctaBtnDisabled]}
-                    onPress={handleSendOtp}
-                    disabled={!phoneValid || sending}
-                  >
+                  <TouchableOpacity style={[styles.ctaBtn, !phoneValid && styles.ctaBtnDisabled]} onPress={handleSendOtp} disabled={!phoneValid || sending}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={styles.ctaBtnText}>{sending ? 'Sending OTP…' : 'Send OTP'}</Text>
                       {!sending && <Feather name="arrow-right" size={15} color="#FFF" />}
@@ -212,6 +260,13 @@ export default function LoginScreen() {
 
               {step === 'otp' && (
                 <>
+                  {isWeb && (
+                    <View style={styles.firebaseBadge}>
+                      <Feather name="shield" size={11} color={TEAL_LT} />
+                      <Text style={styles.firebaseBadgeTxt}>Verified by Firebase · Google</Text>
+                    </View>
+                  )}
+
                   <TextInput
                     ref={otpInputRef}
                     style={styles.hiddenInput}
@@ -235,11 +290,9 @@ export default function LoginScreen() {
 
                   <View style={styles.resendRow}>
                     {timer > 0 ? (
-                      <Text style={styles.resendText}>
-                        Resend OTP in <Text style={{ color: TEAL_LT }}>{timer}s</Text>
-                      </Text>
+                      <Text style={styles.resendText}>Resend OTP in <Text style={{ color: TEAL_LT }}>{timer}s</Text></Text>
                     ) : (
-                      <TouchableOpacity onPress={() => setTimer(30)}>
+                      <TouchableOpacity onPress={handleResendOtp} disabled={sending}>
                         <Text style={styles.resendLink}>↻  Resend OTP</Text>
                       </TouchableOpacity>
                     )}
@@ -256,9 +309,7 @@ export default function LoginScreen() {
                           <Feather name="check" size={14} color="#FFF" />
                           <Text style={styles.ctaBtnText}>Verify & Enter Dashboard</Text>
                         </View>
-                      : <Text style={styles.ctaBtnText}>
-                          {sending ? 'Verifying…' : 'Enter 6-digit OTP'}
-                        </Text>
+                      : <Text style={styles.ctaBtnText}>{sending ? 'Verifying…' : 'Enter 6-digit OTP'}</Text>
                     }
                   </TouchableOpacity>
                 </>
@@ -281,59 +332,33 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   kav: { flex: 1 },
   scroll: { flexGrow: 1, paddingBottom: 32 },
-  statusBar: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 22, paddingTop: 14, paddingBottom: 4,
-  },
+  statusBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 4 },
   statusTime: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
   statusRight: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   signalBar: { width: 3, backgroundColor: '#FFF', borderRadius: 2 },
   batteryOuter: { width: 24, height: 12, borderRadius: 3.5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', marginLeft: 4, justifyContent: 'center', paddingHorizontal: 1 },
   batteryInner: { width: 14, height: 8, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2 },
-  glowTop: {
-    position: 'absolute', top: -100, left: '10%', width: 340, height: 340, borderRadius: 170,
-    backgroundColor: 'rgba(13,148,136,0.28)', transform: [{ scaleX: 1 }],
-    opacity: 0.7,
-  },
-  glowBottom: {
-    position: 'absolute', bottom: 60, right: -60, width: 220, height: 220, borderRadius: 110,
-    backgroundColor: 'rgba(6,182,212,0.14)',
-    opacity: 0.6,
-  },
+  glowTop: { position: 'absolute', top: -100, left: '10%', width: 340, height: 340, borderRadius: 170, backgroundColor: 'rgba(13,148,136,0.28)', opacity: 0.7 },
+  glowBottom: { position: 'absolute', bottom: 60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(6,182,212,0.14)', opacity: 0.6 },
   brand: { alignItems: 'center', paddingTop: 30, paddingBottom: 20 },
   brandName: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
   brandDivider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, marginBottom: 16 },
   dividerLine: { width: 28, height: 1, backgroundColor: 'rgba(45,212,191,0.5)' },
   brandSub: { fontSize: 11, fontWeight: '800', color: TEAL_LT, letterSpacing: 3 },
   trustRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
-  trustBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-  },
+  trustBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   trustDot: { fontSize: 10, color: TEAL_LT },
   trustLabel: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
-  card: {
-    marginHorizontal: 20, borderRadius: 28, padding: 22,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
-  },
+  card: { marginHorizontal: 20, borderRadius: 28, padding: 22, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)' },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 22, gap: 8 },
-  backBtn: {
-    width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
+  backBtn: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardTitle: { fontSize: 16, fontWeight: '900', color: '#FFF' },
   cardSub: { fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2, fontWeight: '500' },
   stepDots: { flexDirection: 'row', gap: 5, alignItems: 'center', flexShrink: 0 },
   stepDot: { width: 6, height: 4, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.15)' },
   stepDotActive: { width: 20, backgroundColor: TEAL_LT },
   fieldLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.2, marginBottom: 8 },
-  phoneInput: {
-    flexDirection: 'row', alignItems: 'center', borderRadius: 16, overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 8,
-  },
+  phoneInput: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 8 },
   phoneInputValid: { borderColor: 'rgba(45,212,191,0.5)' },
   countryCode: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 54, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.08)' },
   flag: { fontSize: 18 },
@@ -341,23 +366,16 @@ const styles = StyleSheet.create({
   phoneField: { flex: 1, paddingHorizontal: 14, fontSize: 18, fontWeight: '700', color: '#FFF', height: 54 },
   phoneDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: TEAL_LT, marginRight: 14 },
   phoneHint: { fontSize: 10, color: 'rgba(245,158,11,0.8)', fontWeight: '600', marginBottom: 8, paddingLeft: 4 },
-  infoBox: {
-    backgroundColor: 'rgba(13,148,136,0.1)', borderWidth: 1, borderColor: 'rgba(13,148,136,0.2)',
-    borderRadius: 12, padding: 12, marginBottom: 20,
-  },
+  infoBox: { backgroundColor: 'rgba(13,148,136,0.1)', borderWidth: 1, borderColor: 'rgba(13,148,136,0.2)', borderRadius: 12, padding: 12, marginBottom: 20 },
   infoText: { fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 16.5, fontWeight: '500' },
-  ctaBtn: {
-    height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: TEAL,
-  },
+  firebaseBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(13,148,136,0.1)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 16 },
+  firebaseBadgeTxt: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
+  ctaBtn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: TEAL },
   ctaBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.07)' },
   ctaBtnText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
   hiddenInput: { position: 'absolute', opacity: 0, height: 0, width: 0 },
   otpRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 20 },
-  otpBox: {
-    width: 48, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)',
-  },
+  otpBox: { width: 48, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)' },
   otpBoxFilled: { backgroundColor: 'rgba(45,212,191,0.12)', borderColor: 'rgba(45,212,191,0.4)' },
   otpBoxFocused: { borderColor: TEAL_LT },
   otpDigit: { fontSize: 22, fontWeight: '900', color: '#FFF' },

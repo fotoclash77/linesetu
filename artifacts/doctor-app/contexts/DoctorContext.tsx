@@ -69,6 +69,7 @@ interface DoctorCtx {
   doctor: DoctorUser | null;
   isLoading: boolean;
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
+  loginWithFirebase: (verifiedPhone: string) => Promise<void>;
   logout: () => Promise<void>;
   updateDoctor: (patch: Partial<DoctorUser>) => Promise<void>;
   setAvailability: (val: boolean) => void;
@@ -77,6 +78,7 @@ interface DoctorCtx {
 const DoctorContext = createContext<DoctorCtx>({
   doctor: null, isLoading: true,
   loginWithOtp: async () => {},
+  loginWithFirebase: async () => {},
   logout: async () => {},
   updateDoctor: async () => {},
   setAvailability: () => {},
@@ -132,19 +134,10 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [doctor?.id]);
 
-  const loginWithOtp = async (phone: string, otp: string) => {
-    const res = await fetch(`${BASE()}/api/auth/doctor/verify-otp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, otp }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "OTP verification failed");
-    // Backward compat: treat existing doctors with a full profile as completed
+  function _mapDoctorData(data: any): DoctorUser {
     const alreadyCompleted = data.profileCompleted === true ||
       (data.name?.trim() && data.qualifications?.trim() && data.specialization?.trim() && data.experience?.trim());
-
-    const doctorData: DoctorUser = {
+    return {
       id: data.id,
       name: data.name,
       phone: data.phone,
@@ -178,6 +171,31 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       state: data.state ?? '',
       district: data.district ?? '',
     };
+  }
+
+  const loginWithOtp = async (phone: string, otp: string) => {
+    const res = await fetch(`${BASE()}/api/auth/doctor/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, otp }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "OTP verification failed");
+    const doctorData = _mapDoctorData(data);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
+    setDoctor(doctorData);
+  };
+
+  // Called after Firebase verifies the OTP client-side — no server-side OTP check needed
+  const loginWithFirebase = async (verifiedPhone: string) => {
+    const res = await fetch(`${BASE()}/api/auth/doctor/phone-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: verifiedPhone }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Login failed");
+    const doctorData = _mapDoctorData(data);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(doctorData));
     setDoctor(doctorData);
   };
@@ -216,7 +234,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, logout, updateDoctor, setAvailability }}>
+    <DoctorContext.Provider value={{ doctor, isLoading, loginWithOtp, loginWithFirebase, logout, updateDoctor, setAvailability }}>
       {children}
     </DoctorContext.Provider>
   );
