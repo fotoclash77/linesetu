@@ -27,7 +27,7 @@ router.get("/doctors", async (req, res) => {
     const snap = await withRetry(() => getDocs(q));
     const doctors = snap.docs
       .map(d => activeClinicOnly({ id: d.id, ...d.data() } as any))
-      .filter(d => d.isApproved !== false && !d.isDeleted);
+      .filter(d => d.isApproved === true && !d.isDeleted);
     res.json({ doctors });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
