@@ -252,7 +252,7 @@ export default function LiveQueueScreen() {
   const [feeExpanded, setFeeExpanded] = useState(false);
   const lastTriggeredRef   = useRef<Set<number>>(new Set());
   const bannerTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reminderInitRef    = useRef(false);
+  const prevAheadRef       = useRef<number | null>(null);
 
   // Load saved thresholds from Firestore token doc
   useEffect(() => {
@@ -345,20 +345,22 @@ export default function LiveQueueScreen() {
   useEffect(() => {
     if (myToken === 0 || liveWaitingNumbers === null) return;
     const triggered = lastTriggeredRef.current;
+    const prev      = prevAheadRef.current;
 
-    // On first load, silently mark all thresholds already below current
-    // count so we only alert when the count actually crosses a threshold.
-    if (!reminderInitRef.current) {
-      reminderInitRef.current = true;
-      for (const threshold of selectedReminders) {
-        if (ahead <= threshold) triggered.add(threshold);
-      }
+    // First real data point — record it silently, no banner.
+    if (prev === null) {
+      prevAheadRef.current = ahead;
       return;
     }
 
-    // Check each selected threshold
+    prevAheadRef.current = ahead;
+
+    // Only alert when the count actually decreased (crossed a threshold).
+    if (ahead >= prev) return;
+
     for (const threshold of selectedReminders) {
-      if (!triggered.has(threshold) && ahead <= threshold) {
+      // Fire only when we cross the threshold from above: prev was above it, now at/below.
+      if (!triggered.has(threshold) && ahead <= threshold && prev > threshold) {
         triggered.add(threshold);
         const msg = threshold === 0
           ? "It's your turn! Head to the clinic now."
