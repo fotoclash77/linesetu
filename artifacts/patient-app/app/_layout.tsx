@@ -21,7 +21,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
 import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
-import { WebAppSwitcher } from "@/components/WebAppSwitcher";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -88,7 +87,6 @@ function RootLayoutNav() {
         <Stack.Screen name="queue/[tokenId]" />
       </Stack>
       {!hideNav && <BottomNavBar />}
-      <WebAppSwitcher />
     </View>
   );
 }

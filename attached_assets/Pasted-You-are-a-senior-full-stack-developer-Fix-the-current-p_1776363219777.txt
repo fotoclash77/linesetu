@@ -1,0 +1,132 @@
+You are a senior full-stack developer.
+
+Fix the current project structure and UI behavior for LINESETU.
+
+⚠️ IMPORTANT: Remove any cross-app switching logic. Patient App and Doctor App must be **completely separate apps**, not connected via toggle or preview switch.
+
+---
+
+# 🎯 CORE REQUIREMENT
+
+Currently there is a button like:
+
+👉 "Switch to Patient App →"
+
+❌ REMOVE this completely.
+
+I do NOT want:
+
+* App switching
+* Preview switching
+* Shared UI between patient & doctor apps
+
+---
+
+# ✅ REQUIRED STRUCTURE
+
+Maintain **3 completely independent projects**:
+
+1. /patient-app (React Native - Expo)
+2. /doctor-app (React Native - Expo)
+3. /admin-panel (React Web)
+
+Each must run independently.
+
+---
+
+# 📱 PATIENT APP REQUIREMENT
+
+In Patient App:
+
+👉 ONLY show patient app screens
+
+DO NOT include:
+
+* Any doctor UI
+* Any switch button
+* Any preview toggle
+* Any doctor logic
+
+👉 It should behave like a standalone production app.
+
+---
+
+# 👨‍⚕️ DOCTOR APP REQUIREMENT
+
+In Doctor App:
+
+👉 ONLY show doctor app screens (as originally designed)
+
+* Dashboard
+* Master Queue
+* Add Walk-in
+* Earnings
+* Settings
+
+❌ DO NOT include:
+
+* Patient UI
+* Any switch button
+* Any preview mode
+
+👉 Restore original doctor app experience (clean, independent)
+
+---
+
+# 🔥 REMOVE THESE COMPLETELY
+
+* "Switch to Patient App"
+* "Switch to Doctor App"
+* Any toggle buttons between apps
+* Any shared navigation logic
+* Any preview wrapper components
+
+---
+
+# 🧠 ARCHITECTURE RULE
+
+Each app must:
+
+* Have its own navigation
+* Have its own screens
+* Have its own state management
+* Share ONLY Firebase backend (no UI sharing)
+
+---
+
+# 📁 EXPECTED FOLDER STRUCTURE
+
+/patient-app
+/screens
+/components
+/services
+
+/doctor-app
+/screens
+/components
+/services
+
+/admin-panel
+/pages
+/components
+
+---
+
+# ⚡ BEHAVIOR
+
+* Running patient-app → shows ONLY patient app
+* Running doctor-app → shows ONLY doctor app
+* No cross navigation between apps
+
+---
+
+# 🎯 FINAL GOAL
+
+👉 Two completely independent mobile apps
+👉 Clean production-ready structure
+👉 No confusion between patient & doctor roles
+👉 No switching UI anywhere
+
+---
+
+Refactor existing code accordingly and remove all switching logic completely.
