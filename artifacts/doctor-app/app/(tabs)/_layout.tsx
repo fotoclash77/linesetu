@@ -48,6 +48,7 @@ export default function TabLayout() {
         tabBarIconStyle: {
           marginTop: 4,
         },
+        sceneContainerStyle: { backgroundColor: "#070B14" },
       }}
     >
       <Tabs.Screen

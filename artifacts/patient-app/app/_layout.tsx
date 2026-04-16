@@ -58,7 +58,7 @@ function RootLayoutNav() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+      <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#0A0E1A" } }}>
         <Stack.Screen name="login" />
         <Stack.Screen name="complete-profile" />
         <Stack.Screen name="(tabs)" />

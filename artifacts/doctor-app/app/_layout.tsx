@@ -53,7 +53,7 @@ function RootLayoutNav() {
   }, [doctorId, doctor?.profileCompleted, isLoading]);
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+    <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#070B14" } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
       <Stack.Screen name="complete-profile" />
