@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
@@ -17,6 +17,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
 import { useForceUpdate } from "../hooks/useForceUpdate";
+import { DoctorBottomNavBar } from "../components/DoctorBottomNavBar";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -26,6 +27,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { doctor, isLoading } = useDoctor();
+  const segments = useSegments();
   const qc = useQueryClient();
   const prevDoctorIdRef = useRef<string | null | undefined>(undefined);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
@@ -64,16 +66,27 @@ function RootLayoutNav() {
     }
   }, [doctorId, doctor?.profileCompleted, isLoading, hasSeenOnboarding]);
 
+  const hideNav = isLoading || !doctor ||
+    segments[0] === "login" ||
+    segments[0] === "onboarding" ||
+    segments[0] === "complete-profile" ||
+    segments[0] === "walkin";
+
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#070B14" } }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="complete-profile" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="walkin/index" />
-      <Stack.Screen name="notifications" />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#070B14" } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="complete-profile" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="walkin/index" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="patients/index" />
+        <Stack.Screen name="patients/[id]" />
+      </Stack>
+      {!hideNav && <DoctorBottomNavBar />}
+    </View>
   );
 }
 

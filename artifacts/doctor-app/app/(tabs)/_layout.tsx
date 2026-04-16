@@ -1,12 +1,8 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
-import { TEAL_LT } from "../../constants/theme";
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { fireSettingsReset } from "./_settingsResetBridge";
-
-const INACTIVE = "rgba(255,255,255,0.3)";
-const isWeb = Platform.OS === "web";
+import { TEAL_LT } from "../../constants/theme";
 
 function HomeIcon({ color }: { color: string }) {
   return <Feather name="home" size={22} color={color} />;
@@ -28,26 +24,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: TEAL_LT,
         tabBarInactiveTintColor: INACTIVE,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "rgba(7,11,20,0.96)",
-          borderTopWidth: 1,
-          borderTopColor: "rgba(255,255,255,0.07)",
-          height: isWeb ? 72 : 64,
-          elevation: 0,
-        },
-        tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(7,11,20,0.96)" }]} />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: "700",
-          letterSpacing: 0.3,
-          marginBottom: isWeb ? 8 : 2,
-        },
-        tabBarIconStyle: {
-          marginTop: 4,
-        },
+        tabBarStyle: { display: "none" },
         sceneContainerStyle: { backgroundColor: "#070B14" },
       }}
     >
@@ -68,14 +45,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="schedule"
         options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="patients"
-        options={{ href: null, tabBarButton: () => null }}
-      />
-      <Tabs.Screen
-        name="patients/[id]"
-        options={{ href: null, tabBarButton: () => null }}
       />
       <Tabs.Screen
         name="earnings"
