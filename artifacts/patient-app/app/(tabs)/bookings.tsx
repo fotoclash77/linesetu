@@ -81,53 +81,65 @@ function MemberDropdown({ selected, members, onSelect }: { selected: MemberItem;
   const isAll = selected.id === "all";
 
   return (
-    <View style={{ zIndex: 100 }}>
+    <View>
       <Pressable
         style={[styles.dropdownBtn, open && styles.dropdownBtnOpen]}
-        onPress={() => setOpen(p => !p)}
+        onPress={() => setOpen(true)}
       >
         {isAll ? (
           <View style={styles.dropdownAllIcon}>
             <Feather name="users" size={15} color="#A5B4FC" />
           </View>
         ) : (
-          <Image source={{ uri: selected.avatar }} style={[styles.dropdownAvatar, { borderColor: selected.color + "60" }]} contentFit="cover" />
+          <View style={[styles.dropdownAllIcon, { backgroundColor: selected.color + "20", borderColor: selected.color + "50" }]}>
+            <Feather name="user" size={15} color={selected.color} />
+          </View>
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.dropdownName}>{selected.name}</Text>
-          {!isAll && <Text style={styles.dropdownSub}>{selected.relation} · {selected.age} yrs</Text>}
+          {!isAll && <Text style={styles.dropdownSub}>{selected.relation}{selected.age > 0 ? ` · ${selected.age} yrs` : ""}</Text>}
         </View>
-        <Feather name={open ? "chevron-up" : "chevron-down"} size={16} color="rgba(255,255,255,0.4)" />
+        <Feather name="chevron-down" size={16} color="rgba(255,255,255,0.4)" />
       </Pressable>
 
-      {open && (
-        <View style={styles.dropdownMenu}>
-          {members.map((m, i) => {
-            const isSelected = m.id === selected.id;
-            const hasAvatar = m.id !== "all";
-            return (
-              <Pressable
-                key={m.id}
-                style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected, i < members.length - 1 && styles.dropdownItemBorder]}
-                onPress={() => { onSelect(m); setOpen(false); }}
-              >
-                {hasAvatar ? (
-                  <Image source={{ uri: m.avatar }} style={[styles.dropdownItemAvatar, { borderColor: m.color + "50" }]} contentFit="cover" />
-                ) : (
-                  <View style={styles.dropdownAllIcon}>
-                    <Feather name="users" size={14} color="#A5B4FC" />
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setOpen(false)}>
+          <Pressable style={styles.dropdownMenu} onPress={() => {}}>
+            <Text style={styles.dropdownMenuTitle}>Select Member</Text>
+            {members.map((m, i) => {
+              const isSelected = m.id === selected.id;
+              const hasAvatar = m.id !== "all";
+              return (
+                <Pressable
+                  key={m.id}
+                  style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected, i < members.length - 1 && styles.dropdownItemBorder]}
+                  onPress={() => { onSelect(m); setOpen(false); }}
+                >
+                  {hasAvatar ? (
+                    <View style={[styles.dropdownAllIcon, { backgroundColor: m.color + "20", borderColor: m.color + "50" }]}>
+                      <Feather name="user" size={14} color={m.color} />
+                    </View>
+                  ) : (
+                    <View style={styles.dropdownAllIcon}>
+                      <Feather name="users" size={14} color="#A5B4FC" />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.dropdownItemName, isSelected && { color: "#A5B4FC" }]}>{m.name}</Text>
+                    {hasAvatar && <Text style={styles.dropdownItemSub}>{m.relation}{m.age > 0 ? ` · ${m.age} yrs` : ""}</Text>}
                   </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.dropdownItemName, isSelected && { color: "#A5B4FC" }]}>{m.name}</Text>
-                  {hasAvatar && <Text style={styles.dropdownItemSub}>{m.relation} · {m.age} yrs</Text>}
-                </View>
-                {isSelected && <View style={styles.selectedDot} />}
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
+                  {isSelected && <View style={styles.selectedDot} />}
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -142,7 +154,7 @@ function SummaryStrip({ bookings }: { bookings: BookingItem[] }) {
     { label: "Active", value: active, color: "#4ADE80", bg: "rgba(34,197,94,0.12)" },
     { label: "Upcoming", value: upcoming, color: "#67E8F9", bg: "rgba(6,182,212,0.12)" },
     { label: "Done", value: done, color: "#A5B4FC", bg: "rgba(99,102,241,0.12)" },
-    { label: "Skipped", value: skipped, color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+    { label: "Cancelled", value: skipped, color: "#F87171", bg: "rgba(239,68,68,0.12)" },
   ];
 
   return (
@@ -281,7 +293,7 @@ function BookingCard({ booking, members, showMember }: { booking: BookingItem; m
             <Text style={styles.viewQueueCtaTxt}>View Live Queue</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.viewDetailCta}>
+          <Pressable style={styles.viewDetailCta} onPress={() => router.push(`/queue/${booking.id}` as any)}>
             <Text style={styles.viewDetailCtaTxt}>View Details</Text>
             <Feather name="arrow-right" size={11} color="rgba(255,255,255,0.5)" />
           </Pressable>
@@ -494,7 +506,9 @@ const styles = StyleSheet.create({
   dropdownAllIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(165,180,252,0.15)", borderWidth: 2, borderColor: "rgba(165,180,252,0.3)", alignItems: "center", justifyContent: "center" },
   dropdownName: { fontSize: 14, fontWeight: "800", color: "#FFF" },
   dropdownSub: { fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: "600" },
-  dropdownMenu: { backgroundColor: "#111827", borderRadius: 16, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)", overflow: "hidden", marginTop: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.7, shadowRadius: 20, elevation: 20 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end", paddingHorizontal: 16, paddingBottom: 32 },
+  dropdownMenu: { backgroundColor: "#111827", borderRadius: 20, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.7, shadowRadius: 20, elevation: 20 },
+  dropdownMenuTitle: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.4)", paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.07)", letterSpacing: 0.5 },
   dropdownItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 11, paddingHorizontal: 14, backgroundColor: "transparent" },
   dropdownItemSelected: { backgroundColor: "rgba(99,102,241,0.2)" },
   dropdownItemBorder: { borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
