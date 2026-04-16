@@ -2,6 +2,8 @@ const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 const http = require("http");
 
+const APP_PREFIX = "/doctor-app";
+
 // Suppress UnableToResolveError crashes caused by the patient app's HMR
 // WebSocket registering its entry points with this Metro server.
 process.on("uncaughtException", (err) => {
@@ -17,6 +19,27 @@ process.on("unhandledRejection", (reason) => {
     return;
   }
 });
+
+// Monkey-patch @expo/cli's appendScriptsToHtml so that script src paths
+// served by the dev server are prefixed with our app base path.
+// This is needed because Metro's enhanceMiddleware only wraps the bundle handler,
+// not the HTML manifest middleware, so we patch at the source.
+try {
+  const htmlModule = require("@expo/cli/build/src/export/html");
+  const origAppend = htmlModule.appendScriptsToHtml;
+  htmlModule.appendScriptsToHtml = function (htmlStr, scripts) {
+    const prefixed = (scripts || []).map((s) => {
+      if (typeof s === "string" && s.startsWith("/") && !s.startsWith(APP_PREFIX + "/")) {
+        return APP_PREFIX + s;
+      }
+      return s;
+    });
+    return origAppend(htmlStr, prefixed);
+  };
+  console.log("[doctor-metro] Patched appendScriptsToHtml with prefix", APP_PREFIX);
+} catch (e) {
+  console.warn("[doctor-metro] Could not patch appendScriptsToHtml:", e.message);
+}
 
 const config = getDefaultConfig(__dirname);
 
@@ -64,37 +87,12 @@ config.server.enhanceMiddleware = (middleware, server) => {
       return proxyToPatientApp(req, res);
     }
 
-    const isHtml =
-      urlNoQuery === "/" ||
-      urlNoQuery === "/index.html" ||
-      urlNoQuery.endsWith(".html");
-    if (isHtml) {
-      const origWrite = res.write.bind(res);
-      const origEnd = res.end.bind(res);
-      let body = "";
-      res.write = (chunk) => { body += chunk.toString(); return true; };
-      res.end = (chunk) => {
-        if (chunk) body += chunk.toString();
-        // Prefix bare /node_modules/, /_expo/, /__metro/ paths with /doctor-app/
-        // so the proxy routes them back to this Metro server, not the patient app.
-        // Guard against double-prefixing.
-        body = body.replace(
-          /(['"])\/(node_modules\/)/g,
-          (_, q, rest) => `${q}${BASE}/${rest}`
-        );
-        body = body.replace(
-          /(['"])\/((_expo|__metro)\/)/g,
-          (_, q, rest) => `${q}${BASE}/${rest}`
-        );
-        body = body.replace(
-          /<\/head>/i,
-          `<style>html,body,#root{background-color:#060E12 !important;margin:0;}</style></head>`
-        );
-        res.setHeader("content-length", Buffer.byteLength(body));
-        origWrite(body);
-        origEnd();
-      };
+    // Strip /doctor-app prefix from incoming requests so Metro processes them normally.
+    // HTML responses from Metro already have the prefix added via the html.js patch.
+    if (req.url && (req.url.startsWith(BASE + "/") || req.url === BASE)) {
+      req.url = req.url.slice(BASE.length) || "/";
     }
+
     base(req, res, next);
   };
 };

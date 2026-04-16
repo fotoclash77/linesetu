@@ -1,6 +1,39 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 
+const APP_PREFIX = "/patient-app";
+
+process.on("uncaughtException", (err) => {
+  if (err && err.type === "UnableToResolveError") {
+    console.warn("[patient-metro] Suppressed HMR resolve error for:", err.targetModuleName || "unknown");
+    return;
+  }
+  throw err;
+});
+process.on("unhandledRejection", (reason) => {
+  if (reason && reason.type === "UnableToResolveError") {
+    console.warn("[patient-metro] Suppressed HMR rejection for:", reason.targetModuleName || "unknown");
+    return;
+  }
+});
+
+try {
+  const htmlModule = require("@expo/cli/build/src/export/html");
+  const origAppend = htmlModule.appendScriptsToHtml;
+  htmlModule.appendScriptsToHtml = function (htmlStr, scripts) {
+    const prefixed = (scripts || []).map((s) => {
+      if (typeof s === "string" && s.startsWith("/") && !s.startsWith(APP_PREFIX + "/")) {
+        return APP_PREFIX + s;
+      }
+      return s;
+    });
+    return origAppend(htmlStr, prefixed);
+  };
+  console.log("[patient-metro] Patched appendScriptsToHtml with prefix", APP_PREFIX);
+} catch (e) {
+  console.warn("[patient-metro] Could not patch appendScriptsToHtml:", e.message);
+}
+
 const config = getDefaultConfig(__dirname);
 
 config.watchFolders = [path.resolve(__dirname, "../../")];

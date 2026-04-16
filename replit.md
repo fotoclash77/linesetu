@@ -26,6 +26,14 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
 
+## Dual-App Web Preview Routing
+
+Both `doctor-app` and `patient-app` are Expo apps that need `router = "expo-domain"`, but only one can win the domain. Solution:
+- Doctor app owns the preview domain; its Metro server (port 20119) proxies `/patient-app/*` requests to the patient Metro (port 20117) via `enhanceMiddleware` in `artifacts/doctor-app/metro.config.js`.
+- Both apps' script URLs must be prefixed with their app path so browsers fetch bundles from the correct server. Since Metro's `enhanceMiddleware` only wraps the bundle handler (not the HTML manifest middleware), we patch `@expo/cli/build/src/export/html.js` directly — `appendScriptsToHtml` reads `process.cwd()` and prefixes script `src` paths with `/doctor-app` or `/patient-app` accordingly.
+- Doctor Metro strips the `/doctor-app` prefix from incoming requests in `enhanceMiddleware` before Metro processes them. The proxy strips `/patient-app` before forwarding to patient Metro.
+- If `@expo/cli` is upgraded, re-apply the `html.js` patch.
+
 ## Artifacts
 
 | Artifact | Type | Port | Preview Path |
