@@ -3,6 +3,7 @@ previewPath = "/doctor-app/"
 title = "LINESETU Doctor App"
 version = "1.0.0"
 id = "artifacts/doctor-app"
+router = "expo-domain"
 
 [[integratedSkills]]
 name = "expo"
@@ -11,7 +12,7 @@ version = "1.0.0"
 [[services]]
 ensurePreviewReachable = "/status"
 name = "expo"
-paths = [ "/doctor-app/" ]
+paths = [ "/doctor-app/", "/node_modules/", "/_expo/", "/__metro/" ]
 localPort = 20119
 
 [services.development]
