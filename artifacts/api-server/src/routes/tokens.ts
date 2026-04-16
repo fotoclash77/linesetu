@@ -15,6 +15,38 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
+type TokenStatus = "waiting" | "up_next" | "in_consult" | "done" | "skipped" | "cancelled";
+type TokenAction = "call" | "done" | "upnext" | "skip" | "refund";
+
+const ALLOWED_TRANSITIONS: Record<TokenAction, TokenStatus[]> = {
+  call:   ["waiting", "up_next", "skipped", "in_consult"],
+  done:   ["waiting", "up_next", "in_consult", "skipped"],
+  upnext: ["waiting", "skipped"],
+  skip:   ["waiting", "up_next", "in_consult"],
+  refund: ["waiting", "skipped"],
+};
+
+function assertValidTransition(
+  action: TokenAction,
+  currentStatus: TokenStatus | string,
+  paymentStatus?: string,
+): { valid: true } | { valid: false; code: number; error: string } {
+  if (paymentStatus === "refunded") {
+    return { valid: false, code: 409, error: `Cannot ${action} a refunded token` };
+  }
+
+  const allowed: readonly string[] = ALLOWED_TRANSITIONS[action];
+  if (!allowed.includes(currentStatus)) {
+    return {
+      valid: false,
+      code: 409,
+      error: `Cannot ${action} a token with status "${currentStatus}"`,
+    };
+  }
+
+  return { valid: true };
+}
+
 interface RefundContext {
   paymentId: string;
   orderId: string;
@@ -608,9 +640,8 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
 
-    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
-      return res.status(409).json({ error: "Cannot call a cancelled or refunded token" });
-    }
+    const guard = assertValidTransition("call", token.status, token.paymentStatus);
+    if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
 
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
 
@@ -648,9 +679,8 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
 
-    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
-      return res.status(409).json({ error: "Cannot mark a cancelled or refunded token as done" });
-    }
+    const guard = assertValidTransition("done", token.status, token.paymentStatus);
+    if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
 
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const txRef    = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
@@ -689,9 +719,8 @@ router.patch("/tokens/:tokenId/upnext", async (req, res) => {
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token = tokenSnap.data();
 
-    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
-      return res.status(409).json({ error: "Cannot set a cancelled or refunded token as up next" });
-    }
+    const guard = assertValidTransition("upnext", token.status, token.paymentStatus);
+    if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
 
     const existingQ = query(
       collection(db, Collections.TOKENS),
@@ -722,9 +751,8 @@ router.patch("/tokens/:tokenId/skip", async (req, res) => {
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
 
-    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
-      return res.status(409).json({ error: "Cannot skip a cancelled or refunded token" });
-    }
+    const guard = assertValidTransition("skip", token.status, token.paymentStatus);
+    if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
 
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const batch = writeBatch(db);
@@ -750,14 +778,12 @@ router.patch("/tokens/:tokenId/refund", async (req, res) => {
     if (token.source === "walkin") {
       return res.status(400).json({ error: "Walk-in tokens cannot be refunded online" });
     }
-    const refundableStatuses = ["skipped", "waiting"];
-    if (!refundableStatuses.includes(token.status)) {
-      return res.status(400).json({ error: "Only waiting or skipped tokens can be cancelled and refunded" });
-    }
     // Idempotent — already refunded
     if (token.paymentStatus === "refunded") {
       return res.json({ id: tokenId, alreadyRefunded: true, message: "Already refunded" });
     }
+    const guard = assertValidTransition("refund", token.status, token.paymentStatus);
+    if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
     if (!token.paymentId) {
       return res.status(400).json({ error: "No online payment found for this token" });
     }
