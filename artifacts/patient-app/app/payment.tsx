@@ -99,6 +99,8 @@ export default function PaymentScreen() {
     : (liveClinicConsultFee ?? paramConsultFee);
   const walkinFee = liveWalkinFee ?? paramWalkinFee;
   const payableNow = eAppFee + platformFee;
+  const payAtClinic = consultFee + walkinFee;
+  const totalVisitCost = payableNow + payAtClinic;
 
   // Real-time next token via SSE
   const [nextToken, setNextToken] = useState<number | null>(null);
@@ -563,6 +565,10 @@ export default function PaymentScreen() {
         <View style={styles.sectionPad}>
           <Text style={styles.sectionLabel}>Fee Breakdown</Text>
           <View style={styles.feeCard}>
+            <View style={styles.feeGroupHeader}>
+              <Feather name="credit-card" size={11} color="#67E8F9" />
+              <Text style={styles.feeGroupLabel}>Pay Now (Online)</Text>
+            </View>
             <View style={styles.feeRow}>
               <Feather name="monitor" size={12} color={isEmergency ? "#EF4444" : "#67E8F9"} />
               <Text style={styles.feeLbl}>{isEmergency ? feeLabels.emergency : feeLabels.normal}</Text>
@@ -574,26 +580,41 @@ export default function PaymentScreen() {
               <Text style={styles.feeLbl}>{feeLabels.platform}</Text>
               <Text style={[styles.feeVal, { color: "#818CF8" }]}>₹{platformFee}</Text>
             </View>
-            <View style={styles.feeDivider} />
+            <View style={styles.feeSubtotalRow}>
+              <Text style={styles.feeSubtotalLbl}>Pay Now</Text>
+              <Text style={[styles.feeSubtotalVal, isEmergency && { color: "#F87171" }]}>₹{payableNow}</Text>
+            </View>
+
+            <View style={styles.feeSectionDivider} />
+
+            <View style={styles.feeGroupHeader}>
+              <Feather name="home" size={11} color="#F59E0B" />
+              <Text style={[styles.feeGroupLabel, { color: "#F59E0B" }]}>Pay at Clinic</Text>
+            </View>
             <View style={styles.feeRow}>
-              <Feather name="home" size={12} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.feeLblSub}>{isEmergency ? "Emergency Consult (at clinic)" : "Consultation (at clinic)"}</Text>
-              <Text style={[styles.feeValSub, isEmergency && { color: "#FCA5A5" }]}>₹{consultFee}</Text>
+              <Feather name="activity" size={12} color="rgba(255,255,255,0.4)" />
+              <Text style={styles.feeLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
+              <Text style={[styles.feeValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{consultFee}</Text>
             </View>
             {walkinFee > 0 && (
               <>
                 <View style={styles.feeDivider} />
                 <View style={styles.feeRow}>
                   <Feather name="log-in" size={12} color="#2DD4BF" />
-                  <Text style={styles.feeLblSub}>Walk-in Fee at Clinic</Text>
-                  <Text style={[styles.feeValSub, { color: "#2DD4BF" }]}>₹{walkinFee}</Text>
+                  <Text style={styles.feeLblSub}>Walk-in Fee</Text>
+                  <Text style={[styles.feeValClinic, { color: "#2DD4BF" }]}>₹{walkinFee}</Text>
                 </View>
               </>
             )}
-            <View style={[styles.feeDivider, { borderColor: "rgba(255,255,255,0.12)" }]} />
+
+            <View style={styles.feeSectionDivider} />
+
             <View style={styles.feeTotalRow}>
-              <Text style={styles.feeTotalLbl}>Pay Now</Text>
-              <Text style={[styles.feeTotalVal, isEmergency && { color: "#F87171" }]}>₹{payableNow}</Text>
+              <View>
+                <Text style={styles.feeTotalLbl}>Total Visit Cost</Text>
+                <Text style={styles.feeTotalHint}>Online + Clinic</Text>
+              </View>
+              <Text style={[styles.feeTotalVal, isEmergency && { color: "#F87171" }]}>₹{totalVisitCost}</Text>
             </View>
           </View>
         </View>
@@ -776,9 +797,17 @@ const styles = StyleSheet.create({
   feeDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginHorizontal: 0 },
   feeLblSub: { flex: 1, fontSize: 12, color: "rgba(255,255,255,0.4)", fontWeight: "500" },
   feeValSub: { fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: "500" },
-  feeTotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13 },
-  feeTotalLbl: { flex: 1, fontSize: 13, fontWeight: "800", color: "#FFF" },
-  feeTotalVal: { fontSize: 22, fontWeight: "900", color: "#A5B4FC" },
+  feeValClinic: { fontSize: 14, color: "#F59E0B", fontWeight: "700" },
+  feeGroupHeader: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 4 },
+  feeGroupLabel: { fontSize: 10, fontWeight: "700", color: "#67E8F9", textTransform: "uppercase", letterSpacing: 0.8 },
+  feeSubtotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.03)" },
+  feeSubtotalLbl: { flex: 1, fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.6)" },
+  feeSubtotalVal: { fontSize: 16, fontWeight: "800", color: "#A5B4FC" },
+  feeSectionDivider: { height: 1.5, backgroundColor: "rgba(255,255,255,0.08)", marginHorizontal: 14 },
+  feeTotalRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "rgba(255,255,255,0.03)" },
+  feeTotalLbl: { fontSize: 13, fontWeight: "800", color: "#FFF" },
+  feeTotalHint: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "500", marginTop: 1 },
+  feeTotalVal: { fontSize: 22, fontWeight: "900", color: "#A5B4FC", marginLeft: "auto" },
 
   securityCard: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 14, backgroundColor: "rgba(34,197,94,0.07)", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)" },
   securityTxt: { fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 16, flex: 1 },
