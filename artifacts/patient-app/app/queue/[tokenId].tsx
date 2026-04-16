@@ -528,11 +528,6 @@ export default function LiveQueueScreen() {
               </View>
             </View>
             <View style={styles.apptBody}>
-              <View style={[styles.apptTokenBox, { borderColor: statusCfg.border }]}>
-                <Text style={styles.apptTokenHash}>#</Text>
-                <Text style={[styles.apptTokenNum, { color: statusCfg.color }]}>{myToken}</Text>
-                <Text style={styles.apptTokenLbl}>Token</Text>
-              </View>
               <View style={styles.apptDetails}>
                 <View style={styles.apptDetailRow}>
                   <Feather name="users" size={12} color="#818CF8" />
