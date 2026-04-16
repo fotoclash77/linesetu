@@ -375,7 +375,7 @@ export default function EarningsScreen() {
                     <Text style={styles.heroReady}>
                       {periods.Today.earned > 0
                         ? `+${fmtFull(periods.Today.earned)} today`
-                        : 'Live from your token data'}
+                        : 'Live from your E-token data'}
                     </Text>
                   </View>
                 </View>
