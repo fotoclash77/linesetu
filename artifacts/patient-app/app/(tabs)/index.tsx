@@ -462,7 +462,7 @@ export default function HomeScreen() {
                 </View>
                 {comingSoon && (
                   <View style={styles.comingSoonBadge}>
-                    <Text style={styles.comingSoonTxt}>Coming soon</Text>
+                    <Text style={styles.comingSoonTxt}>soon</Text>
                   </View>
                 )}
               </View>
