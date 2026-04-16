@@ -680,39 +680,6 @@ export default function LiveQueueScreen() {
           </View>
         )}
 
-        {/* Notification Card */}
-        <View style={styles.sectionPad}>
-          <View style={styles.notifCard}>
-            <View style={styles.notifHeader}>
-              <Feather name="bell" size={14} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.notifTitle}>Reminders</Text>
-              <View style={{ flex: 1 }} />
-              {selectedReminders.length > 0
-                ? <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>{selectedReminders.length} Active</Text></View>
-                : <View style={[styles.notifBadge, { backgroundColor: "rgba(239,68,68,0.15)" }]}><Text style={[styles.notifBadgeTxt, { color: "#F87171" }]}>Off</Text></View>
-              }
-            </View>
-            <Text style={styles.notifBody}>Tap a threshold to toggle reminders. Tap again to turn it off.</Text>
-            <View style={styles.notifTokensRow}>
-              {REMINDER_OPTIONS.map(({ label, value }) => {
-                const on = selectedReminders.includes(value);
-                return (
-                  <Pressable
-                    key={label}
-                    onPress={() => toggleReminder(value)}
-                    style={[
-                      styles.notifTokenChip,
-                      on && { backgroundColor: "rgba(129,140,248,0.22)", borderColor: "rgba(129,140,248,0.5)" },
-                    ]}
-                  >
-                    {on && <Feather name="bell" size={9} color="#A5B4FC" />}
-                    <Text style={[styles.notifTokenChipTxt, on && { color: "#A5B4FC" }]}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </View>
 
         {/* Payment Summary — collapsible, at the bottom */}
         {hasFeeData && (
