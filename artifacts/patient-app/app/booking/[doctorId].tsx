@@ -577,6 +577,20 @@ export default function BookingScreen() {
                           </Pressable>
                         ) : null}
                       </View>
+                      {(() => {
+                        const matchedClinic = (doctorData?.clinics ?? []).find((c: any) => c.name === shift.clinicName);
+                        const district = matchedClinic?.district;
+                        const state = matchedClinic?.state;
+                        if (!district && !state) return null;
+                        return (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                            <Feather name="map-pin" size={10} color="rgba(255,255,255,0.3)" />
+                            <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: "500" }} numberOfLines={1}>
+                              {[district, state].filter(Boolean).join(", ")}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                     </Pressable>
                   );
                 })}
