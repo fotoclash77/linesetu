@@ -3,6 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Animated, {
   useSharedValue,
@@ -127,6 +129,38 @@ export default function LiveQueueScreen() {
     staleTime: 120_000,
   });
 
+  // ── Real-time clinic name from Firestore ──────────────────────
+  const [liveClinicName, setLiveClinicName] = useState("");
+  const [liveClinicAddress, setLiveClinicAddress] = useState("");
+
+  useEffect(() => {
+    if (!token?.doctorId) return;
+    const ref = doc(db, "doctors", token.doctorId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      const date = token?.date ?? "";
+      const shift = token?.shift ?? "";
+      // Try calendar entry first (shift-specific clinic)
+      const shiftCfg = data.calendar?.[date]?.[shift];
+      const calClinicName = shiftCfg?.clinicName ?? "";
+      if (calClinicName) {
+        setLiveClinicName(calClinicName);
+        // Find matching clinic for address
+        const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
+        const matched = clinicsArr.find((c: any) => c.name === calClinicName && c.active !== false);
+        setLiveClinicAddress(matched?.address ?? shiftCfg?.clinicAddress ?? "");
+      } else {
+        // Fallback: first active clinic
+        const clinicsArr: any[] = Array.isArray(data.clinics) ? data.clinics : [];
+        const first = clinicsArr.find((c: any) => c.active !== false);
+        setLiveClinicName(first?.name ?? data.clinicName ?? "Clinic");
+        setLiveClinicAddress(first?.address ?? data.clinicAddress ?? "");
+      }
+    }, () => {});
+    return () => unsub();
+  }, [token?.doctorId, token?.date, token?.shift]);
+
   // ── Derived values ────────────────────────────────────────────
   const myToken      = token?.tokenNumber ?? 0;
   const current      = pos?.currentToken  ?? 0;
@@ -139,8 +173,8 @@ export default function LiveQueueScreen() {
   const shiftIcon: React.ComponentProps<typeof Feather>["name"] = shift === "morning" ? "sun" : "moon";
 
   const doctorName    = doctor?.name ?? "Your Doctor";
-  const clinicName    = doctor?.clinicName ?? "Clinic";
-  const clinicAddress = doctor?.clinicAddress ?? "";
+  const clinicName    = liveClinicName || doctor?.clinicName || "Clinic";
+  const clinicAddress = liveClinicAddress || doctor?.clinicAddress || "";
   const specialization = doctor?.specialization ?? "OPD";
 
   const isEmergency   = token?.type === "emergency";
