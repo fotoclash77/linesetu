@@ -186,6 +186,20 @@ export default function LiveQueueScreen() {
     return () => unsub();
   }, [token?.doctorId, token?.date, token?.shift]);
 
+  // ── Real-time token status from Firestore ─────────────────────
+  const [liveTokenStatus, setLiveTokenStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!validTokenId) return;
+    const ref = doc(db, "tokens", validTokenId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      setLiveTokenStatus(data.status ?? null);
+    }, () => {});
+    return () => unsub();
+  }, [validTokenId]);
+
   // ── Derived values ────────────────────────────────────────────
   const myToken      = token?.tokenNumber ?? 0;
   // Live from Firestore onSnapshot — zero delay, no polling
@@ -193,7 +207,8 @@ export default function LiveQueueScreen() {
   const ahead        = Math.max(0, myToken - current);
   const waitMin      = ahead * liveAvgMin;
   const totalWaiting = liveTotalWaiting ?? pos?.totalWaiting ?? 0;
-  const tokenStatus  = pos?.status ?? token?.status ?? "waiting";
+  // Priority: live Firestore > SSE/polling > static token data
+  const tokenStatus  = liveTokenStatus ?? pos?.status ?? token?.status ?? "waiting";
   const shift        = token?.shift ?? "morning";
   const shiftLabel   = shift === "morning" ? "Morning Shift" : "Evening Shift";
   const shiftIcon: React.ComponentProps<typeof Feather>["name"] = shift === "morning" ? "sun" : "moon";
@@ -213,19 +228,33 @@ export default function LiveQueueScreen() {
   const feeTotalVisit  = token?.totalVisitCost ?? (feePayNow + feePayAtClinic);
   const hasFeeData    = feePayNow > 0 || feePayAtClinic > 0;
 
-  const isDone = tokenStatus === "in_consult" || tokenStatus === "done";
-  const isNear = !isDone && ahead > 0 && ahead <= 3;
-  const isNext = !isDone && ahead === 0;
+  const isCancelled  = tokenStatus === "cancelled";
+  const isConsulting = tokenStatus === "in_consult";
+  const isCompleted  = tokenStatus === "done";
+  const isDone       = isConsulting || isCompleted;
+  const isNear       = !isDone && !isCancelled && ahead > 0 && ahead <= 3;
+  const isNext       = !isDone && !isCancelled && ahead === 0 && current > 0;
+  const queueNotStarted = current === 0 && !isDone && !isCancelled;
   const progPct = myToken > 0 && current > 0
     ? Math.min(100, Math.round((current / myToken) * 100)) : 0;
   const userPct = 100; // "YOU" marker is always at end
 
-  const status = isDone ? "done" : isNext ? "next" : isNear ? "near" : "waiting";
+  const status = isCancelled ? "cancelled"
+    : isCompleted  ? "completed"
+    : isConsulting ? "consulting"
+    : isNext       ? "next"
+    : isNear       ? "near"
+    : queueNotStarted ? "notstarted"
+    : "waiting";
+
   const statusCfg = {
-    waiting: { label: "Waiting",      color: "#818CF8", bg: "rgba(99,102,241,0.18)",  border: "rgba(99,102,241,0.4)"  },
-    near:    { label: "Almost There", color: "#F59E0B", bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.4)"  },
-    next:    { label: "You're Next!", color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
-    done:    { label: "In Progress",  color: "#67E8F9", bg: "rgba(6,182,212,0.18)",   border: "rgba(6,182,212,0.4)"   },
+    notstarted: { label: "Queue Not Started", color: "#818CF8", bg: "rgba(99,102,241,0.18)",  border: "rgba(99,102,241,0.4)"  },
+    waiting:    { label: "In Queue",          color: "#818CF8", bg: "rgba(99,102,241,0.18)",  border: "rgba(99,102,241,0.4)"  },
+    near:       { label: "Almost There",      color: "#F59E0B", bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.4)"  },
+    next:       { label: "You're Next!",      color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
+    consulting: { label: "Your Turn!",        color: "#4ADE80", bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.4)"   },
+    completed:  { label: "Completed",         color: "#67E8F9", bg: "rgba(6,182,212,0.18)",   border: "rgba(6,182,212,0.4)"   },
+    cancelled:  { label: "Cancelled",         color: "#F87171", bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.4)"   },
   }[status];
 
   // ── Animations ────────────────────────────────────────────────
@@ -569,7 +598,7 @@ export default function LiveQueueScreen() {
             </View>
           </View>
         )}
-        {!isNear && !isNext && !isDone && (
+        {!isNear && !isNext && !isDone && !isCancelled && (
           <View style={styles.sectionPad}>
             <View style={styles.alertBannerBlue}>
               <Feather name="info" size={15} color="#67E8F9" />
