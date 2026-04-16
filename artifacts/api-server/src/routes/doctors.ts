@@ -9,6 +9,14 @@ import { uploadBase64ToStorage, deleteFromStorage } from "../lib/storage.js";
 
 const router = Router();
 
+// Only expose clinics that are explicitly marked active
+function activeClinicOnly(data: any): any {
+  if (Array.isArray(data.clinics)) {
+    data.clinics = data.clinics.filter((c: any) => c.active === true);
+  }
+  return data;
+}
+
 // GET /api/doctors — list all active, approved, non-deleted doctors (for patient app)
 router.get("/doctors", async (req, res) => {
   try {
@@ -18,7 +26,7 @@ router.get("/doctors", async (req, res) => {
     );
     const snap = await withRetry(() => getDocs(q));
     const doctors = snap.docs
-      .map(d => ({ id: d.id, ...d.data() } as any))
+      .map(d => activeClinicOnly({ id: d.id, ...d.data() } as any))
       .filter(d => d.isApproved !== false && !d.isDeleted);
     res.json({ doctors });
   } catch (err: any) {
@@ -38,7 +46,7 @@ router.get("/doctors/:doctorId", async (req, res) => {
       await updateDoc(ref, { pendingPayout: 0 });
       data.pendingPayout = 0;
     }
-    res.json({ id: snap.id, ...data });
+    res.json(activeClinicOnly({ id: snap.id, ...data }));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
