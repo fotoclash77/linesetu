@@ -165,7 +165,7 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       ) : (
         <View style={styles.unavailRow}>
           <Feather name="clock" size={9} color="#F59E0B" />
-          <Text style={styles.unavailTxt}>His live queue is yet not started</Text>
+          <Text style={styles.unavailTxt}>Live queue is yet not started</Text>
         </View>
       )}
 
