@@ -581,20 +581,25 @@ export default function ProfileScreen() {
                 </FieldBlock>
 
                 <FieldBlock label="Phone Number" required>
-                  <View style={{ position: "relative" }}>
-                    <TextInput
-                      style={[styles.textInput, { paddingRight: 52 }]}
-                      value={mPhone}
-                      onChangeText={(t) => setMPhone(t.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="10-digit number"
-                      placeholderTextColor="rgba(255,255,255,0.25)"
-                      keyboardType="number-pad"
-                      maxLength={10}
-                    />
-                    <View style={{ position: "absolute", right: 12, top: 0, bottom: 0, justifyContent: "center" }}>
-                      <Text style={{ fontSize: 11, color: mPhone.length === 10 ? "#4ADE80" : "rgba(255,255,255,0.35)", fontWeight: "600" }}>
-                        {mPhone.length}/10
-                      </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={[styles.textInput, { width: 54, alignItems: "center", justifyContent: "center", paddingHorizontal: 0 }]}>
+                      <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "600" }}>+91</Text>
+                    </View>
+                    <View style={{ flex: 1, position: "relative" }}>
+                      <TextInput
+                        style={[styles.textInput, { paddingRight: 52 }]}
+                        value={mPhone}
+                        onChangeText={(t) => setMPhone(t.replace(/\D/g, "").slice(0, 10))}
+                        placeholder="10-digit number"
+                        placeholderTextColor="rgba(255,255,255,0.25)"
+                        keyboardType="number-pad"
+                        maxLength={10}
+                      />
+                      <View style={{ position: "absolute", right: 12, top: 0, bottom: 0, justifyContent: "center" }}>
+                        <Text style={{ fontSize: 11, color: mPhone.length === 10 ? "#4ADE80" : "rgba(255,255,255,0.35)", fontWeight: "600" }}>
+                          {mPhone.length}/10
+                        </Text>
+                      </View>
                     </View>
                   </View>
                   {mPhone.length > 0 && mPhone.length < 10 && (
