@@ -150,7 +150,7 @@ router.post("/notifications/send-alert", async (req, res) => {
         const drName = doctorName
           ? (String(doctorName).startsWith("Dr.") ? doctorName : `Dr. ${doctorName}`)
           : null;
-        const smsBody = drName ? `${trimmed}\n-${drName}` : trimmed;
+        const smsBody = drName ? `${trimmed}\n-${drName} (LineSetu App)` : trimmed;
         console.log("[SMS] Sending to:", cleanPhone, "| body:", smsBody);
 
         // Use POST with Authorization header (recommended by Fast2SMS)

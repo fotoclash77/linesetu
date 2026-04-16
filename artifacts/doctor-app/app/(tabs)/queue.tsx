@@ -1175,7 +1175,7 @@ export default function QueueScreen() {
               {/* Read-only doctor name suffix preview */}
               <View style={S.alertSuffix}>
                 <Text style={S.alertSuffixTxt}>
-                  {`-${doctor?.name?.startsWith('Dr.') ? doctor?.name : `Dr. ${doctor?.name ?? ''}`}`}
+                  {`-${doctor?.name?.startsWith('Dr.') ? doctor?.name : `Dr. ${doctor?.name ?? ''}`} (LineSetu App)`}
                 </Text>
                 <Text style={S.alertSuffixHint}>auto-appended to SMS</Text>
               </View>
