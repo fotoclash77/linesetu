@@ -205,6 +205,28 @@ export default function LiveQueueScreen() {
     return () => unsub();
   }, [validTokenId]);
 
+  // ── Push notification registration (native builds only) ──────
+  useEffect(() => {
+    if (!validTokenId || Platform.OS === "web") return;
+    (async () => {
+      try {
+        const Notifications = await import("expo-notifications");
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        let finalStatus = existing;
+        if (existing !== "granted") {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== "granted") return;
+        const tokenObj = await Notifications.getExpoPushTokenAsync();
+        const expoPushToken = tokenObj.data;
+        await updateDoc(doc(db, "tokens", validTokenId), { expoPushToken });
+      } catch (_) {
+        // expo-notifications not available in Expo Go — works in production builds
+      }
+    })();
+  }, [validTokenId]);
+
   // ── Reminder thresholds (saved to token doc in Firestore) ─────
   const REMINDER_OPTIONS = [
     { label: "10 tokens left", value: 10 },

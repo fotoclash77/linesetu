@@ -8,6 +8,7 @@ import {
   queueDocId, todayDate, withRetry,
 } from "../lib/firebase.js";
 import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
+import { sendQueueReminders } from "../lib/queueReminders.js";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -607,6 +608,12 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+
+    // Read current waitingTokenNumbers before updating so we can derive the new list
+    const queueSnap = await getDoc(queueRef);
+    const prevWaiting: number[] = (queueSnap.exists() ? (queueSnap.data() as any).waitingTokenNumbers : null) ?? [];
+    const newWaiting = prevWaiting.filter((n: number) => n !== token.tokenNumber);
+
     const batch = writeBatch(db);
     batch.update(tokenRef, { status: "in_consult", calledAt: Timestamp.now() });
     batch.update(queueRef, {
@@ -618,6 +625,9 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     await batch.commit();
     emitDoctorTokenChange(token.doctorId);
     res.json({ id: req.params.tokenId, status: "in_consult" });
+
+    // Send push reminders to waiting patients (fire-and-forget)
+    sendQueueReminders(token.doctorId, token.date, token.shift, newWaiting).catch(() => {});
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -649,6 +659,14 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     // Guard: only update tx if it exists (legacy records or rare POST-path failure may lack it)
     const txSnap = isOnlineToken ? await getDoc(txRef) : null;
 
+    // Read current waitingTokenNumbers to derive new list after calling next
+    let newWaiting: number[] | null = null;
+    if (nextToken) {
+      const queueSnap = await getDoc(queueRef);
+      const prevWaiting: number[] = (queueSnap.exists() ? (queueSnap.data() as any).waitingTokenNumbers : null) ?? [];
+      newWaiting = prevWaiting.filter((n: number) => n !== nextToken.tokenNumber);
+    }
+
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
@@ -677,6 +695,11 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       id: req.params.tokenId, status: "done",
       calledNext: nextToken ? { id: callNextId, status: "in_consult" } : null,
     });
+
+    // Send push reminders when queue advances (fire-and-forget)
+    if (nextToken && newWaiting !== null) {
+      sendQueueReminders(nextToken.doctorId, nextToken.date, nextToken.shift, newWaiting).catch(() => {});
+    }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
