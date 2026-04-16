@@ -33,6 +33,7 @@ Both `doctor-app` and `patient-app` are Expo apps that need `router = "expo-doma
 - Both apps' script URLs must be prefixed with their app path so browsers fetch bundles from the correct server. Since Metro's `enhanceMiddleware` only wraps the bundle handler (not the HTML manifest middleware), we patch `@expo/cli/build/src/export/html.js` directly — `appendScriptsToHtml` reads `process.cwd()` and prefixes script `src` paths with `/doctor-app` or `/patient-app` accordingly.
 - Doctor Metro strips the `/doctor-app` prefix from incoming requests in `enhanceMiddleware` before Metro processes them. The proxy strips `/patient-app` before forwarding to patient Metro.
 - If `@expo/cli` is upgraded, re-apply the `html.js` patch.
+- Each app renders a small floating `WebAppSwitcher` pill (top-right, web-only) that links to the other app, so users can flip between them regardless of which app the preview pane opens first.
 
 ## Artifacts
 

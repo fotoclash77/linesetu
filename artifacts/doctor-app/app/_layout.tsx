@@ -18,6 +18,7 @@ import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
 import { useForceUpdate } from "../hooks/useForceUpdate";
 import { DoctorBottomNavBar } from "../components/DoctorBottomNavBar";
+import { WebAppSwitcher } from "../components/WebAppSwitcher";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -86,6 +87,7 @@ function RootLayoutNav() {
         <Stack.Screen name="patients/[id]" />
       </Stack>
       {!hideNav && <DoctorBottomNavBar />}
+      <WebAppSwitcher />
     </View>
   );
 }
