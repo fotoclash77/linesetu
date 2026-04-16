@@ -101,6 +101,7 @@ export default function DoctorDetailScreen() {
     consultFee: doctorData.consultFee,
     emergencyFee: doctorData.emergencyFee,
     walkinFee: doctorData.walkinFee,
+    walkinFeeLabel: doctorData.walkinFeeLabel ?? doctorData.walkinTokenFeeLabel ?? "Walk-In Token Fee",
     clinicConsultFee: doctorData.clinicConsultFee,
     clinicEmergencyFee: doctorData.clinicEmergencyFee,
     onlineBooking: doctorData.onlineBooking !== false,
@@ -247,7 +248,7 @@ export default function DoctorDetailScreen() {
               },
               {
                 icon: "check-circle" as const,
-                label: "Walk-In Fee",
+                label: doctor?.walkinFeeLabel ?? "Walk-In Token Fee",
                 sub: "Come early at clinic to collect your token",
                 amount: `₹${doctor?.walkinFee ?? 0}`,
                 color: "#A78BFA", bg: "rgba(167,139,250,0.1)", border: "rgba(167,139,250,0.28)",
