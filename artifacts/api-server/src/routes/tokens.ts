@@ -171,6 +171,9 @@ router.post("/tokens/reserve", async (req, res) => {
   const doctorRef  = doc(db, Collections.DOCTORS, doctorId);
   const doctorSnap = await getDoc(doctorRef);
   const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
+  if (!doctorData || doctorData.isApproved !== true || doctorData.isDeleted) {
+    return res.status(400).json({ reserved: false, error: "This doctor is not available for booking" });
+  }
   const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
   const maxTokens  = shiftCfg?.maxTokens ? parseInt(String(shiftCfg.maxTokens), 10) : null;
 
@@ -310,8 +313,8 @@ router.post("/tokens", async (req, res) => {
     const counterRef   = doc(db, Collections.META, "counters");
     const doctorSnap = await getDoc(doctorRef);
     const doctorData = doctorSnap.exists() ? doctorSnap.data() as any : null;
-    // Block online patient bookings for unapproved or deleted doctors
-    if (source !== "walkin" && (!doctorData || doctorData.isApproved !== true || doctorData.isDeleted)) {
+    // Block all bookings for unapproved or deleted doctors
+    if (!doctorData || doctorData.isApproved !== true || doctorData.isDeleted) {
       return res.status(400).json({ error: "This doctor is not available for booking" });
     }
     const shiftCfg   = doctorData?.calendar?.[tokenDate]?.[shift];
