@@ -142,10 +142,29 @@ function statusCfg(s: string) {
   return m[s] ?? {label:capitalize(s), color:'#A5B4FC', bg:'rgba(165,180,252,0.12)'};
 }
 
+// ─── Family member lookup hook ───────────────────────────────────────────
+function useFamilyMember(patientId?: string, memberId?: string) {
+  const [member, setMember] = useState<any>(null);
+  useEffect(() => {
+    if (!patientId || !memberId || memberId === 'self') { setMember(null); return; }
+    fetch(`${BASE()}/api/patients/${patientId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const found = (data?.familyMembers ?? []).find((f: any) => f.id === memberId);
+        setMember(found ?? null);
+      })
+      .catch(() => setMember(null));
+  }, [patientId, memberId]);
+  return member;
+}
+
 // ─── MAIN ──────────────────────────────────────────────────────────────
 export default function PatientDetailScreen() {
   const { id } = useLocalSearchParams<{id:string}>();
   const { tok, isLoading, error } = useTokenLive(id);
+
+  const isFamilyBooking = !!tok?.forMemberId && tok.forMemberId !== 'self';
+  const familyMember    = useFamilyMember(tok?.patientId, tok?.forMemberId);
 
   const isEmerg  = tok?.type === 'emergency';
   const isWalkin = tok?.source === 'walkin';
@@ -250,12 +269,50 @@ export default function PatientDetailScreen() {
 
             {/* ── PATIENT PROFILE ── */}
             <Section title="Patient Profile" icon="user" accent="#A5B4FC">
-              <Row icon="user"    label="Full Name"   value={tok.patientName} always/>
-              <Row icon="phone"   label="Phone"       value={tok.patientPhone || null} always/>
-              <Row icon="calendar" label="Age"        value={tok.age ? `${tok.age} years` : null} always/>
-              <Row icon="users"   label="Gender"      value={tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? null)} always/>
-              <Row icon="home"    label="Address"     value={tok.address || null} always/>
-              <Row icon="map-pin" label="Area / City" value={tok.area || null} always/>
+              {isFamilyBooking && (
+                <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:6,
+                  backgroundColor:'rgba(165,180,252,0.1)', borderRadius:10, paddingHorizontal:10, paddingVertical:6 }}>
+                  <Feather name="users" size={11} color="#A5B4FC" />
+                  <Text style={{ fontSize:11, color:'#A5B4FC', fontWeight:'700' }}>
+                    Family Member Booking
+                    {familyMember?.relation ? ` · ${familyMember.relation}` : ''}
+                  </Text>
+                </View>
+              )}
+              <Row icon="user"     label="Full Name"   value={tok.patientName} always/>
+              <Row icon="phone"    label="Phone"
+                value={
+                  isFamilyBooking
+                    ? (familyMember?.phone || tok.patientPhone || null)
+                    : (tok.patientPhone || null)
+                } always/>
+              <Row icon="calendar" label="Age"
+                value={
+                  isFamilyBooking && familyMember?.age
+                    ? `${familyMember.age} years`
+                    : tok.age ? `${tok.age} years` : null
+                } always/>
+              <Row icon="users"    label="Gender"
+                value={
+                  isFamilyBooking && familyMember?.gender
+                    ? (familyMember.gender === 'M' ? 'Male' : familyMember.gender === 'F' ? 'Female' : familyMember.gender)
+                    : tok.gender === 'M' ? 'Male' : tok.gender === 'F' ? 'Female' : (tok.gender ?? null)
+                } always/>
+              {isFamilyBooking && familyMember?.blood
+                ? <Row icon="activity" label="Blood Group" value={familyMember.blood} valueColor="#F87171"/>
+                : null}
+              <Row icon="home"    label="Address"
+                value={
+                  isFamilyBooking && familyMember?.address
+                    ? familyMember.address
+                    : tok.address || null
+                } always/>
+              <Row icon="map-pin" label="Area / City"
+                value={
+                  isFamilyBooking && familyMember?.area
+                    ? familyMember.area
+                    : tok.area || null
+                } always/>
             </Section>
 
             {/* ── BOOKING DETAILS ── */}
