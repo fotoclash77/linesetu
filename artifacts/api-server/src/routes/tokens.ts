@@ -618,6 +618,7 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     batch.update(tokenRef, { status: "in_consult", calledAt: Timestamp.now() });
     batch.update(queueRef, {
       currentToken: token.tokenNumber,
+      currentTokenType: token.status === "skipped" ? "skipped" : (token.type || "normal"),
       waitingTokenIds: arrayRemove(req.params.tokenId),
       waitingTokenNumbers: arrayRemove(token.tokenNumber),
       updatedAt: Timestamp.now(),
@@ -682,6 +683,7 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
       batch.update(nextRef, { status: "in_consult", calledAt: Timestamp.now() });
       batch.update(nextQueueRef, {
         currentToken: nextToken.tokenNumber,
+        currentTokenType: nextToken.type || "normal",
         waitingTokenIds: arrayRemove(callNextId),
         waitingTokenNumbers: arrayRemove(nextToken.tokenNumber),
         updatedAt: Timestamp.now(),

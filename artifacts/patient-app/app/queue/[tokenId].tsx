@@ -183,6 +183,7 @@ export default function LiveQueueScreen() {
 
   // ── Real-time queue position from Firestore (zero delay) ──────
   const [liveCurrentToken, setLiveCurrentToken] = useState<number | null>(null);
+  const [liveCurrentTokenType, setLiveCurrentTokenType] = useState<string>("");
   const [liveTotalWaiting, setLiveTotalWaiting] = useState<number | null>(null);
   const [liveWaitingNumbers, setLiveWaitingNumbers] = useState<number[] | null>(null);
 
@@ -194,8 +195,8 @@ export default function LiveQueueScreen() {
       if (!snap.exists()) return;
       const data = snap.data() as any;
       setLiveCurrentToken(data.currentToken ?? 0);
+      setLiveCurrentTokenType(data.currentTokenType ?? "");
       setLiveTotalWaiting(data.waitingTokenIds?.length ?? 0);
-      // waitingTokenNumbers is maintained by the API — only active (non-cancelled/done) tokens
       if (Array.isArray(data.waitingTokenNumbers)) {
         setLiveWaitingNumbers(data.waitingTokenNumbers as number[]);
       }
@@ -469,6 +470,28 @@ export default function LiveQueueScreen() {
         <View style={styles.heroSection}>
           <View style={styles.heroTextLeft}>
             <Text style={styles.heroLabelSmall}>NOW CONSULTING</Text>
+            {current > 0 && !!liveCurrentTokenType && (
+              <View style={[
+                styles.tokenTypeBadge,
+                liveCurrentTokenType === "emergency"
+                  ? styles.tokenTypeBadgeEmergency
+                  : liveCurrentTokenType === "skipped"
+                    ? styles.tokenTypeBadgeSkipped
+                    : styles.tokenTypeBadgeNormal,
+              ]}>
+                <Feather
+                  name={liveCurrentTokenType === "emergency" ? "alert-circle" : liveCurrentTokenType === "skipped" ? "skip-forward" : "check-circle"}
+                  size={10}
+                  color={liveCurrentTokenType === "emergency" ? "#EF4444" : liveCurrentTokenType === "skipped" ? "#F59E0B" : "#22C55E"}
+                />
+                <Text style={[
+                  styles.tokenTypeBadgeTxt,
+                  { color: liveCurrentTokenType === "emergency" ? "#FCA5A5" : liveCurrentTokenType === "skipped" ? "#FDE68A" : "#86EFAC" },
+                ]}>
+                  {liveCurrentTokenType === "emergency" ? "Emergency" : liveCurrentTokenType === "skipped" ? "Skipped Token" : "Normal"}
+                </Text>
+              </View>
+            )}
             <View style={styles.heroRingWrap}>
               <Animated.View style={[styles.heroRingOuter, ring1Style, { borderColor: ringBase }]} />
               <View style={[styles.heroRingMid, { borderColor: isNear || isDone ? "rgba(245,158,11,0.35)" : "rgba(99,102,241,0.35)" }]} />
@@ -795,6 +818,12 @@ const styles = StyleSheet.create({
   clinicCardMeta: { fontSize: 11, color: "rgba(255,255,255,0.45)", flex: 1, lineHeight: 15 },
   mapsBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(66,133,244,0.18)", borderWidth: 1, borderColor: "rgba(66,133,244,0.35)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   mapsBtnTxt: { fontSize: 11, fontWeight: "700", color: "#4285F4" },
+
+  tokenTypeBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, marginTop: 6, marginBottom: 2 },
+  tokenTypeBadgeNormal: { backgroundColor: "rgba(34,197,94,0.12)", borderColor: "rgba(34,197,94,0.3)" },
+  tokenTypeBadgeEmergency: { backgroundColor: "rgba(239,68,68,0.12)", borderColor: "rgba(239,68,68,0.3)" },
+  tokenTypeBadgeSkipped: { backgroundColor: "rgba(245,158,11,0.12)", borderColor: "rgba(245,158,11,0.3)" },
+  tokenTypeBadgeTxt: { fontSize: 10, fontWeight: "700" },
 
   heroSection: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginBottom: 10 },
   heroTextLeft: { flex: 1, alignItems: "center" },
