@@ -131,7 +131,9 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       </View>
 
       <View style={styles.nameRow}>
-        <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+        <Text style={styles.docName} numberOfLines={1}>
+          {doc.name.startsWith("Dr") ? doc.name : `Dr. ${doc.name}`}
+        </Text>
       </View>
       <View style={[styles.specBadge, { backgroundColor: accent + "18" }]}>
         <Text style={[styles.specText, { color: accent }]}>{doc.specialty}</Text>
