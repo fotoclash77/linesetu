@@ -436,7 +436,7 @@ function InConsultationCard({ tok, onSkip, onDone, busy }: {
             ? <ActivityIndicator color="#FFF" size="small" />
             : <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
                 <Feather name="check" size={13} color="#FCD34D" />
-                <Text style={S.doneBtnTxt}>Consulted & Call Next</Text>
+                <Text style={S.doneBtnTxt}>Mark Consulted</Text>
               </View>}
         </TouchableOpacity>
       </View>
@@ -700,13 +700,12 @@ export default function QueueScreen() {
     setBusy(null);
   };
   const doDone = async (id: string) => {
-    const nextId = upNextRef.current; // locked at click-time — matches what Up Next card shows
     setBusy(id);
     try {
-      await apiDone(id, nextId);
-      if (nextId) setManualNext(null);
-      if (nextId) setAutoHandoffId(nextId);
-      await inv(); // wait for refetch to complete BEFORE re-enabling the button
+      await apiDone(id, undefined); // mark done only — doctor must manually press Send Next
+      setManualNext(null);
+      setAutoHandoffId(null);
+      await inv();
     } catch {}
     setBusy(null);
   };
