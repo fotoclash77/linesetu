@@ -556,8 +556,8 @@ router.post("/tokens", async (req, res) => {
         if (!smsPhone) return;
 
         const drName    = doctorData?.name    ? `Dr. ${doctorData.name}` : "Your Doctor";
-        const clinic    = doctorData?.clinicName ?? "";
-        const address   = doctorData?.address ?? "";
+        const clinic    = shiftCfg?.clinicName  ?? doctorData?.clinicName  ?? "";
+        const address   = shiftCfg?.address     ?? doctorData?.clinicAddress ?? doctorData?.address ?? "";
         const shiftName = shift.charAt(0).toUpperCase() + shift.slice(1);
 
         const lines: string[] = [
