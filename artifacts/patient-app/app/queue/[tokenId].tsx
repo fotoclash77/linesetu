@@ -236,6 +236,7 @@ export default function LiveQueueScreen() {
   ];
   const [selectedReminders, setSelectedReminders] = useState<number[]>([10, 5, 1, 0]);
   const [reminderBanner, setReminderBanner] = useState<string | null>(null);
+  const [feeExpanded, setFeeExpanded] = useState(false);
   const lastTriggeredRef = useRef<Set<number>>(new Set());
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -580,67 +581,6 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
-        {/* Fee Breakdown */}
-        {hasFeeData && (
-          <View style={styles.sectionPad}>
-            <View style={styles.feeCard}>
-              <View style={styles.feeHeader}>
-                <Feather name="file-text" size={13} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.feeHeaderTitle}>Payment Summary</Text>
-                {token?.paymentStatus === "paid" && (
-                  <View style={styles.feePaidBadge}>
-                    <Feather name="check-circle" size={9} color="#4ADE80" />
-                    <Text style={styles.feePaidBadgeTxt}>Paid</Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.feeGroupRow}>
-                <Feather name="credit-card" size={10} color="#67E8F9" />
-                <Text style={styles.feeGroupLbl}>Paid Online</Text>
-              </View>
-              <View style={styles.feeLineRow}>
-                <Feather name="monitor" size={11} color={isEmergency ? "#EF4444" : "#67E8F9"} />
-                <Text style={styles.feeLineLbl}>{isEmergency ? "Emergency E-Token Fee" : "E-Token Fee"}</Text>
-                <Text style={[styles.feeLineVal, { color: isEmergency ? "#EF4444" : "#67E8F9" }]}>₹{feeDoctorEarns}</Text>
-              </View>
-              <View style={styles.feeDivider} />
-              <View style={styles.feeLineRow}>
-                <Feather name="shield" size={11} color="#818CF8" />
-                <Text style={styles.feeLineLbl}>Platform Fee</Text>
-                <Text style={[styles.feeLineVal, { color: "#818CF8" }]}>₹{feePlatform}</Text>
-              </View>
-              <View style={styles.feeSubtotalRow}>
-                <Text style={styles.feeSubtotalLbl}>Paid Online</Text>
-                <Text style={[styles.feeSubtotalVal, isEmergency && { color: "#F87171" }]}>₹{feePayNow}</Text>
-              </View>
-
-              {feePayAtClinic > 0 && (
-                <>
-                  <View style={styles.feeSectionDivider} />
-                  <View style={styles.feeGroupRow}>
-                    <Feather name="home" size={10} color="#F59E0B" />
-                    <Text style={[styles.feeGroupLbl, { color: "#F59E0B" }]}>Pay at Clinic</Text>
-                  </View>
-                  <View style={styles.feeLineRow}>
-                    <Feather name="activity" size={11} color="rgba(255,255,255,0.4)" />
-                    <Text style={styles.feeLineLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
-                    <Text style={[styles.feeLineValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{feeClinicConsult}</Text>
-                  </View>
-                </>
-              )}
-
-              <View style={styles.feeSectionDivider} />
-              <View style={styles.feeTotalRow}>
-                <View>
-                  <Text style={styles.feeTotalLbl}>Total Visit Cost</Text>
-                  <Text style={styles.feeTotalHint}>Online + Clinic</Text>
-                </View>
-                <Text style={[styles.feeTotalVal, isEmergency && { color: "#F87171" }]}>₹{feeTotalVisit}</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Alert Banners */}
         {isNext && !isDone && (
@@ -732,6 +672,85 @@ export default function LiveQueueScreen() {
             </View>
           </View>
         </View>
+
+        {/* Payment Summary — collapsible, at the bottom */}
+        {hasFeeData && (
+          <View style={styles.sectionPad}>
+            <View style={styles.feeCard}>
+              {/* Dropdown toggle header */}
+              <Pressable style={styles.feeDropdownHeader} onPress={() => setFeeExpanded(v => !v)}>
+                <Feather name="file-text" size={13} color="rgba(255,255,255,0.7)" />
+                <Text style={[styles.feeHeaderTitle, { flex: 0, marginRight: 6 }]}>Payment Summary</Text>
+                {token?.paymentStatus === "paid" && !feeExpanded && (
+                  <View style={styles.feePaidBadge}>
+                    <Feather name="check-circle" size={9} color="#4ADE80" />
+                    <Text style={styles.feePaidBadgeTxt}>Paid</Text>
+                  </View>
+                )}
+                <View style={{ flex: 1 }} />
+                {!feeExpanded && (
+                  <Text style={[styles.feeTotalVal, { fontSize: 13, marginRight: 8 }, isEmergency && { color: "#F87171" }]}>₹{feeTotalVisit}</Text>
+                )}
+                <Feather name={feeExpanded ? "chevron-up" : "chevron-down"} size={15} color="rgba(255,255,255,0.45)" />
+              </Pressable>
+
+              {feeExpanded && (
+                <>
+                  <View style={styles.feeSectionDivider} />
+                  <View style={styles.feeGroupRow}>
+                    <Feather name="credit-card" size={10} color="#67E8F9" />
+                    <Text style={styles.feeGroupLbl}>Paid Online</Text>
+                  </View>
+                  <View style={styles.feeLineRow}>
+                    <Feather name="monitor" size={11} color={isEmergency ? "#EF4444" : "#67E8F9"} />
+                    <Text style={styles.feeLineLbl}>{isEmergency ? "Emergency E-Token Fee" : "E-Token Fee"}</Text>
+                    <Text style={[styles.feeLineVal, { color: isEmergency ? "#EF4444" : "#67E8F9" }]}>₹{feeDoctorEarns}</Text>
+                  </View>
+                  <View style={styles.feeDivider} />
+                  <View style={styles.feeLineRow}>
+                    <Feather name="shield" size={11} color="#818CF8" />
+                    <Text style={styles.feeLineLbl}>Platform Fee</Text>
+                    <Text style={[styles.feeLineVal, { color: "#818CF8" }]}>₹{feePlatform}</Text>
+                  </View>
+                  <View style={styles.feeSubtotalRow}>
+                    <Text style={styles.feeSubtotalLbl}>Paid Online</Text>
+                    <Text style={[styles.feeSubtotalVal, isEmergency && { color: "#F87171" }]}>₹{feePayNow}</Text>
+                  </View>
+
+                  {feePayAtClinic > 0 && (
+                    <>
+                      <View style={styles.feeSectionDivider} />
+                      <View style={styles.feeGroupRow}>
+                        <Feather name="home" size={10} color="#F59E0B" />
+                        <Text style={[styles.feeGroupLbl, { color: "#F59E0B" }]}>Pay at Clinic</Text>
+                      </View>
+                      <View style={styles.feeLineRow}>
+                        <Feather name="activity" size={11} color="rgba(255,255,255,0.4)" />
+                        <Text style={styles.feeLineLblSub}>{isEmergency ? "Emergency Consultation" : "Consultation Fee"}</Text>
+                        <Text style={[styles.feeLineValClinic, isEmergency && { color: "#FCA5A5" }]}>₹{feeClinicConsult}</Text>
+                      </View>
+                    </>
+                  )}
+
+                  <View style={styles.feeSectionDivider} />
+                  <View style={styles.feeTotalRow}>
+                    <View>
+                      <Text style={styles.feeTotalLbl}>Total Visit Cost</Text>
+                      <Text style={styles.feeTotalHint}>Online + Clinic</Text>
+                    </View>
+                    <Text style={[styles.feeTotalVal, isEmergency && { color: "#F87171" }]}>₹{feeTotalVisit}</Text>
+                  </View>
+                  {token?.paymentStatus === "paid" && (
+                    <View style={[styles.feePaidBadge, { alignSelf: "flex-start", marginTop: 8, marginHorizontal: 14, marginBottom: 6 }]}>
+                      <Feather name="check-circle" size={9} color="#4ADE80" />
+                      <Text style={styles.feePaidBadgeTxt}>Paid</Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          </View>
+        )}
 
       </ScrollView>
     </View>
@@ -839,6 +858,7 @@ const styles = StyleSheet.create({
 
   feeCard: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
   feeHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  feeDropdownHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 14 },
   feeHeaderTitle: { fontSize: 13, fontWeight: "800", color: "#FFF", flex: 1 },
   feePaidBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(34,197,94,0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: "rgba(34,197,94,0.3)" },
   feePaidBadgeTxt: { fontSize: 9, fontWeight: "700", color: "#4ADE80" },
