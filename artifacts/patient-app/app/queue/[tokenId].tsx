@@ -350,10 +350,12 @@ export default function LiveQueueScreen() {
                 <Text style={styles.heroCoreLabel}>Current</Text>
               </LGradient>
             </View>
+            <Text style={styles.heroDocName}>
+              {doctorName.startsWith("Dr") ? doctorName : `Dr. ${doctorName}`}
+            </Text>
             <Text style={styles.heroConsultingTxt} numberOfLines={1}>
               {current ? `Doctor is consulting Token #${current}` : "Queue not started yet"}
             </Text>
-            <Text style={styles.heroDocName}>{doctorName}</Text>
           </View>
 
           <View style={styles.heroTextRight}>
