@@ -37,6 +37,10 @@ config.server.enhanceMiddleware = (middleware, server) => {
           /src='\/node_modules\//g,
           `src='${baseUrl}/node_modules/`
         );
+        body = body.replace(
+          /<\/head>/i,
+          `<style>html,body,#root{background-color:#060E12 !important;margin:0;}</style></head>`
+        );
         res.setHeader("content-length", Buffer.byteLength(body));
         origWrite(body);
         origEnd();
