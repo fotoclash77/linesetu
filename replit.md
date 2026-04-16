@@ -68,6 +68,22 @@ React+Vite web app for admin doctor lifecycle management.
 - Patient app home screen + find-doctors both use Firebase `onSnapshot` to track doctor status fields in real-time
 - Doctor lifecycle: new doctors start with `isApproved:false, isDeleted:false`; `GET /api/doctors` server-side filters by `isActive==true`, `isApproved!==false`, `!isDeleted`
 
+### SMS Notifications (MSG91)
+When a walk-in or e-token is booked, the API server sends a confirmation SMS to the patient's phone.
+- **Walk-in**: SMS goes to the phone number entered by the doctor on the walk-in screen.
+- **E-token (self)**: SMS goes to the patient's own registered phone number.
+- **E-token (family member)**: SMS goes to the family member's phone stored in their profile.
+- SMS content: token label (`#1` / `#E1`), doctor name, clinic name & address, date/shift, `-LineSetu App` footer.
+- SMS is fire-and-forget — never delays or fails the booking API response.
+
+Required secrets (set in Replit Secrets):
+| Secret | Description |
+|---|---|
+| `MSG91_AUTH_KEY` | MSG91 API authentication key |
+| `MSG91_SENDER_ID` | 6-char sender ID (default: `LNSETU`) |
+
+Provider: [MSG91](https://msg91.com) — route 4 (transactional). Register at msg91.com, create a transactional route, and copy the auth key.
+
 ### Doctor App (artifacts/doctor-app)
 Expo React Native app for doctors. Dark glassmorphic UI with BG=`#070B14`, TEAL=`#0D9488`, TEAL_LT=`#2DD4BF`.
 - 7 screens: Login, Dashboard, Master Queue, Earnings, Schedule (within Queue), Settings, Add Walk-in

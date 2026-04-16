@@ -9,6 +9,7 @@ import {
 } from "../lib/firebase.js";
 import { emitDoctorTokenChange, tokenEmitter } from "../lib/tokenEmitter.js";
 import { sendQueueReminders } from "../lib/queueReminders.js";
+import { sendSMS } from "../lib/sms.js";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -532,6 +533,47 @@ router.post("/tokens", async (req, res) => {
         });
       } catch (_) {}
     }
+
+    // ── SMS confirmation ─────────────────────────────────────────────────────
+    // Fire-and-forget: never block the response or surface SMS errors to caller
+    (async () => {
+      try {
+        // Determine recipient phone
+        let smsPhone = patientPhone ?? "";
+
+        // For family member bookings, use the family member's own phone number
+        if (patientId && forMemberId && forMemberId !== "self") {
+          try {
+            const patSnap = await getDoc(doc(db, Collections.PATIENTS, patientId));
+            if (patSnap.exists()) {
+              const pd = patSnap.data() as any;
+              const member = (pd.familyMembers ?? []).find((m: any) => m.id === forMemberId);
+              if (member?.phone) smsPhone = member.phone;
+            }
+          } catch (_) { /* fall back to patientPhone */ }
+        }
+
+        if (!smsPhone) return;
+
+        const drName    = doctorData?.name    ? `Dr. ${doctorData.name}` : "Your Doctor";
+        const clinic    = doctorData?.clinicName ?? "";
+        const address   = doctorData?.address ?? "";
+        const shiftName = shift.charAt(0).toUpperCase() + shift.slice(1);
+
+        const lines: string[] = [
+          `Token ${nextTokenLabel} Booked!`,
+          `Doctor: ${drName}`,
+        ];
+        if (clinic)   lines.push(`Clinic: ${clinic}`);
+        if (address)  lines.push(`Address: ${address}`);
+        lines.push(`Date: ${tokenDate} | ${shiftName} Shift`);
+        lines.push(`-LineSetu App`);
+
+        await sendSMS(smsPhone, lines.join("\n"));
+      } catch (smsErr: any) {
+        console.error("[SMS] Unexpected error in SMS block:", smsErr?.message);
+      }
+    })();
 
     const response: any = { id: tokenRef.id, ...resultTokenData };
     response.message = autoAdjusted
