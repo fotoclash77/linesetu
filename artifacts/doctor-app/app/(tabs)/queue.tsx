@@ -457,7 +457,7 @@ function WaitingCard({ tok, onSendNext, onSendAlert, onSkip, onRefund, busy, isM
   tok: Token; onSendNext: () => void; onSendAlert: () => void; onSkip: () => void; onRefund: () => void;
   busy: boolean; isManualNext?: boolean; isRefundable?: boolean; consultingActive?: boolean;
 }) {
-  const isCancelled = tok.status === 'cancelled' || tok.status === 'refunded';
+  const isCancelled = tok.status === 'cancelled' || tok.paymentStatus === 'refunded';
   const sendNextDisabled = busy || !!consultingActive;
   return (
     <View style={[S.waitCard, isManualNext && { borderColor: 'rgba(252,211,77,0.45)', backgroundColor: 'rgba(180,83,9,0.1)' }]}>
@@ -758,7 +758,7 @@ export default function QueueScreen() {
   const masterFiltered: Token[] = masterRows.map(mapToken).filter((t: Token) => t.shift === shift);
   const all: Token[] = restTokens.length > 0 ? restTokens : masterFiltered;
 
-  const consulting = all.find(t => t.displayStatus === 'consulting');
+  const consulting = all.find(t => t.displayStatus === 'consulting' && t.status !== 'cancelled' && t.paymentStatus !== 'refunded');
   const waitSorted = all.filter(t => t.displayStatus === 'waiting').sort((a, b) => {
     if (a.type === 'emergency' && b.type !== 'emergency') return -1;
     if (b.type === 'emergency' && a.type !== 'emergency') return 1;

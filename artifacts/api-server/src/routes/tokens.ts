@@ -607,6 +607,11 @@ router.patch("/tokens/:tokenId/call", async (req, res) => {
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
+
+    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
+      return res.status(409).json({ error: "Cannot call a cancelled or refunded token" });
+    }
+
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
 
     // Read current waitingTokenNumbers before updating so we can derive the new list
@@ -642,6 +647,11 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
+
+    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
+      return res.status(409).json({ error: "Cannot mark a cancelled or refunded token as done" });
+    }
+
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const txRef    = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
 
@@ -678,6 +688,11 @@ router.patch("/tokens/:tokenId/upnext", async (req, res) => {
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token = tokenSnap.data();
+
+    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
+      return res.status(409).json({ error: "Cannot set a cancelled or refunded token as up next" });
+    }
+
     const existingQ = query(
       collection(db, Collections.TOKENS),
       where("doctorId", "==", token.doctorId),
@@ -706,6 +721,11 @@ router.patch("/tokens/:tokenId/skip", async (req, res) => {
     const tokenSnap = await getDoc(tokenRef);
     if (!tokenSnap.exists()) return res.status(404).json({ error: "Token not found" });
     const token    = tokenSnap.data();
+
+    if (token.status === "cancelled" || token.paymentStatus === "refunded") {
+      return res.status(409).json({ error: "Cannot skip a cancelled or refunded token" });
+    }
+
     const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
     const batch = writeBatch(db);
     batch.update(tokenRef, { status: "skipped", skippedAt: Timestamp.now() });

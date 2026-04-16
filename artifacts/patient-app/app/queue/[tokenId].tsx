@@ -276,9 +276,10 @@ export default function LiveQueueScreen() {
   const hasFeeData    = feePayNow > 0 || feePayAtClinic > 0;
 
   const isCancelled  = tokenStatus === "cancelled";
-  const isConsulting = tokenStatus === "in_consult";
+  const isRefunded   = token?.paymentStatus === "refunded";
+  const isConsulting = tokenStatus === "in_consult" && !isCancelled && !isRefunded;
   const isCompleted  = tokenStatus === "done";
-  const isDone       = isConsulting || isCompleted;
+  const isDone       = (isConsulting || isCompleted) && !isCancelled && !isRefunded;
   const isNear       = !isDone && !isCancelled && ahead > 0 && ahead <= 3;
   const isNext       = !isDone && !isCancelled && ahead === 0 && current > 0;
   const queueNotStarted = current === 0 && !isDone && !isCancelled;
