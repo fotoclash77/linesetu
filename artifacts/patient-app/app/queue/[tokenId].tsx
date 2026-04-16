@@ -292,8 +292,9 @@ export default function LiveQueueScreen() {
   const feePlatform   = token?.platformFee ?? 0;
   const feeClinicConsult = token?.clinicConsultFee ?? 0;
   const feeWalkin     = token?.walkinFee ?? 0;
-  const feePayAtClinic = token?.payAtClinic ?? (feeClinicConsult + feeWalkin);
-  const feeTotalVisit  = token?.totalVisitCost ?? (feePayNow + feePayAtClinic);
+  // Walk-in fee is hidden from display — subtract it from both pay-at-clinic and total
+  const feePayAtClinic = (token?.payAtClinic ?? (feeClinicConsult + feeWalkin)) - feeWalkin;
+  const feeTotalVisit  = (token?.totalVisitCost ?? (feePayNow + feePayAtClinic + feeWalkin)) - feeWalkin;
   const hasFeeData    = feePayNow > 0 || feePayAtClinic > 0;
 
   const isCancelled  = tokenStatus === "cancelled";
