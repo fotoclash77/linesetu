@@ -35,21 +35,53 @@ const AuthContext = createContext<AuthContextType>({
 
 const STORAGE_KEY = "linesetu_patient";
 
+function getApiBase() {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}`;
+  return "http://localhost:8080";
+}
+
+async function validateSession(p: PatientUser): Promise<PatientUser | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  try {
+    const resp = await fetch(`${getApiBase()}/api/patients/${p.id}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!resp.ok) return null;
+    const fresh = await resp.json();
+    return { ...p, ...fresh } as PatientUser;
+  } catch {
+    clearTimeout(timeoutId);
+    return p;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [patient, setPatient] = useState<PatientUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        try {
-          setPatient(JSON.parse(raw));
-        } catch {
-          // ignore
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as PatientUser;
+          const validated = await validateSession(cached);
+          if (validated) {
+            setPatient(validated);
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
+          } else {
+            await AsyncStorage.removeItem(STORAGE_KEY);
+          }
         }
+      } catch {
+        // ignore parse / storage errors
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    })();
   }, []);
 
   const login = async (p: PatientUser) => {
