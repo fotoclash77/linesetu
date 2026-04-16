@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { pct } from "@/constants/design";
 import { useQuery } from "@tanstack/react-query";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Animated, {
@@ -205,6 +205,43 @@ export default function LiveQueueScreen() {
     return () => unsub();
   }, [validTokenId]);
 
+  // ── Reminder thresholds (saved to token doc in Firestore) ─────
+  const REMINDER_OPTIONS = [
+    { label: "10 tokens left", value: 10 },
+    { label: "5 tokens left",  value: 5  },
+    { label: "1 token left",   value: 1  },
+    { label: "Your turn",      value: 0  },
+  ];
+  const [selectedReminders, setSelectedReminders] = useState<number[]>([10, 5, 1, 0]);
+  const [reminderBanner, setReminderBanner] = useState<string | null>(null);
+  const lastTriggeredRef = useRef<Set<number>>(new Set());
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load saved thresholds from Firestore token doc
+  useEffect(() => {
+    if (!validTokenId) return;
+    const ref = doc(db, "tokens", validTokenId);
+    const unsub = onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      if (Array.isArray(data.reminderThresholds)) {
+        setSelectedReminders(data.reminderThresholds as number[]);
+      }
+    }, () => {});
+    return () => unsub();
+  }, [validTokenId]);
+
+  const toggleReminder = useCallback(async (value: number) => {
+    if (!validTokenId) return;
+    const next = selectedReminders.includes(value)
+      ? selectedReminders.filter(v => v !== value)
+      : [...selectedReminders, value];
+    setSelectedReminders(next);
+    try {
+      await updateDoc(doc(db, "tokens", validTokenId), { reminderThresholds: next });
+    } catch (_) {}
+  }, [validTokenId, selectedReminders]);
+
   // ── Derived values ────────────────────────────────────────────
   const myToken      = token?.tokenNumber ?? 0;
   // Live from Firestore onSnapshot — zero delay, no polling
@@ -265,6 +302,25 @@ export default function LiveQueueScreen() {
     completed:  { label: "Completed",         color: "#67E8F9", bg: "rgba(6,182,212,0.18)",   border: "rgba(6,182,212,0.4)"   },
     cancelled:  { label: "Cancelled",         color: "#F87171", bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.4)"   },
   }[status];
+
+  // ── In-app reminder banner triggered by live ahead count ──────
+  useEffect(() => {
+    if (myToken === 0 || liveWaitingNumbers === null) return;
+    const triggered = lastTriggeredRef.current;
+    // Check each selected threshold
+    for (const threshold of selectedReminders) {
+      if (!triggered.has(threshold) && ahead <= threshold) {
+        triggered.add(threshold);
+        const msg = threshold === 0
+          ? "It's your turn! Head to the clinic now."
+          : `Only ${threshold} patient${threshold === 1 ? "" : "s"} ahead of you. Get ready!`;
+        setReminderBanner(msg);
+        if (bannerTimer.current) clearTimeout(bannerTimer.current);
+        bannerTimer.current = setTimeout(() => setReminderBanner(null), 5000);
+        break;
+      }
+    }
+  }, [ahead, selectedReminders, myToken, liveWaitingNumbers]);
 
   // ── Animations ────────────────────────────────────────────────
   const ring1 = useSharedValue(1);
@@ -619,22 +675,47 @@ export default function LiveQueueScreen() {
           </View>
         )}
 
+        {/* In-app reminder banner */}
+        {reminderBanner && (
+          <View style={styles.sectionPad}>
+            <Pressable style={styles.reminderBanner} onPress={() => setReminderBanner(null)}>
+              <Feather name="bell" size={14} color="#FDE68A" />
+              <Text style={styles.reminderBannerTxt}>{reminderBanner}</Text>
+              <Feather name="x" size={12} color="rgba(253,230,138,0.6)" />
+            </Pressable>
+          </View>
+        )}
+
         {/* Notification Card */}
         <View style={styles.sectionPad}>
           <View style={styles.notifCard}>
             <View style={styles.notifHeader}>
               <Feather name="bell" size={14} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.notifTitle}>Reminders Active</Text>
+              <Text style={styles.notifTitle}>Reminders</Text>
               <View style={{ flex: 1 }} />
-              <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>Active</Text></View>
+              {selectedReminders.length > 0
+                ? <View style={styles.notifBadge}><Text style={styles.notifBadgeTxt}>{selectedReminders.length} Active</Text></View>
+                : <View style={[styles.notifBadge, { backgroundColor: "rgba(239,68,68,0.15)" }]}><Text style={[styles.notifBadgeTxt, { color: "#F87171" }]}>Off</Text></View>
+              }
             </View>
-            <Text style={styles.notifBody}>You'll get notified when your turn is approaching. Stay relaxed!</Text>
+            <Text style={styles.notifBody}>Tap a threshold to toggle reminders. Tap again to turn it off.</Text>
             <View style={styles.notifTokensRow}>
-              {["10 tokens left", "5 tokens left", "1 token left", "Your turn"].map((t, i) => (
-                <View key={t} style={[styles.notifTokenChip, i === 0 && { backgroundColor: "rgba(129,140,248,0.2)", borderColor: "rgba(129,140,248,0.4)" }]}>
-                  <Text style={[styles.notifTokenChipTxt, i === 0 && { color: "#A5B4FC" }]}>{t}</Text>
-                </View>
-              ))}
+              {REMINDER_OPTIONS.map(({ label, value }) => {
+                const on = selectedReminders.includes(value);
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => toggleReminder(value)}
+                    style={[
+                      styles.notifTokenChip,
+                      on && { backgroundColor: "rgba(129,140,248,0.22)", borderColor: "rgba(129,140,248,0.5)" },
+                    ]}
+                  >
+                    {on && <Feather name="bell" size={9} color="#A5B4FC" />}
+                    <Text style={[styles.notifTokenChipTxt, on && { color: "#A5B4FC" }]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -737,8 +818,11 @@ const styles = StyleSheet.create({
   notifBadgeTxt: { fontSize: 9, fontWeight: "800", color: "#4ADE80" },
   notifBody: { fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 16, marginBottom: 10 },
   notifTokensRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  notifTokenChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  notifTokenChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   notifTokenChipTxt: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
+
+  reminderBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(217,119,6,0.2)", borderRadius: 14, padding: 12, borderWidth: 1, borderColor: "rgba(245,158,11,0.4)" },
+  reminderBannerTxt: { flex: 1, fontSize: 12, fontWeight: "600", color: "#FDE68A", lineHeight: 17 },
 
   feeCard: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
   feeHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
