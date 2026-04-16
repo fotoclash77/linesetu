@@ -278,6 +278,7 @@ export default function BookingScreen() {
   const clinicConsultFee   = Number((doctorData as any)?.clinicConsultFee   ?? 0);
   const clinicEmergencyFee = Number((doctorData as any)?.clinicEmergencyFee ?? 0);
   const clinicFee = isEmergency ? clinicEmergencyFee : clinicConsultFee;
+  const walkinFee = Number((doctorData as any)?.walkinFee ?? 0);
 
   // Calendar cell style — no entry = holiday by default (matches doctor app)
   function cellStyle(cfg: any) {
@@ -414,6 +415,13 @@ export default function BookingScreen() {
               <Text style={[styles.feePreviewVal, { color: isEmergency ? "#F87171" : "#A5B4FC", fontWeight: "700", fontSize: 15 }]}>₹{payableNow}</Text>
             </View>
             <Text style={styles.feePreviewNote}>+ ₹{clinicFee} consultation paid directly at clinic</Text>
+            {walkinFee > 0 && (
+              <View style={[styles.feePreviewRow, { marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)" }]}>
+                <Feather name="log-in" size={12} color="#2DD4BF" />
+                <Text style={styles.feePreviewLbl}>Walk-in Fee at Clinic</Text>
+                <Text style={[styles.feePreviewVal, { color: "#2DD4BF" }]}>₹{walkinFee}</Text>
+              </View>
+            )}
           </View>
         </View>
 
