@@ -5,7 +5,7 @@ import { usePatientNotifs } from "@/contexts/PatientNotifsContext";
 import { useQuery } from "@tanstack/react-query";
 import { getGetPatientTokensQueryOptions, getListDoctorsQueryOptions } from "@workspace/api-client-react";
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
@@ -314,25 +314,32 @@ export default function BookingsScreen() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [members, setMembers] = useState<MemberItem[]>([MEMBER_ALL]);
 
-  // Load family members from AsyncStorage
-  React.useEffect(() => {
-    import("@react-native-async-storage/async-storage").then(({ default: AS }) => {
-      AS.getItem("linesetu_family").then(raw => {
-        try {
-          const family: any[] = raw ? JSON.parse(raw) : [];
-          const selfMember: MemberItem = {
-            id: "self", name: (patient as any)?.name ?? "Self",
-            relation: "Self", age: 0, avatar: (patient as any)?.photo ?? "", color: "#6366F1",
-          };
-          const extras: MemberItem[] = family.map((f: any, i: number) => ({
-            id: f.id ?? `member_${i}`, name: f.name ?? "Member",
-            relation: f.relation ?? "Family", age: f.age ?? 0,
-            avatar: f.photo ?? "", color: ACCENT_POOL[i % ACCENT_POOL.length],
-          }));
-          setMembers([MEMBER_ALL, selfMember, ...extras]);
-        } catch { /* ignore */ }
-      }).catch(() => {});
+  // Load family members from Firestore (same source as the Profile screen)
+  useEffect(() => {
+    if (!patient?.id) return;
+    const ref = doc(db, "patients", patient.id);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.data() as any;
+      const selfMember: MemberItem = {
+        id: "self",
+        name: (patient as any)?.name ?? "Self",
+        relation: "Self",
+        age: 0,
+        avatar: (patient as any)?.photo ?? "",
+        color: "#6366F1",
+      };
+      const familyRaw: any[] = Array.isArray(data?.familyMembers) ? data.familyMembers : [];
+      const extras: MemberItem[] = familyRaw.map((f: any, i: number) => ({
+        id:       f.id       ?? `fam-${i}`,
+        name:     f.name     ?? "Member",
+        relation: f.relation ?? "Family",
+        age:      Number(f.age) || 0,
+        avatar:   f.avatar   ?? f.photo ?? "",
+        color:    ACCENT_POOL[i % ACCENT_POOL.length],
+      }));
+      setMembers([MEMBER_ALL, selfMember, ...extras]);
     });
+    return () => unsub();
   }, [patient?.id]);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -387,7 +394,7 @@ export default function BookingsScreen() {
       shift: t.shift,
       time: t.shift === "morning" ? "9:00 AM – 1:00 PM" : "5:00 PM – 9:00 PM",
       visitType: "first" as const,
-      memberId: t.memberId ?? "self",
+      memberId: t.forMemberId ?? t.memberId ?? "self",
       ahead: t.queuePosition ?? 0,
       patientPaid: t.patientPaid ?? t.amount ?? 20,
       consultFee: t.clinicConsultFee ?? doc?.fee ?? 500,
