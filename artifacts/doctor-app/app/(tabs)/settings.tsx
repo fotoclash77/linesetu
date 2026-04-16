@@ -787,8 +787,6 @@ export default function SettingsScreen() {
         totalPatients: patientsTotal.trim(),
         phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
         bio: bio.trim(),
-        state: doctorState,
-        district: doctorDistrict,
       } as any);
       setProfileSaved(true);
       setTimeout(() => {
@@ -818,12 +816,10 @@ export default function SettingsScreen() {
           totalPatients: patientsTotal.trim(),
           phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
           bio: bio.trim(),
-          state: doctorState,
-          district: doctorDistrict,
         } as any).catch(() => {});
       }
     } else if (section === 'clinics') {
-      updateDoctor({ clinics: clinics as any }).catch(() => {});
+      updateDoctor({ clinics: clinics as any, state: doctorState, district: doctorDistrict } as any).catch(() => {});
     } else if (section === 'schedule') {
       updateDoctor({ calendar: calendarOverrides as any }).catch(() => {});
     } else if (section === 'fees') {
@@ -923,16 +919,6 @@ export default function SettingsScreen() {
               <Field label="About / Bio" value={bio} onChange={setBio} multiline required error={profileFieldErrors.bio} />
             </View>
 
-            <View style={styles.formCard}>
-              <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
-              <LocationPicker
-                selectedState={doctorState}
-                selectedDistrict={doctorDistrict}
-                onStateChange={setDoctorState}
-                onDistrictChange={setDoctorDistrict}
-              />
-            </View>
-
             <View style={{ paddingHorizontal: 6, marginBottom: 8 }}>
               <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>* All fields are mandatory and will be visible to patients in the app.</Text>
             </View>
@@ -1006,6 +992,18 @@ export default function SettingsScreen() {
               </View>
               <Field label="Google Maps Link" value={clinic.maps} onChange={v => { updateClinic(activeClinic, { maps: v }); setClinicFieldErrors(e => ({ ...e, maps: false })); }} keyboardType="url" required error={clinicFieldErrors.maps} />
             </View>
+
+            <View style={styles.formCard}>
+              <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
+              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 12 }}>Shown to patients when they search for doctors</Text>
+              <LocationPicker
+                selectedState={doctorState}
+                selectedDistrict={doctorDistrict}
+                onStateChange={setDoctorState}
+                onDistrictChange={setDoctorDistrict}
+              />
+            </View>
+
             <TouchableOpacity
               style={[styles.saveBtn, clinicSaving && { opacity: 0.7 }]}
               disabled={clinicSaving}
@@ -1025,7 +1023,7 @@ export default function SettingsScreen() {
                 setClinicFieldErrors({});
                 setClinicSaving(true); setClinicSaved(false);
                 try {
-                  await updateDoctor({ clinics: clinics as any });
+                  await updateDoctor({ clinics: clinics as any, state: doctorState, district: doctorDistrict } as any);
                   setClinicSaved(true);
                   setTimeout(() => {
                     setClinicSaved(false);
