@@ -191,8 +191,8 @@ export default function FindDoctorsScreen() {
     token: Math.floor(Math.random() * 50) + 1,
     exp: d.experience != null ? `${d.experience} yrs` : "—",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
-    district: Array.isArray((d as any).clinics) && (d as any).clinics[0]?.district || '',
-    state: Array.isArray((d as any).clinics) && (d as any).clinics[0]?.state || '',
+    district: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return ''; const active = cs.find((c: any) => c.active && c.name?.trim()) ?? cs[0]; return active?.district || ''; })(),
+    state: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return ''; const active = cs.find((c: any) => c.active && c.name?.trim()) ?? cs[0]; return active?.state || ''; })(),
     photo: fbPhotoMap.get(d.id) ?? d.profilePhoto ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   }));
