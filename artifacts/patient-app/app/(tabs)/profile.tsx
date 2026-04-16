@@ -257,7 +257,8 @@ export default function ProfileScreen() {
     if (!mRelation)       { Alert.alert("Relation required",    "Please select the relation.");               return; }
     if (!mAge.trim())     { Alert.alert("Age required",         "Please enter the member's age.");            return; }
     if (!mBlood)          { Alert.alert("Blood group required", "Please select the blood group.");            return; }
-    if (!mPhone.trim())   { Alert.alert("Phone required",       "Please enter the member's phone number.");  return; }
+    const phoneDigits = mPhone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) { Alert.alert("Phone required", "Please enter a valid 10-digit phone number."); return; }
     if (!mArea.trim())    { Alert.alert("Area required",        "Please enter the member's area.");           return; }
     if (!mAddress.trim()) { Alert.alert("Address required",     "Please enter the member's complete address."); return; }
     setMSaving(true);
@@ -267,7 +268,7 @@ export default function ProfileScreen() {
       relation: mRelation,
       age:      mAge,
       blood:    mBlood,
-      phone:    mPhone,
+      phone:    phoneDigits,
       area:     mArea.trim(),
       address:  mAddress.trim(),
     };
