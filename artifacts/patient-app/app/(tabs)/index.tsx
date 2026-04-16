@@ -460,11 +460,6 @@ export default function HomeScreen() {
                   shadowColor: glow, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 4 }]}>
                   <Feather name={icon} size={18} color={color} />
                 </View>
-                {comingSoon && (
-                  <View style={styles.comingSoonBadge}>
-                    <Text style={styles.comingSoonTxt}>soon</Text>
-                  </View>
-                )}
               </View>
               <Text style={styles.quickLabel}>{label}</Text>
             </Pressable>
@@ -567,8 +562,6 @@ const styles = StyleSheet.create({
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   quickLabel: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.65)", textAlign: "center" },
-  comingSoonBadge: { position: "absolute" as const, top: -8, right: -18, backgroundColor: "rgba(245,158,11,0.9)", borderRadius: 999, paddingVertical: 2, paddingHorizontal: 6, alignItems: "center" as const, justifyContent: "center" as const },
-  comingSoonTxt: { fontSize: 6, fontWeight: "700" as const, color: "#FFF", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   sectionPad: { paddingHorizontal: 20, marginBottom: 22 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
