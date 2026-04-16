@@ -639,25 +639,6 @@ export default function LiveQueueScreen() {
           </View>
         </View>
 
-        {/* Shift Details */}
-        <View style={styles.sectionPad}>
-          <View style={styles.shiftCard}>
-            <View style={styles.shiftCardHeader}>
-              <Feather name={shiftIcon} size={14} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.shiftCardTitle}>{shiftLabel} Details</Text>
-            </View>
-            <View style={styles.shiftDetail}>
-              <Feather name="clock" size={11} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.shiftDetailTxt}>{shift === "morning" ? "10:00 AM – 2:00 PM" : "4:00 PM – 8:00 PM"}</Text>
-            </View>
-            {!!clinicAddress && (
-              <View style={styles.shiftDetail}>
-                <Feather name="map-pin" size={11} color="rgba(255,255,255,0.3)" />
-                <Text style={styles.shiftDetailTxt}>{clinicAddress}</Text>
-              </View>
-            )}
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -758,12 +739,6 @@ const styles = StyleSheet.create({
   notifTokensRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   notifTokenChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   notifTokenChipTxt: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)" },
-
-  shiftCard: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
-  shiftCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  shiftCardTitle: { fontSize: 12, fontWeight: "700", color: "#FFF" },
-  shiftDetail: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  shiftDetailTxt: { fontSize: 11, color: "rgba(255,255,255,0.4)" },
 
   feeCard: { borderRadius: 18, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)" },
   feeHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
