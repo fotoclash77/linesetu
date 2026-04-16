@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   quickLink: { flex: 1, alignItems: "center", gap: 7, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   quickIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   quickLabel: { fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.65)", textAlign: "center" },
-  comingSoonBadge: { position: "absolute" as const, top: -18, right: -14, backgroundColor: "rgba(245,158,11,0.9)", borderRadius: 999, paddingVertical: 2, paddingHorizontal: 6, alignItems: "center" as const, justifyContent: "center" as const },
+  comingSoonBadge: { position: "absolute" as const, top: -8, right: -18, backgroundColor: "rgba(245,158,11,0.9)", borderRadius: 999, paddingVertical: 2, paddingHorizontal: 6, alignItems: "center" as const, justifyContent: "center" as const },
   comingSoonTxt: { fontSize: 6, fontWeight: "700" as const, color: "#FFF", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   sectionPad: { paddingHorizontal: 20, marginBottom: 22 },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
