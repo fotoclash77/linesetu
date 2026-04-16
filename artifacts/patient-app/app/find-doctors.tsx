@@ -1,4 +1,5 @@
 import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { INDIA_STATES } from "@/constants/indiaLocations";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -11,6 +12,7 @@ import { db } from "@/lib/firebase";
 import {
   ActivityIndicator,
   Animated,
+  FlatList,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +20,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,6 +59,10 @@ const sortStyles = StyleSheet.create({
   optionLabel: { fontSize: 14, fontWeight: "700", color: "rgba(255,255,255,0.7)" },
   optionDesc: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 1 },
   checkCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4F46E5", alignItems: "center", justifyContent: "center" },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.4)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 8 },
+  locBtn: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  locBtnActive: { backgroundColor: "rgba(99,102,241,0.15)", borderColor: "rgba(99,102,241,0.45)" },
+  locBtnTxt: { flex: 1, fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.5)" },
 });
 
 function DoctorListCard({ doc }: { doc: DoctorItem }) {
@@ -163,6 +170,10 @@ export default function FindDoctorsScreen() {
   ];
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [showSortModal, setShowSortModal] = useState(false);
+  const [filterState, setFilterState] = useState("");
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [showLocPicker, setShowLocPicker] = useState<"state" | "district" | null>(null);
+  const [locSearch, setLocSearch] = useState("");
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
@@ -231,13 +242,17 @@ export default function FindDoctorsScreen() {
   }, [fbSpecList]);
 
   const filtered = useMemo(() => {
+    const fs = filterState.toLowerCase().trim();
+    const fd = filterDistrict.toLowerCase().trim();
     const list = allDoctors.filter((d) => {
       const matchSpec = selectedSpec === "All" || d.specialty.toLowerCase() === selectedSpec.toLowerCase();
       const matchSearch = !search.trim() ||
         d.name.toLowerCase().includes(search.toLowerCase()) ||
         d.specialty.toLowerCase().includes(search.toLowerCase()) ||
         d.clinicName.toLowerCase().includes(search.toLowerCase());
-      return matchSpec && matchSearch;
+      const matchState = !fs || d.locations?.some(l => l.state.toLowerCase().trim() === fs);
+      const matchDistrict = !fd || d.locations?.some(l => l.district.toLowerCase().trim() === fd);
+      return matchSpec && matchSearch && matchState && matchDistrict;
     });
 
     const parseNum = (v: string) => {
@@ -261,7 +276,7 @@ export default function FindDoctorsScreen() {
       default:
         return list;
     }
-  }, [allDoctors, selectedSpec, search, sortKey]);
+  }, [allDoctors, selectedSpec, search, sortKey, filterState, filterDistrict]);
 
   const currentSortOption = SORT_OPTIONS.find(o => o.key === sortKey) ?? SORT_OPTIONS[0];
 
@@ -293,8 +308,14 @@ export default function FindDoctorsScreen() {
           <Text style={styles.headerTitle}>Find Doctors</Text>
           <Text style={styles.headerSub}>{filtered.length} available near you</Text>
         </View>
-        <Pressable style={[styles.filterBtn, sortKey !== "default" && { borderColor: "rgba(99,102,241,0.7)", backgroundColor: "rgba(99,102,241,0.22)" }]} onPress={openSort}>
-          <Feather name="sliders" size={17} color={sortKey !== "default" ? "#A5B4FC" : "#818CF8"} />
+        <Pressable
+          style={[styles.filterBtn, (sortKey !== "default" || filterState || filterDistrict) && { borderColor: "rgba(99,102,241,0.7)", backgroundColor: "rgba(99,102,241,0.22)" }]}
+          onPress={openSort}
+        >
+          <Feather name="sliders" size={17} color={(sortKey !== "default" || filterState || filterDistrict) ? "#A5B4FC" : "#818CF8"} />
+          {(filterState || filterDistrict) && (
+            <View style={{ position: "absolute", top: 6, right: 6, width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#818CF8" }} />
+          )}
         </Pressable>
       </View>
 
@@ -382,37 +403,148 @@ export default function FindDoctorsScreen() {
           <Pressable style={sortStyles.overlay} onPress={closeSort}>
             <Animated.View style={[sortStyles.sheet, { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]}>
               <Pressable onPress={(e) => e.stopPropagation()}>
-                <View style={sortStyles.handle} />
-                <Text style={sortStyles.title}>Sort Doctors</Text>
-                <Text style={sortStyles.subtitle}>Choose how to order the list</Text>
-                <View style={{ gap: 6, marginTop: 16 }}>
-                  {SORT_OPTIONS.map(opt => {
-                    const isActive = sortKey === opt.key;
-                    return (
-                      <Pressable
-                        key={opt.key}
-                        style={[sortStyles.option, isActive && sortStyles.optionActive]}
-                        onPress={() => pickSort(opt.key)}
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  <View style={sortStyles.handle} />
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                    <Text style={sortStyles.title}>Sort & Filter</Text>
+                    {(filterState || filterDistrict) && (
+                      <TouchableOpacity
+                        onPress={() => { setFilterState(""); setFilterDistrict(""); }}
+                        style={{ backgroundColor: "rgba(239,68,68,0.12)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" }}
                       >
-                        <View style={[sortStyles.optionIcon, isActive && sortStyles.optionIconActive]}>
-                          <Feather name={opt.icon} size={15} color={isActive ? "#FFF" : "#818CF8"} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[sortStyles.optionLabel, isActive && { color: "#FFF" }]}>{opt.label}</Text>
-                          <Text style={sortStyles.optionDesc}>{opt.desc}</Text>
-                        </View>
-                        {isActive && (
-                          <View style={sortStyles.checkCircle}>
-                            <Feather name="check" size={12} color="#FFF" />
+                        <Text style={{ color: "#F87171", fontSize: 11, fontWeight: "700" }}>Clear Filters</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={sortStyles.subtitle}>Sort and filter doctors</Text>
+
+                  {/* Location Filter */}
+                  <Text style={[sortStyles.sectionLabel, { marginTop: 16 }]}>Filter by Location</Text>
+                  <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+                    {/* State picker */}
+                    <TouchableOpacity
+                      style={[sortStyles.locBtn, filterState && sortStyles.locBtnActive]}
+                      onPress={() => { setLocSearch(""); setShowLocPicker("state"); }}
+                    >
+                      <Feather name="map-pin" size={12} color={filterState ? "#A5B4FC" : "rgba(255,255,255,0.4)"} />
+                      <Text style={[sortStyles.locBtnTxt, filterState && { color: "#A5B4FC" }]} numberOfLines={1}>
+                        {filterState || "State"}
+                      </Text>
+                      <Feather name="chevron-down" size={11} color={filterState ? "#A5B4FC" : "rgba(255,255,255,0.3)"} />
+                    </TouchableOpacity>
+                    {/* District picker */}
+                    <TouchableOpacity
+                      style={[sortStyles.locBtn, filterDistrict && sortStyles.locBtnActive, !filterState && { opacity: 0.45 }]}
+                      onPress={() => { if (!filterState) return; setLocSearch(""); setShowLocPicker("district"); }}
+                    >
+                      <Feather name="navigation" size={12} color={filterDistrict ? "#A5B4FC" : "rgba(255,255,255,0.4)"} />
+                      <Text style={[sortStyles.locBtnTxt, filterDistrict && { color: "#A5B4FC" }]} numberOfLines={1}>
+                        {filterDistrict || (filterState ? "District" : "State first")}
+                      </Text>
+                      <Feather name="chevron-down" size={11} color={filterDistrict ? "#A5B4FC" : "rgba(255,255,255,0.3)"} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Sort options */}
+                  <Text style={sortStyles.sectionLabel}>Sort by</Text>
+                  <View style={{ gap: 6, marginTop: 8 }}>
+                    {SORT_OPTIONS.map(opt => {
+                      const isActive = sortKey === opt.key;
+                      return (
+                        <Pressable
+                          key={opt.key}
+                          style={[sortStyles.option, isActive && sortStyles.optionActive]}
+                          onPress={() => pickSort(opt.key)}
+                        >
+                          <View style={[sortStyles.optionIcon, isActive && sortStyles.optionIconActive]}>
+                            <Feather name={opt.icon} size={15} color={isActive ? "#FFF" : "#818CF8"} />
                           </View>
-                        )}
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[sortStyles.optionLabel, isActive && { color: "#FFF" }]}>{opt.label}</Text>
+                            <Text style={sortStyles.optionDesc}>{opt.desc}</Text>
+                          </View>
+                          {isActive && (
+                            <View style={sortStyles.checkCircle}>
+                              <Feather name="check" size={12} color="#FFF" />
+                            </View>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
               </Pressable>
             </Animated.View>
           </Pressable>
+        </Modal>
+      )}
+
+      {/* Location Picker Sub-Modal */}
+      {showLocPicker && (
+        <Modal transparent visible animationType="fade" onRequestClose={() => setShowLocPicker(null)}>
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center" }}
+            activeOpacity={1}
+            onPress={() => setShowLocPicker(null)}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              style={{ backgroundColor: "#0D1321", borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", width: 310, maxHeight: 500, overflow: "hidden" }}
+            >
+              <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.07)", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text style={{ color: "#818CF8", fontWeight: "900", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                  {showLocPicker === "state" ? "Select State / UT" : `Districts — ${filterState}`}
+                </Text>
+                <TouchableOpacity onPress={() => setShowLocPicker(null)}>
+                  <Feather name="x" size={16} color="rgba(255,255,255,0.4)" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }}>
+                <TextInput
+                  style={{ height: 36, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 10, paddingHorizontal: 12, color: "#FFF", fontSize: 13, fontWeight: "500" }}
+                  placeholder={showLocPicker === "state" ? "Search state..." : "Search district..."}
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={locSearch}
+                  onChangeText={setLocSearch}
+                  autoFocus
+                />
+              </View>
+              <FlatList
+                data={(() => {
+                  if (showLocPicker === "state") {
+                    const list = INDIA_STATES.map(s => s.name);
+                    return locSearch ? list.filter(n => n.toLowerCase().includes(locSearch.toLowerCase())) : list;
+                  } else {
+                    const districts = INDIA_STATES.find(s => s.name === filterState)?.districts ?? [];
+                    return locSearch ? districts.filter(d => d.toLowerCase().includes(locSearch.toLowerCase())) : districts;
+                  }
+                })()}
+                keyExtractor={item => item}
+                renderItem={({ item }) => {
+                  const isSelected = showLocPicker === "state" ? item === filterState : item === filterDistrict;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (showLocPicker === "state") {
+                          setFilterState(item);
+                          setFilterDistrict("");
+                        } else {
+                          setFilterDistrict(item);
+                        }
+                        setShowLocPicker(null);
+                        setLocSearch("");
+                      }}
+                      style={{ paddingHorizontal: 16, paddingVertical: 13, backgroundColor: isSelected ? "rgba(99,102,241,0.15)" : "transparent", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.04)" }}
+                    >
+                      <Text style={{ color: isSelected ? "#A5B4FC" : "rgba(255,255,255,0.75)", fontWeight: isSelected ? "800" : "500", fontSize: 14 }}>{item}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+                ListEmptyComponent={<Text style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: 20, fontSize: 13 }}>No results</Text>}
+                keyboardShouldPersistTaps="handled"
+              />
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
       )}
     </View>
