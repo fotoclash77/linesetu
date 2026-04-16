@@ -16,6 +16,7 @@ export const modules: ModuleMap = {
   "./components/mockups/doctor-app/Schedule.tsx": () => import("../components/mockups/doctor-app/Schedule.tsx"),
   "./components/mockups/doctor-app/Settings.tsx": () => import("../components/mockups/doctor-app/Settings.tsx"),
   "./components/mockups/doctor-app/Settings2.tsx": () => import("../components/mockups/doctor-app/Settings2.tsx"),
+  "./components/mockups/linesetu-design-system/Showcase.tsx": () => import("../components/mockups/linesetu-design-system/Showcase.tsx"),
   "./components/mockups/patient-app/Booking.tsx": () => import("../components/mockups/patient-app/Booking.tsx"),
   "./components/mockups/patient-app/DoctorDetail.tsx": () => import("../components/mockups/patient-app/DoctorDetail.tsx"),
   "./components/mockups/patient-app/Home.tsx": () => import("../components/mockups/patient-app/Home.tsx"),
@@ -23,6 +24,5 @@ export const modules: ModuleMap = {
   "./components/mockups/patient-app/Login.tsx": () => import("../components/mockups/patient-app/Login.tsx"),
   "./components/mockups/patient-app/MyBookings.tsx": () => import("../components/mockups/patient-app/MyBookings.tsx"),
   "./components/mockups/patient-app/Payment.tsx": () => import("../components/mockups/patient-app/Payment.tsx"),
-  "./components/mockups/patient-app/Profile.tsx": () => import("../components/mockups/patient-app/Profile.tsx"),
-  "./components/mockups/linesetu-design-system/Showcase.tsx": () => import("../components/mockups/linesetu-design-system/Showcase.tsx")
+  "./components/mockups/patient-app/Profile.tsx": () => import("../components/mockups/patient-app/Profile.tsx")
 };
