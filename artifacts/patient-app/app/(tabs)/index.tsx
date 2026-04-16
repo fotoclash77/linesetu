@@ -340,29 +340,49 @@ export default function HomeScreen() {
     return () => unsub();
   }, []);
 
-  const apiDoctors: DoctorItem[] = (doctorsData?.doctors ?? [])
-    .filter((d: any) => {
-      const fb = fbDoctorMap.get(d.id);
-      if (!fb) return fbDoctorMap.size === 0;
-      return fb.isActive && fb.isApproved && !fb.isDeleted;
-    })
-    .map((d: any, i: number) => ({
-      id: d.id,
-      name: d.name,
-      specialty: d.specialization,
-      clinicName: d.clinicName ?? "",
-      accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
-      rating: "4.8",
-      wait: d.estimatedWaitMins != null || d.waitMinutes != null || d.waitMins != null
-        ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
-        : "~",
-      token: 1,
-      exp: d.experience != null ? `${d.experience}` : "",
-      patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
-      photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
-      isAvailable: d.isAvailable !== false,
-    }));
-  const doctors: DoctorItem[] = apiDoctors;
+  const rawDoctors: any[] = (doctorsData?.doctors ?? []).filter((d: any) => {
+    const fb = fbDoctorMap.get(d.id);
+    if (!fb) return fbDoctorMap.size === 0;
+    return fb.isActive && fb.isApproved && !fb.isDeleted;
+  });
+
+  const toDocItem = (d: any, i: number): DoctorItem => ({
+    id: d.id,
+    name: d.name,
+    specialty: d.specialization,
+    clinicName: d.clinicName ?? "",
+    accent: ["#EF4444", "#3B82F6", "#8B5CF6", "#22C55E"][i % 4],
+    rating: "4.8",
+    wait: d.estimatedWaitMins != null || d.waitMinutes != null || d.waitMins != null
+      ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
+      : "~",
+    token: 1,
+    exp: d.experience != null ? `${d.experience}` : "",
+    patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
+    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
+    isAvailable: d.isAvailable !== false,
+  });
+
+  const patientDistrict = patient?.district?.toLowerCase().trim() ?? "";
+
+  const districtRaw = patientDistrict
+    ? rawDoctors.filter((d: any) => {
+        const docDistrict = d.district?.toLowerCase().trim();
+        if (docDistrict === patientDistrict) return true;
+        if (Array.isArray(d.clinics)) {
+          return d.clinics.some((c: any) =>
+            c.district?.toLowerCase().trim() === patientDistrict && c.active !== false
+          );
+        }
+        return false;
+      })
+    : [];
+
+  const isDistrictMatch = districtRaw.length > 0;
+
+  const doctors: DoctorItem[] = isDistrictMatch
+    ? districtRaw.map(toDocItem)
+    : rawDoctors.map(toDocItem);
 
   const [fbSpecList, setFbSpecList] = useState<string[]>([]);
   useEffect(() => {
@@ -482,7 +502,11 @@ export default function HomeScreen() {
         {/* Recommended Doctors */}
         <View style={styles.sectionPad}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recommended for You</Text>
+            <Text style={styles.sectionTitle}>
+              {isDistrictMatch && patient?.district
+                ? `Doctors in ${patient.district}`
+                : "Recommended for You"}
+            </Text>
             <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 2 }} onPress={() => router.push("/find-doctors")}>
               <Text style={styles.seeAll}>See All</Text>
               <Feather name="chevron-right" size={13} color="#818CF8" />
