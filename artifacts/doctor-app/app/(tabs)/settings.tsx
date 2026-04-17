@@ -1753,7 +1753,12 @@ export default function SettingsScreen() {
 
   // ── Share Profile QR ────────────────────────────────────────────────────
   if (section === 'shareProfile') {
-    const profileUrl = doctor?.id ? `${BASE()}/patient-app/doctor/${doctor.id}` : '';
+    const shortCode = (doctor as any)?.shortCode;
+    const profileUrl = doctor?.id
+      ? shortCode
+        ? `${BASE()}/s/${shortCode}`
+        : `${BASE()}/patient-app/doctor/${doctor.id}`
+      : '';
     const shareTitle = doctor?.name ? `Book a token with ${doctor.name} on LINESETU` : 'Book a token on LINESETU';
     const shareMessage = profileUrl
       ? `${shareTitle}\n\n${profileUrl}\n\nScan or tap the link to view my profile and book your token.`

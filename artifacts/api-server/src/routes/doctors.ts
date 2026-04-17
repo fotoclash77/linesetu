@@ -9,6 +9,24 @@ import { uploadBase64ToStorage, deleteFromStorage } from "../lib/storage.js";
 
 const router = Router();
 
+// ---------- Short-link helpers ----------
+const SHORT_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+function makeCode(len = 6): string {
+  let s = "";
+  for (let i = 0; i < len; i++) s += SHORT_CHARS[Math.floor(Math.random() * SHORT_CHARS.length)];
+  return s;
+}
+
+async function generateUniqueShortCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = makeCode();
+    const snap = await getDocs(query(collection(db, Collections.DOCTORS), where("shortCode", "==", code)));
+    if (snap.empty) return code;
+  }
+  return makeCode(8);
+}
+// ----------------------------------------
+
 // Only expose clinics that are explicitly marked active
 function activeClinicOnly(data: any): any {
   if (Array.isArray(data.clinics)) {
@@ -46,6 +64,12 @@ router.get("/doctors/:doctorId", async (req, res) => {
       await updateDoc(ref, { pendingPayout: 0 });
       data.pendingPayout = 0;
     }
+    // Lazy backfill: ensure legacy doctor documents have a shortCode
+    if (!data.shortCode) {
+      const shortCode = await generateUniqueShortCode();
+      await updateDoc(ref, { shortCode });
+      data.shortCode = shortCode;
+    }
     res.json(activeClinicOnly({ id: snap.id, ...data }));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -58,6 +82,7 @@ router.post("/doctors", async (req, res) => {
     const { name, phone, specialization, clinicName, clinicAddress, shifts } = req.body;
     if (!name || !phone) return res.status(400).json({ error: "name and phone are required" });
 
+    const shortCode = await generateUniqueShortCode();
     const data = {
       name,
       phone,
@@ -79,6 +104,7 @@ router.post("/doctors", async (req, res) => {
       walkinFee: 0,
       pendingPayout: 0,
       bankAccount: null,
+      shortCode,
       createdAt: Timestamp.now(),
     };
 
