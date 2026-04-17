@@ -7,7 +7,6 @@ const values = [28, 34, 31, 42, 38, 51];
 const features = [
   { icon: "💸", title: "Digital Payments", desc: "Razorpay-powered instant payouts" },
   { icon: "📋", title: "Booking History", desc: "Full record of every consultation" },
-  { icon: "⭐", title: "Patient Reviews", desc: "Build reputation, earn trust" },
 ];
 
 export default function Growth() {
