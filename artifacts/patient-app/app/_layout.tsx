@@ -5,22 +5,33 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { Image } from "expo-image";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
-
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
 import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
+
+const LOGO = require("../assets/images/logo.png");
+
+function SplashView() {
+  return (
+    <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
+      <Image source={LOGO} style={{ width: 180, height: 180 }} contentFit="contain" />
+    </View>
+  );
+}
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -74,7 +85,7 @@ function RootLayoutNav() {
     segments[0] === "complete-profile";
 
   if (isLoading || hasSeenOnboarding === null) {
-    return <View style={{ flex: 1, backgroundColor: "#0A0E1A" }} />;
+    return <SplashView />;
   }
 
   return (
@@ -116,7 +127,7 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: "#0A0E1A" }} />;
+    return <SplashView />;
   }
 
   return (
