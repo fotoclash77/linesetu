@@ -7,8 +7,8 @@ export function Welcome3() {
 
   const receipts = [
     { doc: "Dr. Ananya Sharma", date: "Mar 28", amt: "", status: "Consulted" },
-    { doc: "Dr. Priya Nair", date: "Mar 15", amt: "₹600", status: "Consulted" },
-    { doc: "Dr. Vikram Patel", date: "Mar 3", amt: "₹400", status: "Consulted" },
+    { doc: "Dr. Priya Nair", date: "Mar 15", amt: "", status: "Consulted" },
+    { doc: "Dr. Vikram Patel", date: "Mar 3", amt: "", status: "Consulted" },
   ];
 
   return (
