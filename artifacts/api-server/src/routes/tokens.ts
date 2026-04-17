@@ -742,11 +742,28 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     // Guard: only update tx if it exists (legacy records or rare POST-path failure may lack it)
     const txSnap = isOnlineToken ? await getDoc(txRef) : null;
 
+    // Read the doctor doc to handle legacy records where totalPatients is
+    // stored as a string. FieldValue.increment() cannot operate on a string,
+    // so for those rows we coerce to a number and write the new value
+    // explicitly. New / already-numeric rows continue to use increment(1).
+    const doctorSnap = await getDoc(doctorRef);
+    const currentTotal = doctorSnap.exists() ? (doctorSnap.data() as any).totalPatients : undefined;
+    let totalPatientsUpdate: any;
+    if (typeof currentTotal === "string") {
+      const parsed = Number(currentTotal);
+      totalPatientsUpdate = (Number.isFinite(parsed) ? parsed : 0) + 1;
+    } else if (typeof currentTotal === "number") {
+      totalPatientsUpdate = increment(1);
+    } else {
+      // Field missing entirely — initialize to 1.
+      totalPatientsUpdate = 1;
+    }
+
     const batch = writeBatch(db);
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
-    batch.update(doctorRef, { totalPatients: increment(1) });
+    batch.update(doctorRef, { totalPatients: totalPatientsUpdate });
 
     // Mark transaction as "completed" so the Earnings tab shows the correct status badge.
     if (isOnlineToken && txSnap?.exists()) {
