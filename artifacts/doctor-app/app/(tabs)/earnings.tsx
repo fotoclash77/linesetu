@@ -194,7 +194,7 @@ export default function EarningsScreen() {
     queryFn:  () => fetchEarnings(doctor!.id, ranges.fetchFrom),
     enabled:  !!doctor?.id,
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 3_000,
   });
 
   // Fresh doctor data for pendingPayout + in-clinic fees
@@ -206,7 +206,7 @@ export default function EarningsScreen() {
     },
     enabled:  !!doctor?.id,
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 3_000,
   });
 
   // Payout requests from Firebase
@@ -218,7 +218,7 @@ export default function EarningsScreen() {
     },
     enabled:  !!doctor?.id && tab === 'payouts',
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 3_000,
   });
 
   // Transactions tab state
@@ -232,7 +232,7 @@ export default function EarningsScreen() {
     },
     enabled:  !!doctor?.id,
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 3_000,
   });
 
   const allTx: any[] = txData?.transactions ?? [];
