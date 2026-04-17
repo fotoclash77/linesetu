@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -164,7 +165,19 @@ export default function DoctorDetailScreen() {
           <Feather name="chevron-left" size={20} color="rgba(255,255,255,0.9)" />
         </Pressable>
         <Text style={styles.navTitle}>Doctor Profile</Text>
-        <Pressable style={styles.navBtn}>
+        <Pressable
+          style={styles.navBtn}
+          onPress={async () => {
+            if (!id) return;
+            const name = doctor?.name || hint_name || "this doctor";
+            const url = `${BASE_URL}/patient-app/doctor/${id}`;
+            const title = `Book a token with ${name} on LINESETU`;
+            const message = `${title}\n\n${url}\n\nTap the link to view the profile and book your token.`;
+            try {
+              await Share.share({ message, url, title });
+            } catch {}
+          }}
+        >
           <Feather name="share-2" size={16} color="rgba(255,255,255,0.8)" />
         </Pressable>
       </View>
