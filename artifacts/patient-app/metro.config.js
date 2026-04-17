@@ -52,6 +52,17 @@ const origEnhanceMiddleware = config.server.enhanceMiddleware;
 config.server.enhanceMiddleware = (middleware, server) => {
   const base = origEnhanceMiddleware ? origEnhanceMiddleware(middleware, server) : middleware;
   return (req, res, next) => {
+    // Patient-app owns the expo-domain root. When the canvas iframe lands at
+    // bare "/" (no /patient-app prefix), Expo serves its default "Run this
+    // app to see the results" landing page. Redirect bare-root HTML requests
+    // to /patient-app/ so the actual app loads.
+    const accept = req.headers && req.headers.accept;
+    const wantsHtml = typeof accept === "string" && accept.includes("text/html");
+    if (req.url === "/" && wantsHtml) {
+      res.writeHead(302, { Location: "/patient-app/" });
+      res.end();
+      return;
+    }
     // Strip /patient-app prefix from incoming requests (shared proxy forwards them with prefix intact)
     if (req.url && (req.url === BASE || req.url.startsWith(BASE + "/") || req.url.startsWith(BASE + "?"))) {
       req.url = req.url.slice(BASE.length) || "/";

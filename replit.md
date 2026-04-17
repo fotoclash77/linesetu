@@ -33,6 +33,7 @@ Both `doctor-app` and `patient-app` are Expo apps that need `router = "expo-doma
 - Doctor app is accessible via the shared proxy at `/doctor-app/`. Its Metro runs on port 20119.
 - Both apps' script URLs must be prefixed with their app path so browsers fetch bundles from the correct server. Since Metro's `enhanceMiddleware` only wraps the bundle handler (not the HTML manifest middleware), we patch `@expo/cli/build/src/export/html.js` directly — `appendScriptsToHtml` reads `process.cwd()` and prefixes script `src` paths with `/doctor-app` or `/patient-app` accordingly.
 - Doctor Metro strips the `/doctor-app` prefix from incoming requests in `enhanceMiddleware` before Metro processes them.
+- Patient Metro redirects bare-root HTML requests (`/`) to `/patient-app/`. The canvas iframe sometimes lands at `/` (e.g. `initialPath=%2F`); without this redirect, Expo serves its default "Run this app to see the results" landing page because patient-app's `EXPO_BASE_URL=/patient-app` has no content at `/`.
 - If `@expo/cli` is upgraded, re-apply the `html.js` patch.
 
 ### Helper Modules — Keep Out of app/ Directory
