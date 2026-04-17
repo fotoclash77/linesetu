@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#060E12"
+      "backgroundColor": "#1A3D1A"
     },
     "ios": {
       "supportsTablet": false
@@ -19,8 +19,8 @@
     "android": {
       "package": "com.linesetu.doctorapp",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#060E12"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1A3D1A"
       }
     },
     "web": {

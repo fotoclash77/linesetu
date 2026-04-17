@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0E1A"
+      "backgroundColor": "#1B2A4A"
     },
     "ios": {
       "supportsTablet": false,
@@ -29,8 +29,8 @@
       "package": "com.linesetu.patientapp",
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#0A0E1A"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1B2A4A"
       }
     },
     "web": {
