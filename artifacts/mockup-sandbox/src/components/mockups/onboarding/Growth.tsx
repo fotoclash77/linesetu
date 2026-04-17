@@ -13,16 +13,6 @@ const features = [
 export default function Growth() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: BG, fontFamily: "system-ui, sans-serif", padding: "24px 24px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 16, background: "linear-gradient(135deg, #0F766E, #0D9488)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderBottom: "14px solid white" }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: TEAL_LT, letterSpacing: 2 }}>FEATURE 03</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>Grow & earn</div>
-        </div>
-      </div>
-
       <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 8 }}>
         Grow Your<br/><span style={{ color: TEAL_LT }}>Practice</span>
       </div>
