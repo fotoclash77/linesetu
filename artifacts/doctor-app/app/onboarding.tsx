@@ -28,7 +28,7 @@ async function markSeenAndGo() {
 
 // ─── Slide 0: Splash ─────────────────────────────────────────
 function SplashSlide() {
-  const badges = ["500+ Clinics", "12K+ Doctors", "MCI Verified"];
+  const badges = ["500+ Clinics", "12K+ Doctors"];
   return (
     <View style={[styles.slide, { alignItems: "center", justifyContent: "center" }]}>
       {/* Glow orb */}
@@ -81,19 +81,6 @@ function QueueSlide() {
 
   return (
     <View style={styles.slide}>
-      {/* Feature badge */}
-      <View style={styles.featureBadgeRow}>
-        <LinearGradient colors={["#0D9488", "#0891B2"]} style={styles.featureIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <View style={[styles.lineIcon, { width: 16, marginBottom: 3 }]} />
-          <View style={[styles.lineIcon, { width: 12 }]} />
-          <View style={[styles.lineIcon, { width: 8, marginTop: 3 }]} />
-        </LinearGradient>
-        <View>
-          <Text style={styles.featureNum}>FEATURE 01</Text>
-          <Text style={styles.featureSub}>What you get</Text>
-        </View>
-      </View>
-
       <Text style={styles.slideTitle}>Smart Queue{"\n"}<Text style={{ color: TEAL_LT }}>Management</Text></Text>
       <Text style={styles.slideDesc}>
         Your clinic queue, organised and visible at a glance. No chaos, no confusion — just smooth patient flow.
@@ -145,18 +132,6 @@ function InsightsSlide() {
 
   return (
     <View style={styles.slide}>
-      <View style={styles.featureBadgeRow}>
-        <LinearGradient colors={["#0891B2", "#2DD4BF"]} style={styles.featureIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <View style={styles.clockOuter}>
-            <View style={styles.clockHand} />
-          </View>
-        </LinearGradient>
-        <View>
-          <Text style={styles.featureNum}>FEATURE 02</Text>
-          <Text style={styles.featureSub}>Insights & tracking</Text>
-        </View>
-      </View>
-
       <Text style={styles.slideTitle}>Real-time Patient{"\n"}<Text style={{ color: TEAL_LT }}>Insights</Text></Text>
       <Text style={styles.slideDesc}>
         Track your patient flow throughout the day. See peaks, plan better, and reduce wait times dramatically.
@@ -221,21 +196,10 @@ function GrowthSlide() {
   const features = [
     { icon: "💸", title: "Digital Payments", desc: "Razorpay-powered instant payouts" },
     { icon: "📋", title: "Booking History", desc: "Full record of every consultation" },
-    { icon: "⭐", title: "Patient Reviews", desc: "Build reputation, earn trust" },
   ];
 
   return (
     <View style={styles.slide}>
-      <View style={styles.featureBadgeRow}>
-        <LinearGradient colors={["#0F766E", "#0D9488"]} style={styles.featureIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <View style={styles.growthArrow} />
-        </LinearGradient>
-        <View>
-          <Text style={styles.featureNum}>FEATURE 03</Text>
-          <Text style={styles.featureSub}>Grow & earn</Text>
-        </View>
-      </View>
-
       <Text style={styles.slideTitle}>Grow Your{"\n"}<Text style={{ color: TEAL_LT }}>Practice</Text></Text>
       <Text style={styles.slideDesc}>
         Transparent earnings, instant payouts, and tools to attract more patients — all in one place.
