@@ -55,7 +55,7 @@ export function Splash() {
 
           {/* Tagline */}
           <p className="text-[15px] text-white/45 font-medium mt-2 text-center px-10 leading-relaxed">
-            Skip the waiting room.<br />See a doctor on your terms.
+            No early morning lines.<br />Book your token instantly.
           </p>
 
           {/* Trust badges */}
