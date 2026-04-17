@@ -26,6 +26,10 @@ try { MediaLibrary = require('expo-media-library'); } catch {}
 // services / Bluetooth printers). Loaded defensively for the same reasons.
 let ExpoPrint: any = null;
 try { ExpoPrint = require('expo-print'); } catch {}
+// expo-sharing opens the native OS share sheet to hand a file off to
+// WhatsApp, email, AirDrop, etc. Loaded defensively for the same reasons.
+let ExpoSharing: any = null;
+try { ExpoSharing = require('expo-sharing'); } catch {}
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from '../../lib/settingsResetBridge';
@@ -569,6 +573,7 @@ export default function SettingsScreen() {
       setPosterTaglineDraft(pt);
     }
   }, [doctor]);
+  const [sharingPoster, setSharingPoster] = useState(false);
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
@@ -2112,6 +2117,89 @@ export default function SettingsScreen() {
       }
     };
 
+    const onSharePoster = async () => {
+      if (!profileUrl || sharingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't share poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setSharingPoster(true);
+      try {
+        if (Platform.OS === 'web') {
+          // Build the same canvas poster as onSavePoster, then try
+          // navigator.share with a File; fall back to download if unsupported.
+          const qrDataUrl: string = await new Promise((resolve, reject) => {
+            const ref = qrRef.current;
+            if (!ref || typeof ref.toDataURL !== 'function') { reject(new Error('QR not ready')); return; }
+            try { ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64)); } catch (err) { reject(err); }
+          });
+          const img = new (window as any).Image();
+          img.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('Failed to load QR')); img.src = qrDataUrl; });
+          const W = 720, H = 980;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas not supported');
+          ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#0E5A53'; ctx.fillRect(0, 0, W, 110);
+          ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
+          ctx.font = 'bold 34px Inter, Arial, sans-serif'; ctx.fillText('LINESETU', W / 2, 60);
+          ctx.font = '600 16px Inter, Arial, sans-serif'; ctx.fillText('Scan to book your token', W / 2, 92);
+          const qrSize = 460, qrX = (W - qrSize) / 2, qrY = 170;
+          ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#E5E7EB'; ctx.lineWidth = 2;
+          ctx.strokeRect(qrX - 18, qrY - 18, qrSize + 36, qrSize + 36);
+          ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+          ctx.fillStyle = '#0F172A'; ctx.font = 'bold 30px Inter, Arial, sans-serif';
+          ctx.fillText(doctor?.name || 'Doctor', W / 2, qrY + qrSize + 70);
+          if (clinicLine) { ctx.fillStyle = '#475569'; ctx.font = '500 20px Inter, Arial, sans-serif'; ctx.fillText(clinicLine, W / 2, qrY + qrSize + 102); }
+          ctx.fillStyle = '#0E7C73'; ctx.font = '700 14px Inter, Arial, sans-serif';
+          ctx.fillText('Scan with the LINESETU Patient App', W / 2, H - 36);
+          const dataUrl = canvas.toDataURL('image/png');
+          const fileName = `linesetu-${safeFileSlug}-qr.png`;
+          // Try Web Share API with file first (WhatsApp, etc.)
+          const canShare = typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function' && typeof (navigator as any).canShare === 'function';
+          if (canShare) {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if ((navigator as any).canShare({ files: [file] })) {
+              await (navigator as any).share({ files: [file], title: `${doctor?.name || 'Doctor'} – LINESETU QR Poster` });
+              return;
+            }
+          }
+          // Fallback: download
+          const a = document.createElement('a');
+          a.href = dataUrl; a.download = fileName;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else {
+          if (!captureRef) {
+            Alert.alert("Can't share poster", 'Image capture is not available in this build. Please use a development build.');
+            return;
+          }
+          await new Promise(r => setTimeout(r, 60));
+          const uri = await captureRef(posterShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+          if (!ExpoSharing || typeof ExpoSharing.shareAsync !== 'function') {
+            Alert.alert("Can't share poster", 'Sharing is not available in this build. Please use a development build.');
+            return;
+          }
+          const isAvailable = await ExpoSharing.isAvailableAsync();
+          if (!isAvailable) {
+            Alert.alert("Can't share poster", 'Sharing is not supported on this device.');
+            return;
+          }
+          await ExpoSharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share poster' });
+        }
+      } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (!/cancel/i.test(msg) && !/abort/i.test(msg)) {
+          Alert.alert("Couldn't share poster", msg || 'Please try again.');
+        }
+      } finally {
+        setSharingPoster(false);
+      }
+    };
+
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
@@ -2295,6 +2383,21 @@ export default function SettingsScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            {/* Share poster — opens OS share sheet (WhatsApp, email, AirDrop…) */}
+            <TouchableOpacity
+              onPress={onSharePoster}
+              disabled={!profileUrl || sharingPoster || !QRCode}
+              style={{ marginTop: 10, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(37,211,102,0.13)', borderWidth: 1, borderColor: 'rgba(37,211,102,0.38)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+            >
+              {sharingPoster ? (
+                <ActivityIndicator color="#25D366" size="small" />
+              ) : (
+                <>
+                  <Feather name="share-2" size={15} color="#25D366" />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#25D366' }}>Share poster</Text>
+                </>
+              )}
+            </TouchableOpacity>
             <Text style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 16 }}>
               Print at your clinic, share on WhatsApp, or post on social media.
             </Text>
