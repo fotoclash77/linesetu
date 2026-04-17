@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "event-source-polyfill": "^1.0.31",
+    "expo-camera": "^17.0.10",
     "expo-firebase-recaptcha": "^2.3.1",
     "expo-notifications": "^55.0.19",
     "firebase": "^12.12.0",

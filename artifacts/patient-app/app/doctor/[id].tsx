@@ -42,6 +42,7 @@ export default function DoctorDetailScreen() {
 
   // Real-time Firebase listener + REST API polling fallback
   const [doctorData, setDoctorData] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
   const firestoreActive = useRef(false);
 
   const fetchDoctorRest = useCallback(async () => {
@@ -51,12 +52,16 @@ export default function DoctorDetailScreen() {
       if (res.ok) {
         const data = await res.json();
         setDoctorData(data);
+        setNotFound(false);
+      } else if (res.status === 404) {
+        setNotFound(true);
       }
     } catch {}
   }, [id]);
 
   useEffect(() => {
     if (!id) return;
+    setNotFound(false);
 
     // Firebase real-time listener
     const ref = doc(db, "doctors", id);
@@ -66,6 +71,11 @@ export default function DoctorDetailScreen() {
         if (snap.exists()) {
           firestoreActive.current = true;
           setDoctorData({ id: snap.id, ...snap.data() });
+          setNotFound(false);
+        } else {
+          // Firestore confirmed the doc doesn't exist — verify with REST so we
+          // don't false-flag during permission/race issues.
+          fetchDoctorRest();
         }
       },
       () => {
@@ -112,6 +122,26 @@ export default function DoctorDetailScreen() {
 
   const currentToken = queueData?.currentToken ?? 0;
   const queueCount = queueData?.totalBooked ?? 0;
+
+  // Doctor not found (404 from API and Firestore confirms missing) — give the
+  // user a recoverable error instead of an indefinite spinner. This matters
+  // for QR-scan / shared-link entry points where the ID may be stale.
+  if (notFound && !doctorData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center", padding: 28 }}>
+        <View style={{ width: 76, height: 76, borderRadius: 22, backgroundColor: "rgba(248,113,113,0.12)", borderWidth: 1, borderColor: "rgba(248,113,113,0.4)", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+          <Feather name="user-x" size={32} color="#F87171" />
+        </View>
+        <Text style={{ fontSize: 18, fontWeight: "900", color: "#FFF", marginBottom: 8 }}>Doctor not found</Text>
+        <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", textAlign: "center", lineHeight: 19, marginBottom: 24 }}>
+          This profile no longer exists or the link is invalid. Try searching for the doctor instead.
+        </Text>
+        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)")} style={{ paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" }}>
+          <Text style={{ fontSize: 13, fontWeight: "800", color: "#FFF" }}>Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   // Only show spinner if no hints were passed AND Firebase hasn't responded yet
   // (e.g. direct URL navigation without list context)

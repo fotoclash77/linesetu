@@ -82,6 +82,7 @@ function RootLayoutNav() {
         <Stack.Screen name="help-faq" />
         <Stack.Screen name="contact-support" />
         <Stack.Screen name="doctor/[id]" />
+        <Stack.Screen name="scan-qr" />
         <Stack.Screen name="booking/[doctorId]" />
         <Stack.Screen name="payment" />
         <Stack.Screen name="queue/[tokenId]" />

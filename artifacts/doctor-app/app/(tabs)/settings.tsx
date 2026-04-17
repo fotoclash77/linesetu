@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
-  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking, Alert,
+  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking, Alert, Share,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as ImagePicker from 'expo-image-picker';
+import * as Clipboard from 'expo-clipboard';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
+
+// react-native-qrcode-svg renders the QR. Loaded defensively so a missing
+// install can't crash the whole settings screen.
+let QRCode: any = null;
+try { QRCode = require('react-native-qrcode-svg').default; } catch {}
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';
@@ -16,7 +22,7 @@ import { INDIA_STATES } from '../../constants/indiaLocations';
 const isWeb = Platform.OS === 'web';
 const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms';
+type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms' | 'shareProfile';
 
 interface ClinicData {
   name: string; address: string; phone: string; maps: string; active: boolean; state: string; district: string;
@@ -1704,6 +1710,110 @@ export default function SettingsScreen() {
     );
   }
 
+  // ── Share Profile QR ────────────────────────────────────────────────────
+  if (section === 'shareProfile') {
+    const profileUrl = doctor?.id ? `${BASE()}/patient-app/doctor/${doctor.id}` : '';
+    const shareTitle = doctor?.name ? `Book a token with ${doctor.name} on LINESETU` : 'Book a token on LINESETU';
+    const shareMessage = profileUrl
+      ? `${shareTitle}\n\n${profileUrl}\n\nScan or tap the link to view my profile and book your token.`
+      : '';
+    const onShare = async () => {
+      if (!profileUrl) return;
+      try {
+        await Share.share({ message: shareMessage, url: profileUrl, title: shareTitle });
+      } catch {}
+    };
+    const onCopy = async () => {
+      if (!profileUrl) return;
+      let ok = false;
+      try {
+        await Clipboard.setStringAsync(profileUrl);
+        ok = true;
+      } catch {
+        // Last-ditch web fallback (some browsers reject the async API).
+        if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
+          try {
+            await (navigator as any).clipboard.writeText(profileUrl);
+            ok = true;
+          } catch {}
+        }
+      }
+      Alert.alert(ok ? 'Copied' : "Couldn't copy", ok ? 'Profile link copied to clipboard' : 'Please copy the link manually.');
+    };
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Share Profile QR" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 18, lineHeight: 20, fontWeight: '500' }}>
+              Patients can scan this QR with the LINESETU Patient App to open your profile and book a token instantly. Print it at your clinic or share the link on WhatsApp, posters, or business cards.
+            </Text>
+
+            {/* QR card */}
+            <View style={[styles.formCard, { alignItems: 'center', paddingVertical: 24 }]}>
+              {profileUrl && QRCode ? (
+                <View style={{ padding: 16, backgroundColor: '#FFF', borderRadius: 18 }}>
+                  <QRCode
+                    value={profileUrl}
+                    size={220}
+                    backgroundColor="#FFFFFF"
+                    color="#060E12"
+                    ecl="H"
+                  />
+                </View>
+              ) : (
+                <View style={{ width: 252, height: 252, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                  {!profileUrl ? (
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Profile loading…</Text>
+                  ) : (
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center', paddingHorizontal: 16 }}>QR renderer unavailable on this build. Use the link below.</Text>
+                  )}
+                </View>
+              )}
+              <Text style={{ marginTop: 16, fontSize: 13, fontWeight: '800', color: '#FFF', textAlign: 'center' }}>
+                {doctor?.name || 'Your profile'}
+              </Text>
+              <Text style={{ marginTop: 4, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                Scan with the LINESETU Patient App
+              </Text>
+            </View>
+
+            {/* Link row */}
+            <Text style={styles.sectionLabel}>PROFILE LINK</Text>
+            <View style={[styles.formCard, { paddingVertical: 12 }]}>
+              <Text selectable style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600', lineHeight: 18 }}>
+                {profileUrl || '—'}
+              </Text>
+            </View>
+
+            {/* Action buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+              <TouchableOpacity
+                onPress={onCopy}
+                disabled={!profileUrl}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', opacity: profileUrl ? 1 : 0.5 }}
+              >
+                <Feather name="copy" size={15} color="#FFF" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Copy link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onShare}
+                disabled={!profileUrl}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: TEAL, borderWidth: 1, borderColor: TEAL_LT, opacity: profileUrl ? 1 : 0.5 }}
+              >
+                <Feather name="share-2" size={15} color="#FFF" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Share</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // ── Help & Support ──────────────────────────────────────────────────────
   if (section === 'help') {
     const faqs = [
@@ -2128,7 +2238,8 @@ export default function SettingsScreen() {
           <View style={styles.settingsGroup}>
             <SettingRow iconName="home" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Manage Clinics" sub={`${clinics.filter(c => c.active && c.name).length} clinics configured`} onPress={() => setSection('clinics')} />
             <SettingRow iconName="calendar" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="Schedule & Shifts" sub="Shift timings, days off & max tokens" onPress={() => setSection('schedule')} />
-            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} last />
+            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} />
+            <SettingRow iconName="grid" iconBg="rgba(245,158,11,0.12)" iconColor="#F59E0B" label="Share Profile QR" sub="QR code patients can scan to find you" onPress={() => setSection('shareProfile')} last />
           </View>
 
           {/* Bank */}
