@@ -149,19 +149,21 @@ router.post("/auth/doctor/verify-otp", async (req, res) => {
   console.log(`  OK: OTP verified for doctor [${key}]`);
 
   try {
-    // Look up doctor by phone (last 10 digits match)
+    // Look up doctor by phone (last 10 digits match).
+    // Deleted records are skipped so the same phone can sign up again as a
+    // brand-new doctor — old data stays archived in Firestore for the admin
+    // but is never re-attached to the new account.
     const snap = await getDocs(collection(db, Collections.DOCTORS));
     const normalized = key.replace(/\D/g, "").slice(-10);
     const match = snap.docs.find(d => {
-      const dp = (d.data().phone || "").replace(/\D/g, "").slice(-10);
+      const data = d.data();
+      if (data.isDeleted) return false;
+      const dp = (data.phone || "").replace(/\D/g, "").slice(-10);
       return dp === normalized;
     });
 
     if (match) {
       const matchData = match.data();
-      if (matchData.isDeleted) {
-        return res.status(403).json({ error: "Account has been deleted. Contact admin.", deleted: true });
-      }
       if (!matchData.isActive) {
         await updateDoc(doc(db, Collections.DOCTORS, match.id), { isActive: true });
       }
@@ -239,17 +241,17 @@ router.post("/auth/doctor/phone-login", async (req, res) => {
   const normalized = key.replace(/\D/g, "").slice(-10);
 
   try {
+    // Skip soft-deleted records — same phone can sign up fresh as a new doctor.
     const snap  = await getDocs(collection(db, Collections.DOCTORS));
     const match = snap.docs.find(d => {
-      const dp = (d.data().phone || "").replace(/\D/g, "").slice(-10);
+      const data = d.data();
+      if (data.isDeleted) return false;
+      const dp = (data.phone || "").replace(/\D/g, "").slice(-10);
       return dp === normalized;
     });
 
     if (match) {
       const matchData = match.data();
-      if (matchData.isDeleted) {
-        return res.status(403).json({ error: "Account has been deleted. Contact admin.", deleted: true });
-      }
       if (!matchData.isActive) {
         await updateDoc(doc(db, Collections.DOCTORS, match.id), { isActive: true });
       }
