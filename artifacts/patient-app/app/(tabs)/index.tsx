@@ -1,4 +1,5 @@
 import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { InitialsAvatar } from "@/components/InitialsAvatar";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -145,11 +146,17 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
       onPress={navToDoctor}
     >
       <View style={{ position: "relative", marginBottom: 10 }}>
-        <Image
-          source={{ uri: doc.photo }}
-          style={[styles.docPhoto, { borderColor: accent + "55", opacity: available ? 1 : 0.6 }]}
-          contentFit="cover"
-        />
+        {doc.photo ? (
+          <Image
+            source={{ uri: doc.photo }}
+            style={[styles.docPhoto, { borderColor: accent + "55", opacity: available ? 1 : 0.6 }]}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.docPhoto, { borderColor: accent + "66", backgroundColor: accent + "18", opacity: available ? 1 : 0.6, alignItems: "center", justifyContent: "center" }]}>
+            <InitialsAvatar name={doc.name} size={80} color={accent} />
+          </View>
+        )}
         <View style={styles.photoBadgeWrap}>
           <View style={styles.verifiedBadge}>
             <Feather name="check-circle" size={9} color="#06B6D4" />
@@ -388,7 +395,7 @@ export default function HomeScreen() {
     token: 1,
     exp: d.experience != null ? `${d.experience}+ Yrs` : "",
     patients: d.totalPatients != null ? formatCompactCount(d.totalPatients) : "",
-    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
+    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || null,
     isAvailable: d.isAvailable !== false,
   });
 

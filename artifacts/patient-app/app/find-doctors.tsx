@@ -1,4 +1,5 @@
 import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { InitialsAvatar } from "@/components/InitialsAvatar";
 import { INDIA_STATES } from "@/constants/indiaLocations";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -39,7 +40,7 @@ interface DoctorItem {
   token: number;
   exp: string;
   patients: string;
-  photo: string;
+  photo: string | null;
   accent: string;
   isAvailable?: boolean;
   locations?: { district: string; state: string }[];
@@ -76,11 +77,17 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       style={({ pressed }) => [styles.listCard, { opacity: pressed ? 0.88 : 1 }]}
       onPress={navToDoctor}
     >
-      <Image
-        source={{ uri: doc.photo }}
-        style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
-        contentFit="cover"
-      />
+      {doc.photo ? (
+        <Image
+          source={{ uri: doc.photo }}
+          style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[styles.listPhoto, { borderColor: doc.accent + "66", backgroundColor: doc.accent + "18", opacity: available ? 1 : 0.55, alignItems: "center", justifyContent: "center" }]}>
+          <InitialsAvatar name={doc.name} size={44} color={doc.accent} />
+        </View>
+      )}
       <View style={styles.listInfo}>
         <View style={styles.listNameRow}>
           <Text style={styles.listName} numberOfLines={1}>{doc.name.startsWith("Dr") ? doc.name : `Dr. ${doc.name}`}</Text>
@@ -220,7 +227,7 @@ export default function FindDoctorsScreen() {
     exp: d.experience != null ? `${d.experience} yrs` : "—",
     patients: d.totalPatients != null ? `${d.totalPatients}+` : "—",
     locations: (() => { const cs = (d as any).clinics; if (!Array.isArray(cs)) return []; const actives = cs.filter((c: any) => c.active && c.name?.trim() && (c.state || c.district)); return actives.length ? actives.map((c: any) => ({ district: c.district || '', state: c.state || '' })) : (cs[0] && (cs[0].state || cs[0].district) ? [{ district: cs[0].district || '', state: cs[0].state || '' }] : []); })(),
-    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
+    photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || null,
     isAvailable: d.isAvailable !== false,
   }));
 
