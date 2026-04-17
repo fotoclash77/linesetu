@@ -1,0 +1,121 @@
+You are a senior React Native (Expo) engineer.
+
+Fix a critical UI/UX issue in my LINESETU Patient App.
+
+---
+
+# 🚨 PROBLEM
+
+In the Patient App:
+
+- When navigating between screens OR going back,
+- A **white flash screen appears for a split second**
+- Then the actual screen loads
+
+This creates a bad UX.
+
+👉 Doctor App does NOT have this issue — it works smoothly.
+
+---
+
+# 🎯 GOAL
+
+Fix this **white flash transition issue completely in ONE PASS**.
+
+No partial fixes. No trial-and-error.
+
+---
+
+# 🔍 ROOT CAUSE AREAS TO CHECK
+
+You must inspect and fix ALL possible causes:
+
+1. Navigation container background
+2. Screen container styles
+3. Stack navigator settings
+4. Default screen background color
+5. SafeAreaView / View wrappers
+6. Async loading delays
+7. Layout re-render flickers
+
+---
+
+# ✅ REQUIRED FIXES
+
+## 1. SET GLOBAL BACKGROUND COLOR
+
+Ensure everywhere:
+
+- backgroundColor is consistent (NOT white)
+- Use app theme background (light blue / app color)
+
+Apply to:
+- NavigationContainer
+- All screens root View
+- SafeAreaView
+
+---
+
+## 2. FIX STACK NAVIGATOR
+
+Use proper config:
+
+- animationEnabled: true
+- presentation: 'card'
+- headerShown: false (if needed)
+
+AND ensure:
+
+- No blank screen renders before screen loads
+
+---
+
+## 3. REMOVE EMPTY INITIAL RENDERS
+
+- Avoid returning null or empty View before data loads
+- Add proper loading state with background color
+
+---
+
+## 4. PREVENT RE-RENDER FLASH
+
+- Avoid unnecessary state resets
+- Use useMemo / useCallback where needed
+- Ensure screen mounts smoothly
+
+---
+
+## 5. MATCH DOCTOR APP CONFIG
+
+👉 Compare with Doctor App navigation setup
+
+- Copy working navigation structure
+- Ensure consistency
+
+---
+
+## ⚡ STRICT INSTRUCTION
+
+- Do NOT rewrite whole app
+- Do NOT experiment multiple times
+- Identify root cause and fix in ONE implementation
+
+---
+
+# 🎯 FINAL RESULT REQUIRED
+
+- Smooth transitions
+- No white flash
+- Native-like navigation experience
+
+---
+
+# 📁 TARGET
+
+Only fix Patient App navigation and screen rendering.
+
+Doctor App should remain untouched.
+
+---
+
+Deliver clean, production-ready fix.
