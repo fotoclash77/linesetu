@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -49,6 +49,16 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom + 16;
+
+  useEffect(() => {
+    if (!isWeb) return;
+    const styleId = "hide-recaptcha-badge";
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = ".grecaptcha-badge { visibility: hidden !important; width: 0 !important; height: 0 !important; }";
+    document.head.appendChild(style);
+  }, []);
 
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [step, setStep] = useState<"phone" | "otp">("phone");
