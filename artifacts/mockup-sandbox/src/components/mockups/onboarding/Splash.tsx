@@ -4,13 +4,8 @@ export default function Splash() {
     <div style={{ minHeight: "100vh", backgroundColor: "#060E12", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", backgroundColor: "rgba(13,148,136,0.18)", top: "15%", left: "50%", transform: "translateX(-50%)" }} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, zIndex: 1 }}>
-        <div style={{ width: 140, height: 140, borderRadius: 30, background: "rgba(13,148,136,0.15)", border: "1.5px solid rgba(13,148,136,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, boxShadow: "0 0 40px rgba(13,148,136,0.35)" }}>
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <rect x="8" y="8" width="56" height="56" rx="14" fill="rgba(13,148,136,0.2)" stroke="rgba(45,212,191,0.4)" strokeWidth="1.5"/>
-            <rect x="18" y="28" width="36" height="4" rx="2" fill="#2DD4BF" opacity="0.9"/>
-            <rect x="18" y="36" width="26" height="4" rx="2" fill="#2DD4BF" opacity="0.6"/>
-            <rect x="18" y="44" width="16" height="4" rx="2" fill="#2DD4BF" opacity="0.35"/>
-          </svg>
+        <div style={{ width: 240, height: 240, borderRadius: 40, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, boxShadow: "0 0 40px rgba(13,148,136,0.18)", overflow: "hidden" }}>
+          <img src="/assets/2_1776397970805.png" alt="Doctor logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <div style={{ fontSize: 34, fontWeight: 900, color: "#fff", letterSpacing: -1, marginBottom: 8 }}>LINESETU</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
