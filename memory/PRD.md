@@ -53,12 +53,13 @@ User built LINESETU (healthcare queue management) app on Replit.com and needed A
   - Logs deletion activity to `adminLogs` collection
   - Phone number is freed for new registration
 
-**Frontend (admin-panel):**
-- `App.tsx` — Tab navigation (Doctors / Patients)
-- `PatientsPage.tsx` — Patient list with search, filter tabs, stats cards
-- `PatientRow.tsx` — Patient row with red delete button + confirmation modal
-- `usePatients.ts` — Real-time Firestore listener for patients collection
-- `adminService.ts` — Added `deletePatient()` and `listPatients()` API calls
+**Frontend (admin-panel & Emergent preview):**
+- Tab navigation (Doctors / Patients) in header
+- PatientsPage with search, filter tabs (All/Complete/Incomplete), stat cards
+- PatientRow with red delete button + confirmation modal + success message
+- Real-time Firestore listener for patients collection
+- Also ported to Emergent React frontend for live preview at port 3000
+- FastAPI backend on port 8001 proxies API calls to Express server on port 8002
 
 ## Prioritized Backlog
 - P0: Test APKs on real devices, verify login/OTP flow
