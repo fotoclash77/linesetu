@@ -58,11 +58,6 @@ export function Welcome1() {
                     <div className="text-[13px] font-bold text-white truncate">{doc.name}</div>
                     <div className="text-[11px] text-white/40 font-medium">{doc.spec}</div>
                   </div>
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <span className="text-[10px] text-yellow-400">★</span>
-                    <span className="text-[11px] font-bold text-white/70">{doc.rating}</span>
-                  </div>
                 </div>
 
                 {/* Bottom row */}
