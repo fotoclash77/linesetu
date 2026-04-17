@@ -38,7 +38,7 @@ export function Splash() {
             <img
               src="https://d8479a8d-fa68-4a0e-9145-0243e19272df-00-aspsb1pq2zqb.spock.replit.dev/__mockup/assets/patient-logo.png"
               alt="LINESETU Patient App"
-              style={{ width: 140, height: 140, objectFit: "contain" }}
+              style={{ width: 180, height: 180, objectFit: "contain" }}
             />
           </div>
 
