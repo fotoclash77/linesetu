@@ -37,7 +37,6 @@ function activeClinicOnly(data: any): any {
 
 // GET /api/doctors — list all active, approved, non-deleted doctors (for patient app)
 router.get("/doctors", async (req, res) => {
-  res.setHeader("Cache-Control", "no-store");
   try {
     const q = query(
       collection(db, Collections.DOCTORS),

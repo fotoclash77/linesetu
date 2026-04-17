@@ -7,6 +7,11 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Disable Express's automatic ETag generation so clients (especially React
+// Native) never receive a 304 Not Modified with an empty body. All API data
+// comes from Firestore and should always return a fresh 200 response.
+app.disable("etag");
+
 app.use(
   pinoHttp({
     logger,
