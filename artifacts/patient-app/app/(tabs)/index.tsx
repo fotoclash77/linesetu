@@ -366,7 +366,7 @@ export default function HomeScreen() {
       ? formatWait(Number(d.estimatedWaitMins ?? d.waitMinutes ?? d.waitMins))
       : "~",
     token: 1,
-    exp: d.experience != null ? `${d.experience}` : "",
+    exp: d.experience != null ? `${d.experience}+ Yrs` : "",
     patients: d.totalPatients != null ? formatCompactCount(d.totalPatients) : "",
     photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
