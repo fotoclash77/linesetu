@@ -345,8 +345,8 @@ export default function BookingsScreen() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
     enabled: !!patient?.id,
-    refetchInterval: 10_000,
-    staleTime: 5_000,
+    refetchInterval: 2_000,
+    staleTime: 0,
   });
 
   const { data: doctorsData } = useQuery({
