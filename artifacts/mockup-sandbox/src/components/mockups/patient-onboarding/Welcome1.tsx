@@ -17,22 +17,6 @@ export function Welcome1() {
         {/* Content */}
         <div className="flex-1 flex flex-col px-6 pt-6 pb-6">
 
-          {/* Icon badge */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #4F46E5, #6366F1)" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="4" width="18" height="16" rx="3" stroke="white" strokeWidth="1.8" />
-                <path d="M8 4V2M16 4V2M3 9h18" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M8 14h2M12 14h4M8 17h2M12 17h2" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-[#818CF8] tracking-[2px]">FEATURE 01</div>
-              <div className="text-[12px] text-white/40 font-medium">How it works</div>
-            </div>
-          </div>
-
           {/* Heading */}
           <h2 className="text-[28px] font-black text-white leading-tight mb-2">
             Book a Token<br />
