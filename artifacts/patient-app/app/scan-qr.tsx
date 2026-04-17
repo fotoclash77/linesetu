@@ -30,30 +30,33 @@ try {
 
 /**
  * Parse a scanned QR payload and extract a doctor ID if it points to a
- * LINESETU doctor profile. Returns null for any payload that isn't a
- * recognised LINESETU doctor link — we deliberately reject arbitrary URLs
- * and bare IDs so unrelated QR codes don't get treated as valid links.
+ * LINESETU doctor profile.
  *
  * Accepted shapes:
- *   - patient-app://doctor/{id}                       (app deep link)
- *   - https://<host>/patient-app/doctor/{id}          (universal/web link)
- *   - https://<host>/patient-app/doctor/{id}?...      (with query/hash)
+ *   - linesetu://doctor/{id}                          (brand deep link)
+ *   - patient-app://doctor/{id}                       (app scheme deep link)
+ *   - https://<host>/patient-app/doctor/{id}[?...]    (universal/web link)
+ *   - {id}                                            (bare Firestore-style ID)
  *
- * Doctor IDs are Firestore document IDs (20 chars, alphanumeric).
+ * Firestore IDs are alphanumeric. We require >= 12 chars on the bare form to
+ * keep stray text from being treated as a doctor ID, while still accepting
+ * the full real-world ID range.
  */
 function parseDoctorIdFromQr(raw: string | undefined | null): string | null {
   if (!raw) return null;
   const data = String(raw).trim();
   if (!data) return null;
 
-  // App deep-link: patient-app://doctor/<id>
-  const schemeMatch = data.match(/^patient-app:\/\/doctor\/([A-Za-z0-9]{16,32})(?:[/?#]|$)/);
+  // App deep-links: linesetu://doctor/<id>  OR  patient-app://doctor/<id>
+  const schemeMatch = data.match(/^(?:linesetu|patient-app):\/\/doctor\/([A-Za-z0-9_-]+)(?:[/?#]|$)/i);
   if (schemeMatch) return schemeMatch[1];
 
-  // Universal/web link: must include the LINESETU patient-app base path.
-  // This rejects unrelated /doctor/... URLs from other sites.
-  const httpsMatch = data.match(/^https?:\/\/[^/]+\/patient-app\/doctor\/([A-Za-z0-9]{16,32})(?:[/?#]|$)/);
+  // Universal/web link: https://<host>/patient-app/doctor/<id>
+  const httpsMatch = data.match(/^https?:\/\/[^/]+\/patient-app\/doctor\/([A-Za-z0-9_-]+)(?:[/?#]|$)/i);
   if (httpsMatch) return httpsMatch[1];
+
+  // Bare Firestore-style ID fallback.
+  if (/^[A-Za-z0-9_-]{12,40}$/.test(data)) return data;
 
   return null;
 }
