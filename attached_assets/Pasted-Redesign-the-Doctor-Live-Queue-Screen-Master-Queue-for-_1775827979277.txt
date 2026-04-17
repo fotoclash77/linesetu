@@ -1,0 +1,159 @@
+Redesign the **Doctor Live Queue Screen (Master Queue)** for the LINESETU doctor mobile app.
+
+This is the **MOST CRITICAL screen** of the entire system.
+It must be **fast, highly responsive, analytical, and extremely easy to operate in real clinic conditions**.
+
+---
+
+## 🎯 Core Goal:
+
+👉 Enable doctor to manage entire queue in **real-time with zero confusion**
+👉 All actions must be possible within **1–2 taps**
+
+---
+
+## 🔝 SECTION 1: CURRENT STATUS (STICKY TOP)
+
+* Display:
+
+  * “Currently Consulting Token #X”
+  * Patient Name (current)
+
+* Real-time auto-updating
+
+* Add small indicators:
+
+  * Total waiting patients
+  * Avg wait time
+
+---
+
+## 📋 SECTION 2: MASTER LIVE QUEUE (MAIN AREA)
+
+Scrollable glass list of patients:
+
+Each patient row must include:
+
+* Token Number (large & bold)
+
+* Patient Name
+
+* Age
+
+* Phone Number
+
+* Address (shortened)
+
+* Type Badge:
+
+  * Walk-in / Online
+
+* Status badge:
+
+  * Waiting / Skipped / Completed
+
+---
+
+## ⚡ ACTION BUTTONS (PER PATIENT)
+
+Each row must have:
+
+* Call Button (Primary highlight)
+* Done (Mark Completed)
+* Not Shown (Mark as skipped)
+
+Buttons must be:
+
+* Large
+* Clearly color-coded
+* Easy to tap quickly
+
+---
+
+## 🚨 SECTION 3: EMERGENCY LIST (SEPARATE)
+
+* Separate section above or toggle tab
+* Fetch emergency patients (if enabled from patient side in future)
+
+Each row:
+
+* Highlighted (red accent)
+* Same info as queue
+
+---
+
+## ⚙️ SECTION 4: QUICK CONTROLS (FLOATING / STICKY)
+
+Bottom or floating panel:
+
+* Call Next Patient (Primary button)
+* Pause Queue / Resume
+* Add Walk-in
+
+---
+
+## 📊 ANALYTICAL ELEMENTS (IMPORTANT)
+
+Show small insights:
+
+* Total patients today
+* Waiting count
+* Completed count
+* Skipped count
+
+Optional:
+
+* Avg consultation time
+
+---
+
+## 🎨 UI DESIGN REQUIREMENTS
+
+* Dark Glassmorphic UI
+* Clean layered cards
+* Smooth blur effects
+* High contrast text
+
+---
+
+## ⚡ UX REQUIREMENTS
+
+* One-hand usability
+* Instant readability
+* No clutter
+* Fast scrolling
+* Sticky important elements (top + bottom)
+
+---
+
+## 💎 COMPONENTS
+
+* QueueRowCard
+* ActionButtonsGroup
+* StatusBadge
+* EmergencyCard
+* FloatingControls
+* StatsMiniCards
+
+---
+
+## 🚫 AVOID
+
+* Small buttons
+* Deep navigation
+* Complex layouts
+* Hidden actions
+
+---
+
+## 🎯 FINAL GOAL
+
+Design should feel like:
+
+👉 A real-time clinic command center
+👉 Extremely fast and practical
+👉 Doctor should operate without thinking
+
+---
+
+Build complete UI with reusable components accordingly.

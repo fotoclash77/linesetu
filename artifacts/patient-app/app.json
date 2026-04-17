@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "LINESETU",
+    "slug": "patient-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "patient-app",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E1A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "userInterfaceStyle": "dark"
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0A0E1A"
+    },
+    "androidNavigationBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0A0E1A"
+    },
+    "android": {
+      "package": "com.linesetu.patientapp",
+      "userInterfaceStyle": "dark",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#0A0E1A"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png",
+      "baseUrl": "/patient-app"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#6366F1",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/patient-app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "110d3cf2-8e37-4a41-b188-15c20c468716"
+      }
+    },
+    "owner": "linesetu76"
+  }
+}

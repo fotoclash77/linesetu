@@ -1,0 +1,147 @@
+Implement E-Token Earnings and Refund System for LINESETU (Doctor App + Backend)
+
+Core Logic:
+
+- Whenever a patient books an E-Token (online booking), the platform fee must be charged and immediately recorded as "earning" for the doctor.
+- This earning is independent of whether the doctor marks the patient as completed or not.
+- ALL e-token bookings are considered earnings by default.
+
+Refund Logic:
+
+- If the doctor marks a patient as "Skipped" in the queue, then a button "Cancel / Refund" must be available.
+- When doctor clicks "Cancel / Refund":
+  - The earning must be reversed
+  - Transaction must be marked as "refunded"
+- Refund should only be allowed once (prevent duplicate refunds)
+
+Important Rule:
+Earnings = All E-Token Bookings – Refunds initiated by doctor from "Skipped"
+
+Walk-in bookings:
+- Do NOT generate any earnings or transactions
+
+---
+
+Firestore Structure:
+
+Collection: transactions/{transactionId}
+
+Fields:
+- clinicId
+- doctorId
+- bookingId
+- patientName
+- tokenNumber
+- amount
+- type ("earning" | "refund" | "abandoned")
+- status ("earned" | "refunded")
+- source ("online")
+- shift
+- bookingDate
+- createdAt
+- updatedAt
+
+Update bookings/{bookingId}:
+- paymentStatus ("paid" | "refunded")
+- transactionId
+
+---
+
+Transaction Logic:
+
+1. On E-Token Booking:
+- Create booking
+- Create transaction:
+  type = "earning"
+  status = "earned"
+
+2. On Refund (from Skipped):
+- Update booking:
+  paymentStatus = "refunded"
+- Update transaction:
+  type = "refund"
+  status = "refunded"
+
+3. Abandoned (optional):
+- If payment not completed:
+  type = "abandoned"
+
+---
+
+Doctor App Feature:
+
+Add a separate tab under this screen:
+👉 "My Earnings / Transactions"
+
+---
+
+Transactions Screen UI:
+
+List all e-token transactions with:
+
+- Patient Name
+- Token Number
+- Amount (₹)
+- Type:
+  - Booking (earning)
+  - Refund (doctor skipped)
+  - Abandoned
+- Status:
+  - Earned
+  - Refunded
+- Date
+- Shift
+
+---
+
+Filters:
+
+- All
+- Earnings
+- Refunds
+- Abandoned
+
+---
+
+Summary (Top Section):
+
+- Today Earnings
+- Total Earnings
+- Total Refunds
+
+---
+
+Queue Integration:
+
+In "Skipped" section:
+- Add button: "Cancel / Refund"
+
+On click:
+- Trigger refund logic
+- Update transaction
+- Reflect instantly in earnings tab (real-time)
+
+---
+
+Real-Time Requirement:
+
+- Transactions must update in real-time
+- Refunds should instantly reflect in UI
+
+---
+
+Edge Cases:
+
+- Prevent multiple refunds
+- Refund only if paymentStatus == "paid"
+- Walk-in bookings must not appear in transactions
+- Ensure transaction and booking always stay in sync
+
+---
+
+Final Goal:
+
+- Every E-Token = earning by default
+- Only doctor-initiated refund reduces earning
+- Doctor gets full transparency of income and refunds
+- System works in real-time with queue integration

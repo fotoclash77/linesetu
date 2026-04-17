@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/doctor-onboarding/"
+title = "LINESETU Doctor Onboarding"
+version = "1.0.0"
+id = "artifacts/doctor-onboarding"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/doctor-onboarding/" ]
+localPort = 19222
+
+[services.development]
+run = "pnpm --filter @workspace/doctor-onboarding run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/doctor-onboarding", "run", "build" ]
+publicDir = "artifacts/doctor-onboarding/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19222"
+BASE_PATH = "/doctor-onboarding/"

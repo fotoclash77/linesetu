@@ -1,0 +1,33 @@
+14 - Doctor Fees, Earnings & Payout Requests
+What & Why
+The doctor sets their own token fees (online normal, emergency, walk-in) from Settings → Fee Structure. These rates should drive the live rate card on the Earnings screen, and the doctor should be able to request a payout (withdraw) directly from the Earnings screen. Payout requests are stored in Firebase so that an Admin Panel (planned for later) can approve or reject them without any code changes.
+
+Done looks like
+Settings → Fee Structure has three editable sliders/inputs: Online E-Token fee (₹0–₹3000), Emergency token fee (₹0–₹3000), Walk-in fee (₹0–₹3000). All three save to and live-sync from Firebase (consultFee, emergencyFee, walkinFee on the doctor document).
+The Rate Card on the Earnings screen reads those three live values from the doctor's Firebase document instead of hardcoded numbers. The breakdown shows "X tokens × ₹Y/token" using the real rates.
+A pendingPayout field on the doctor document accumulates earned amounts. It is incremented by the API when a token is marked done (using the doctor's rates at that moment) and decremented when a payout request is submitted.
+The Withdraw button on the Earnings screen opens a modal: shows pending balance, asks for UPI ID, lets doctor confirm. Submitting creates a payoutRequests/{id} document in Firestore with fields doctorId, amount, upiId, requestedAt, status: "pending", and doctorName (for admin lookup later).
+The Payouts tab on the Earnings screen shows a real-time list of the doctor's own payout requests fetched from Firestore, with correct status badges: Pending (yellow), Approved (green), Rejected (red).
+The API has a POST /api/doctors/:id/payouts endpoint to create a payout request and a GET /api/doctors/:id/payouts endpoint to list them. Both leave clean paths for the Admin Panel to add GET /api/admin/payouts and PATCH /api/admin/payouts/:id later.
+Out of scope
+Admin Panel (planned for later — do not build any admin UI now)
+Actual bank transfer or Razorpay payout disbursement (status updates will be done manually by admin later)
+Walk-in fee being charged to patients via Razorpay (walk-in tokens are currently free at booking; fee shown for doctor's own reference only)
+Tasks
+Fee Structure settings — add Walk-in fee — Add walkinFee state, a slider from 0–3000, and save it alongside consultFee/emergencyFee in the Settings Fee Structure section. Update DoctorContext to expose walkinFee. Update the API's PATCH allowed fields to include walkinFee.
+
+Live rate card + earnings calculation — Replace all hardcoded ₹10/₹20 values in the Earnings screen with doctor.consultFee, doctor.emergencyFee, and doctor.walkinFee read from Firebase via DoctorContext. Earnings breakdowns recalculate using those live rates.
+
+pendingPayout tracking — When a token is marked done via the API (PATCH /api/tokens/:id with status=done), add to pendingPayout on the doctor document using the doctor's current rates. Initialise pendingPayout to 0 on doctors that don't have it yet.
+
+Payout request API — Add POST /api/doctors/:id/payouts (creates Firestore payoutRequests doc) and GET /api/doctors/:id/payouts (lists them ordered by requestedAt desc). Structure the collection to be admin-ready: include doctorName, status, upiId.
+
+Withdraw modal + real Payouts tab — Wire the Withdraw button on the Earnings screen to a modal that shows the pendingPayout balance, collects a UPI ID, and calls the new API endpoint. After success, decrement pendingPayout on the doctor doc. Replace the static "Done" payout history with a real-time React Query fetch from GET /api/doctors/:id/payouts with status-coloured badges.
+
+Relevant files
+artifacts/doctor-app/app/(tabs)/settings.tsx
+artifacts/doctor-app/app/(tabs)/earnings.tsx
+artifacts/doctor-app/contexts/DoctorContext.tsx
+artifacts/api-server/src/routes/doctors.ts
+artifacts/api-server/src/routes/tokens.ts
+artifacts/api-server/src/lib/firebase.ts

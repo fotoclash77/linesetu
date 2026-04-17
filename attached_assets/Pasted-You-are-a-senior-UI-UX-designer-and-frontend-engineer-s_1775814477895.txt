@@ -1,0 +1,334 @@
+You are a senior UI/UX designer and frontend engineer specializing in modern SaaS products.
+
+Your task is to design a **premium, industry-grade Glassmorphic Light Theme UI** for a complete SaaS system:
+
+👉 App Name: **LINESETU**
+👉 Product: Smart Queue & Token Management System for Clinics
+
+You must design THREE interfaces:
+
+1. Patient Mobile App (React Native - Expo)
+2. Doctor Mobile App (React Native - Expo)
+3. Admin Web Panel (React + Tailwind CSS)
+
+⚠️ IMPORTANT:
+
+* Focus ONLY on UI/UX design (no backend logic)
+* Output should be production-ready component structure and layout
+* Maintain consistency across all platforms
+* STRICT RULE: Avoid dark colors, dark theme, or dark mode completely
+* Take inspiration from modern, premium apps (Stripe, Apple, Notion, Zocdoc, etc.)
+* Design must feel like a funded startup product
+
+---
+
+## 💰 PAYMENT LOGIC (REFLECT IN UI)
+
+* Platform Fee (₹10) → charged inside the app during booking
+* Appointment Booking happens in app
+* Consultation Fee → paid at clinic (NOT inside app)
+
+👉 Clearly show this separation in UI:
+
+* Booking screen must show:
+
+  * Platform Fee
+  * Clinic Consultation Fee (label: "Pay at clinic")
+
+---
+
+## 🎨 GLOBAL DESIGN SYSTEM (MANDATORY)
+
+### Theme: Glassmorphic Light UI
+
+Use:
+
+* Soft white / pastel backgrounds
+* Frosted glass cards
+* Subtle blur (backdrop-blur)
+* Light transparency (rgba whites)
+* Smooth shadows
+* Thin borders
+
+### Color Palette:
+
+* Primary: #4F46E5 (Indigo)
+* Secondary: #22C55E (Green)
+* Accent: #06B6D4 (Cyan)
+* Background: #F8FAFC
+* Glass: rgba(255,255,255,0.6 – 0.8)
+
+### Effects:
+
+* backdrop-blur-md / lg
+* soft shadow layers
+* rounded-2xl / rounded-3xl
+* gradient highlights
+
+---
+
+## ✨ DESIGN PRINCIPLES
+
+* Minimal
+* Clean
+* High readability
+* Mobile-first
+* Floating UI (glass cards)
+* Smooth spacing (8pt grid)
+* Premium feel
+
+---
+
+# 📱 1. PATIENT MOBILE APP (LINESETU)
+
+### Navigation:
+
+Bottom Tabs:
+
+* Home
+* My Bookings
+* Profile
+
+---
+
+## Screens:
+
+### 1. Login Screen
+
+* Center glass card
+* Branding: LINESETU logo
+* Clean input + CTA
+
+---
+
+### 2. Home Screen
+
+Top:
+
+* Greeting ("Hello 👋")
+* Glass search bar
+
+Doctor Cards (Glass UI):
+Each card must include:
+
+* Doctor Name (bold)
+* Specialization
+* Clinic Name
+* Location
+* Live Token Running (badge)
+* Estimated Wait Time
+* CTA: "Get Token"
+
+---
+
+### 3. Doctor Detail Screen
+
+* Glass header card
+* Doctor + clinic info
+* Queue preview
+* CTA button
+
+---
+
+### 4. Booking Screen
+
+Glass summary card showing:
+
+* Next token number
+* People ahead
+* Platform Fee (₹10)
+* Consultation Fee (Pay at clinic)
+
+CTA: Confirm Booking
+
+---
+
+### 5. Payment Screen
+
+* Only show Platform Fee
+* Clean payment UI
+
+---
+
+### 6. Live Queue Screen (VERY IMPORTANT)
+
+* Large Current Token display
+* User token highlighted
+* People ahead
+* Status indicator
+
+Design:
+
+* Center aligned
+* Bold typography
+* Glass panels
+
+---
+
+### 7. My Bookings
+
+* Tabs: Active / Completed
+* Card layout
+
+---
+
+### 8. Profile
+
+* Avatar
+* Basic info
+* Settings
+
+---
+
+# 📱 2. DOCTOR MOBILE APP
+
+### Focus:
+
+Speed + clarity (clinic environment)
+
+---
+
+## Screens:
+
+### 1. Login
+
+---
+
+### 2. Dashboard
+
+Glass cards:
+
+* Total patients
+* Active queue
+* Completed
+
+---
+
+### 3. MASTER QUEUE SCREEN (CORE)
+
+List of patients:
+
+* Token number (large)
+* Name
+* Type badge (online / walk-in)
+
+Top section:
+
+* Current running token
+
+Bottom floating buttons:
+
+* Call Next
+* Complete
+* Skip
+
+---
+
+### 4. Add Walk-in
+
+* Glass form
+* Name + Phone
+
+---
+
+### 5. Settings
+
+* Fee input
+* Toggle booking ON/OFF
+* Clinic settings
+
+---
+
+# 💻 3. ADMIN WEB PANEL
+
+### Layout:
+
+* Glass sidebar
+* Top navbar
+* Card-based content
+
+---
+
+## Pages:
+
+### Dashboard
+
+* Metrics cards
+* Charts
+
+---
+
+### Clinics Management
+
+* Table + glass modal
+
+---
+
+### Doctors Management
+
+* Assign UI
+
+---
+
+### Booking Monitor
+
+* Table with filters
+
+---
+
+### Revenue Dashboard
+
+* Platform earnings
+
+---
+
+### Transactions
+
+* Clean table
+
+---
+
+## 💎 COMPONENT SYSTEM
+
+Create reusable components:
+
+* GlassCard
+* GlassButton
+* InputField
+* Badge
+* Modal
+* Tabs
+* List Items
+
+---
+
+## 📐 TYPOGRAPHY & SPACING
+
+* Font: Inter / modern sans-serif
+* 8px spacing system
+* Clear hierarchy
+
+---
+
+## 🚫 STRICTLY AVOID
+
+* Dark theme
+* Dark UI elements
+* Heavy shadows
+* Clutter
+* Over-design
+
+---
+
+## 🎯 FINAL GOAL
+
+Design should look like:
+
+👉 A premium startup app (LINESETU)
+👉 Inspired by top global products
+👉 Clean, minimal, modern
+👉 Beautiful glassmorphism but highly usable
+
+---
+
+Build all screens and reusable UI components accordingly.

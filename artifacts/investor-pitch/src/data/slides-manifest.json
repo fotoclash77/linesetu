@@ -1,0 +1,58 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Cover.tsx",
+    "title": "Cover",
+    "description": "LINESETU brand cover with tagline and key stats",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Problem.tsx",
+    "title": "The Problem",
+    "description": "47-minute average wait time and the chaos of unmanaged clinic queues",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3Solution.tsx",
+    "title": "The Solution",
+    "description": "Three-app platform overview: Patient App, Doctor App, Admin Panel",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4BusinessModel.tsx",
+    "title": "Business Model",
+    "description": "Per-token platform fee model — Normal and Emergency tokens",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5Market.tsx",
+    "title": "Market Opportunity",
+    "description": "India's 13.5L doctors, 8.5L clinics, and 3B+ OPD visits annually",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Roadmap.tsx",
+    "title": "Traction & Roadmap",
+    "description": "6-week build-to-production milestone plan",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7TheAsk.tsx",
+    "title": "The Ask",
+    "description": "Pre-seed funding ask and use of funds breakdown",
+    "speakerNotes": ""
+  }
+]

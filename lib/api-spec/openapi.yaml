@@ -1,0 +1,655 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: LINESETU Queue Management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: doctors
+  - name: patients
+  - name: tokens
+  - name: queues
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /doctors:
+    get:
+      operationId: listDoctors
+      tags: [doctors]
+      summary: List active doctors
+      responses:
+        "200":
+          description: List of doctors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  doctors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Doctor"
+                required: [doctors]
+    post:
+      operationId: createDoctor
+      tags: [doctors]
+      summary: Register a doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDoctorInput"
+      responses:
+        "201":
+          description: Doctor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+
+  /doctors/{doctorId}:
+    get:
+      operationId: getDoctor
+      tags: [doctors]
+      summary: Get doctor by ID
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Doctor data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+        "404":
+          description: Not found
+
+  /doctors/{doctorId}/earnings:
+    get:
+      operationId: getDoctorEarnings
+      tags: [doctors]
+      summary: Get doctor earnings
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Earnings list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  earnings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DailyEarning"
+                required: [earnings]
+
+  /patients:
+    post:
+      operationId: registerPatient
+      tags: [patients]
+      summary: Register or find patient by phone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+              required: [phone]
+      responses:
+        "200":
+          description: Existing patient found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "201":
+          description: New patient created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+
+  /patients/{patientId}:
+    get:
+      operationId: getPatient
+      tags: [patients]
+      summary: Get patient by ID
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Patient data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+
+  /patients/{patientId}/tokens:
+    get:
+      operationId: getPatientTokens
+      tags: [patients]
+      summary: Get patient booking history
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Token"
+                required: [tokens]
+
+  /tokens:
+    get:
+      operationId: listTokens
+      tags: [tokens]
+      summary: List tokens with filters
+      parameters:
+        - name: doctorId
+          in: query
+          schema:
+            type: string
+        - name: patientId
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Token"
+                required: [tokens]
+    post:
+      operationId: bookToken
+      tags: [tokens]
+      summary: Book a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookTokenInput"
+      responses:
+        "201":
+          description: Token booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+
+  /tokens/{tokenId}:
+    get:
+      operationId: getToken
+      tags: [tokens]
+      summary: Get token by ID
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+
+  /tokens/{tokenId}/cancel:
+    patch:
+      operationId: cancelToken
+      tags: [tokens]
+      summary: Cancel a token
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                required: [id, status]
+
+  /queues/{doctorId}:
+    get:
+      operationId: getLiveQueue
+      tags: [queues]
+      summary: Get live queue for a doctor
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: shift
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Queue"
+
+  /queues/{doctorId}/position/{tokenId}:
+    get:
+      operationId: getQueuePosition
+      tags: [queues]
+      summary: Get patient position in queue
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Queue position
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueuePosition"
+
+  /razorpay/create-order:
+    post:
+      operationId: createRazorpayOrder
+      tags: [payments]
+      summary: Create a Razorpay payment order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: integer
+                  description: Amount in paise (e.g. 1000 = ₹10)
+                currency:
+                  type: string
+                  default: INR
+                receipt:
+                  type: string
+                notes:
+                  type: object
+              required: [amount]
+      responses:
+        "200":
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  amount:
+                    type: integer
+                  currency:
+                    type: string
+                  receipt:
+                    type: string
+
+  /razorpay/verify:
+    post:
+      operationId: verifyRazorpayPayment
+      tags: [payments]
+      summary: Verify Razorpay payment signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                razorpay_order_id:
+                  type: string
+                razorpay_payment_id:
+                  type: string
+                razorpay_signature:
+                  type: string
+              required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      responses:
+        "200":
+          description: Signature verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  /razorpay/refund:
+    post:
+      operationId: refundRazorpayPayment
+      tags: [payments]
+      summary: Refund a captured Razorpay payment for a capacity-full booking failure
+      description: |
+        Refunds a captured payment that failed due to a full queue.
+        Two-factor security:
+        1. HMAC-SHA256 signature (proves caller witnessed the original Razorpay payment).
+        2. A server-created `failedBookings/{paymentId}` Firestore record must exist —
+           written exclusively by `POST /api/tokens` on capacity-full; no client path creates it.
+        This ensures refunds are only issued for verified failed bookings, never for
+        successfully booked tokens. The operation is idempotent — repeated calls return
+        the same refundId if the refund was already issued.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentId:
+                  type: string
+                  description: Razorpay payment ID (pay_...)
+                orderId:
+                  type: string
+                  description: Razorpay order ID (order_...)
+                razorpay_signature:
+                  type: string
+                  description: HMAC-SHA256 of "{orderId}|{paymentId}" using Razorpay key secret
+              required: [paymentId, orderId, razorpay_signature]
+      responses:
+        "200":
+          description: Refund issued (or already completed — idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  refundId:
+                    type: string
+                    description: Razorpay refund ID (rfnd_...)
+                  status:
+                    type: string
+                  amount:
+                    type: integer
+                required: [success, refundId]
+        "400":
+          description: Missing required fields
+        "403":
+          description: Signature mismatch or no server-recorded failure for this payment
+        "409":
+          description: Payment not in capturable state
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        specialization:
+          type: string
+        clinicName:
+          type: string
+        clinicAddress:
+          type: string
+        profilePhoto:
+          type: string
+        isActive:
+          type: boolean
+        shifts:
+          type: object
+          properties:
+            morning:
+              type: boolean
+            morningStart:
+              type: string
+            morningEnd:
+              type: string
+            evening:
+              type: boolean
+            eveningStart:
+              type: string
+            eveningEnd:
+              type: string
+      required: [id, name, specialization]
+
+    CreateDoctorInput:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        specialization:
+          type: string
+        clinicName:
+          type: string
+        clinicAddress:
+          type: string
+      required: [name, phone]
+
+    Patient:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        profilePhoto:
+          type: string
+        isNew:
+          type: boolean
+      required: [id, name, phone]
+
+    Token:
+      type: object
+      properties:
+        id:
+          type: string
+        tokenNumber:
+          type: integer
+        doctorId:
+          type: string
+        patientId:
+          type: string
+        patientName:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        date:
+          type: string
+        shift:
+          type: string
+        patientPaid:
+          type: integer
+        doctorEarns:
+          type: integer
+        platformFee:
+          type: integer
+        paymentId:
+          type: string
+        paymentStatus:
+          type: string
+      required: [id, tokenNumber, doctorId, patientId, patientName, type, status, date, shift]
+
+    BookTokenInput:
+      type: object
+      properties:
+        doctorId:
+          type: string
+        patientId:
+          type: string
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        type:
+          type: string
+        date:
+          type: string
+        shift:
+          type: string
+        paymentId:
+          type: string
+      required: [doctorId, patientId, patientName]
+
+    Queue:
+      type: object
+      properties:
+        doctorId:
+          type: string
+        date:
+          type: string
+        shift:
+          type: string
+        isActive:
+          type: boolean
+        currentToken:
+          type: integer
+        nextTokenNumber:
+          type: integer
+        totalBooked:
+          type: integer
+        doneCount:
+          type: integer
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Token"
+      required: [doctorId, date, shift, isActive, currentToken]
+
+    QueuePosition:
+      type: object
+      properties:
+        tokenId:
+          type: string
+        tokenNumber:
+          type: integer
+        currentToken:
+          type: integer
+        position:
+          type: integer
+        estimatedWaitMins:
+          type: integer
+        status:
+          type: string
+        totalWaiting:
+          type: integer
+      required: [tokenId, tokenNumber, currentToken, position, estimatedWaitMins, status]
+
+    DailyEarning:
+      type: object
+      properties:
+        date:
+          type: string
+        totalTokens:
+          type: integer
+        tokensNormal:
+          type: integer
+        tokensEmergency:
+          type: integer
+        earned:
+          type: integer
+      required: [date, totalTokens, earned]

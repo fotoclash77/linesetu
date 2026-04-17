@@ -1,0 +1,3227 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
+  ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking, Alert, Share,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import * as ImagePicker from 'expo-image-picker';
+import * as Clipboard from 'expo-clipboard';
+import { BG, TEAL, TEAL_LT } from '../../constants/theme';
+import { FeatherIcon as Feather } from "../../components/FeatherIcon";
+
+// react-native-qrcode-svg renders the QR. Loaded defensively so a missing
+// install can't crash the whole settings screen.
+let QRCode: any = null;
+try { QRCode = require('react-native-qrcode-svg').default; } catch {}
+
+// Native-only modules for capturing and saving the poster image. Loaded
+// defensively so they can't crash the screen on web or in builds where the
+// native module isn't bundled (e.g. Expo Go).
+let captureRef: any = null;
+try { captureRef = require('react-native-view-shot').captureRef; } catch {}
+let MediaLibrary: any = null;
+try { MediaLibrary = require('expo-media-library'); } catch {}
+// expo-print powers the native OS print sheet (AirPrint / Android print
+// services / Bluetooth printers). Loaded defensively for the same reasons.
+let ExpoPrint: any = null;
+try { ExpoPrint = require('expo-print'); } catch {}
+// expo-sharing opens the native OS share sheet to hand a file off to
+// WhatsApp, email, AirDrop, etc. Loaded defensively for the same reasons.
+let ExpoSharing: any = null;
+try { ExpoSharing = require('expo-sharing'); } catch {}
+
+import { useDoctor } from '../../contexts/DoctorContext';
+import { registerSettingsResetHandler } from '../../lib/settingsResetBridge';
+import { INDIA_STATES } from '../../constants/indiaLocations';
+
+const isWeb = Platform.OS === 'web';
+const BASE = () => `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+type SettingsSection = 'main' | 'profile' | 'clinics' | 'schedule' | 'fees' | 'patientApp' | 'bank' | 'payout' | 'help' | 'feedback' | 'terms' | 'shareProfile';
+
+interface ClinicData {
+  name: string; address: string; phone: string; maps: string; active: boolean; state: string; district: string;
+}
+
+// ── Time options: every 15 min from 06:00 to 22:45 ──────────────────
+const TIME_OPTIONS: string[] = [];
+for (let h = 6; h <= 22; h++) {
+  for (const m of [0, 15, 30, 45]) {
+    if (h === 22 && m > 0) break;
+    TIME_OPTIONS.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+  }
+}
+
+function TimePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, marginBottom: 8 }]}
+        onPress={() => setOpen(true)}
+      >
+        <Text style={{ color: value ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '700', fontSize: 14 }}>{value || 'Select time'}</Text>
+        <Feather name="clock" size={14} color="rgba(255,255,255,0.3)" />
+      </TouchableOpacity>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={{ backgroundColor: '#0D1321', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', width: 200, maxHeight: 340, overflow: 'hidden' }}>
+            <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' }}>
+              <Text style={{ color: '#2DD4BF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</Text>
+            </View>
+            <FlatList
+              data={TIME_OPTIONS}
+              keyExtractor={t => t}
+              getItemLayout={(_, i) => ({ length: 44, offset: 44 * i, index: i })}
+              initialScrollIndex={Math.max(0, TIME_OPTIONS.indexOf(value))}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => { onChange(item); setOpen(false); }}
+                  style={{ height: 44, paddingHorizontal: 18, justifyContent: 'center', backgroundColor: item === value ? 'rgba(45,212,191,0.18)' : 'transparent' }}
+                >
+                  <Text style={{ color: item === value ? '#2DD4BF' : 'rgba(255,255,255,0.7)', fontWeight: item === value ? '800' : '500', fontSize: 15 }}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+interface ShiftSlot { startTime: string; endTime: string; maxTokens: number; clinicName: string; address: string; locationLink: string }
+interface ShiftFormProps {
+  shift: 'morning' | 'evening';
+  accentColor: string;
+  iconName: React.ComponentProps<typeof Feather>['name'];
+  label: string;
+  data: ShiftSlot;
+  clinics: ClinicData[];
+  onChange: (patch: Partial<ShiftSlot>) => void;
+}
+function ShiftForm({ shift, accentColor, iconName, label, data, clinics, onChange }: ShiftFormProps) {
+  const activeClinics = clinics.filter(c => c.active && c.name);
+  const selectedClinicIdx = activeClinics.findIndex(c => c.name === data.clinicName);
+  return (
+    <View style={[styles.shiftCard, { marginTop: 10, borderColor: `${accentColor}40` }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <Feather name={iconName} size={16} color={accentColor} />
+        <Text style={[styles.shiftCardTitle, { color: accentColor }]}>{label}</Text>
+      </View>
+
+      {/* Clinic selector buttons */}
+      {activeClinics.length > 0 && (
+        <>
+          <Text style={styles.fieldLabel}>SELECT CLINIC</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {activeClinics.map((c, i) => (
+              <TouchableOpacity
+                key={i}
+                onPress={() => onChange({ clinicName: c.name, address: c.address, locationLink: c.maps })}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: selectedClinicIdx === i ? accentColor : 'rgba(255,255,255,0.12)',
+                  backgroundColor: selectedClinicIdx === i ? `${accentColor}20` : 'rgba(255,255,255,0.04)',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: selectedClinicIdx === i ? accentColor : 'rgba(255,255,255,0.5)' }}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
+      {activeClinics.length === 0 && (
+        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 10, fontStyle: 'italic' }}>Add clinics in Settings → Manage Clinics to enable quick selection</Text>
+      )}
+
+      {/* Time pickers */}
+      <View style={styles.timeRow}>
+        <View style={{ flex: 1 }}>
+          <TimePicker label="START TIME" value={data.startTime} onChange={v => onChange({ startTime: v })} />
+        </View>
+        <View style={{ width: 16, alignItems: 'center', marginTop: 28 }}>
+          <Text style={styles.timeDash}>–</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <TimePicker label="END TIME" value={data.endTime} onChange={v => onChange({ endTime: v })} />
+        </View>
+      </View>
+
+      {/* Single max tokens field */}
+      <Text style={styles.fieldLabel}>MAX TOKENS (Total)</Text>
+      <TextInput
+        style={[styles.fieldInput, { marginBottom: 10 }]}
+        value={String(data.maxTokens)}
+        onChangeText={v => onChange({ maxTokens: parseInt(v) || 0 })}
+        keyboardType="number-pad"
+        placeholderTextColor="rgba(255,255,255,0.2)"
+        placeholder="30"
+      />
+
+    </View>
+  );
+}
+
+function Toggle({ on, onChange, color = TEAL }: { on: boolean; onChange: () => void; color?: string }) {
+  return (
+    <TouchableOpacity
+      onPress={onChange}
+      style={[styles.toggle, { backgroundColor: on ? color : 'rgba(255,255,255,0.12)', borderColor: on ? color : 'rgba(255,255,255,0.15)' }]}
+    >
+      <View style={[styles.toggleThumb, on ? styles.toggleThumbOn : styles.toggleThumbOff]} />
+    </TouchableOpacity>
+  );
+}
+
+function Field({ label, value, onChange, multiline, keyboardType, required, error }: {
+  label: string; value: string; onChange: (v: string) => void;
+  multiline?: boolean; keyboardType?: 'default' | 'phone-pad' | 'numeric' | 'url';
+  required?: boolean; error?: boolean;
+}) {
+  const handleChange = (v: string) => {
+    if (keyboardType === 'phone-pad') {
+      onChange(v.replace(/\D/g, '').slice(0, 10));
+      return;
+    }
+    onChange(v);
+  };
+  return (
+    <View style={styles.field}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        {required && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>}
+      </View>
+      <TextInput
+        style={[styles.fieldInput, multiline && { height: 72, paddingTop: 10 }, error && { borderColor: 'rgba(239,68,68,0.6)' }]}
+        value={value}
+        onChangeText={handleChange}
+        multiline={multiline}
+        keyboardType={keyboardType ?? 'default'}
+        maxLength={keyboardType === 'phone-pad' ? 10 : undefined}
+        placeholderTextColor="rgba(255,255,255,0.2)"
+        placeholder={`Enter ${label.toLowerCase()}`}
+      />
+      {error && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
+    </View>
+  );
+}
+
+const SPECIALIZATIONS = [
+  'General Physician', 'Cardiologist', 'Dermatologist', 'Orthopedic Surgeon',
+  'Gynecologist', 'Pediatrician', 'ENT Specialist', 'Neurologist',
+  'Ophthalmologist', 'Dentist',
+];
+
+function SpecPicker({ value, onChange, error }: {
+  value: string; onChange: (v: string) => void; error?: boolean;
+}) {
+  const [showInput, setShowInput] = useState(() => !SPECIALIZATIONS.includes(value));
+
+  const pick = (spec: string) => { onChange(spec); setShowInput(false); };
+  const pickOther = () => { setShowInput(true); if (SPECIALIZATIONS.includes(value)) onChange(''); };
+
+  return (
+    <View style={styles.field}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 8 }}>
+        <Text style={styles.fieldLabel}>SPECIALISATION</Text>
+        <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+        {SPECIALIZATIONS.map(spec => {
+          const active = value === spec && !showInput;
+          return (
+            <TouchableOpacity
+              key={spec}
+              onPress={() => pick(spec)}
+              style={[styles.specChip, active && styles.specChipActive]}
+            >
+              <Text style={[styles.specChipText, active && styles.specChipTextActive]}>{spec}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          onPress={pickOther}
+          style={[styles.specChip, showInput && styles.specChipOther]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={[styles.specChipText, showInput && { color: '#FCD34D' }]}>Other</Text>
+              <Feather name="edit-2" size={10} color={showInput ? '#FCD34D' : 'rgba(255,255,255,0.45)'} />
+            </View>
+        </TouchableOpacity>
+      </View>
+      {showInput && (
+        <TextInput
+          style={[styles.fieldInput, { marginTop: 10 }, error && !value.trim() && { borderColor: 'rgba(239,68,68,0.6)' }]}
+          value={value}
+          onChangeText={onChange}
+          placeholder="Type your specialisation..."
+          placeholderTextColor="rgba(255,255,255,0.2)"
+          autoFocus
+        />
+      )}
+      {error && !value.trim() && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 4 }}>Required</Text>}
+    </View>
+  );
+}
+
+function LocationPicker({
+  selectedState, selectedDistrict,
+  onStateChange, onDistrictChange,
+}: {
+  selectedState: string; selectedDistrict: string;
+  onStateChange: (s: string) => void; onDistrictChange: (d: string) => void;
+}) {
+  const [modal, setModal] = useState<'state' | 'district' | null>(null);
+  const [search, setSearch] = useState('');
+
+  const districts = INDIA_STATES.find(s => s.name === selectedState)?.districts ?? [];
+
+  const stateList = search
+    ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+    : INDIA_STATES;
+  const districtList = search
+    ? districts.filter(d => d.toLowerCase().includes(search.toLowerCase()))
+    : districts;
+
+  const openState = () => { setSearch(''); setModal('state'); };
+  const openDistrict = () => { if (!selectedState) return; setSearch(''); setModal('district'); };
+  const close = () => { setModal(null); setSearch(''); };
+
+  const pickState = (name: string) => {
+    onStateChange(name);
+    onDistrictChange('');
+    close();
+  };
+  const pickDistrict = (name: string) => {
+    onDistrictChange(name);
+    close();
+  };
+
+  return (
+    <View>
+      {/* State selector */}
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>STATE</Text>
+        <TouchableOpacity
+          style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }]}
+          onPress={openState}
+        >
+          <Text style={{ color: selectedState ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '600', fontSize: 14 }}>
+            {selectedState || 'Select state'}
+          </Text>
+          <Feather name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+        </TouchableOpacity>
+      </View>
+
+      {/* District selector */}
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>DISTRICT</Text>
+        <TouchableOpacity
+          style={[styles.fieldInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, opacity: selectedState ? 1 : 0.45 }]}
+          onPress={openDistrict}
+        >
+          <Text style={{ color: selectedDistrict ? '#FFF' : 'rgba(255,255,255,0.25)', fontWeight: '600', fontSize: 14 }}>
+            {selectedDistrict || (selectedState ? 'Select district' : 'Select state first')}
+          </Text>
+          <Feather name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal */}
+      <Modal visible={!!modal} transparent animationType="fade" onRequestClose={close}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={close}>
+          <TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#0D1321', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', width: 300, maxHeight: 480, overflow: 'hidden' }}>
+            <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: '#2DD4BF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                {modal === 'state' ? 'Select State / UT' : `Districts — ${selectedState}`}
+              </Text>
+              <TouchableOpacity onPress={close}>
+                <Feather name="x" size={16} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            </View>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+              <TextInput
+                style={{ height: 36, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingHorizontal: 12, color: '#FFF', fontSize: 13, fontWeight: '500' }}
+                placeholder={modal === 'state' ? 'Search state...' : 'Search district...'}
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                value={search}
+                onChangeText={setSearch}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={modal === 'state' ? stateList.map(s => s.name) : districtList}
+              keyExtractor={item => item}
+              renderItem={({ item }) => {
+                const isSelected = modal === 'state' ? item === selectedState : item === selectedDistrict;
+                return (
+                  <TouchableOpacity
+                    onPress={() => modal === 'state' ? pickState(item) : pickDistrict(item)}
+                    style={{ paddingHorizontal: 16, paddingVertical: 13, backgroundColor: isSelected ? 'rgba(45,212,191,0.15)' : 'transparent', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' }}
+                  >
+                    <Text style={{ color: isSelected ? '#2DD4BF' : 'rgba(255,255,255,0.75)', fontWeight: isSelected ? '800' : '500', fontSize: 14 }}>{item}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', padding: 20, fontSize: 13 }}>No results</Text>}
+              keyboardShouldPersistTaps="handled"
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return <Text style={styles.sectionLabel}>{label}</Text>;
+}
+
+function SettingRow({
+  iconName, iconBg, iconColor, label, sub, right, danger = false, last = false, onPress,
+}: {
+  iconName: React.ComponentProps<typeof Feather>['name']; iconBg: string; iconColor: string;
+  label: string; sub?: string; right?: React.ReactNode;
+  danger?: boolean; last?: boolean; onPress?: () => void;
+}) {
+  const Wrapper = onPress ? TouchableOpacity : View;
+  return (
+    <Wrapper onPress={onPress} style={[styles.settingRow, !last && styles.settingRowBorder]}>
+      <View style={[styles.settingIcon, { backgroundColor: iconBg, borderColor: `${iconColor}33` }]}>
+        <Feather name={iconName} size={16} color={iconColor} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[styles.settingLabel, danger && { color: '#F87171' }]}>{label}</Text>
+        {sub && <Text style={styles.settingSub}>{sub}</Text>}
+      </View>
+      {right ?? <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />}
+    </Wrapper>
+  );
+}
+
+function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <View style={styles.subHeader}>
+      <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+        <Feather name="chevron-left" size={22} color="#FFF" />
+      </TouchableOpacity>
+      <Text style={styles.subHeaderTitle}>{title}</Text>
+    </View>
+  );
+}
+
+export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
+  const { doctor, logout, updateDoctor } = useDoctor();
+  const [section, setSection] = useState<SettingsSection>('main');
+  // Reset to main whenever the Settings tab button is tapped (even while already on settings)
+  useEffect(() => {
+    return registerSettingsResetHandler(() => setSection('main'));
+  }, []);
+
+  // Profile state — seeded from Firebase via doctor context
+  const [name, setName] = useState(() => doctor?.name ?? '');
+  const [qualifications, setQualifications] = useState(() => doctor?.qualifications ?? '');
+  const [specialisation, setSpecialisation] = useState(() => (doctor as any)?.specialization ?? '');
+  const [experience, setExperience] = useState(() => doctor?.experience ?? '');
+  const [patientsTotal, setPatientsTotal] = useState(() => doctor?.totalPatients ?? '');
+  const [mobile, setMobile] = useState(() => {
+    const p: string = doctor?.phone ?? '';
+    return p.startsWith('+91') ? p.slice(3).trim() : p;
+  });
+  const [bio, setBio] = useState(() => doctor?.bio ?? '');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  // Sync profile fields when doctor context loads (e.g. after async hydration)
+  const profileSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!profileSynced.current && doctor) {
+      profileSynced.current = true;
+      setName(doctor.name ?? '');
+      setQualifications(doctor.qualifications ?? '');
+      setSpecialisation((doctor as any).specialization ?? '');
+      setExperience(doctor.experience ?? '');
+      setPatientsTotal(doctor.totalPatients ?? '');
+      const p: string = doctor.phone ?? '';
+      setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
+      setBio(doctor.bio ?? '');
+    }
+  }, [doctor]);
+
+  // Clinics state — seeded from Firebase via doctor.clinics
+  const EMPTY_CLINIC: ClinicData = { name: '', address: '', phone: '', maps: '', active: false, state: '', district: '' };
+  const [activeClinic, setActiveClinic] = useState(0);
+  const [clinics, setClinics] = useState<ClinicData[]>(() => {
+    const saved = (doctor as any)?.clinics as ClinicData[] | undefined;
+    if (saved && saved.length) return saved;
+    return [EMPTY_CLINIC, EMPTY_CLINIC, EMPTY_CLINIC];
+  });
+  const [clinicSaving, setClinicSaving] = useState(false);
+  const [clinicSaved, setClinicSaved] = useState(false);
+  const [clinicFieldErrors, setClinicFieldErrors] = useState<{ name?: boolean; address?: boolean; phone?: boolean; maps?: boolean; state?: boolean; district?: boolean }>({});
+
+  // Schedule state — seeded from doctor.shifts
+  const [morningEnabled, setMorningEnabled] = useState(() => doctor?.shifts?.morning !== false);
+  const [eveningEnabled, setEveningEnabled] = useState(() => doctor?.shifts?.evening !== false);
+  const [morningStart, setMorningStart] = useState(() => doctor?.shifts?.morningStart ?? '09:00');
+  const [morningEnd, setMorningEnd] = useState(() => doctor?.shifts?.morningEnd ?? '13:00');
+  const [eveningStart, setEveningStart] = useState(() => doctor?.shifts?.eveningStart ?? '17:00');
+  const [eveningEnd, setEveningEnd] = useState(() => doctor?.shifts?.eveningEnd ?? '20:00');
+  const [morningMax, setMorningMax] = useState('20');
+  const [eveningMax, setEveningMax] = useState('15');
+  const [schedSaving, setSchedSaving] = useState(false);
+  const [schedSaved, setSchedSaved] = useState(false);
+
+  type ShiftCfg = { enabled: boolean; startTime: string; endTime: string; maxTokens: number; clinicName: string; address: string; locationLink: string };
+  type DayCfg  = { off: boolean; morning: ShiftCfg; evening: ShiftCfg };
+  type DayMode = 'morning' | 'evening' | 'both' | 'holiday';
+
+  function makeShift(start: string, end: string, clinic?: ClinicData): ShiftCfg {
+    return {
+      enabled: true, startTime: start, endTime: end, maxTokens: 30,
+      clinicName: clinic?.name ?? '', address: clinic?.address ?? '', locationLink: clinic?.maps ?? '',
+    };
+  }
+  function blankDay(clinic?: ClinicData): DayCfg {
+    return {
+      off: false,
+      morning: makeShift('09:00', '13:00', clinic),
+      evening: makeShift('17:00', '20:00', clinic),
+    };
+  }
+  function modeOf(cfg: DayCfg): DayMode {
+    if (cfg.off) return 'holiday';
+    const m = cfg.morning.enabled, e = cfg.evening.enabled;
+    if (m && e) return 'both';
+    if (m) return 'morning';
+    if (e) return 'evening';
+    return 'holiday';
+  }
+  function applyMode(mode: DayMode, prev: DayCfg): DayCfg {
+    if (mode === 'holiday') return { ...prev, off: true, morning: { ...prev.morning, enabled: false }, evening: { ...prev.evening, enabled: false } };
+    if (mode === 'morning') return { ...prev, off: false, morning: { ...prev.morning, enabled: true }, evening: { ...prev.evening, enabled: false } };
+    if (mode === 'evening') return { ...prev, off: false, morning: { ...prev.morning, enabled: false }, evening: { ...prev.evening, enabled: true } };
+    return { ...prev, off: false, morning: { ...prev.morning, enabled: true }, evening: { ...prev.evening, enabled: true } };
+  }
+
+  // Calendar overrides: { [isoDate]: DayCfg }
+  const [calendarOverrides, setCalendarOverrides] = useState<Record<string, DayCfg>>(() => (doctor as any)?.calendar ?? {});
+  const [selectedCalDate, setSelectedCalDate] = useState<string | null>(null);
+  const [dayForm, setDayForm] = useState<DayCfg>(() => blankDay());
+  const [dayMode, setDayModeState] = useState<DayMode>('both');
+  const [calSaving, setCalSaving] = useState(false);
+  const [calSaved, setCalSaved] = useState(false);
+
+  function patchShift(shift: 'morning' | 'evening', patch: Partial<ShiftCfg>) {
+    setDayForm(prev => ({ ...prev, [shift]: { ...prev[shift], ...patch } }));
+  }
+  function selectMode(mode: DayMode) {
+    setDayModeState(mode);
+    setDayForm(prev => applyMode(mode, prev));
+  }
+
+  // Re-seed when doctor loads (covers cold start)
+  useEffect(() => {
+    if (!doctor) return;
+    if (doctor.shifts) {
+      setMorningEnabled(doctor.shifts.morning !== false);
+      setEveningEnabled(doctor.shifts.evening !== false);
+      setMorningStart(doctor.shifts.morningStart ?? '09:00');
+      setMorningEnd(doctor.shifts.morningEnd ?? '13:00');
+      setEveningStart(doctor.shifts.eveningStart ?? '17:00');
+      setEveningEnd(doctor.shifts.eveningEnd ?? '20:00');
+    }
+    if ((doctor as any).calendar) setCalendarOverrides((doctor as any).calendar);
+    if ((doctor as any).clinics?.length) setClinics((doctor as any).clinics);
+  }, [doctor?.id]);
+
+  // Fee state — seeded from Firebase via doctor context
+  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 10));
+  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 20));
+  const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
+  const [clinicConsultFee, setClinicConsultFee] = useState(() => String((doctor as any)?.clinicConsultFee ?? 0));
+  const [clinicEmergencyFee, setClinicEmergencyFee] = useState(() => String((doctor as any)?.clinicEmergencyFee ?? 0));
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [feeSaved, setFeeSaved] = useState(false);
+
+  // Share Profile QR — poster save state and refs (hoisted to top level so
+  // hook order stays stable across section navigation).
+  const qrRef = useRef<any>(null);
+  const posterShotRef = useRef<any>(null);
+  const [savingPoster, setSavingPoster] = useState(false);
+  const [posterSaved, setPosterSaved] = useState(false);
+  const [printingPoster, setPrintingPoster] = useState(false);
+  const [posterLogo, setPosterLogo] = useState<string>(() => (doctor as any)?.posterLogo ?? '');
+  const [posterTagline, setPosterTagline] = useState<string>(() => (doctor as any)?.posterTagline ?? '');
+  const [posterTaglineDraft, setPosterTaglineDraft] = useState<string>(() => (doctor as any)?.posterTagline ?? '');
+  const [posterLogoUploading, setPosterLogoUploading] = useState(false);
+  const [posterTaglineSaving, setPosterTaglineSaving] = useState(false);
+  const posterCustomSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!posterCustomSynced.current && doctor) {
+      posterCustomSynced.current = true;
+      const pl = (doctor as any).posterLogo ?? '';
+      const pt = (doctor as any).posterTagline ?? '';
+      setPosterLogo(pl);
+      setPosterTagline(pt);
+      setPosterTaglineDraft(pt);
+    }
+  }, [doctor]);
+  const [sharingPoster, setSharingPoster] = useState(false);
+  const feeSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!feeSynced.current && doctor) {
+      feeSynced.current = true;
+      setConsultFee(String((doctor as any).consultFee ?? 10));
+      setEmergencyFee(String((doctor as any).emergencyFee ?? 20));
+      setWalkinFee(String((doctor as any).walkinFee ?? 0));
+      setClinicConsultFee(String((doctor as any).clinicConsultFee ?? 0));
+      setClinicEmergencyFee(String((doctor as any).clinicEmergencyFee ?? 0));
+    }
+  }, [doctor]);
+
+  // Patient app state
+  const [onlineBooking, setOnlineBooking] = useState(true);
+  const [emergencyTokens, setEmergencyTokens] = useState(true);
+  const [showWaitTime, setShowWaitTime] = useState(true);
+  const [showPosition, setShowPosition] = useState(true);
+  const [showFee, setShowFee] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('Your turn is coming soon. Please be ready at the clinic.');
+  const [patientAppSaving, setPatientAppSaving] = useState(false);
+  const [patientAppSaved, setPatientAppSaved] = useState(false);
+  const patientAppSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!patientAppSynced.current && doctor) {
+      patientAppSynced.current = true;
+      if ((doctor as any).onlineBooking !== undefined) setOnlineBooking((doctor as any).onlineBooking);
+      if ((doctor as any).emergencyTokens !== undefined) setEmergencyTokens((doctor as any).emergencyTokens);
+      if ((doctor as any).showWaitTime !== undefined) setShowWaitTime((doctor as any).showWaitTime);
+      if ((doctor as any).showPosition !== undefined) setShowPosition((doctor as any).showPosition);
+      if ((doctor as any).showFee !== undefined) setShowFee((doctor as any).showFee);
+      if ((doctor as any).alertMessage) setAlertMessage((doctor as any).alertMessage);
+    }
+  }, [doctor]);
+
+  const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('bank');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [branch, setBranch] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [payoutDisplayName, setPayoutDisplayName] = useState('');
+  const [payoutCycle, setPayoutCycle] = useState('Weekly');
+  const [payoutEnabled, setPayoutEnabled] = useState(true);
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankSaved, setBankSaved] = useState(false);
+  const [bankAttempted, setBankAttempted] = useState(false);
+  const [payoutAttempted, setPayoutAttempted] = useState(false);
+  const bankSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!bankSynced.current && doctor) {
+      bankSynced.current = true;
+      const bank = (doctor as any).bankAccount ?? {};
+      setPayoutType(bank.accountType === 'upi' ? 'upi' : 'bank');
+      setAccountHolderName(bank.accountHolderName ?? '');
+      setBankName(bank.bankName ?? '');
+      setAccountNumber(bank.accountNumber ?? '');
+      setIfscCode(bank.ifscCode ?? '');
+      setBranch(bank.branch ?? '');
+      setUpiId(bank.upiId ?? '');
+      setPayoutDisplayName(bank.payoutName ?? '');
+      setPayoutCycle(bank.payoutCycle ?? 'Weekly');
+      setPayoutEnabled(bank.payoutEnabled !== false);
+    }
+  }, [doctor]);
+
+  // Notification state — synced from Firebase
+  const [notifBooking, setNotifBooking] = useState(true);
+  const [notifEmergency, setNotifEmergency] = useState(true);
+  const [notifPayout, setNotifPayout] = useState(true);
+  const notifSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!notifSynced.current && doctor) {
+      notifSynced.current = true;
+      const n = (doctor as any).notifications;
+      if (n) {
+        if (n.booking !== undefined) setNotifBooking(n.booking !== false);
+        if (n.emergency !== undefined) setNotifEmergency(n.emergency !== false);
+        if (n.payout !== undefined) setNotifPayout(n.payout !== false);
+      }
+    }
+  }, [doctor]);
+
+  // Feedback state
+  const [feedbackCategory, setFeedbackCategory] = useState('Feature Request');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Delete account state
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [showLogout, setShowLogout] = useState(false);
+  const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(doctor?.profilePhoto ?? null);
+  const [profilePhotoLocal, setProfilePhotoLocal] = useState<string | null>(null);
+
+  // Results / photo gallery state
+  const [resultPhotos, setResultPhotos] = useState<string[]>([]);
+  const [showResults, setShowResults] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
+  const resultsSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!resultsSynced.current && doctor) {
+      resultsSynced.current = true;
+      if (Array.isArray((doctor as any).results)) setResultPhotos((doctor as any).results);
+      if ((doctor as any).showResults !== undefined) setShowResults((doctor as any).showResults !== false);
+    }
+  }, [doctor]);
+
+  React.useEffect(() => {
+    setProfilePhotoUrl(doctor?.profilePhoto ?? null);
+  }, [doctor?.profilePhoto]);
+
+  const pickAndUploadPhoto = async () => {
+    if (!doctor) return;
+    setUploadingPhoto(true);
+    setUploadError(null);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setUploadingPhoto(false);
+      setUploadError('Permission denied — please allow photo access in your device settings.');
+      return;
+    }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.5,
+        base64: true,
+        allowsEditing: true,
+        aspect: [16, 9],
+        exif: false,
+      });
+    if (result.canceled || !result.assets[0]) {
+      setUploadingPhoto(false);
+      return;
+    }
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      setUploadingPhoto(false);
+      setUploadError('Could not read image data. Please try a different photo.');
+      return;
+    }
+    try {
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: asset.base64, mimeType }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        const newResults = [...resultPhotos, data.url];
+        setResultPhotos(newResults);
+        await updateDoctor({ results: newResults } as any);
+      } else {
+        setUploadError(data.error || 'Upload failed. Please try again.');
+      }
+    } catch (err: any) {
+      setUploadError('Upload failed — check your internet connection and try again.');
+    }
+    setUploadingPhoto(false);
+  };
+
+  const pickProfilePhoto = async () => {
+    if (!doctor) return;
+    setProfilePhotoLoading(true);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+        base64: true,
+        allowsEditing: true,
+        aspect: [1, 1],
+        exif: false,
+      });
+      if (result.canceled || !result.assets[0]?.base64) return;
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType || 'image/jpeg';
+      setProfilePhotoLocal(`data:${mimeType};base64,${asset.base64}`);
+      const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: asset.base64, mimeType }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setProfilePhotoUrl(data.url);
+        await updateDoctor({ profilePhoto: data.url } as any);
+      } else {
+        setProfilePhotoLocal(null);
+      }
+    } catch {}
+    setProfilePhotoLoading(false);
+  };
+
+  const deletePhoto = async (url: string) => {
+    if (!doctor) return;
+    setDeletingPhotoUrl(url);
+    try {
+      await fetch(`${BASE()}/api/doctors/${doctor.id}/results`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const updated = resultPhotos.filter(u => u !== url);
+      setResultPhotos(updated);
+      await updateDoctor({ results: updated } as any);
+    } catch {}
+    setDeletingPhotoUrl(null);
+  };
+
+  const toggleShowResults = async () => {
+    const next = !showResults;
+    setShowResults(next);
+    try { await updateDoctor({ showResults: next } as any); } catch {}
+  };
+
+  const updateClinic = (idx: number, patch: Partial<ClinicData>) => {
+    setClinics(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c));
+  };
+
+  const profileFieldErrors = {
+    name: profileSaving && !name.trim(),
+    qualifications: profileSaving && !qualifications.trim(),
+    specialisation: profileSaving && !specialisation.trim(),
+    experience: profileSaving && !experience.trim(),
+    patientsTotal: profileSaving && !patientsTotal.trim(),
+    mobile: profileSaving && !mobile.trim(),
+    bio: profileSaving && !bio.trim(),
+  };
+
+  const saveProfile = async () => {
+    const required = [name, qualifications, specialisation, experience, patientsTotal, mobile, bio];
+    if (required.some(v => !v.trim())) {
+      setProfileSaving(true);
+      setProfileError('Please fill in all required fields.');
+      return;
+    }
+    setProfileSaving(true);
+    setProfileError('');
+    try {
+      await updateDoctor({
+        name: name.trim(),
+        qualifications: qualifications.trim(),
+        specialization: specialisation.trim(),
+        experience: experience.trim(),
+        totalPatients: patientsTotal.trim(),
+        phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
+        bio: bio.trim(),
+      } as any);
+      setProfileSaved(true);
+      setTimeout(() => {
+        setProfileSaved(false);
+        setSection('main');
+      }, 1200);
+    } catch {
+      setProfileError('Failed to save. Please try again.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  // ── Device hardware back button: auto-save + navigate to main ──────────
+  // Use ref so handler always closes over fresh state (no stale closure issue)
+  const deviceBackHandlerRef = React.useRef<() => void>(() => {});
+  deviceBackHandlerRef.current = () => {
+    const go = () => setSection('main');
+    if (section === 'profile') {
+      const required = [name, qualifications, specialisation, experience, patientsTotal, mobile, bio];
+      if (required.every(v => v.trim())) {
+        updateDoctor({
+          name: name.trim(),
+          qualifications: qualifications.trim(),
+          specialization: specialisation.trim(),
+          experience: experience.trim(),
+          totalPatients: patientsTotal.trim(),
+          phone: mobile.startsWith('+91') ? mobile.trim() : `+91${mobile.trim()}`,
+          bio: bio.trim(),
+        } as any).catch(() => {});
+      }
+    } else if (section === 'clinics') {
+      updateDoctor({ clinics: clinics as any } as any).catch(() => {});
+    } else if (section === 'schedule') {
+      updateDoctor({ calendar: calendarOverrides as any }).catch(() => {});
+    } else if (section === 'fees') {
+      updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0, clinicConsultFee: Number(clinicConsultFee) || 0, clinicEmergencyFee: Number(clinicEmergencyFee) || 0 } as any).catch(() => {});
+    } else if (section === 'patientApp') {
+      updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showFee, alertMessage } as any).catch(() => {});
+    } else if (section === 'bank') {
+      const valid = payoutType === 'bank'
+        ? accountHolderName.trim() && bankName.trim() && accountNumber.trim() && ifscCode.trim() && branch.trim()
+        : upiId.trim() && payoutDisplayName.trim();
+      if (valid) {
+        updateDoctor({
+          bankAccount: { accountType: payoutType, accountHolderName, bankName, accountNumber, ifscCode, branch, upiId, payoutName: payoutDisplayName, payoutCycle, payoutEnabled },
+        } as any).catch(() => {});
+      }
+      setBankAttempted(false);
+    } else if (section === 'payout') {
+      if (payoutDisplayName.trim()) {
+        const bank = (doctor as any)?.bankAccount ?? {};
+        updateDoctor({ bankAccount: { ...bank, accountType: payoutType, payoutName: payoutDisplayName, payoutCycle, payoutEnabled } } as any).catch(() => {});
+      }
+      setPayoutAttempted(false);
+    }
+    go();
+  };
+
+  // Register/unregister BackHandler whenever section changes
+  useEffect(() => {
+    if (section === 'main') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      deviceBackHandlerRef.current();
+      return true;
+    });
+    return () => sub.remove();
+  }, [section]);
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (section === 'profile') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Doctor Profile" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            {/* Avatar */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarLarge}>
+                {profilePhotoLocal || profilePhotoUrl
+                  ? <Image
+                      key={profilePhotoLocal || profilePhotoUrl || 'avatar'}
+                      source={{ uri: profilePhotoLocal || profilePhotoUrl || undefined }}
+                      style={{ width: '100%', height: '100%', borderRadius: 26 }}
+                      resizeMode="cover"
+                    />
+                  : <Feather name="activity" size={28} color="#FFF" />}
+              </View>
+              <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
+                {profilePhotoLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.photoBtnText}>{profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}</Text>}
+              </TouchableOpacity>
+            </View>
+
+            {!!profileError && (
+              <View style={{ marginBottom: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: 'rgba(239,68,68,0.08)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Feather name="alert-triangle" size={11} color="#F87171" />
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '700' }}>{profileError}</Text>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.formCard}>
+              <Field label="Full Name" value={name} onChange={setName} required error={profileFieldErrors.name} />
+              <Field label="Qualifications" value={qualifications} onChange={setQualifications} required error={profileFieldErrors.qualifications} />
+              <SpecPicker value={specialisation} onChange={setSpecialisation} error={profileFieldErrors.specialisation} />
+              <Field label="Years of Experience" value={experience} onChange={setExperience} keyboardType="numeric" required error={profileFieldErrors.experience} />
+              <Field label="Total Patients Consulted" value={patientsTotal} onChange={setPatientsTotal} keyboardType="numeric" required error={profileFieldErrors.patientsTotal} />
+              <View style={styles.field}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+                  <Text style={styles.fieldLabel}>REGISTERED MOBILE</Text>
+                  <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+                </View>
+                <View style={styles.phoneRow}>
+                  <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
+                  <TextInput
+                    style={[styles.fieldInput, { flex: 1 }]}
+                    value={mobile}
+                    onChangeText={v => setMobile(v.replace(/\D/g, '').slice(0, 10))}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholder="Enter your 10-digit phone number"
+                  />
+                </View>
+                {profileFieldErrors.mobile && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
+              </View>
+              <Field label="About / Bio" value={bio} onChange={setBio} multiline required error={profileFieldErrors.bio} />
+            </View>
+
+            <View style={{ paddingHorizontal: 6, marginBottom: 8 }}>
+              <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>* All fields are mandatory and will be visible to patients in the app.</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, profileSaving && !profileError && { opacity: 0.7 }]}
+              disabled={profileSaving && !profileError}
+              onPress={saveProfile}
+            >
+              {profileSaving && !profileError
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={profileSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{profileSaved ? 'Saved' : 'Save Profile'}</Text>
+                  </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'clinics') {
+    const clinic = clinics[activeClinic];
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Manage Clinics" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            {/* Clinic tabs */}
+            <View style={styles.clinicTabs}>
+              {clinics.map((c, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => { setActiveClinic(i); setClinicFieldErrors({}); }}
+                  style={[styles.clinicTab, activeClinic === i && styles.clinicTabActive]}
+                >
+                  <Text style={[styles.clinicTabText, activeClinic === i && styles.clinicTabTextActive]}>
+                    {c.name ? `Clinic ${i + 1}` : `+ Add`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.formCard}>
+              <View style={[styles.field, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                <Text style={styles.fieldLabel}>ACTIVE</Text>
+                <Toggle on={clinic.active} onChange={() => updateClinic(activeClinic, { active: !clinic.active })} />
+              </View>
+              <Field label="Clinic Name" value={clinic.name} onChange={v => { updateClinic(activeClinic, { name: v }); setClinicFieldErrors(e => ({ ...e, name: false })); }} required error={clinicFieldErrors.name} />
+              <Field label="Address" value={clinic.address} onChange={v => { updateClinic(activeClinic, { address: v }); setClinicFieldErrors(e => ({ ...e, address: false })); }} required error={clinicFieldErrors.address} />
+              <View style={styles.field}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 5 }}>
+                  <Text style={styles.fieldLabel}>CLINIC PHONE</Text>
+                  <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '900' }}>*</Text>
+                </View>
+                <View style={styles.phoneRow}>
+                  <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
+                  <TextInput
+                    style={[styles.fieldInput, { flex: 1 }, clinicFieldErrors.phone && { borderColor: 'rgba(239,68,68,0.6)' }]}
+                    value={(clinic.phone ?? '').replace(/\D/g, '').slice(0, 10)}
+                    onChangeText={v => { updateClinic(activeClinic, { phone: v.replace(/\D/g, '').slice(0, 10) }); setClinicFieldErrors(e => ({ ...e, phone: false })); }}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholderTextColor="rgba(255,255,255,0.2)"
+                    placeholder="Enter 10-digit phone number"
+                  />
+                </View>
+                {clinicFieldErrors.phone && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
+              </View>
+              <Field label="Google Maps Link" value={clinic.maps} onChange={v => { updateClinic(activeClinic, { maps: v }); setClinicFieldErrors(e => ({ ...e, maps: false })); }} keyboardType="url" required error={clinicFieldErrors.maps} />
+              <View style={{ marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 12 }}>
+                <Text style={{ fontSize: 11, color: '#2DD4BF', fontWeight: '800', marginBottom: 4, letterSpacing: 0.6, textTransform: 'uppercase' }}>Practice Location</Text>
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 10 }}>Shown to patients when they search for doctors</Text>
+                <LocationPicker
+                  selectedState={clinic.state ?? ''}
+                  selectedDistrict={clinic.district ?? ''}
+                  onStateChange={v => { updateClinic(activeClinic, { state: v, district: '' }); setClinicFieldErrors(e => ({ ...e, state: false, district: false })); }}
+                  onDistrictChange={v => { updateClinic(activeClinic, { district: v }); setClinicFieldErrors(e => ({ ...e, district: false })); }}
+                />
+                {clinicFieldErrors.state && <Text style={{ fontSize: 10, color: '#F87171', fontWeight: '700', marginTop: 5 }}>State is required</Text>}
+                {clinicFieldErrors.district && !clinicFieldErrors.state && <Text style={{ fontSize: 10, color: '#F87171', fontWeight: '700', marginTop: 5 }}>District is required</Text>}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, clinicSaving && { opacity: 0.7 }]}
+              disabled={clinicSaving}
+              onPress={async () => {
+                const phone = (clinic.phone ?? '').replace(/\D/g, '');
+                const errors = {
+                  name: !clinic.name?.trim(),
+                  address: !clinic.address?.trim(),
+                  phone: phone.length < 10,
+                  maps: !clinic.maps?.trim(),
+                  state: !clinic.state?.trim(),
+                  district: !clinic.district?.trim(),
+                };
+                if (Object.values(errors).some(Boolean)) {
+                  setClinicFieldErrors(errors);
+                  return;
+                }
+                setClinicFieldErrors({});
+                setClinicSaving(true); setClinicSaved(false);
+                try {
+                  await updateDoctor({ clinics: clinics as any } as any);
+                  setClinicSaved(true);
+                  setTimeout(() => {
+                    setClinicSaved(false);
+                    setSection('main');
+                  }, 1200);
+                } catch {}
+                setClinicSaving(false);
+              }}
+            >
+              {clinicSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={clinicSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{clinicSaved ? 'Saved' : 'Save Clinics'}</Text>
+                  </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'schedule') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Schedule & Shifts" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            {/* ── 30-DAY SCHEDULE EDITOR ────────────────────── */}
+            {(() => {
+              const today = new Date(); today.setHours(0,0,0,0);
+              const dates30: Date[] = [];
+              for (let i = 0; i < 30; i++) {
+                const d = new Date(today); d.setDate(today.getDate() + i);
+                dates30.push(d);
+              }
+              const startDow = today.getDay();
+              const cells: (Date | null)[] = [...Array(startDow).fill(null), ...dates30];
+              while (cells.length % 7 !== 0) cells.push(null);
+              const rows: (Date | null)[][] = [];
+              for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+              const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+              function isoOf(d: Date) {
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              }
+              function friendlyDate(iso: string) {
+                const d = new Date(iso + 'T00:00:00');
+                return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+              }
+
+              // Derive a dot color for each configured date
+              function dotColor(cfg: DayCfg | undefined): string {
+                if (!cfg) return '';
+                if (cfg.off) return '#F87171';
+                const m = cfg.morning.enabled, e = cfg.evening.enabled;
+                if (m && e) return '#2DD4BF';
+                if (m) return '#FCD34D';
+                if (e) return '#A5B4FC';
+                return '#F87171';
+              }
+
+              let prevMonth = -1;
+              const monthLabels: { label: string; rowIdx: number }[] = [];
+              rows.forEach((row, ri) => {
+                const fd = row.find(c => c !== null);
+                if (fd && fd.getMonth() !== prevMonth) {
+                  prevMonth = fd.getMonth();
+                  monthLabels.push({ label: fd.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }), rowIdx: ri });
+                }
+              });
+
+              return (
+                <View style={{ marginTop: 24 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                    <Feather name="calendar" size={13} color="rgba(255,255,255,0.5)" />
+                    <Text style={styles.calTitle}>30-DAY SCHEDULE  ·  Tap date to configure</Text>
+                  </View>
+
+                  {/* DOW header */}
+                  <View style={[styles.calDowRow, { marginTop: 12 }]}>
+                    {DOW.map(d => <Text key={d} style={styles.calDow}>{d}</Text>)}
+                  </View>
+
+                  {/* Calendar grid */}
+                  {rows.map((row, ri) => {
+                    const ml = monthLabels.find(m => m.rowIdx === ri);
+                    return (
+                      <View key={ri}>
+                        {ml && <Text style={styles.calMonthLabel}>{ml.label}</Text>}
+                        <View style={styles.calRow}>
+                          {row.map((cell, ci) => {
+                            if (!cell) return <View key={ci} style={styles.calCell} />;
+                            const iso = isoOf(cell);
+                            const cfg = calendarOverrides[iso];
+                            const dot = dotColor(cfg);
+                            const isSelected = selectedCalDate === iso;
+                            const isToday = cell.getTime() === today.getTime();
+                            return (
+                              <TouchableOpacity
+                                key={ci}
+                                onPress={() => {
+                                  const activeCli = clinics[activeClinic];
+                                  const existing = calendarOverrides[iso];
+                                  const form = existing ? JSON.parse(JSON.stringify(existing)) : blankDay(activeCli);
+                                  setSelectedCalDate(iso);
+                                  setDayForm(form);
+                                  setDayModeState(existing ? modeOf(existing) : 'both');
+                                }}
+                                style={[
+                                  styles.calCell,
+                                  cfg?.off && { backgroundColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)' },
+                                  cfg && !cfg.off && { backgroundColor: 'rgba(13,148,136,0.14)', borderColor: 'rgba(45,212,191,0.35)' },
+                                  isSelected && { borderColor: '#FFF', borderWidth: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
+                                  isToday && !isSelected && { borderColor: '#2DD4BF', borderWidth: 1.5 },
+                                ]}
+                              >
+                                <Text style={[
+                                  styles.calCellDate,
+                                  isToday && { color: '#2DD4BF', fontWeight: '900' },
+                                  isSelected && { color: '#FFF' },
+                                  cfg?.off && { textDecorationLine: 'line-through', color: '#F87171' },
+                                ]}>{cell.getDate()}</Text>
+                                {dot ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: dot }} /> : null}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {/* Legend */}
+                  <View style={styles.calLegend}>
+                    {[
+                      { color: '#F87171', label: 'Off/Holiday' },
+                      { color: '#FCD34D', label: 'Morning' },
+                      { color: '#A5B4FC', label: 'Evening' },
+                      { color: '#2DD4BF', label: 'Both open' },
+                    ].map(item => (
+                      <View key={item.label} style={styles.calLegendItem}>
+                        <View style={[styles.calLegendDot, { backgroundColor: item.color }]} />
+                        <Text style={styles.calLegendTxt}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* ── DAY EDITOR ─────────────────────────── */}
+                  {selectedCalDate && (
+                    <View style={styles.dayEditor}>
+                      {/* Header */}
+                      <View style={styles.dayEditorHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Feather name="edit-2" size={12} color="rgba(255,255,255,0.6)" />
+                          <Text style={styles.dayEditorDate}>{friendlyDate(selectedCalDate)}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setSelectedCalDate(null)} style={styles.dayEditorClose}>
+                          <Feather name="x" size={14} color="rgba(255,255,255,0.4)" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* ── 4 SHIFT BUTTONS ── */}
+                      <View style={styles.shiftBtnRow}>
+                        {([
+                          { id: 'morning',  iconName: 'sun'   as const, label: 'Morning',  bg: 'rgba(245,158,11,0.25)', border: '#F59E0B', txt: '#FCD34D' },
+                          { id: 'evening',  iconName: 'moon'  as const, label: 'Evening',  bg: 'rgba(139,92,246,0.25)', border: '#7C3AED', txt: '#A5B4FC' },
+                          { id: 'both',     iconName: 'check' as const, label: 'Both',     bg: 'rgba(13,148,136,0.25)', border: '#0D9488', txt: '#2DD4BF' },
+                          { id: 'holiday',  iconName: 'x'     as const, label: 'Holiday',  bg: 'rgba(239,68,68,0.22)',  border: '#DC2626', txt: '#F87171' },
+                        ] as { id: DayMode; iconName: React.ComponentProps<typeof Feather>['name']; label: string; bg: string; border: string; txt: string }[]).map(btn => {
+                          const active = dayMode === btn.id;
+                          return (
+                            <TouchableOpacity
+                              key={btn.id}
+                              onPress={() => selectMode(btn.id)}
+                              style={[
+                                styles.shiftModeBtn,
+                                active && { backgroundColor: btn.bg, borderColor: btn.border },
+                              ]}
+                            >
+                              <Feather name={btn.iconName} size={14} color={active ? btn.txt : 'rgba(255,255,255,0.4)'} />
+                              <Text style={[styles.shiftModeBtnTxt, active && { color: btn.txt }]}>{btn.label}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      {/* Holiday: no further config needed */}
+                      {dayMode === 'holiday' && (
+                        <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                          <Feather name="slash" size={26} color="#F87171" style={{ marginBottom: 6 }} />
+                          <Text style={{ color: '#F87171', fontWeight: '700', fontSize: 13 }}>No appointments on this day</Text>
+                        </View>
+                      )}
+
+                      {/* ── SHIFT FORMS ──────────────────────────────── */}
+                      {(['morning', 'both'].includes(dayMode)) && (
+                        <ShiftForm
+                          shift="morning"
+                          accentColor="#FCD34D"
+                          iconName="sun"
+                          label="Morning Shift"
+                          data={dayForm.morning}
+                          clinics={clinics}
+                          onChange={p => patchShift('morning', p)}
+                        />
+                      )}
+                      {(['evening', 'both'].includes(dayMode)) && (
+                        <ShiftForm
+                          shift="evening"
+                          accentColor="#A5B4FC"
+                          iconName="moon"
+                          label="Evening Shift"
+                          data={dayForm.evening}
+                          clinics={clinics}
+                          onChange={p => patchShift('evening', p)}
+                        />
+                      )}
+
+                      {/* Apply Day button */}
+                      {(() => {
+                        const needsMorning = ['morning', 'both'].includes(dayMode);
+                        const needsEvening = ['evening', 'both'].includes(dayMode);
+                        const morningOk = !needsMorning || dayForm.morning.clinicName.trim() !== '';
+                        const eveningOk = !needsEvening || dayForm.evening.clinicName.trim() !== '';
+                        const canApply   = dayMode === 'holiday' || (morningOk && eveningOk);
+                        return (
+                          <TouchableOpacity
+                            style={[styles.applyDayBtn, !canApply && { opacity: 0.38, borderColor: 'rgba(45,212,191,0.3)' }]}
+                            activeOpacity={canApply ? 0.75 : 1}
+                            onPress={() => {
+                              if (!canApply) {
+                                Alert.alert(
+                                  'Select a Clinic',
+                                  `Please select a clinic for the ${!morningOk && !eveningOk ? 'morning and evening shifts' : !morningOk ? 'morning shift' : 'evening shift'} before applying.`,
+                                  [{ text: 'OK' }]
+                                );
+                                return;
+                              }
+                              setCalendarOverrides(prev => ({ ...prev, [selectedCalDate]: dayForm }));
+                              setSelectedCalDate(null);
+                            }}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                              <Feather name="check" size={13} color={canApply ? TEAL_LT : 'rgba(45,212,191,0.5)'} />
+                              <Text style={[styles.applyDayBtnTxt, !canApply && { color: 'rgba(45,212,191,0.5)' }]}>Apply to {friendlyDate(selectedCalDate)}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })()}
+                    </View>
+                  )}
+
+                  {/* Save all */}
+                  <TouchableOpacity
+                    style={[styles.saveBtn, { marginTop: 16 }, calSaving && { opacity: 0.7 }]}
+                    disabled={calSaving}
+                    onPress={async () => {
+                      setCalSaving(true); setCalSaved(false);
+                      try {
+                        await updateDoctor({ calendar: calendarOverrides as any });
+                        setCalSaved(true);
+                        setTimeout(() => {
+                          setCalSaved(false);
+                          setSection('main');
+                        }, 1200);
+                      } catch {}
+                      setCalSaving(false);
+                    }}
+                  >
+                    {calSaving
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Feather name={calSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                          <Text style={styles.saveBtnText}>{calSaved ? 'Saved' : 'Save 30-Day Schedule'}</Text>
+                        </View>}
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'fees') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Fee Structure" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>FEE STRUCTURE</Text>
+              <View style={styles.feeNote}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                  <Feather name="info" size={12} color="rgba(255,255,255,0.35)" style={{ marginTop: 2 }} />
+                  <Text style={[styles.feeNoteText, { flex: 1 }]}>
+                    Set your consultation rates. These drive your earnings rate card. Online payments use your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment is processed.
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>normal E-TOKEN FEE</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={consultFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setConsultFee(String(Math.min(2000, n)));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="10"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>EMERGENCY E-TOKEN FEE</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={emergencyFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setEmergencyFee(String(Math.min(1000, n)));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="20"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>WALK-IN FEE</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={walkinFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setWalkinFee(String(Math.min(1000, n)));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="200"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>CONSULTATION AT CLINIC</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={clinicConsultFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setClinicConsultFee(String(n));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="300"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>EMERGENCY CONSULTATION AT CLINIC</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={clinicEmergencyFee}
+                  onChangeText={v => {
+                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
+                    setClinicEmergencyFee(String(n));
+                  }}
+                  keyboardType="numeric"
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholder="500"
+                />
+              </View>
+              <View style={[styles.feeNote, { backgroundColor: 'rgba(45,212,191,0.08)', borderColor: 'rgba(45,212,191,0.2)' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                  <Feather name="check-circle" size={12} color="rgba(45,212,191,0.8)" style={{ marginTop: 2 }} />
+                  <Text style={[styles.feeNoteText, { color: 'rgba(45,212,191,0.8)', flex: 1 }]}>
+                    Fees saved. Online tokens charge patients your E-Token rate + ₹10 platform fee. Walk-in and in-clinic payments are collected directly — no app payment required.
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, feeSaving && { opacity: 0.7 }]}
+              disabled={feeSaving}
+              onPress={async () => {
+                setFeeSaving(true); setFeeSaved(false);
+                try {
+                  await updateDoctor({ consultFee: Number(consultFee) || 0, emergencyFee: Number(emergencyFee) || 0, walkinFee: Number(walkinFee) || 0, clinicConsultFee: Number(clinicConsultFee) || 0, clinicEmergencyFee: Number(clinicEmergencyFee) || 0 } as any);
+                  setFeeSaved(true);
+                  setTimeout(() => {
+                    setFeeSaved(false);
+                    setSection('main');
+                  }, 1200);
+                } catch {} finally {
+                  setFeeSaving(false);
+                }
+              }}
+            >
+              {feeSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={feeSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{feeSaved ? 'Saved' : 'Save Fee Structure'}</Text>
+                  </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'patientApp') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Patient App Settings" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>FEATURES</Text>
+              {[
+                { label: 'Emergency Tokens', sub: 'Allow emergency token requests', val: emergencyTokens, set: setEmergencyTokens },
+                { label: 'Show Wait Time', sub: 'Display estimated wait time', val: showWaitTime, set: setShowWaitTime },
+                { label: 'Show Queue Position', sub: 'Show patient\'s current position', val: showPosition, set: setShowPosition },
+                { label: 'Show Fee', sub: 'Display consultation fee', val: showFee, set: setShowFee },
+              ].map((item, i) => (
+                <View key={item.label} style={[styles.toggleRow, i > 0 && { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.toggleRowLabel}>{item.label}</Text>
+                    <Text style={styles.toggleRowSub}>{item.sub}</Text>
+                  </View>
+                  <Toggle on={item.val} onChange={() => item.set(p => !p)} />
+                </View>
+              ))}
+            </View>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>PATIENT ALERT MESSAGE</Text>
+              <TextInput
+                style={[styles.fieldInput, { height: 80, paddingTop: 10 }]}
+                value={alertMessage}
+                onChangeText={setAlertMessage}
+                multiline
+                placeholderTextColor="rgba(255,255,255,0.2)"
+                placeholder="Enter the alert message sent to patients..."
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, patientAppSaving && { opacity: 0.7 }]}
+              disabled={patientAppSaving}
+              onPress={async () => {
+                setPatientAppSaving(true); setPatientAppSaved(false);
+                try {
+                  await updateDoctor({ onlineBooking, emergencyTokens, showWaitTime, showPosition, showFee, alertMessage } as any);
+                  setPatientAppSaved(true);
+                  setTimeout(() => { setPatientAppSaved(false); setSection('main'); }, 1200);
+                } catch {}
+                setPatientAppSaving(false);
+              }}
+            >
+              {patientAppSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={patientAppSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{patientAppSaved ? 'Settings Saved!' : 'Save Patient App Settings'}</Text>
+                  </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'bank') {
+    const bankValid = payoutType === 'bank'
+      ? accountHolderName.trim() && bankName.trim() && accountNumber.trim() && ifscCode.trim() && branch.trim()
+      : upiId.trim() && payoutDisplayName.trim();
+
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Bank Account" onBack={() => { setBankAttempted(false); setSection('main'); }} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>PAYMENT METHOD</Text>
+              <View style={styles.clinicTabs}>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'bank' && styles.clinicTabActive]} onPress={() => { setPayoutType('bank'); setBankAttempted(false); }}>
+                  <Text style={[styles.clinicTabText, payoutType === 'bank' && styles.clinicTabTextActive]}>Bank Transfer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.clinicTab, payoutType === 'upi' && styles.clinicTabActive]} onPress={() => { setPayoutType('upi'); setBankAttempted(false); }}>
+                  <Text style={[styles.clinicTabText, payoutType === 'upi' && styles.clinicTabTextActive]}>UPI</Text>
+                </TouchableOpacity>
+              </View>
+              {payoutType === 'bank' ? (
+                <>
+                  <Field label="Account Holder Name" value={accountHolderName} onChange={setAccountHolderName} required error={bankAttempted && !accountHolderName.trim()} />
+                  <Field label="Bank Name" value={bankName} onChange={setBankName} required error={bankAttempted && !bankName.trim()} />
+                  <Field label="Account Number" value={accountNumber} onChange={setAccountNumber} keyboardType="numeric" required error={bankAttempted && !accountNumber.trim()} />
+                  <Field label="IFSC Code" value={ifscCode} onChange={setIfscCode} required error={bankAttempted && !ifscCode.trim()} />
+                  <Field label="Branch" value={branch} onChange={setBranch} required error={bankAttempted && !branch.trim()} />
+                </>
+              ) : (
+                <>
+                  <Field label="UPI ID" value={upiId} onChange={setUpiId} required error={bankAttempted && !upiId.trim()} />
+                  <Field label="Receiver Name" value={payoutDisplayName} onChange={setPayoutDisplayName} required error={bankAttempted && !payoutDisplayName.trim()} />
+                </>
+              )}
+              {bankAttempted && !bankValid && (
+                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '600' }}>Please fill in all required fields before saving.</Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
+              disabled={bankSaving}
+              onPress={async () => {
+                setBankAttempted(true);
+                if (!bankValid) return;
+                setBankSaving(true); setBankSaved(false);
+                try {
+                  await updateDoctor({
+                    bankAccount: {
+                      accountType: payoutType,
+                      accountHolderName,
+                      bankName,
+                      accountNumber,
+                      ifscCode,
+                      branch,
+                      upiId,
+                      payoutName: payoutDisplayName,
+                      payoutCycle,
+                      payoutEnabled,
+                    },
+                  } as any);
+                  setBankSaved(true);
+                  setBankAttempted(false);
+                  setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
+                } finally {
+                  setBankSaving(false);
+                }
+              }}
+            >
+              {bankSaving
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Feather name={bankSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                    <Text style={styles.saveBtnText}>{bankSaved ? 'Saved' : 'Save Bank Details'}</Text>
+                  </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (section === 'payout') {
+    const cycles = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'];
+    const linkedAccount = accountNumber
+      ? `${bankName || 'Bank'} **${accountNumber.slice(-4)}`
+      : upiId
+        ? `UPI · ${upiId}`
+        : null;
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Payout Settings" onBack={() => { setPayoutAttempted(false); setSection('main'); }} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {/* Linked account summary */}
+            {linkedAccount ? (
+              <View style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(45,212,191,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name={accountNumber ? 'database' : 'credit-card'} size={18} color={TEAL_LT} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>{linkedAccount}</Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Linked payout account</Text>
+                </View>
+                <TouchableOpacity onPress={() => setSection('bank')} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(45,212,191,0.3)', backgroundColor: 'rgba(45,212,191,0.08)' }}>
+                  <Text style={{ fontSize: 11, color: TEAL_LT, fontWeight: '700' }}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={[styles.formCard, { flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: 'rgba(251,191,36,0.25)', backgroundColor: 'rgba(251,191,36,0.05)' }]} onPress={() => setSection('bank')}>
+                <Feather name="alert-triangle" size={20} color="#FCD34D" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FCD34D' }}>No account linked</Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500', marginTop: 1 }}>Tap to add bank account or UPI</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.3)" />
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.formCard}>
+              <Text style={styles.formCardTitle}>SETTLEMENT</Text>
+              <View style={[styles.toggleRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12, marginBottom: 12 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleRowLabel}>Enable Payouts</Text>
+                  <Text style={styles.toggleRowSub}>Allow settlement transfers to your account</Text>
+                </View>
+                <Toggle on={payoutEnabled} onChange={() => setPayoutEnabled(p => !p)} />
+              </View>
+
+              <Text style={styles.fieldLabel}>PAYOUT CYCLE</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
+                {cycles.map(cycle => (
+                  <TouchableOpacity
+                    key={cycle}
+                    onPress={() => setPayoutCycle(cycle)}
+                    style={{
+                      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5,
+                      borderColor: payoutCycle === cycle ? TEAL : 'rgba(255,255,255,0.12)',
+                      backgroundColor: payoutCycle === cycle ? 'rgba(45,212,191,0.18)' : 'rgba(255,255,255,0.04)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: payoutCycle === cycle ? TEAL_LT : 'rgba(255,255,255,0.5)' }}>{cycle}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Field
+                label="Payout Display Name"
+                value={payoutDisplayName}
+                onChange={setPayoutDisplayName}
+                required
+                error={payoutAttempted && !payoutDisplayName.trim()}
+              />
+              <View style={styles.feeNote}>
+                <Text style={styles.feeNoteText}>Payout display name appears on your settlement receipts and payout notifications.</Text>
+              </View>
+              {payoutAttempted && !payoutDisplayName.trim() && (
+                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}>
+                  <Text style={{ fontSize: 11, color: '#F87171', fontWeight: '600' }}>Please fill in all required fields before saving.</Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, bankSaving && { opacity: 0.7 }]}
+              disabled={bankSaving}
+              onPress={async () => {
+                setPayoutAttempted(true);
+                if (!payoutDisplayName.trim()) return;
+                setBankSaving(true); setBankSaved(false);
+                try {
+                  const bank = (doctor as any)?.bankAccount ?? {};
+                  await updateDoctor({
+                    bankAccount: {
+                      ...bank,
+                      accountType: payoutType,
+                      payoutName: payoutDisplayName,
+                      payoutCycle,
+                      payoutEnabled,
+                    },
+                  } as any);
+                  setBankSaved(true);
+                  setPayoutAttempted(false);
+                  setTimeout(() => { setBankSaved(false); setSection('main'); }, 1200);
+                } finally {
+                  setBankSaving(false);
+                }
+              }}
+            >
+              {bankSaving ? <ActivityIndicator color="#FFF" size="small" /> : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Feather name={bankSaved ? 'check' : 'save'} size={13} color="#FFF" />
+                  <Text style={styles.saveBtnText}>{bankSaved ? 'Saved' : 'Save Payout Settings'}</Text>
+                </View>}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Share Profile QR ────────────────────────────────────────────────────
+  if (section === 'shareProfile') {
+    const shortCode = (doctor as any)?.shortCode;
+    const profileUrl = doctor?.id
+      ? shortCode
+        ? `${BASE()}/s/${shortCode}`
+        : `${BASE()}/patient-app/doctor/${doctor.id}`
+      : '';
+    const shareTitle = doctor?.name ? `Book a token with ${doctor.name} on LINESETU` : 'Book a token on LINESETU';
+    const shareMessage = profileUrl
+      ? `${shareTitle}\n\n${profileUrl}\n\nScan or tap the link to view my profile and book your token.`
+      : '';
+    const clinicLine = (() => {
+      const list: any = (doctor as any)?.clinics;
+      if (Array.isArray(list)) {
+        const active = list.find((c: any) => c?.active && c?.name);
+        if (active?.name) return String(active.name);
+        if (list[0]?.name) return String(list[0].name);
+      }
+      const cn = (doctor as any)?.clinicName;
+      return cn ? String(cn) : '';
+    })();
+    const safeFileSlug = (doctor?.name || 'doctor').toString().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'doctor';
+    const onShare = async () => {
+      if (!profileUrl) return;
+      try {
+        await Share.share({ message: shareMessage, url: profileUrl, title: shareTitle });
+      } catch {}
+    };
+    const onCopy = async () => {
+      if (!profileUrl) return;
+      let ok = false;
+      try {
+        await Clipboard.setStringAsync(profileUrl);
+        ok = true;
+      } catch {
+        // Last-ditch web fallback (some browsers reject the async API).
+        if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
+          try {
+            await (navigator as any).clipboard.writeText(profileUrl);
+            ok = true;
+          } catch {}
+        }
+      }
+      Alert.alert(ok ? 'Copied' : "Couldn't copy", ok ? 'Profile link copied to clipboard' : 'Please copy the link manually.');
+    };
+
+    // (qrRef, posterShotRef, savingPoster, posterSaved are declared at the
+    // top of the component to keep hook order stable across sections.)
+
+    // Build the print-ready poster HTML used by both expo-print (native) and
+    // window.print() (web). Embeds the QR as a base64 PNG so the printed page
+    // doesn't need any network/asset resolution.
+    const buildPosterHtml = (qrDataUrl: string) => {
+      const safe = (s: string) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c] as string));
+      const docName = safe(doctor?.name || 'Doctor');
+      const clinic = clinicLine ? `<div class="clinic">${safe(clinicLine)}</div>` : '';
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+        <title>LINESETU – ${docName}</title>
+        <style>
+          @page { size: A4; margin: 18mm; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #FFFFFF; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Arial, sans-serif; color: #0F172A; }
+          .poster { width: 100%; max-width: 560px; margin: 0 auto; padding: 28px 24px; text-align: center; }
+          .header { border-bottom: 1px solid #E5E7EB; padding-bottom: 16px; }
+          .brand { font-size: 28px; font-weight: 900; color: #0E5A53; letter-spacing: 2px; }
+          .tagline { margin-top: 6px; font-size: 14px; font-weight: 600; color: #475569; }
+          .qr-wrap { margin: 28px auto 0; display: inline-block; padding: 14px; border: 1px solid #E5E7EB; border-radius: 14px; background: #FFFFFF; }
+          .qr-wrap img { display: block; width: 320px; height: 320px; }
+          .doctor { margin-top: 24px; font-size: 22px; font-weight: 900; color: #0F172A; }
+          .clinic { margin-top: 8px; font-size: 15px; font-weight: 600; color: #475569; }
+          .footer { margin-top: 22px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: #0E7C73; text-transform: uppercase; }
+        </style></head>
+        <body>
+          <div class="poster">
+            <div class="header">
+              <div class="brand">LINESETU</div>
+              <div class="tagline">Scan to book your token</div>
+            </div>
+            <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR code"/></div>
+            <div class="doctor">${docName}</div>
+            ${clinic}
+            <div class="footer">Scan with the LINESETU Patient App</div>
+          </div>
+        </body></html>`;
+    };
+
+    // Resolve the QR image as a data URL via the SVG ref (works on web + native).
+    const getQrDataUrl = (): Promise<string> => new Promise((resolve, reject) => {
+      const ref = qrRef.current;
+      if (!ref || typeof ref.toDataURL !== 'function') {
+        reject(new Error('QR not ready'));
+        return;
+      }
+      try {
+        ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64));
+      } catch (err) { reject(err); }
+    });
+
+    const onPrintPoster = async () => {
+      if (!profileUrl || printingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't print poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setPrintingPoster(true);
+      try {
+        const qrDataUrl = await getQrDataUrl();
+        const html = buildPosterHtml(qrDataUrl);
+        if (Platform.OS === 'web') {
+          // Render the poster in a hidden iframe and trigger the browser's
+          // print dialog scoped to that iframe so the rest of the app UI
+          // doesn't end up on the printed page.
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!doc) throw new Error('Print frame unavailable');
+          doc.open(); doc.write(html); doc.close();
+          // Wait for the QR image to load before invoking print.
+          const cw = iframe.contentWindow!;
+          const cleanup = () => { setTimeout(() => { try { document.body.removeChild(iframe); } catch {} }, 1000); };
+          const doPrint = () => {
+            try { cw.focus(); cw.print(); } catch {}
+            cleanup();
+          };
+          const img = doc.querySelector('img');
+          if (img && !(img as HTMLImageElement).complete) {
+            (img as HTMLImageElement).onload = doPrint;
+            (img as HTMLImageElement).onerror = doPrint;
+          } else {
+            setTimeout(doPrint, 100);
+          }
+        } else {
+          if (!ExpoPrint || typeof ExpoPrint.printAsync !== 'function') {
+            Alert.alert("Can't print poster", 'Printing is not available in this build. Please use a development build.');
+            return;
+          }
+          await ExpoPrint.printAsync({ html });
+        }
+      } catch (e: any) {
+        // User-cancelled prints on iOS surface as a "Printing did not complete"
+        // error; treat any user-cancel-shaped error quietly.
+        const msg = String(e?.message || '');
+        if (!/cancel/i.test(msg) && !/did not complete/i.test(msg)) {
+          Alert.alert("Couldn't print poster", msg || 'Please try again.');
+        }
+      } finally {
+        setPrintingPoster(false);
+      }
+    };
+
+    const displayTagline = (posterTagline && posterTagline.trim())
+      ? posterTagline.trim()
+      : 'Scan to book your token';
+
+    const onPickPosterLogo = async () => {
+      if (!doctor || posterLogoUploading) return;
+      try {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Permission needed', 'Please allow photo access to choose a logo.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+          base64: true,
+          allowsEditing: true,
+          aspect: [1, 1],
+          exif: false,
+        });
+        if (result.canceled || !result.assets[0]?.base64) return;
+        const asset = result.assets[0];
+        setPosterLogoUploading(true);
+        const mimeType = asset.mimeType || 'image/png';
+        const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/poster-logo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: asset.base64, mimeType }),
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setPosterLogo(data.url);
+          await updateDoctor({ posterLogo: data.url } as any);
+        } else {
+          Alert.alert("Couldn't upload logo", data.error || 'Please try again.');
+        }
+      } catch (e: any) {
+        Alert.alert("Couldn't upload logo", e?.message || 'Please try again.');
+      } finally {
+        setPosterLogoUploading(false);
+      }
+    };
+
+    const onRemovePosterLogo = async () => {
+      if (!doctor || posterLogoUploading) return;
+      try {
+        setPosterLogoUploading(true);
+        setPosterLogo('');
+        await updateDoctor({ posterLogo: '' } as any);
+      } catch (e: any) {
+        Alert.alert("Couldn't remove logo", e?.message || 'Please try again.');
+      } finally {
+        setPosterLogoUploading(false);
+      }
+    };
+
+    const onSaveTagline = async () => {
+      if (!doctor || posterTaglineSaving) return;
+      const next = posterTaglineDraft.trim().slice(0, 80);
+      if (next === (posterTagline || '')) return;
+      try {
+        setPosterTaglineSaving(true);
+        setPosterTagline(next);
+        await updateDoctor({ posterTagline: next } as any);
+      } catch (e: any) {
+        Alert.alert("Couldn't save tagline", e?.message || 'Please try again.');
+      } finally {
+        setPosterTaglineSaving(false);
+      }
+    };
+
+    // Fetch a remote image as a data URL so it can be drawn on the web canvas
+    // without tainting it. Returns null on failure (poster will skip the logo).
+    const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
+      try {
+        const r = await fetch(url, { mode: 'cors' });
+        if (!r.ok) return null;
+        const blob = await r.blob();
+        return await new Promise<string | null>((resolve) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(typeof fr.result === 'string' ? fr.result : null);
+          fr.onerror = () => resolve(null);
+          fr.readAsDataURL(blob);
+        });
+      } catch { return null; }
+    };
+
+    const onSavePoster = async () => {
+      if (!profileUrl || savingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't save poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setSavingPoster(true);
+      try {
+        if (Platform.OS === 'web') {
+          // Compose poster on an HTML canvas using the QR's PNG data URL.
+          const qrDataUrl: string = await new Promise((resolve, reject) => {
+            const ref = qrRef.current;
+            if (!ref || typeof ref.toDataURL !== 'function') {
+              reject(new Error('QR not ready'));
+              return;
+            }
+            try {
+              ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64));
+            } catch (err) { reject(err); }
+          });
+          const img = new (window as any).Image();
+          img.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            img.onload = () => res();
+            img.onerror = () => rej(new Error('Failed to load QR image'));
+            img.src = qrDataUrl;
+          });
+          const W = 720, H = 980;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas not supported');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, W, H);
+          // Header band
+          ctx.fillStyle = '#0E5A53';
+          ctx.fillRect(0, 0, W, 110);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 34px Inter, Arial, sans-serif';
+          ctx.fillText('LINESETU', W / 2, 60);
+          ctx.font = '600 16px Inter, Arial, sans-serif';
+          ctx.fillText(displayTagline, W / 2, 92);
+
+          // Optional clinic logo — round badge centred just below the header.
+          if (posterLogo) {
+            const logoDataUrl = await fetchImageAsDataUrl(posterLogo);
+            if (logoDataUrl) {
+              try {
+                const logoImg = new (window as any).Image();
+                logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((res, rej) => {
+                  logoImg.onload = () => res();
+                  logoImg.onerror = () => rej(new Error('logo'));
+                  logoImg.src = logoDataUrl;
+                });
+                const lSize = 96;
+                const lX = (W - lSize) / 2;
+                const lY = 110 - lSize / 2;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(lX + lSize / 2, lY + lSize / 2, lSize / 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.stroke();
+                ctx.clip();
+                ctx.drawImage(logoImg, lX, lY, lSize, lSize);
+                ctx.restore();
+              } catch {}
+            }
+          }
+          // QR with light frame
+          const qrSize = 460;
+          const qrX = (W - qrSize) / 2;
+          const qrY = 170;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.strokeStyle = '#E5E7EB';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(qrX - 18, qrY - 18, qrSize + 36, qrSize + 36);
+          ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+          // Doctor name + clinic
+          ctx.fillStyle = '#0F172A';
+          ctx.font = 'bold 30px Inter, Arial, sans-serif';
+          ctx.fillText(doctor?.name || 'Doctor', W / 2, qrY + qrSize + 70);
+          if (clinicLine) {
+            ctx.fillStyle = '#475569';
+            ctx.font = '500 20px Inter, Arial, sans-serif';
+            ctx.fillText(clinicLine, W / 2, qrY + qrSize + 102);
+          }
+          ctx.fillStyle = '#0E7C73';
+          ctx.font = '700 14px Inter, Arial, sans-serif';
+          ctx.fillText('Scan with the LINESETU Patient App', W / 2, H - 36);
+          const dataUrl = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `linesetu-${safeFileSlug}-qr.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          if (!captureRef || !MediaLibrary) {
+            Alert.alert("Can't save poster", 'Image saving is not available in this build. Please use a development build.');
+            return;
+          }
+          const perm = await MediaLibrary.requestPermissionsAsync();
+          if (!perm?.granted && perm?.status !== 'granted') {
+            Alert.alert('Permission needed', 'Please allow photo library access to save the poster.');
+            return;
+          }
+          // Tiny pause so the offscreen poster has painted before capture.
+          await new Promise(r => setTimeout(r, 60));
+          const uri = await captureRef(posterShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+          await MediaLibrary.saveToLibraryAsync(uri);
+        }
+        setPosterSaved(true);
+        setTimeout(() => setPosterSaved(false), 1800);
+      } catch (e: any) {
+        Alert.alert("Couldn't save poster", e?.message || 'Please try again.');
+      } finally {
+        setSavingPoster(false);
+      }
+    };
+
+    const onSharePoster = async () => {
+      if (!profileUrl || sharingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't share poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setSharingPoster(true);
+      try {
+        if (Platform.OS === 'web') {
+          // Build the same canvas poster as onSavePoster, then try
+          // navigator.share with a File; fall back to download if unsupported.
+          const qrDataUrl: string = await new Promise((resolve, reject) => {
+            const ref = qrRef.current;
+            if (!ref || typeof ref.toDataURL !== 'function') { reject(new Error('QR not ready')); return; }
+            try { ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64)); } catch (err) { reject(err); }
+          });
+          const img = new (window as any).Image();
+          img.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('Failed to load QR')); img.src = qrDataUrl; });
+          const W = 720, H = 980;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas not supported');
+          ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#0E5A53'; ctx.fillRect(0, 0, W, 110);
+          ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
+          ctx.font = 'bold 34px Inter, Arial, sans-serif'; ctx.fillText('LINESETU', W / 2, 60);
+          ctx.font = '600 16px Inter, Arial, sans-serif'; ctx.fillText('Scan to book your token', W / 2, 92);
+          const qrSize = 460, qrX = (W - qrSize) / 2, qrY = 170;
+          ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#E5E7EB'; ctx.lineWidth = 2;
+          ctx.strokeRect(qrX - 18, qrY - 18, qrSize + 36, qrSize + 36);
+          ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+          ctx.fillStyle = '#0F172A'; ctx.font = 'bold 30px Inter, Arial, sans-serif';
+          ctx.fillText(doctor?.name || 'Doctor', W / 2, qrY + qrSize + 70);
+          if (clinicLine) { ctx.fillStyle = '#475569'; ctx.font = '500 20px Inter, Arial, sans-serif'; ctx.fillText(clinicLine, W / 2, qrY + qrSize + 102); }
+          ctx.fillStyle = '#0E7C73'; ctx.font = '700 14px Inter, Arial, sans-serif';
+          ctx.fillText('Scan with the LINESETU Patient App', W / 2, H - 36);
+          const dataUrl = canvas.toDataURL('image/png');
+          const fileName = `linesetu-${safeFileSlug}-qr.png`;
+          // Try Web Share API with file first (WhatsApp, etc.)
+          const canShare = typeof navigator !== 'undefined' && typeof (navigator as any).share === 'function' && typeof (navigator as any).canShare === 'function';
+          if (canShare) {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if ((navigator as any).canShare({ files: [file] })) {
+              await (navigator as any).share({ files: [file], title: `${doctor?.name || 'Doctor'} – LINESETU QR Poster` });
+              return;
+            }
+          }
+          // Fallback: download
+          const a = document.createElement('a');
+          a.href = dataUrl; a.download = fileName;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else {
+          if (!captureRef) {
+            Alert.alert("Can't share poster", 'Image capture is not available in this build. Please use a development build.');
+            return;
+          }
+          await new Promise(r => setTimeout(r, 60));
+          const uri = await captureRef(posterShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+          if (!ExpoSharing || typeof ExpoSharing.shareAsync !== 'function') {
+            Alert.alert("Can't share poster", 'Sharing is not available in this build. Please use a development build.');
+            return;
+          }
+          const isAvailable = await ExpoSharing.isAvailableAsync();
+          if (!isAvailable) {
+            Alert.alert("Can't share poster", 'Sharing is not supported on this device.');
+            return;
+          }
+          await ExpoSharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share poster' });
+        }
+      } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (!/cancel/i.test(msg) && !/abort/i.test(msg)) {
+          Alert.alert("Couldn't share poster", msg || 'Please try again.');
+        }
+      } finally {
+        setSharingPoster(false);
+      }
+    };
+
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Share Profile QR" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 18, lineHeight: 20, fontWeight: '500' }}>
+              Patients can scan this QR with the LINESETU Patient App to open your profile and book a token instantly. Print it at your clinic or share the link on WhatsApp, posters, or business cards.
+            </Text>
+
+            {/* QR card */}
+            <View style={[styles.formCard, { alignItems: 'center', paddingVertical: 24 }]}>
+              {profileUrl && QRCode ? (
+                <View style={{ padding: 16, backgroundColor: '#FFF', borderRadius: 18 }}>
+                  <QRCode
+                    value={profileUrl}
+                    size={220}
+                    backgroundColor="#FFFFFF"
+                    color="#060E12"
+                    ecl="H"
+                    getRef={(c: any) => { qrRef.current = c; }}
+                  />
+                </View>
+              ) : (
+                <View style={{ width: 252, height: 252, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                  {!profileUrl ? (
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Profile loading…</Text>
+                  ) : (
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center', paddingHorizontal: 16 }}>QR renderer unavailable on this build. Use the link below.</Text>
+                  )}
+                </View>
+              )}
+              <Text style={{ marginTop: 16, fontSize: 13, fontWeight: '800', color: '#FFF', textAlign: 'center' }}>
+                {doctor?.name || 'Your profile'}
+              </Text>
+              <Text style={{ marginTop: 4, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                Scan with the LINESETU Patient App
+              </Text>
+            </View>
+
+            {/* Link row */}
+            <Text style={styles.sectionLabel}>PROFILE LINK</Text>
+            <View style={[styles.formCard, { paddingVertical: 12 }]}>
+              <Text selectable style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600', lineHeight: 18 }}>
+                {profileUrl || '—'}
+              </Text>
+            </View>
+
+            {/* Action buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+              <TouchableOpacity
+                onPress={onCopy}
+                disabled={!profileUrl}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', opacity: profileUrl ? 1 : 0.5 }}
+              >
+                <Feather name="copy" size={15} color="#FFF" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Copy link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onShare}
+                disabled={!profileUrl}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: TEAL, borderWidth: 1, borderColor: TEAL_LT, opacity: profileUrl ? 1 : 0.5 }}
+              >
+                <Feather name="share-2" size={15} color="#FFF" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Share</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Poster customization — logo + tagline baked into the saved image. */}
+            <Text style={[styles.sectionLabel, { marginTop: 18 }]}>POSTER CUSTOMIZATION</Text>
+            <View style={[styles.formCard, { paddingVertical: 14 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {posterLogo ? (
+                    <Image source={{ uri: posterLogo }} style={{ width: 56, height: 56 }} />
+                  ) : (
+                    <Feather name="image" size={20} color="rgba(255,255,255,0.35)" />
+                  )}
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Clinic logo</Text>
+                  <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '500', marginTop: 2 }}>
+                    {posterLogo ? 'Shown on the saved poster' : 'Optional — uses LINESETU branding by default'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <TouchableOpacity
+                  onPress={onPickPosterLogo}
+                  disabled={posterLogoUploading}
+                  style={{ flex: 1, height: 40, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: posterLogoUploading ? 0.6 : 1 }}
+                >
+                  {posterLogoUploading ? (
+                    <ActivityIndicator color="#2DD4BF" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="upload" size={13} color="#2DD4BF" />
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#2DD4BF' }}>{posterLogo ? 'Replace logo' : 'Upload logo'}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {!!posterLogo && (
+                  <TouchableOpacity
+                    onPress={onRemovePosterLogo}
+                    disabled={posterLogoUploading}
+                    style={{ width: 90, height: 40, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', opacity: posterLogoUploading ? 0.6 : 1 }}
+                  >
+                    <Feather name="trash-2" size={13} color="rgba(255,255,255,0.6)" />
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.7)' }}>Remove</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 14 }} />
+
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Tagline</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '500', marginTop: 2 }}>
+                Shown under the LINESETU header. Leave blank for the default.
+              </Text>
+              <TextInput
+                style={[styles.fieldInput, { marginTop: 10 }]}
+                value={posterTaglineDraft}
+                onChangeText={(v) => setPosterTaglineDraft(v.slice(0, 80))}
+                placeholder="e.g. Smile Care Dental Clinic — Open Mon–Sat"
+                placeholderTextColor="rgba(255,255,255,0.2)"
+                maxLength={80}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>{posterTaglineDraft.length}/80</Text>
+                <TouchableOpacity
+                  onPress={onSaveTagline}
+                  disabled={posterTaglineSaving || posterTaglineDraft.trim() === (posterTagline || '').trim()}
+                  style={{ height: 34, paddingHorizontal: 16, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (posterTaglineSaving || posterTaglineDraft.trim() === (posterTagline || '').trim()) ? 0.5 : 1 }}
+                >
+                  {posterTaglineSaving ? (
+                    <ActivityIndicator color="#2DD4BF" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="check" size={12} color="#2DD4BF" />
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#2DD4BF' }}>Save tagline</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Save poster + Print poster — Save generates a PNG; Print opens
+                the OS native print sheet (AirPrint / Android print services /
+                Bluetooth printers on mobile, browser print dialog on web). */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <TouchableOpacity
+                onPress={onSavePoster}
+                disabled={!profileUrl || savingPoster || !QRCode}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+              >
+                {savingPoster ? (
+                  <ActivityIndicator color="#2DD4BF" size="small" />
+                ) : (
+                  <>
+                    <Feather name={posterSaved ? 'check' : (Platform.OS === 'web' ? 'download' : 'image')} size={15} color="#2DD4BF" />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>
+                      {posterSaved
+                        ? (Platform.OS === 'web' ? 'Downloaded' : 'Saved')
+                        : (Platform.OS === 'web' ? 'Download' : 'Save poster')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onPrintPoster}
+                disabled={!profileUrl || printingPoster || !QRCode}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+              >
+                {printingPoster ? (
+                  <ActivityIndicator color="#2DD4BF" size="small" />
+                ) : (
+                  <>
+                    <Feather name="printer" size={15} color="#2DD4BF" />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>Print</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+            {/* Share poster — opens OS share sheet (WhatsApp, email, AirDrop…) */}
+            <TouchableOpacity
+              onPress={onSharePoster}
+              disabled={!profileUrl || sharingPoster || !QRCode}
+              style={{ marginTop: 10, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(37,211,102,0.13)', borderWidth: 1, borderColor: 'rgba(37,211,102,0.38)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+            >
+              {sharingPoster ? (
+                <ActivityIndicator color="#25D366" size="small" />
+              ) : (
+                <>
+                  <Feather name="share-2" size={15} color="#25D366" />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#25D366' }}>Share poster</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <Text style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 16 }}>
+              Print at your clinic, share on WhatsApp, or post on social media.
+            </Text>
+
+            <View style={{ height: 24 }} />
+          </ScrollView>
+
+          {/* Hidden poster used by view-shot on native. Rendered offscreen so
+              it paints but is invisible to the user. Kept out of the web tree
+              because web uses an HTML canvas instead. */}
+          {Platform.OS !== 'web' && profileUrl && QRCode && (
+            <View
+              ref={posterShotRef}
+              collapsable={false}
+              pointerEvents="none"
+              style={{ position: 'absolute', left: -10000, top: 0, width: 380, paddingVertical: 28, paddingHorizontal: 24, backgroundColor: '#FFFFFF' }}
+            >
+              <View style={{ alignItems: 'center', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+                {!!posterLogo && (
+                  <Image
+                    source={{ uri: posterLogo }}
+                    style={{ width: 64, height: 64, borderRadius: 32, marginBottom: 8, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF' }}
+                  />
+                )}
+                <Text style={{ fontSize: 20, fontWeight: '900', color: '#0E5A53', letterSpacing: 1.2 }}>LINESETU</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: '#475569', fontWeight: '600', textAlign: 'center', paddingHorizontal: 12 }}>{displayTagline}</Text>
+              </View>
+              <View style={{ alignItems: 'center', marginTop: 22 }}>
+                <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12 }}>
+                  <QRCode
+                    value={profileUrl}
+                    size={260}
+                    backgroundColor="#FFFFFF"
+                    color="#060E12"
+                    ecl="H"
+                  />
+                </View>
+              </View>
+              <View style={{ marginTop: 22, alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', textAlign: 'center' }}>{doctor?.name || 'Doctor'}</Text>
+                {!!clinicLine && (
+                  <Text style={{ marginTop: 6, fontSize: 13, color: '#475569', textAlign: 'center', fontWeight: '600' }}>{clinicLine}</Text>
+                )}
+              </View>
+              <Text style={{ marginTop: 18, fontSize: 11, color: '#0E7C73', textAlign: 'center', fontWeight: '800', letterSpacing: 0.4 }}>
+                SCAN WITH THE LINESETU PATIENT APP
+              </Text>
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Help & Support ──────────────────────────────────────────────────────
+  if (section === 'help') {
+    const faqs = [
+      { q: 'How do I add or edit a clinic?', a: 'Go to Settings → Manage Clinics. You can add up to 3 clinics, set their address, phone, and Google Maps link, and toggle each one active or inactive.' },
+      { q: 'How do online tokens work?', a: 'Patients book via the LINESETU Patient App. They pay your configured E-Token fee plus a ₹10 platform fee. A sequential token number is assigned automatically and they can track their position in the queue in real time.' },
+      { q: 'When do I receive my payouts?', a: 'Based on your Payout Cycle setting under Bank & Payout. Funds are settled to your linked bank account or UPI. You can view payout history in the Earnings tab.' },
+      { q: 'How do I mark myself unavailable for a day?', a: 'Go to Settings → Schedule & Shifts. Tap the date on the 30-day calendar and select "Mark as Off / Holiday". Patients will be unable to book tokens for that day.' },
+      { q: 'Can I set different shifts for different dates?', a: 'Yes. In Schedule & Shifts, tap any date to configure morning/evening slots, start/end times, and max tokens specifically for that day, overriding your default shift settings.' },
+      { q: 'How do emergency tokens work?', a: 'Emergency tokens skip the regular queue and are assigned a priority number. They are controlled by the Emergency Tokens toggle in Patient App Settings. You can also set a separate fee for them in Fee Structure.' },
+      { q: 'Why are patients not seeing my profile?', a: 'Ensure your profile is complete (name, qualifications, bio, specialization) and that you are set as Available on the Home screen. Incomplete profiles may not appear in patient searches.' },
+    ];
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Help & Support" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {/* Contact options */}
+            <Text style={styles.sectionLabel}>CONTACT US</Text>
+            <View style={styles.formCard}>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://wa.me/919876000000?text=Hi%20LINESETU%2C%20I%20need%20support').catch(() => {})}
+                style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
+                  <Feather name="help-circle" size={18} color="#4ADE80" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>WhatsApp Support</Text>
+                  <Text style={styles.helpContactSub}>+91 98760 00000 · Fastest response</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('mailto:support@linesetu.com?subject=Doctor%20App%20Support%20Request').catch(() => {})}
+                style={[styles.helpContactRow, { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }]}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(103,232,249,0.12)' }]}>
+                  <Feather name="send" size={18} color="#67E8F9" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>Email Support</Text>
+                  <Text style={styles.helpContactSub}>support@linesetu.com</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('tel:+919876000000').catch(() => {})}
+                style={styles.helpContactRow}
+              >
+                <View style={[styles.helpContactIcon, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
+                  <Feather name="phone" size={18} color="#FBBF24" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpContactLabel}>Call Support</Text>
+                  <Text style={styles.helpContactSub}>Mon – Sat · 9 AM – 9 PM IST</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.2)" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginBottom: 20, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(45,212,191,0.07)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.15)', flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+              <Feather name="clock" size={13} color="rgba(45,212,191,0.8)" style={{ marginTop: 2 }} />
+              <Text style={{ flex: 1, fontSize: 11, color: 'rgba(45,212,191,0.8)', fontWeight: '600', lineHeight: 17 }}>
+                We typically respond within 2–4 hours during business hours (Mon – Sat, 9 AM – 9 PM IST). Urgent issues via WhatsApp get the fastest response.
+              </Text>
+            </View>
+
+            {/* FAQs */}
+            <Text style={styles.sectionLabel}>FREQUENTLY ASKED QUESTIONS</Text>
+            {faqs.map((faq, i) => (
+              <View key={i} style={[styles.formCard, { marginBottom: 8 }]}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF', marginBottom: 6, lineHeight: 18 }}>Q. {faq.q}</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 18, fontWeight: '500' }}>{faq.a}</Text>
+              </View>
+            ))}
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Send Feedback ────────────────────────────────────────────────────────
+  if (section === 'feedback') {
+    const categories = [
+      { label: 'Bug Report', value: 'Bug Report' },
+      { label: 'Feature Request', value: 'Feature Request' },
+      { label: 'General', value: 'General' },
+      { label: 'Compliment', value: 'Compliment' },
+    ];
+    const submitFeedback = async () => {
+      if (!feedbackText.trim()) return;
+      setFeedbackSubmitting(true);
+      try {
+        await fetch(`${BASE()}/api/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doctorId: doctor?.id ?? null,
+            category: feedbackCategory,
+            message: feedbackText.trim(),
+          }),
+        });
+        setFeedbackSubmitted(true);
+        setTimeout(() => setSection('main'), 2200);
+      } catch {}
+      setFeedbackSubmitting(false);
+    };
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Send Feedback" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            {feedbackSubmitted ? (
+              <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
+                <Feather name="check-circle" size={48} color={TEAL_LT} style={{ marginBottom: 16 }} />
+                <Text style={{ fontSize: 20, fontWeight: '900', color: TEAL_LT, marginBottom: 10 }}>Thank you!</Text>
+                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 22 }}>
+                  Your feedback has been received. We read every submission and use them to make LINESETU better for doctors and patients.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 20, fontWeight: '500' }}>
+                  Help us improve LINESETU. Whether it's a bug, a feature idea, or a general observation — we want to hear from you.
+                </Text>
+
+                {/* Category */}
+                <Text style={styles.sectionLabel}>CATEGORY</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                  {categories.map(cat => (
+                    <TouchableOpacity
+                      key={cat.value}
+                      onPress={() => setFeedbackCategory(cat.value)}
+                      style={{
+                        paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20,
+                        borderWidth: 1.5,
+                        borderColor: feedbackCategory === cat.value ? TEAL : 'rgba(255,255,255,0.12)',
+                        backgroundColor: feedbackCategory === cat.value ? 'rgba(45,212,191,0.14)' : 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: feedbackCategory === cat.value ? TEAL_LT : 'rgba(255,255,255,0.5)' }}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Message */}
+                <Text style={styles.sectionLabel}>YOUR MESSAGE</Text>
+                <TextInput
+                  style={[styles.fieldInput, {
+                    height: 140, textAlignVertical: 'top', paddingTop: 12,
+                    marginBottom: 6,
+                    borderColor: feedbackText.trim() ? 'rgba(45,212,191,0.4)' : 'rgba(255,255,255,0.12)',
+                  }]}
+                  value={feedbackText}
+                  onChangeText={setFeedbackText}
+                  multiline
+                  placeholder={`Describe your ${feedbackCategory.toLowerCase()}...`}
+                  placeholderTextColor="rgba(255,255,255,0.2)"
+                />
+                {!feedbackText.trim() && (
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 16, fontWeight: '600' }}>
+                    Please describe your feedback in a few words.
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.saveBtn, { opacity: feedbackText.trim() ? 1 : 0.4 }]}
+                  disabled={!feedbackText.trim() || feedbackSubmitting}
+                  onPress={submitFeedback}
+                >
+                  {feedbackSubmitting
+                    ? <ActivityIndicator color="#FFF" size="small" />
+                    : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Feather name="send" size={13} color="#FFF" />
+                        <Text style={styles.saveBtnText}>Submit Feedback</Text>
+                      </View>}
+                </TouchableOpacity>
+
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: 12, fontWeight: '500', lineHeight: 17 }}>
+                  By submitting, you agree that your feedback may be used to improve LINESETU products and services. We do not share your personal details with third parties.
+                </Text>
+              </>
+            )}
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Terms & Privacy Policy ───────────────────────────────────────────────
+  if (section === 'terms') {
+    const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ fontSize: 12, fontWeight: '900', color: TEAL_LT, letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>{title}</Text>
+        {children}
+      </View>
+    );
+    const Para = ({ text }: { text: string }) => (
+      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 20, fontWeight: '500', marginBottom: 8 }}>{text}</Text>
+    );
+    const Bullet = ({ text }: { text: string }) => (
+      <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+        <Text style={{ color: TEAL, fontWeight: '900', marginRight: 8, fontSize: 12 }}>·</Text>
+        <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 20, fontWeight: '500' }}>{text}</Text>
+      </View>
+    );
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.container}>
+          <BackHeader title="Terms & Privacy Policy" onBack={() => setSection('main')} />
+          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+
+            <View style={{ marginBottom: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>LINESETU Doctor App  ·  v2.1.0</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', marginTop: 2 }}>Last updated: January 2026  ·  Effective: January 1, 2026</Text>
+            </View>
+
+            <Section title="1. Terms of Service">
+              <Para text="By accessing or using the LINESETU Doctor App, you agree to be bound by these Terms. If you disagree with any part, you may not use the App." />
+              <Para text="LINESETU provides a smart queue and token management platform for registered medical practitioners in India. The platform facilitates real-time token booking and queue management between doctors and patients." />
+              <Bullet text="You must be a licensed medical practitioner in India to register as a doctor on LINESETU." />
+              <Bullet text="You are responsible for the accuracy of your profile information including qualifications, specialization, and clinic details." />
+              <Bullet text="LINESETU reserves the right to suspend accounts found providing false credentials or violating patient trust." />
+              <Bullet text="Fees and payout structures are subject to change with 30 days prior notice." />
+            </Section>
+
+            <Section title="2. Doctor Obligations">
+              <Para text="As a registered doctor on LINESETU, you agree to:" />
+              <Bullet text="Maintain accurate schedule, availability, and fee information visible to patients." />
+              <Bullet text="Honor token bookings made by patients unless an emergency or system error occurs." />
+              <Bullet text="Notify patients promptly via the app if significant delays or closures arise." />
+              <Bullet text="Not misuse the platform to collect payments outside of the disclosed fee structure." />
+              <Bullet text="Comply with all applicable laws, medical regulations, and the Indian Medical Council Act." />
+            </Section>
+
+            <Section title="3. Platform Fee & Payouts">
+              <Para text="LINESETU charges a platform fee of ₹10 per online E-Token booking. This is collected from the patient in addition to your configured consultation fee. Your earnings are settled based on your selected payout cycle (Daily, Weekly, Bi-weekly, Monthly, or Manual)." />
+              <Para text="Payout disputes must be raised within 7 days of the scheduled settlement date by contacting support@linesetu.com." />
+            </Section>
+
+            <Section title="4. Privacy Policy">
+              <Para text="LINESETU is committed to protecting the privacy of doctors and patients. This Privacy Policy describes how we collect, use, and protect your information." />
+              <Bullet text="Account data: Name, phone, qualifications, clinic details, and bank/UPI information collected at registration." />
+              <Bullet text="Usage data: Schedule configurations, token data, queue activity, and session logs are stored for platform functionality." />
+              <Bullet text="Patient data: We store only the minimum patient information required for token management. Doctors do not have access to patients' payment details." />
+              <Bullet text="Data sharing: We do not sell or share your personal data with third parties for marketing. Payment data is processed securely via Razorpay and governed by Razorpay's own privacy policy." />
+              <Bullet text="Data retention: Your account data is retained for 3 years after account closure for legal and financial compliance." />
+            </Section>
+
+            <Section title="5. Data Security">
+              <Para text="All data is transmitted over HTTPS and stored in Google Firebase with industry-standard encryption. Bank account details and UPI IDs are encrypted at rest. We conduct periodic security reviews to ensure the safety of your information." />
+              <Para text="You are responsible for maintaining the confidentiality of your login OTP and account access. Report any suspected unauthorized access immediately to support@linesetu.com." />
+            </Section>
+
+            <Section title="6. Intellectual Property">
+              <Para text="The LINESETU name, logo, and all associated marks are the property of LINESETU Technologies Pvt. Ltd. The App and its content may not be reproduced, distributed, or used for commercial purposes without written permission." />
+            </Section>
+
+            <Section title="7. Limitation of Liability">
+              <Para text="LINESETU is a technology platform and is not responsible for the medical services provided by doctors registered on the platform. In no event shall LINESETU be liable for indirect, incidental, or consequential damages arising from the use of the platform." />
+              <Para text="Service availability is provided on a best-effort basis. Scheduled maintenance windows will be communicated in advance via in-app notifications." />
+            </Section>
+
+            <Section title="8. Governing Law">
+              <Para text="These Terms are governed by the laws of India. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts in Bengaluru, Karnataka, India." />
+            </Section>
+
+            <Section title="9. Contact">
+              <Para text="For any questions regarding these Terms or our Privacy Policy, contact:" />
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:legal@linesetu.com').catch(() => {})}>
+                <Text style={{ fontSize: 13, color: TEAL_LT, fontWeight: '700', marginBottom: 4 }}>legal@linesetu.com</Text>
+              </TouchableOpacity>
+              <Para text="LINESETU Technologies Pvt. Ltd., Bengaluru, Karnataka – 560001, India" />
+            </Section>
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Main settings menu
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.container}>
+        <View style={styles.glowTop} />
+        <View style={styles.glowBottom} />
+
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.headerSub}>Account, clinic & preferences</Text>
+        </View>
+
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 14, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+          {/* Profile hero card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileRow}>
+              <View style={styles.avatarWrap}>
+                {profilePhotoUrl ? (
+                  <Image key={profilePhotoUrl} source={{ uri: profilePhotoUrl }} style={styles.avatarPlaceholder} resizeMode="cover" />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Feather name="activity" size={28} color="rgba(255,255,255,0.5)" />
+                  </View>
+                )}
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <Text style={styles.profileName}>{name.startsWith('Dr.') ? name : `Dr. ${name}`}</Text>
+                  <Feather name="check-circle" size={14} color={TEAL_LT} />
+                </View>
+                <Text style={styles.profileSpec}>{specialisation} · {qualifications}</Text>
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                  {doctor?.isAvailable !== false ? (
+                    <View style={[styles.onlineBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#22C55E' }} />
+                      <Text style={styles.onlineBadgeText}>Available</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.unavailBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' }} />
+                      <Text style={styles.unavailBadgeText}>Unavailable</Text>
+                    </View>
+                  )}
+                  <View style={styles.expBadge}><Text style={styles.expBadgeText}>{experience} yrs exp</Text></View>
+                </View>
+              </View>
+            </View>
+            <View style={styles.profileStats}>
+              {[
+                { label: 'Patients', value: `${parseInt(patientsTotal) || 0}+` },
+                { label: 'Clinics',  value: `${clinics.filter(c => c.active && c.name).length} Active` },
+              ].map((s, i) => (
+                <View key={i} style={[styles.profileStatItem, i < 1 && styles.profileStatBorder]}>
+                  <Text style={styles.profileStatValue}>{s.value}</Text>
+                  <Text style={styles.profileStatLabel}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* My Results / Photo Gallery */}
+          <View style={styles.galleryCard}>
+            <View style={styles.galleryHeader}>
+              <View>
+                <Text style={styles.galleryTitle}>My Results</Text>
+                <Text style={styles.gallerySub}>Photos shown in your patient profile</Text>
+              </View>
+              <TouchableOpacity style={styles.galleryToggleBtn} onPress={toggleShowResults} activeOpacity={0.8}>
+                <View style={[styles.galleryToggleTrack, showResults && styles.galleryToggleTrackOn]}>
+                  <View style={[styles.galleryToggleThumb, showResults && styles.galleryToggleThumbOn]} />
+                </View>
+                <Text style={[styles.galleryToggleTxt, showResults && { color: TEAL_LT }]}>
+                  {showResults ? 'Visible' : 'Hidden'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
+              {resultPhotos.map((uri, i) => (
+                <View key={i} style={styles.galleryThumbWrap}>
+                  <Image source={{ uri }} style={styles.galleryThumb} resizeMode="cover" />
+                  <TouchableOpacity
+                    style={styles.galleryDeleteBtn}
+                    onPress={() => deletePhoto(uri)}
+                    disabled={deletingPhotoUrl === uri}
+                  >
+                    {deletingPhotoUrl === uri
+                      ? <ActivityIndicator size={10} color="#FFF" />
+                      : <Feather name="x" size={12} color="#FFF" />}
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.galleryAddBtn} onPress={pickAndUploadPhoto} disabled={uploadingPhoto}>
+                {uploadingPhoto
+                  ? <ActivityIndicator color={TEAL_LT} size="small" />
+                  : <>
+                      <Feather name="plus" size={18} color={TEAL_LT} />
+                      <Text style={styles.galleryAddTxt}>Add Photo</Text>
+                    </>}
+              </TouchableOpacity>
+            </ScrollView>
+            {uploadingPhoto && (
+              <View style={styles.galleryLoadingOverlay}>
+                <ActivityIndicator color={TEAL_LT} size="small" />
+                <Text style={styles.galleryLoadingText}>Uploading photo…</Text>
+              </View>
+            )}
+
+            {uploadError && (
+              <View style={styles.galleryErrorBanner}>
+                <Text style={styles.galleryErrorText}>{uploadError}</Text>
+                <TouchableOpacity onPress={() => setUploadError(null)}>
+                  <Feather name="x" size={14} color="rgba(255,255,255,0.6)" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {resultPhotos.length === 0 && !uploadingPhoto && !uploadError && (
+              <Text style={styles.galleryEmpty}>No photos yet — tap Add Photo to upload</Text>
+            )}
+          </View>
+
+          {/* Doctor Profile */}
+          <SectionLabel label="Doctor Profile" />
+          <View style={styles.settingsGroup}>
+            <SettingRow iconName="user" iconBg="rgba(129,140,248,0.15)" iconColor="#818CF8" label="Manage Profile" sub="Name, qualifications, bio & photo" onPress={() => setSection('profile')} />
+          </View>
+
+          {/* Practice */}
+          <SectionLabel label="Practice" />
+          <View style={styles.settingsGroup}>
+            <SettingRow iconName="home" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Manage Clinics" sub={`${clinics.filter(c => c.active && c.name).length} clinics configured`} onPress={() => setSection('clinics')} />
+            <SettingRow iconName="calendar" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="Schedule & Shifts" sub="Shift timings, days off & max tokens" onPress={() => setSection('schedule')} />
+            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Fee Structure" sub={`Consult ₹${consultFee} · Emergency ₹${emergencyFee}`} onPress={() => setSection('fees')} />
+            <SettingRow iconName="grid" iconBg="rgba(245,158,11,0.12)" iconColor="#F59E0B" label="Share Profile QR" sub="QR code patients can scan to find you" onPress={() => setSection('shareProfile')} last />
+          </View>
+
+          {/* Bank */}
+          <SectionLabel label="Bank & Payments" />
+          <View style={styles.settingsGroup}>
+            <SettingRow
+              iconName="credit-card" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT}
+              label="Bank Account"
+              sub={
+                accountNumber
+                  ? `${bankName || 'Bank'} **${accountNumber.slice(-4)}`
+                  : upiId
+                    ? `UPI · ${upiId}`
+                    : 'Add bank account or UPI'
+              }
+              onPress={() => setSection('bank')}
+            />
+            <SettingRow
+              iconName="briefcase" iconBg="rgba(129,140,248,0.12)" iconColor="#A5B4FC"
+              label="Payout Settings"
+              sub={payoutEnabled ? `${payoutCycle} settlement · Active` : 'Payouts paused'}
+              onPress={() => setSection('payout')}
+              last
+            />
+          </View>
+
+          {/* Notifications */}
+          <SectionLabel label="Notifications" />
+          <View style={styles.settingsGroup}>
+            <SettingRow iconName="bell" iconBg="rgba(45,212,191,0.12)" iconColor={TEAL_LT} label="New Booking Alerts" sub="Notify when a token is booked"
+              right={<Toggle on={notifBooking} onChange={() => {
+                const next = !notifBooking;
+                setNotifBooking(next);
+                updateDoctor({ notifications: { booking: next, emergency: notifEmergency, payout: notifPayout } } as any).catch(() => {});
+              }} />} />
+            <SettingRow iconName="alert-triangle" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Emergency Alerts" sub="High-priority push notifications"
+              right={<Toggle on={notifEmergency} onChange={() => {
+                const next = !notifEmergency;
+                setNotifEmergency(next);
+                updateDoctor({ notifications: { booking: notifBooking, emergency: next, payout: notifPayout } } as any).catch(() => {});
+              }} />} />
+            <SettingRow iconName="dollar-sign" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Payout Notifications" sub="Settlement & transfer updates"
+              right={<Toggle on={notifPayout} onChange={() => {
+                const next = !notifPayout;
+                setNotifPayout(next);
+                updateDoctor({ notifications: { booking: notifBooking, emergency: notifEmergency, payout: next } } as any).catch(() => {});
+              }} />} last />
+          </View>
+
+          {/* Support */}
+          <SectionLabel label="Support & Legal" />
+          <View style={styles.settingsGroup}>
+            <SettingRow iconName="help-circle" iconBg="rgba(103,232,249,0.12)" iconColor="#67E8F9" label="Help & Support" sub="Chat, call or raise a ticket" onPress={() => setSection('help')} />
+            <SettingRow iconName="message-square" iconBg="rgba(129,140,248,0.12)" iconColor="#818CF8" label="Send Feedback" sub="Help us improve LINESETU" onPress={() => { setFeedbackText(''); setFeedbackCategory('Feature Request'); setFeedbackSubmitted(false); setSection('feedback'); }} />
+            <SettingRow iconName="star" iconBg="rgba(251,191,36,0.12)" iconColor="#FCD34D" label="Rate the App" sub="Love the app? Leave a review" onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.linesetu.doctor').catch(() => {})} />
+            <SettingRow iconName="file-text" iconBg="rgba(255,255,255,0.07)" iconColor="rgba(255,255,255,0.4)" label="Terms & Privacy Policy" sub="v2.1.0 · Last updated Jan 2026" onPress={() => setSection('terms')} last />
+          </View>
+
+          {/* Account Actions */}
+          <SectionLabel label="Account Actions" />
+          <View style={styles.settingsGroup}>
+            <SettingRow iconName="log-out" iconBg="rgba(239,68,68,0.12)" iconColor="#F87171" label="Log Out" danger
+              right={<Feather name="chevron-right" size={16} color="#F87171" />} onPress={() => setShowLogout(true)} />
+            <SettingRow iconName="trash-2" iconBg="rgba(239,68,68,0.08)" iconColor="rgba(239,68,68,0.55)" label="Delete Account" sub="Permanently remove your LINESETU account" danger
+              right={<Feather name="chevron-right" size={16} color="rgba(239,68,68,0.45)" />} last
+              onPress={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }} />
+          </View>
+
+          <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+            <Text style={styles.versionText}>LINESETU Doctor · v2.1.0</Text>
+            <Text style={styles.buildText}>Build 20260410 · © 2026 LINESETU</Text>
+          </View>
+        </ScrollView>
+
+        {showLogout && (
+          <View style={styles.logoutOverlay}>
+            <View style={[styles.logoutSheet, { paddingBottom: 24 + 49 + insets.bottom }]}>
+              <View style={styles.logoutHandle} />
+              <View style={styles.logoutIconRow}>
+                <View style={styles.logoutIcon}><Feather name="log-out" size={20} color="#F87171" /></View>
+                <View>
+                  <Text style={styles.logoutTitle}>Log Out?</Text>
+                  <Text style={styles.logoutSub}>You'll need to sign in again to access your account.</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => setShowLogout(false)} style={[styles.logoutCancelBtn, { flex: 1, marginBottom: 0 }]}>
+                  <Text style={[styles.logoutCancelBtnText, { fontSize: 14, fontWeight: '800', color: '#FFF' }]}>No</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.logoutConfirmBtn, { flex: 1, marginBottom: 0 }]} onPress={async () => {
+                  setShowLogout(false);
+                  await logout();
+                }}>
+                  <Text style={styles.logoutConfirmBtnText}>Yes, Log Out</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {showDeleteAccount && (
+          <View style={styles.logoutOverlay}>
+            <View style={[styles.logoutSheet, { paddingBottom: 24 + 49 + insets.bottom }]}>
+              <View style={styles.logoutHandle} />
+
+              {/* Header */}
+              <View style={styles.logoutIconRow}>
+                <View style={[styles.logoutIcon, { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }]}>
+                  <Feather name="trash-2" size={20} color="#F87171" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.logoutTitle, { color: '#F87171' }]}>Delete Account</Text>
+                  <Text style={styles.logoutSub}>This action cannot be undone.</Text>
+                </View>
+              </View>
+
+              {/* Warning bullets */}
+              <View style={{ backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 14, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(239,68,68,0.18)' }}>
+                {[
+                  'Your doctor profile will be removed from the LINESETU Patient App immediately.',
+                  'All scheduled tokens and pending payouts will be cancelled.',
+                  'Your clinic, schedule, and fee data will be permanently erased.',
+                  'This cannot be reversed. You will need to re-register to use LINESETU again.',
+                ].map((line, i) => (
+                  <View key={i} style={{ flexDirection: 'row', marginBottom: i < 3 ? 8 : 0 }}>
+                    <Feather name="x" size={12} color="#F87171" style={{ marginRight: 8, marginTop: 1 }} />
+                    <Text style={{ flex: 1, fontSize: 11, color: 'rgba(239,68,68,0.75)', lineHeight: 17, fontWeight: '500' }}>{line}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Typed confirmation */}
+              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 0.5 }}>
+                TYPE <Text style={{ color: '#F87171', fontWeight: '900' }}>DELETE</Text> TO CONFIRM
+              </Text>
+              <TextInput
+                style={[
+                  styles.fieldInput,
+                  { marginBottom: 16, borderColor: deleteConfirmText === 'DELETE' ? 'rgba(239,68,68,0.7)' : 'rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: '800', color: '#F87171' },
+                ]}
+                value={deleteConfirmText}
+                onChangeText={v => setDeleteConfirmText(v.toUpperCase())}
+                placeholder="Type DELETE here"
+                placeholderTextColor="rgba(255,255,255,0.15)"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+
+              {/* Confirm button */}
+              <TouchableOpacity
+                style={[
+                  styles.logoutConfirmBtn,
+                  { marginBottom: 10, opacity: deleteConfirmText === 'DELETE' && !deleteLoading ? 1 : 0.35 },
+                ]}
+                disabled={deleteConfirmText !== 'DELETE' || deleteLoading}
+                onPress={async () => {
+                  if (!doctor) return;
+                  setDeleteLoading(true);
+                  try {
+                    await fetch(`${BASE()}/api/doctors/${doctor.id}`, { method: 'DELETE' });
+                  } catch {}
+                  setDeleteLoading(false);
+                  setShowDeleteAccount(false);
+                  await logout();
+                }}
+              >
+                {deleteLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.logoutConfirmBtnText}>Delete My Account Permanently</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { setShowDeleteAccount(false); setDeleteConfirmText(''); }} style={styles.logoutCancelBtn}>
+                <Text style={styles.logoutCancelBtnText}>Cancel — Keep My Account</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: BG, ...(isWeb && { paddingTop: 44 }) },
+  container: { flex: 1, backgroundColor: BG },
+  glowTop: { position: 'absolute', top: -60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(13,148,136,0.18)', opacity: 0.5 },
+  glowBottom: { position: 'absolute', bottom: 100, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(99,102,241,0.1)', opacity: 0.5 },
+  header: { padding: 16, paddingBottom: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
+  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginTop: 2 },
+  subHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, paddingBottom: 8 },
+  backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  backBtnText: { fontSize: 18, color: 'rgba(255,255,255,0.6)' },
+  subHeaderTitle: { fontSize: 18, fontWeight: '900', color: '#FFF' },
+  formScroll: { padding: 14, paddingBottom: 100 },
+  formCard: {
+    borderRadius: 20, padding: 14, marginBottom: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
+  },
+  formCardTitle: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  avatarSection: { alignItems: 'center', marginBottom: 18 },
+  avatarLarge: {
+    width: 90, height: 90, borderRadius: 26, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: 'rgba(45,212,191,0.4)', marginBottom: 10,
+  },
+  photoChangeBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(13,148,136,0.2)', borderWidth: 1.5, borderColor: 'rgba(13,148,136,0.4)' },
+  photoBtnText: { fontSize: 12, fontWeight: '700', color: TEAL_LT },
+  specChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)' },
+  specChipActive: { backgroundColor: 'rgba(45,212,191,0.18)', borderColor: TEAL },
+  specChipOther: { backgroundColor: 'rgba(251,191,36,0.1)', borderColor: 'rgba(251,191,36,0.4)' },
+  specChipText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  specChipTextActive: { color: TEAL_LT },
+  photoNoteRow: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', backgroundColor: 'rgba(251,191,36,0.07)', maxWidth: 300 },
+  photoNoteText: { fontSize: 11, color: 'rgba(251,191,36,0.85)', fontWeight: '600', textAlign: 'center', lineHeight: 16 },
+  field: { marginBottom: 10 },
+  fieldLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 },
+  fieldInput: {
+    borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.06)', color: '#FFF', fontSize: 13, fontWeight: '500',
+    paddingHorizontal: 12, height: 44,
+  },
+  phoneRow: { flexDirection: 'row', gap: 6 },
+  phonePrefix: { width: 52, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  phonePrefixText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+  saveBtn: { height: 50, borderRadius: 16, backgroundColor: TEAL, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  saveBtnText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
+  clinicTabs: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+  clinicTab: { flex: 1, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  clinicTabActive: { backgroundColor: `${TEAL}33`, borderColor: `${TEAL}88` },
+  clinicTabText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)' },
+  clinicTabTextActive: { color: TEAL_LT },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  toggleRowLabel: { fontSize: 13, fontWeight: '700', color: '#FFF', flex: 1 },
+  toggleRowSub: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginTop: 1 },
+  shiftCard: {
+    borderRadius: 18, padding: 12, marginBottom: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
+  },
+  shiftCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  shiftCardTitle: { fontSize: 13, fontWeight: '800', color: '#FFF' },
+  timeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 6 },
+  timeDash: { fontSize: 18, color: 'rgba(255,255,255,0.3)', marginBottom: 10 },
+  feeNote: { padding: 10, borderRadius: 10, backgroundColor: 'rgba(13,148,136,0.08)', borderWidth: 1, borderColor: 'rgba(13,148,136,0.2)', marginTop: 6 },
+  feeNoteText: { fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 15 },
+  profileCard: {
+    borderRadius: 20, padding: 16, marginBottom: 8,
+    backgroundColor: 'rgba(13,148,136,0.12)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.2)',
+  },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
+  avatarWrap: { position: 'relative', flexShrink: 0 },
+  avatarPlaceholder: { width: 82, height: 82, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, overflow: 'hidden' },
+  avatarEmoji: { fontSize: 30, color: 'rgba(255,255,255,0.4)' },
+  changePhotoBar: { backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 5, alignItems: 'center' },
+  changePhotoBarText: { fontSize: 9, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 },
+  photoHintRow: { marginTop: 10, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)', backgroundColor: 'rgba(251,191,36,0.06)' },
+  photoHintText: { fontSize: 10, color: 'rgba(251,191,36,0.8)', fontWeight: '600' },
+  cameraBtn: { position: 'absolute', bottom: -5, right: -5, width: 24, height: 24, borderRadius: 12, backgroundColor: TEAL, borderWidth: 2, borderColor: BG, alignItems: 'center', justifyContent: 'center' },
+  profileName: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: -0.3 },
+  profileSpec: { fontSize: 11, color: TEAL_LT, fontWeight: '700' },
+  onlineBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(45,212,191,0.12)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.25)' },
+  onlineBadgeText: { fontSize: 9, fontWeight: '700', color: TEAL_LT },
+  unavailBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(239,68,68,0.12)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
+  unavailBadgeText: { fontSize: 9, fontWeight: '700', color: '#F87171' },
+  expBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(129,140,248,0.12)', borderWidth: 1, borderColor: 'rgba(129,140,248,0.25)' },
+  expBadgeText: { fontSize: 9, fontWeight: '700', color: '#A5B4FC' },
+  ratingBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, backgroundColor: 'rgba(251,191,36,0.1)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)' },
+  ratingBadgeText: { fontSize: 9, fontWeight: '700', color: '#FCD34D' },
+  profileStats: { flexDirection: 'row', paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' },
+  profileStatItem: { flex: 1, alignItems: 'center' },
+  profileStatBorder: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.07)' },
+  profileStatValue: { fontSize: 14, fontWeight: '900', color: '#FFF' },
+  profileStatLabel: { fontSize: 9, color: 'rgba(255,255,255,0.35)', fontWeight: '600', marginTop: 1 },
+  sectionLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, marginTop: 18, paddingLeft: 2 },
+  settingsGroup: { borderRadius: 18, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 11, paddingHorizontal: 14 },
+  settingRowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.045)' },
+  settingIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderWidth: 1 },
+  settingLabel: { fontSize: 13, fontWeight: '700', color: '#FFF', lineHeight: 18 },
+  settingSub: { fontSize: 10, color: 'rgba(255,255,255,0.32)', fontWeight: '500', marginTop: 2 },
+  helpContactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 2, gap: 12 },
+  helpContactIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  helpContactLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  helpContactSub: { fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
+  toggle: { width: 40, height: 22, borderRadius: 11, justifyContent: 'center', borderWidth: 1 },
+  toggleThumb: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFF' },
+  toggleThumbOn: { right: 2 },
+  toggleThumbOff: { left: 2 },
+  galleryCard: { borderRadius: 20, padding: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  galleryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  galleryTitle: { fontSize: 13, fontWeight: '800', color: '#FFF', marginBottom: 2 },
+  gallerySub: { fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '500' },
+  galleryToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  galleryToggleTrack: { width: 38, height: 21, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', justifyContent: 'center' },
+  galleryToggleTrackOn: { backgroundColor: 'rgba(45,212,191,0.25)', borderColor: 'rgba(45,212,191,0.5)' },
+  galleryToggleThumb: { position: 'absolute', left: 2, width: 15, height: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.4)' },
+  galleryToggleThumbOn: { left: undefined, right: 2, backgroundColor: TEAL_LT },
+  galleryToggleTxt: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.35)' },
+  galleryScroll: { gap: 10, paddingVertical: 2 },
+  galleryThumbWrap: { width: 100, height: 80, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', position: 'relative' },
+  galleryThumb: { width: '100%', height: '100%' },
+  galleryDeleteBtn: { position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(15,15,20,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  galleryDeleteX: { fontSize: 11, color: '#FFF', fontWeight: '800', lineHeight: 13 },
+  galleryAddBtn: { width: 100, height: 80, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(45,212,191,0.3)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: 'rgba(45,212,191,0.04)' },
+  galleryAddTxt: { fontSize: 10, fontWeight: '700', color: TEAL_LT },
+  galleryLoadingOverlay: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center' },
+  galleryLoadingText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+  galleryEmpty: { fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: '500', textAlign: 'center', paddingTop: 4, paddingBottom: 2 },
+  galleryErrorBanner: { marginTop: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.18)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
+  galleryErrorText: { flex: 1, fontSize: 11, fontWeight: '600', color: '#FCA5A5' },
+  galleryErrorDismiss: { fontSize: 14, color: '#FCA5A5', fontWeight: '700' },
+  versionText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.15)' },
+  buildText: { fontSize: 9, color: 'rgba(255,255,255,0.1)', marginTop: 3 },
+  logoutOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end', zIndex: 50 } as ViewStyle,
+  logoutSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 32, backgroundColor: '#0A0F1E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  logoutHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 20 },
+  logoutIconRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 },
+  logoutIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', alignItems: 'center', justifyContent: 'center' },
+  logoutTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
+  logoutSub: { fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  logoutConfirmBtn: { height: 48, borderRadius: 14, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  logoutConfirmBtnText: { fontSize: 14, fontWeight: '800', color: '#FFF' },
+  logoutCancelBtn: { height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  logoutCancelBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+
+  // 30-day calendar
+  calHeader:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  calTitle:        { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 },
+  calSub:          { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '500', marginBottom: 12, lineHeight: 15 },
+  calDowRow:       { flexDirection: 'row', marginBottom: 4 },
+  calDow:          { flex: 1, textAlign: 'center', fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  calMonthLabel:   { fontSize: 10, fontWeight: '800', color: TEAL_LT, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 8, marginBottom: 2 },
+  calRow:          { flexDirection: 'row', marginBottom: 4 },
+  calCell:         { flex: 1, height: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', margin: 1.5 },
+  calCellDate:     { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', lineHeight: 16 },
+  calLegend:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10, marginBottom: 4 },
+  calLegendItem:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  calLegendDot:    { width: 8, height: 8, borderRadius: 4 },
+  calLegendTxt:    { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.45)' },
+  calHint:         { fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: '500', marginBottom: 14, fontStyle: 'italic' },
+  // Day editor
+  dayEditor:       { marginTop: 14, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.04)', padding: 14 },
+  dayEditorHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  dayEditorDate:   { fontSize: 14, fontWeight: '900', color: '#FFF' },
+  dayEditorClose:  { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' },
+  dayOffRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', marginBottom: 6 },
+  dayOffLabel:     { fontSize: 13, fontWeight: '700', color: '#FFF' },
+  dayOffSub:       { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  applyDayBtn:     { marginTop: 14, height: 46, borderRadius: 14, backgroundColor: 'rgba(45,212,191,0.25)', borderWidth: 1.5, borderColor: '#2DD4BF', alignItems: 'center', justifyContent: 'center' },
+  applyDayBtnTxt:  { fontSize: 13, fontWeight: '900', color: '#2DD4BF' },
+  // Shift-mode 4-button row
+  shiftBtnRow:     { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  shiftModeBtn:    { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', gap: 3 },
+  shiftModeBtnTxt: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+});

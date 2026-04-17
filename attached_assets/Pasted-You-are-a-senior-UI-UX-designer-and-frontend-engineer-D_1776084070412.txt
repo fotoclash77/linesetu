@@ -1,0 +1,159 @@
+You are a senior UI/UX designer and frontend engineer.
+
+Design a **simple, real-time Master Queue Screen** for the LINESETU Doctor App using a **Dark Glassmorphic UI**.
+
+⚠️ Focus ONLY on UI/UX (no backend logic), but structure it ready for real-time updates.
+
+---
+
+## 🎯 CORE GOAL
+
+Design a **clean, fast, and highly usable queue management screen** with only 3 main sections:
+
+1. **In Consultation**
+2. **Up Next**
+3. **Waiting**
+
+---
+
+## 🧩 SECTION 1: IN CONSULTATION (TOP – STICKY)
+
+Display ONE active patient card:
+
+Card must include:
+
+* Token Number (large & bold)
+* Patient Name
+* Age
+* Gender
+* Token Type (Walk-in / Online / Emergency)
+
+Actions (Buttons):
+
+* **Skip**
+* **Consulted & Call Next**
+
+👉 This section must be highly visible and fixed at top
+
+---
+
+## ⏭️ SECTION 2: UP NEXT
+
+Display next patient card:
+
+* Same patient details:
+
+  * Token Number
+  * Name
+  * Age
+  * Gender
+  * Token Type
+
+👉 Clean, highlighted card (slightly glowing)
+
+---
+
+## 📋 SECTION 3: WAITING (MAIN AREA)
+
+This is a **scrollable list with toggle filter**
+
+### 🔀 Toggle Menu (Tabs inside Waiting):
+
+* Normal Tokens
+* Emergency Tokens
+* Skipped
+* Consulted
+
+---
+
+## 🧾 PATIENT CARD (WAITING LIST)
+
+Each card must display ONLY:
+
+* Token Number (bold)
+* Name
+* Age
+* Gender
+* Token Type
+
+---
+
+## ⚡ ACTION BUTTONS (WAITING SECTION)
+
+For ALL patients EXCEPT “Consulted”:
+
+* **Send Next** → moves patient to "Up Next"
+* **Send Alert** → notify patient
+
+👉 Buttons must be:
+
+* Clearly visible
+* Easy to tap
+* Color-coded
+
+---
+
+## 🎨 UI DESIGN REQUIREMENTS
+
+* Dark Glassmorphic Design
+
+* Background: dark gradient
+
+* Cards:
+
+  * Frosted glass effect
+  * backdrop blur
+  * soft borders
+  * rounded corners
+
+* Use:
+
+  * subtle glow for active sections
+  * clear spacing (8pt grid)
+  * high contrast text
+
+---
+
+## ⚡ UX REQUIREMENTS
+
+* One-hand usability
+* Fast interaction (clinic environment)
+* Minimal clutter
+* Clear visual hierarchy:
+
+  1. In Consultation (Top)
+  2. Up Next
+  3. Waiting List
+
+---
+
+## 💎 COMPONENTS
+
+* PatientCard
+* SectionHeader
+* ToggleTabs
+* ActionButtonsGroup
+* GlassContainer
+
+---
+
+## 🚫 AVOID
+
+* Complex layouts
+* Too much text
+* Small buttons
+* Confusing navigation
+
+---
+
+## 🎯 FINAL GOAL
+
+Design should feel like:
+
+👉 A real-time clinic control panel
+👉 Extremely simple but powerful
+👉 Doctor should operate instantly without thinking
+
+---
+
+Build complete UI with reusable components accordingly.
