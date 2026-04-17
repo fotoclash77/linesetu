@@ -17,16 +17,6 @@ const stats = [
 export default function Queue() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: BG, fontFamily: "system-ui, sans-serif", padding: "24px 24px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 16, background: `linear-gradient(135deg, ${TEAL}, #0891B2)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3 }}>
-          {[16,12,8].map((w,i) => <div key={i} style={{ width: w, height: 2, backgroundColor: "rgba(255,255,255,0.8)", borderRadius: 1 }} />)}
-        </div>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: TEAL_LT, letterSpacing: 2 }}>FEATURE 01</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>What you get</div>
-        </div>
-      </div>
-
       <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 8 }}>
         Smart Queue<br/><span style={{ color: TEAL_LT }}>Management</span>
       </div>
