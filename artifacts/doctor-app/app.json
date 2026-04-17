@@ -4,7 +4,7 @@
     "slug": "doctor-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "doctor-app",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
@@ -23,7 +23,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [
