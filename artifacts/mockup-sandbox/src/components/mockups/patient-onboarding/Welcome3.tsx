@@ -58,7 +58,6 @@ export function Welcome3() {
                   <div className="text-[9px] text-white/30">{r.date}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.amt && <span className="text-[12px] font-bold text-white">{r.amt}</span>}
                   <span className="text-[9px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">{r.status}</span>
                 </div>
               </div>
