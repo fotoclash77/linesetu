@@ -141,7 +141,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
           onPress={() => available && navToDoctor()}
         >
           <Text style={[styles.getTokenTxt, !available && { color: "rgba(255,255,255,0.3)" }]}>
-            {available ? "Book" : "N/A"}
+            {available ? "Get Token" : "N/A"}
           </Text>
         </Pressable>
       </View>
