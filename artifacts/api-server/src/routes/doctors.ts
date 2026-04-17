@@ -35,6 +35,32 @@ function activeClinicOnly(data: any): any {
   return data;
 }
 
+// Fields that are semantically numeric but historically may have been written
+// to Firestore as strings (e.g. from text-input forms). Coerce them on read so
+// every API consumer gets real numbers.
+const NUMERIC_DOCTOR_FIELDS = [
+  "totalPatients", "experience",
+  "consultFee", "emergencyFee", "walkinFee",
+  "clinicConsultFee", "clinicEmergencyFee",
+  "pendingPayout",
+] as const;
+
+function coerceNumericFields(data: any): any {
+  for (const key of NUMERIC_DOCTOR_FIELDS) {
+    const v = data[key];
+    if (v == null || typeof v === "number") continue;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      if (Number.isFinite(n)) data[key] = n;
+    }
+  }
+  return data;
+}
+
+function normalizeDoctor(data: any): any {
+  return activeClinicOnly(coerceNumericFields(data));
+}
+
 // GET /api/doctors — list all active, approved, non-deleted doctors (for patient app)
 router.get("/doctors", async (req, res) => {
   try {
@@ -44,7 +70,7 @@ router.get("/doctors", async (req, res) => {
     );
     const snap = await withRetry(() => getDocs(q));
     const doctors = snap.docs
-      .map(d => activeClinicOnly({ id: d.id, ...d.data() } as any))
+      .map(d => normalizeDoctor({ id: d.id, ...d.data() } as any))
       .filter(d => d.isApproved === true && !d.isDeleted);
     res.json({ doctors });
   } catch (err: any) {
@@ -70,7 +96,7 @@ router.get("/doctors/:doctorId", async (req, res) => {
       await updateDoc(ref, { shortCode });
       data.shortCode = shortCode;
     }
-    res.json(activeClinicOnly({ id: snap.id, ...data }));
+    res.json(normalizeDoctor({ id: snap.id, ...data }));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -122,6 +148,16 @@ router.patch("/doctors/:doctorId", async (req, res) => {
     const updates: Record<string, any> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    // Coerce numeric fields written from text inputs so they persist as
+    // numbers (not strings). Critical for FieldValue.increment() on
+    // totalPatients and for client-side numeric formatting.
+    for (const key of NUMERIC_DOCTOR_FIELDS) {
+      const v = updates[key];
+      if (typeof v === "string" && v.trim() !== "") {
+        const n = Number(v);
+        if (Number.isFinite(n)) updates[key] = n;
+      }
     }
     await updateDoc(doc(db, Collections.DOCTORS, req.params.doctorId), updates);
     res.json({ id: req.params.doctorId, updated: Object.keys(updates) });
