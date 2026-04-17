@@ -46,11 +46,6 @@ export function Splash() {
           {/* Brand name */}
           <div className="text-center mb-3">
             <h1 className="text-[36px] font-black text-white tracking-[-1px] leading-none">LINESETU</h1>
-            <div className="flex items-center justify-center gap-2 mt-3">
-              <div className="h-[1px] w-8 bg-[#818CF8]/40" />
-              <span className="text-[11px] font-bold text-[#818CF8] tracking-[3px]">PATIENT APP</span>
-              <div className="h-[1px] w-8 bg-[#818CF8]/40" />
-            </div>
           </div>
 
           {/* Tagline */}
