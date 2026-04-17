@@ -17,37 +17,8 @@ export function Welcome2() {
         <div className="absolute bottom-[80px] right-[-40px] w-[200px] h-[200px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)" }} />
 
-        {/* Status bar */}
-        <div className="flex justify-between items-center px-6 pt-4 pb-2 flex-shrink-0">
-          <span className="text-[13px] font-semibold text-white/40">9:41</span>
-          <div className="flex items-center gap-1.5">
-            {[0.35, 0.6, 0.85, 1].map((op, i) => (
-              <div key={i} className="w-[3px] bg-white rounded-sm" style={{ height: `${6 + i * 2}px`, opacity: op }} />
-            ))}
-            <div className="w-[22px] h-[11px] rounded-[3px] border border-white/25 ml-1.5 flex items-center px-0.5">
-              <div className="w-[13px] h-[7px] bg-white/80 rounded-[2px]" />
-            </div>
-          </div>
-        </div>
-
         {/* Content */}
         <div className="flex-1 flex flex-col px-6 pt-6 pb-6">
-
-          {/* Icon badge */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #0891B2, #06B6D4)" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="1.8" />
-                <path d="M12 8v4l3 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="12" cy="12" r="1.5" fill="white" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-[#22D3EE] tracking-[2px]">FEATURE 02</div>
-              <div className="text-[12px] text-white/40 font-medium">Live tracking</div>
-            </div>
-          </div>
 
           {/* Heading */}
           <h2 className="text-[28px] font-black text-white leading-tight mb-2">
