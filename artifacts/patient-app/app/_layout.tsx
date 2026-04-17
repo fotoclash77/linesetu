@@ -26,6 +26,10 @@ if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 }
 
+if (Platform.OS !== "web") {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -108,7 +112,7 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: "#060A14" }} />;
+    return <View style={{ flex: 1, backgroundColor: "#0A0E1A" }} />;
   }
 
   return (
