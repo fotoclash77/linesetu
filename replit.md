@@ -29,10 +29,15 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 ## Dual-App Web Preview Routing
 
 Both `doctor-app` and `patient-app` are Expo apps that need `router = "expo-domain"`, but only one can win the domain. Solution:
-- Doctor app owns the preview domain; its Metro server (port 20119) proxies `/patient-app/*` requests to the patient Metro (port 20117) via `enhanceMiddleware` in `artifacts/doctor-app/metro.config.js`.
+- **Patient app** owns `expo.spock.replit.dev` (router = "expo-domain" in patient-app artifact.toml).
+- Doctor app is accessible via the shared proxy at `/doctor-app/`. Its Metro runs on port 20119.
 - Both apps' script URLs must be prefixed with their app path so browsers fetch bundles from the correct server. Since Metro's `enhanceMiddleware` only wraps the bundle handler (not the HTML manifest middleware), we patch `@expo/cli/build/src/export/html.js` directly — `appendScriptsToHtml` reads `process.cwd()` and prefixes script `src` paths with `/doctor-app` or `/patient-app` accordingly.
-- Doctor Metro strips the `/doctor-app` prefix from incoming requests in `enhanceMiddleware` before Metro processes them. The proxy strips `/patient-app` before forwarding to patient Metro.
+- Doctor Metro strips the `/doctor-app` prefix from incoming requests in `enhanceMiddleware` before Metro processes them.
 - If `@expo/cli` is upgraded, re-apply the `html.js` patch.
+
+### Helper Modules — Keep Out of app/ Directory
+Expo Router v6 treats **every** file inside `app/` as a route (including `_`-prefixed files that aren't `_layout`). Non-component helper modules must live outside `app/` (e.g. `lib/`, `utils/`, `contexts/`) — otherwise Expo Router logs a "missing required default export" warning and may silently crash the tab layout.
+- `artifacts/doctor-app/lib/settingsResetBridge.ts` — tiny publish/subscribe bridge between `_layout.tsx` (fires reset) and `settings.tsx` (registers handler). Formerly at `app/(tabs)/_settingsResetBridge.ts`; moved out to fix a crash loop.
 
 ## Artifacts
 

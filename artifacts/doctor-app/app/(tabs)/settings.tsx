@@ -28,7 +28,7 @@ let ExpoPrint: any = null;
 try { ExpoPrint = require('expo-print'); } catch {}
 
 import { useDoctor } from '../../contexts/DoctorContext';
-import { registerSettingsResetHandler } from './_settingsResetBridge';
+import { registerSettingsResetHandler } from '../../lib/settingsResetBridge';
 import { INDIA_STATES } from '../../constants/indiaLocations';
 
 const isWeb = Platform.OS === 'web';

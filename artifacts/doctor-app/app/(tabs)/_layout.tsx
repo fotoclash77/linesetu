@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
-import { fireSettingsReset } from "./_settingsResetBridge";
+import { fireSettingsReset } from "../../lib/settingsResetBridge";
 
 function HomeIcon({ color }: { color: string }) {
   return <Feather name="home" size={22} color={color} />;
