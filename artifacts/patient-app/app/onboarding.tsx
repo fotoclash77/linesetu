@@ -7,7 +7,6 @@ import {
   Dimensions,
   TouchableOpacity,
   StatusBar,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -31,7 +30,9 @@ function SplashSlide() {
   return (
     <View style={[styles.slide, { alignItems: "center", justifyContent: "center" }]}> 
       <View style={styles.glowOrb} />
-      <Image source={require("../assets/images/logo.png")} style={styles.logoImage} resizeMode="contain" />
+      <View style={styles.logoMark}>
+        <Text style={styles.logoMarkText}>#1</Text>
+      </View>
       <Text style={styles.brandName}>LINESETU</Text>
       <Text style={styles.tagline}>No early morning lines.{"\n"}Book your token instantly.</Text>
     </View>
@@ -113,7 +114,7 @@ function TrackSlide() {
         <View style={{ flexDirection: "row", gap: 4 }}>
           {queue.map((q, i) => (
             <View key={i} style={{ flex: 1, alignItems: "center", gap: 4 }}>
-              <View style={[styles.queueSlot, q.active && { backgroundColor: "rgba(6,182,212,0.25)", borderColor: "rgba(6,182,212,0.5)" }, q.you && { backgroundColor: "rgba(79,70,229,0.35)", borderColor: "rgba(99,102,241,0.6)" }, q.done && { backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.06)" }, q.none && { backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.06)" }]}>
+              <View style={[styles.queueSlot, q.active && { backgroundColor: "rgba(6,182,212,0.25)", borderColor: "rgba(6,182,212,0.5)" }, q.you && { backgroundColor: "rgba(79,70,229,0.35)", borderColor: "rgba(99,102,241,0.6)" }, q.done && { backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.06)" }, q.none && { backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.06)" }]}> 
                 {q.done ? <Text style={{ fontSize: 10, color: "rgba(34,197,94,0.5)" }}>✓</Text> : <Text style={{ fontSize: 11, fontWeight: "900", color: q.you ? INDIGO_LT : q.active ? CYAN_LT : "rgba(255,255,255,0.2)" }}>{q.num}</Text>}
               </View>
               <Text style={{ fontSize: 8, fontWeight: "700", color: q.you ? INDIGO_LT : q.active ? CYAN_LT : "rgba(255,255,255,0.2)" }}>{q.label}</Text>
@@ -238,7 +239,8 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   slide: { flex: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
   glowOrb: { position: "absolute", width: 400, height: 400, borderRadius: 200, backgroundColor: "rgba(79,70,229,0.18)", alignSelf: "center", top: "15%" },
-  logoImage: { width: 180, height: 180, marginBottom: 14 },
+  logoMark: { width: 180, height: 180, borderRadius: 90, borderWidth: 1, borderColor: "rgba(129,140,248,0.18)", alignItems: "center", justifyContent: "center", marginBottom: 14, backgroundColor: "rgba(79,70,229,0.08)" },
+  logoMarkText: { color: "#fff", fontSize: 44, fontWeight: "900" },
   brandName: { fontSize: 34, fontWeight: "900", color: "#fff", letterSpacing: -1, marginBottom: 8 },
   tagline: { fontSize: 15, color: "rgba(255,255,255,0.45)", fontWeight: "500", textAlign: "center", lineHeight: 24, marginBottom: 28, paddingHorizontal: 20 },
   dot: { width: 6, height: 6, borderRadius: 3 },
