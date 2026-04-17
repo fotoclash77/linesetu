@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "patient-app",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
