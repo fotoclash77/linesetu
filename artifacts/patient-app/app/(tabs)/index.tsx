@@ -321,7 +321,11 @@ export default function HomeScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 64;
 
-  const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
+  const { data: doctorsData, isLoading } = useQuery({
+    ...getListDoctorsQueryOptions(),
+    refetchInterval: 5_000,
+    staleTime: 0,
+  });
   const { data: tokenData } = useQuery({
     ...getGetPatientTokensQueryOptions(patient?.id ?? ""),
     enabled: !!patient?.id,

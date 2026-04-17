@@ -731,8 +731,9 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
     const guard = assertValidTransition("done", token.status, token.paymentStatus);
     if (!guard.valid) return res.status(guard.code).json({ error: guard.error });
 
-    const queueRef = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
-    const txRef    = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
+    const queueRef  = doc(db, Collections.QUEUES, queueDocId(token.doctorId, token.date, token.shift));
+    const txRef     = doc(db, Collections.TRANSACTIONS, req.params.tokenId);
+    const doctorRef = doc(db, Collections.DOCTORS, token.doctorId);
 
     // Earnings are credited at booking time (POST /api/tokens).
     // done-route only marks the token/transaction complete — no balance change here.
@@ -745,6 +746,7 @@ router.patch("/tokens/:tokenId/done", async (req, res) => {
 
     batch.update(tokenRef, { status: "done", doneAt: Timestamp.now() });
     batch.update(queueRef, { doneCount: increment(1), updatedAt: Timestamp.now() });
+    batch.update(doctorRef, { totalPatients: increment(1) });
 
     // Mark transaction as "completed" so the Earnings tab shows the correct status badge.
     if (isOnlineToken && txSnap?.exists()) {

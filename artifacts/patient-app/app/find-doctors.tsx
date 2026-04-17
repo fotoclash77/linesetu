@@ -176,7 +176,11 @@ export default function FindDoctorsScreen() {
   const [locSearch, setLocSearch] = useState("");
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { data: doctorsData, isLoading } = useQuery(getListDoctorsQueryOptions());
+  const { data: doctorsData, isLoading } = useQuery({
+    ...getListDoctorsQueryOptions(),
+    refetchInterval: 5_000,
+    staleTime: 0,
+  });
 
   const [fbDoctorMap, setFbDoctorMap] = useState<Map<string, { photo: string; isActive: boolean; isApproved: boolean; isDeleted: boolean }>>(new Map());
   useEffect(() => {
