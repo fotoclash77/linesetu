@@ -131,7 +131,6 @@ export default function LoginScreen() {
               <View style={styles.trustRow}>
                 <TrustBadge label="Secure Login" />
                 <TrustBadge label="Clinic Verified" />
-                <TrustBadge label="MCI Registered" />
               </View>
             </View>
 
