@@ -17,6 +17,7 @@
       "supportsTablet": false
     },
     "android": {
+      "package": "com.linesetu.doctorapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#060E12"

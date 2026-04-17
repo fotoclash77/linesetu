@@ -26,6 +26,7 @@
       "backgroundColor": "#0A0E1A"
     },
     "android": {
+      "package": "com.linesetu.patientapp",
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
@@ -58,6 +59,12 @@
       "typedRoutes": true,
       "reactCompiler": true,
       "baseUrl": "/patient-app"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "110d3cf2-8e37-4a41-b188-15c20c468716"
+      }
+    },
+    "owner": "linesetu76"
   }
 }
