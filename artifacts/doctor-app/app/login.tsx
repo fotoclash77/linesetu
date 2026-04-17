@@ -13,25 +13,6 @@ function getApiBase() {
   return 'http://localhost:8080';
 }
 
-const STATUS_ICONS = [0.4, 0.65, 0.9, 1];
-
-function StatusBar() {
-  return (
-    <View style={styles.statusBar}>
-      <Text style={styles.statusTime}>9:41</Text>
-      <View style={styles.statusRight}>
-        {STATUS_ICONS.map((op, i) => (
-          <View key={i} style={[styles.signalBar, { height: 6 + i * 2, opacity: op }]} />
-        ))}
-        <View style={{ width: 6 }} />
-        <View style={styles.batteryOuter}>
-          <View style={styles.batteryInner} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function TrustBadge({ label }: { label: string }) {
   return (
     <View style={styles.trustBadge}>
@@ -134,8 +115,6 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={styles.container}>
-        <StatusBar />
-
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
 
@@ -282,12 +261,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   kav: { flex: 1 },
   scroll: { flexGrow: 1, paddingBottom: 32 },
-  statusBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 4 },
-  statusTime: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
-  statusRight: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  signalBar: { width: 3, backgroundColor: '#FFF', borderRadius: 2 },
-  batteryOuter: { width: 24, height: 12, borderRadius: 3.5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', marginLeft: 4, justifyContent: 'center', paddingHorizontal: 1 },
-  batteryInner: { width: 14, height: 8, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 2 },
   glowTop: { position: 'absolute', top: -100, left: '10%', width: 340, height: 340, borderRadius: 170, backgroundColor: 'rgba(13,148,136,0.28)', opacity: 0.7 },
   glowBottom: { position: 'absolute', bottom: 60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(6,182,212,0.14)', opacity: 0.6 },
   brand: { alignItems: 'center', paddingTop: 30, paddingBottom: 20 },
