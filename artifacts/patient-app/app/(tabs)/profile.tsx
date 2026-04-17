@@ -367,9 +367,9 @@ export default function ProfileScreen() {
             <View style={styles.familyList}>
               {/* Self */}
               <View style={styles.familyCard}>
-                <LinearGradient colors={["#4F46E5", "#06B6D4"]} style={styles.familyCardAvatar}>
-                  <Text style={styles.familyAvatarTxt}>{initials}</Text>
-                </LinearGradient>
+                <View style={[styles.familyCardAvatar, { backgroundColor: "#4F46E518", borderWidth: 2, borderColor: "#818CF8" }]}>
+                  <Text style={[styles.familyAvatarTxt, { color: "#818CF8" }]}>{initials}</Text>
+                </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     {name ? (
@@ -399,7 +399,7 @@ export default function ProfileScreen() {
                     {m.avatar ? (
                       <Image source={{ uri: m.avatar }} style={[styles.familyCardImgAvatar, { borderColor: color + "50" }]} contentFit="cover" />
                     ) : (
-                      <View style={[styles.familyCardAvatar, { backgroundColor: color + "30" }]}>
+                      <View style={[styles.familyCardAvatar, { backgroundColor: color + "18", borderWidth: 2, borderColor: color }]}>
                         <Text style={[styles.familyAvatarTxt, { color }]}>{m.name.slice(0, 2).toUpperCase()}</Text>
                       </View>
                     )}
