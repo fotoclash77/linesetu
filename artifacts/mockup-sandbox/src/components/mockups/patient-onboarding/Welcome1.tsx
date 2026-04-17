@@ -14,19 +14,6 @@ export function Welcome1() {
         <div className="absolute bottom-[120px] left-[-40px] w-[200px] h-[200px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)" }} />
 
-        {/* Status bar */}
-        <div className="flex justify-between items-center px-6 pt-4 pb-2 flex-shrink-0">
-          <span className="text-[13px] font-semibold text-white/40">9:41</span>
-          <div className="flex items-center gap-1.5">
-            {[0.35, 0.6, 0.85, 1].map((op, i) => (
-              <div key={i} className="w-[3px] bg-white rounded-sm" style={{ height: `${6 + i * 2}px`, opacity: op }} />
-            ))}
-            <div className="w-[22px] h-[11px] rounded-[3px] border border-white/25 ml-1.5 flex items-center px-0.5">
-              <div className="w-[13px] h-[7px] bg-white/80 rounded-[2px]" />
-            </div>
-          </div>
-        </div>
-
         {/* Content */}
         <div className="flex-1 flex flex-col px-6 pt-6 pb-6">
 
