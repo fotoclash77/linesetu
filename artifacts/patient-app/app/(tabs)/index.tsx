@@ -69,6 +69,26 @@ const SPEC_META: Record<string, { icon: React.ComponentProps<typeof Feather>["na
 };
 const SPEC_COLOR_POOL = ["#EF4444","#3B82F6","#06B6D4","#22C55E","#8B5CF6","#F97316","#EC4899","#F59E0B","#A855F7","#14B8A6"];
 
+const SPEC_IMAGE: Record<string, number> = {
+  "general physician":   require("../../assets/specialty-icons/general-physician.png"),
+  "cardiologist":        require("../../assets/specialty-icons/cardiologist.png"),
+  "cardiology":          require("../../assets/specialty-icons/cardiologist.png"),
+  "dermatologist":       require("../../assets/specialty-icons/dermatologist.png"),
+  "dermatology":         require("../../assets/specialty-icons/dermatologist.png"),
+  "orthopedic surgeon":  require("../../assets/specialty-icons/orthopedic-surgeon.png"),
+  "orthopedic":          require("../../assets/specialty-icons/orthopedic-surgeon.png"),
+  "orthopedics":         require("../../assets/specialty-icons/orthopedic-surgeon.png"),
+  "gynecologist":        require("../../assets/specialty-icons/gynecologist.png"),
+  "gynecology":          require("../../assets/specialty-icons/gynecologist.png"),
+  "pediatrician":        require("../../assets/specialty-icons/pediatrician.png"),
+  "pediatric":           require("../../assets/specialty-icons/pediatrician.png"),
+  "pediatrics":          require("../../assets/specialty-icons/pediatrician.png"),
+  "ent specialist":      require("../../assets/specialty-icons/ent-specialist.png"),
+  "ent":                 require("../../assets/specialty-icons/ent-specialist.png"),
+  "neurologist":         require("../../assets/specialty-icons/neurologist.png"),
+  "neurology":           require("../../assets/specialty-icons/neurologist.png"),
+};
+
 
 interface DoctorItem {
   id: string;
@@ -407,11 +427,12 @@ export default function HomeScreen() {
   const specialties = useMemo(() => {
     const list = fbSpecList.length > 0 ? fbSpecList.slice(0, 8) : [];
     return list.map((s, i) => {
-      const key = s.toLowerCase();
+      const key = s.toLowerCase().trim();
       const meta = SPEC_META[key];
       const color = meta?.color ?? SPEC_COLOR_POOL[i % SPEC_COLOR_POOL.length];
       const icon: React.ComponentProps<typeof Feather>["name"] = meta?.icon ?? "plus-circle";
-      return { icon, label: s, color };
+      const image = SPEC_IMAGE[key] ?? null;
+      return { icon, image, label: s, color };
     });
   }, [fbSpecList]);
 
@@ -546,10 +567,14 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <View style={styles.specGrid}>
-            {specialties.length > 0 ? specialties.map(({ icon, label, color }) => (
+            {specialties.length > 0 ? specialties.map(({ icon, image, label, color }) => (
               <Pressable key={label} style={styles.specItem} onPress={() => router.push({ pathname: "/find-doctors", params: { specialty: label } })}>
                 <View style={[styles.specIcon, { backgroundColor: color + "1A" }]}>
-                  <Feather name={icon} size={17} color={color} />
+                  {image ? (
+                    <Image source={image} style={{ width: 28, height: 28 }} contentFit="contain" />
+                  ) : (
+                    <Feather name={icon} size={17} color={color} />
+                  )}
                 </View>
                 <Text style={styles.specItemLabel}>{label}</Text>
               </Pressable>
