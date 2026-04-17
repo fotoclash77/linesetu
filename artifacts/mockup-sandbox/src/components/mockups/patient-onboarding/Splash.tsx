@@ -33,14 +33,13 @@ export function Splash() {
         {/* Main content */}
         <div className="relative z-10 flex flex-col items-center">
 
-          {/* Logo mark */}
-          <div className="relative mb-8">
-            {/* Orbit dot */}
-            <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-[#818CF8]"
-              style={{ boxShadow: "0 0 10px #818CF8" }} />
-            {/* Second orbit dot */}
-            <div className="absolute bottom-4 left-2 w-2 h-2 rounded-full bg-[#06B6D4]/70"
-              style={{ boxShadow: "0 0 8px #06B6D4" }} />
+          {/* Logo */}
+          <div className="mb-6" style={{ filter: "drop-shadow(0 0 32px rgba(79,70,229,0.45))" }}>
+            <img
+              src="https://d8479a8d-fa68-4a0e-9145-0243e19272df-00-aspsb1pq2zqb.spock.replit.dev/__mockup/assets/patient-logo.png"
+              alt="LINESETU Patient App"
+              style={{ width: 140, height: 140, objectFit: "contain" }}
+            />
           </div>
 
           {/* Brand name */}
