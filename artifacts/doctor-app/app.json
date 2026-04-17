@@ -30,7 +30,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://linesetu.replit.app/"
         }
       ],
       "expo-font",
@@ -38,8 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true,
-      "baseUrl": "/doctor-app"
-    }
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ae61ea8b-a7e0-4e7c-bd62-59d58820d349"
+      }
+    },
+    "owner": "linesetu76"
   }
 }
