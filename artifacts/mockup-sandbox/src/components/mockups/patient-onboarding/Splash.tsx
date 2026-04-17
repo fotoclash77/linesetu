@@ -60,7 +60,7 @@ export function Splash() {
 
           {/* Trust badges */}
           <div className="flex items-center gap-3 mt-8">
-            {["50K+ Patients", "ABDM Ready", "100% Secure"].map((badge) => (
+            {["50K+ Patients", "100% Secure"].map((badge) => (
               <div key={badge} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/[0.07] bg-white/[0.03]">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
                 <span className="text-[10px] text-white/40 font-semibold">{badge}</span>
