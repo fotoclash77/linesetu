@@ -906,7 +906,7 @@ export default function SettingsScreen() {
                     keyboardType="phone-pad"
                     maxLength={10}
                     placeholderTextColor="rgba(255,255,255,0.2)"
-                    placeholder="98765 00001"
+                    placeholder="Enter your 10-digit phone number"
                   />
                 </View>
                 {profileFieldErrors.mobile && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}
@@ -979,7 +979,7 @@ export default function SettingsScreen() {
                     keyboardType="phone-pad"
                     maxLength={10}
                     placeholderTextColor="rgba(255,255,255,0.2)"
-                    placeholder="98765 00001"
+                    placeholder="Enter 10-digit phone number"
                   />
                 </View>
                 {clinicFieldErrors.phone && <Text style={{ fontSize: 9, color: '#F87171', fontWeight: '700', marginTop: 3 }}>Required</Text>}

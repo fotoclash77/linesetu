@@ -386,7 +386,7 @@ export default function AddWalkinScreen() {
               </View>
               <View style={styles.phoneRow}>
                 <View style={styles.countryPrefix}><Text style={styles.countryPrefixText}>+91</Text></View>
-                <TextInput style={[styles.input, { flex: 1 }]} placeholder="98765 43210" placeholderTextColor="rgba(255,255,255,0.2)" keyboardType="phone-pad" maxLength={10} value={phone} onChangeText={t => setPhone(t.replace(/\D/g, '').slice(0, 10))} />
+                <TextInput style={[styles.input, { flex: 1 }]} placeholder="Enter 10-digit phone number" placeholderTextColor="rgba(255,255,255,0.2)" keyboardType="phone-pad" maxLength={10} value={phone} onChangeText={t => setPhone(t.replace(/\D/g, '').slice(0, 10))} />
               </View>
             </View>
 
