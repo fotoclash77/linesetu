@@ -22,6 +22,10 @@ let captureRef: any = null;
 try { captureRef = require('react-native-view-shot').captureRef; } catch {}
 let MediaLibrary: any = null;
 try { MediaLibrary = require('expo-media-library'); } catch {}
+// expo-print powers the native OS print sheet (AirPrint / Android print
+// services / Bluetooth printers). Loaded defensively for the same reasons.
+let ExpoPrint: any = null;
+try { ExpoPrint = require('expo-print'); } catch {}
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';
@@ -548,6 +552,7 @@ export default function SettingsScreen() {
   const posterShotRef = useRef<any>(null);
   const [savingPoster, setSavingPoster] = useState(false);
   const [posterSaved, setPosterSaved] = useState(false);
+  const [printingPoster, setPrintingPoster] = useState(false);
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
@@ -1770,6 +1775,114 @@ export default function SettingsScreen() {
     // (qrRef, posterShotRef, savingPoster, posterSaved are declared at the
     // top of the component to keep hook order stable across sections.)
 
+    // Build the print-ready poster HTML used by both expo-print (native) and
+    // window.print() (web). Embeds the QR as a base64 PNG so the printed page
+    // doesn't need any network/asset resolution.
+    const buildPosterHtml = (qrDataUrl: string) => {
+      const safe = (s: string) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c] as string));
+      const docName = safe(doctor?.name || 'Doctor');
+      const clinic = clinicLine ? `<div class="clinic">${safe(clinicLine)}</div>` : '';
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+        <title>LINESETU – ${docName}</title>
+        <style>
+          @page { size: A4; margin: 18mm; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #FFFFFF; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Arial, sans-serif; color: #0F172A; }
+          .poster { width: 100%; max-width: 560px; margin: 0 auto; padding: 28px 24px; text-align: center; }
+          .header { border-bottom: 1px solid #E5E7EB; padding-bottom: 16px; }
+          .brand { font-size: 28px; font-weight: 900; color: #0E5A53; letter-spacing: 2px; }
+          .tagline { margin-top: 6px; font-size: 14px; font-weight: 600; color: #475569; }
+          .qr-wrap { margin: 28px auto 0; display: inline-block; padding: 14px; border: 1px solid #E5E7EB; border-radius: 14px; background: #FFFFFF; }
+          .qr-wrap img { display: block; width: 320px; height: 320px; }
+          .doctor { margin-top: 24px; font-size: 22px; font-weight: 900; color: #0F172A; }
+          .clinic { margin-top: 8px; font-size: 15px; font-weight: 600; color: #475569; }
+          .footer { margin-top: 22px; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: #0E7C73; text-transform: uppercase; }
+        </style></head>
+        <body>
+          <div class="poster">
+            <div class="header">
+              <div class="brand">LINESETU</div>
+              <div class="tagline">Scan to book your token</div>
+            </div>
+            <div class="qr-wrap"><img src="${qrDataUrl}" alt="QR code"/></div>
+            <div class="doctor">${docName}</div>
+            ${clinic}
+            <div class="footer">Scan with the LINESETU Patient App</div>
+          </div>
+        </body></html>`;
+    };
+
+    // Resolve the QR image as a data URL via the SVG ref (works on web + native).
+    const getQrDataUrl = (): Promise<string> => new Promise((resolve, reject) => {
+      const ref = qrRef.current;
+      if (!ref || typeof ref.toDataURL !== 'function') {
+        reject(new Error('QR not ready'));
+        return;
+      }
+      try {
+        ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64));
+      } catch (err) { reject(err); }
+    });
+
+    const onPrintPoster = async () => {
+      if (!profileUrl || printingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't print poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setPrintingPoster(true);
+      try {
+        const qrDataUrl = await getQrDataUrl();
+        const html = buildPosterHtml(qrDataUrl);
+        if (Platform.OS === 'web') {
+          // Render the poster in a hidden iframe and trigger the browser's
+          // print dialog scoped to that iframe so the rest of the app UI
+          // doesn't end up on the printed page.
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!doc) throw new Error('Print frame unavailable');
+          doc.open(); doc.write(html); doc.close();
+          // Wait for the QR image to load before invoking print.
+          const cw = iframe.contentWindow!;
+          const cleanup = () => { setTimeout(() => { try { document.body.removeChild(iframe); } catch {} }, 1000); };
+          const doPrint = () => {
+            try { cw.focus(); cw.print(); } catch {}
+            cleanup();
+          };
+          const img = doc.querySelector('img');
+          if (img && !(img as HTMLImageElement).complete) {
+            (img as HTMLImageElement).onload = doPrint;
+            (img as HTMLImageElement).onerror = doPrint;
+          } else {
+            setTimeout(doPrint, 100);
+          }
+        } else {
+          if (!ExpoPrint || typeof ExpoPrint.printAsync !== 'function') {
+            Alert.alert("Can't print poster", 'Printing is not available in this build. Please use a development build.');
+            return;
+          }
+          await ExpoPrint.printAsync({ html });
+        }
+      } catch (e: any) {
+        // User-cancelled prints on iOS surface as a "Printing did not complete"
+        // error; treat any user-cancel-shaped error quietly.
+        const msg = String(e?.message || '');
+        if (!/cancel/i.test(msg) && !/did not complete/i.test(msg)) {
+          Alert.alert("Couldn't print poster", msg || 'Please try again.');
+        }
+      } finally {
+        setPrintingPoster(false);
+      }
+    };
+
     const onSavePoster = async () => {
       if (!profileUrl || savingPoster) return;
       if (!QRCode) {
@@ -1933,25 +2046,43 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Save poster — generates a printable PNG with QR + name + clinic. */}
-            <TouchableOpacity
-              onPress={onSavePoster}
-              disabled={!profileUrl || savingPoster || !QRCode}
-              style={{ marginTop: 10, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
-            >
-              {savingPoster ? (
-                <ActivityIndicator color="#2DD4BF" size="small" />
-              ) : (
-                <>
-                  <Feather name={posterSaved ? 'check' : (Platform.OS === 'web' ? 'download' : 'image')} size={15} color="#2DD4BF" />
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>
-                    {posterSaved
-                      ? (Platform.OS === 'web' ? 'Downloaded' : 'Saved to gallery')
-                      : (Platform.OS === 'web' ? 'Download poster' : 'Save poster to gallery')}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {/* Save poster + Print poster — Save generates a PNG; Print opens
+                the OS native print sheet (AirPrint / Android print services /
+                Bluetooth printers on mobile, browser print dialog on web). */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <TouchableOpacity
+                onPress={onSavePoster}
+                disabled={!profileUrl || savingPoster || !QRCode}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+              >
+                {savingPoster ? (
+                  <ActivityIndicator color="#2DD4BF" size="small" />
+                ) : (
+                  <>
+                    <Feather name={posterSaved ? 'check' : (Platform.OS === 'web' ? 'download' : 'image')} size={15} color="#2DD4BF" />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>
+                      {posterSaved
+                        ? (Platform.OS === 'web' ? 'Downloaded' : 'Saved')
+                        : (Platform.OS === 'web' ? 'Download' : 'Save poster')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onPrintPoster}
+                disabled={!profileUrl || printingPoster || !QRCode}
+                style={{ flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+              >
+                {printingPoster ? (
+                  <ActivityIndicator color="#2DD4BF" size="small" />
+                ) : (
+                  <>
+                    <Feather name="printer" size={15} color="#2DD4BF" />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>Print</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             <Text style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 16 }}>
               Print at your clinic, share on WhatsApp, or post on social media.
             </Text>
