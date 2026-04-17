@@ -89,6 +89,19 @@ interface DoctorItem {
   isAvailable?: boolean;
 }
 
+function formatCompactCount(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  const abs = Math.abs(n);
+  const fmt = (v: number) => {
+    const r = Math.round(v * 10) / 10;
+    return (r % 1 === 0 ? r.toFixed(0) : r.toFixed(1));
+  };
+  if (abs >= 1_00_00_000) return `${fmt(n / 1_00_00_000)}Cr+`;
+  if (abs >= 1_00_000) return `${fmt(n / 1_00_000)}L+`;
+  if (abs >= 1_000) return `${fmt(n / 1_000)}K+`;
+  return `${Math.round(n)}+`;
+}
+
 function formatWait(mins: number) {
   if (!Number.isFinite(mins) || mins <= 0) return "~0 min";
   if (mins < 60) return `~${Math.round(mins)} min`;
@@ -350,7 +363,7 @@ export default function HomeScreen() {
       : "~",
     token: 1,
     exp: d.experience != null ? `${d.experience}` : "",
-    patients: d.totalPatients != null ? `${d.totalPatients}+` : "",
+    patients: d.totalPatients != null ? formatCompactCount(d.totalPatients) : "",
     photo: fbDoctorMap.get(d.id)?.photo || d.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name ?? "D")}&background=4F46E5&color=fff`,
     isAvailable: d.isAvailable !== false,
   });
