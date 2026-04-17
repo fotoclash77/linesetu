@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ViewStyle, Platform,
   ActivityIndicator, Modal, FlatList, Image, BackHandler, Linking, Alert, Share,
@@ -14,6 +14,14 @@ import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 // install can't crash the whole settings screen.
 let QRCode: any = null;
 try { QRCode = require('react-native-qrcode-svg').default; } catch {}
+
+// Native-only modules for capturing and saving the poster image. Loaded
+// defensively so they can't crash the screen on web or in builds where the
+// native module isn't bundled (e.g. Expo Go).
+let captureRef: any = null;
+try { captureRef = require('react-native-view-shot').captureRef; } catch {}
+let MediaLibrary: any = null;
+try { MediaLibrary = require('expo-media-library'); } catch {}
 
 import { useDoctor } from '../../contexts/DoctorContext';
 import { registerSettingsResetHandler } from './_settingsResetBridge';
@@ -533,6 +541,13 @@ export default function SettingsScreen() {
   const [clinicEmergencyFee, setClinicEmergencyFee] = useState(() => String((doctor as any)?.clinicEmergencyFee ?? 0));
   const [feeSaving, setFeeSaving] = useState(false);
   const [feeSaved, setFeeSaved] = useState(false);
+
+  // Share Profile QR — poster save state and refs (hoisted to top level so
+  // hook order stays stable across section navigation).
+  const qrRef = useRef<any>(null);
+  const posterShotRef = useRef<any>(null);
+  const [savingPoster, setSavingPoster] = useState(false);
+  const [posterSaved, setPosterSaved] = useState(false);
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
@@ -1717,6 +1732,17 @@ export default function SettingsScreen() {
     const shareMessage = profileUrl
       ? `${shareTitle}\n\n${profileUrl}\n\nScan or tap the link to view my profile and book your token.`
       : '';
+    const clinicLine = (() => {
+      const list: any = (doctor as any)?.clinics;
+      if (Array.isArray(list)) {
+        const active = list.find((c: any) => c?.active && c?.name);
+        if (active?.name) return String(active.name);
+        if (list[0]?.name) return String(list[0].name);
+      }
+      const cn = (doctor as any)?.clinicName;
+      return cn ? String(cn) : '';
+    })();
+    const safeFileSlug = (doctor?.name || 'doctor').toString().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'doctor';
     const onShare = async () => {
       if (!profileUrl) return;
       try {
@@ -1740,6 +1766,105 @@ export default function SettingsScreen() {
       }
       Alert.alert(ok ? 'Copied' : "Couldn't copy", ok ? 'Profile link copied to clipboard' : 'Please copy the link manually.');
     };
+
+    // (qrRef, posterShotRef, savingPoster, posterSaved are declared at the
+    // top of the component to keep hook order stable across sections.)
+
+    const onSavePoster = async () => {
+      if (!profileUrl || savingPoster) return;
+      if (!QRCode) {
+        Alert.alert("Can't save poster", 'QR renderer is not available in this build.');
+        return;
+      }
+      setSavingPoster(true);
+      try {
+        if (Platform.OS === 'web') {
+          // Compose poster on an HTML canvas using the QR's PNG data URL.
+          const qrDataUrl: string = await new Promise((resolve, reject) => {
+            const ref = qrRef.current;
+            if (!ref || typeof ref.toDataURL !== 'function') {
+              reject(new Error('QR not ready'));
+              return;
+            }
+            try {
+              ref.toDataURL((b64: string) => resolve('data:image/png;base64,' + b64));
+            } catch (err) { reject(err); }
+          });
+          const img = new (window as any).Image();
+          img.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            img.onload = () => res();
+            img.onerror = () => rej(new Error('Failed to load QR image'));
+            img.src = qrDataUrl;
+          });
+          const W = 720, H = 980;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas not supported');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, W, H);
+          // Header band
+          ctx.fillStyle = '#0E5A53';
+          ctx.fillRect(0, 0, W, 110);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 34px Inter, Arial, sans-serif';
+          ctx.fillText('LINESETU', W / 2, 60);
+          ctx.font = '600 16px Inter, Arial, sans-serif';
+          ctx.fillText('Scan to book your token', W / 2, 92);
+          // QR with light frame
+          const qrSize = 460;
+          const qrX = (W - qrSize) / 2;
+          const qrY = 170;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.strokeStyle = '#E5E7EB';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(qrX - 18, qrY - 18, qrSize + 36, qrSize + 36);
+          ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+          // Doctor name + clinic
+          ctx.fillStyle = '#0F172A';
+          ctx.font = 'bold 30px Inter, Arial, sans-serif';
+          ctx.fillText(doctor?.name || 'Doctor', W / 2, qrY + qrSize + 70);
+          if (clinicLine) {
+            ctx.fillStyle = '#475569';
+            ctx.font = '500 20px Inter, Arial, sans-serif';
+            ctx.fillText(clinicLine, W / 2, qrY + qrSize + 102);
+          }
+          ctx.fillStyle = '#0E7C73';
+          ctx.font = '700 14px Inter, Arial, sans-serif';
+          ctx.fillText('Scan with the LINESETU Patient App', W / 2, H - 36);
+          const dataUrl = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `linesetu-${safeFileSlug}-qr.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          if (!captureRef || !MediaLibrary) {
+            Alert.alert("Can't save poster", 'Image saving is not available in this build. Please use a development build.');
+            return;
+          }
+          const perm = await MediaLibrary.requestPermissionsAsync();
+          if (!perm?.granted && perm?.status !== 'granted') {
+            Alert.alert('Permission needed', 'Please allow photo library access to save the poster.');
+            return;
+          }
+          // Tiny pause so the offscreen poster has painted before capture.
+          await new Promise(r => setTimeout(r, 60));
+          const uri = await captureRef(posterShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+          await MediaLibrary.saveToLibraryAsync(uri);
+        }
+        setPosterSaved(true);
+        setTimeout(() => setPosterSaved(false), 1800);
+      } catch (e: any) {
+        Alert.alert("Couldn't save poster", e?.message || 'Please try again.');
+      } finally {
+        setSavingPoster(false);
+      }
+    };
+
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.container}>
@@ -1760,6 +1885,7 @@ export default function SettingsScreen() {
                     backgroundColor="#FFFFFF"
                     color="#060E12"
                     ecl="H"
+                    getRef={(c: any) => { qrRef.current = c; }}
                   />
                 </View>
               ) : (
@@ -1807,8 +1933,68 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Save poster — generates a printable PNG with QR + name + clinic. */}
+            <TouchableOpacity
+              onPress={onSavePoster}
+              disabled={!profileUrl || savingPoster || !QRCode}
+              style={{ marginTop: 10, height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (!profileUrl || !QRCode) ? 0.5 : 1 }}
+            >
+              {savingPoster ? (
+                <ActivityIndicator color="#2DD4BF" size="small" />
+              ) : (
+                <>
+                  <Feather name={posterSaved ? 'check' : (Platform.OS === 'web' ? 'download' : 'image')} size={15} color="#2DD4BF" />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#2DD4BF' }}>
+                    {posterSaved
+                      ? (Platform.OS === 'web' ? 'Downloaded' : 'Saved to gallery')
+                      : (Platform.OS === 'web' ? 'Download poster' : 'Save poster to gallery')}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <Text style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 16 }}>
+              Print at your clinic, share on WhatsApp, or post on social media.
+            </Text>
+
             <View style={{ height: 24 }} />
           </ScrollView>
+
+          {/* Hidden poster used by view-shot on native. Rendered offscreen so
+              it paints but is invisible to the user. Kept out of the web tree
+              because web uses an HTML canvas instead. */}
+          {Platform.OS !== 'web' && profileUrl && QRCode && (
+            <View
+              ref={posterShotRef}
+              collapsable={false}
+              pointerEvents="none"
+              style={{ position: 'absolute', left: -10000, top: 0, width: 380, paddingVertical: 28, paddingHorizontal: 24, backgroundColor: '#FFFFFF' }}
+            >
+              <View style={{ alignItems: 'center', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: '#0E5A53', letterSpacing: 1.2 }}>LINESETU</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: '#475569', fontWeight: '600' }}>Scan to book your token</Text>
+              </View>
+              <View style={{ alignItems: 'center', marginTop: 22 }}>
+                <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12 }}>
+                  <QRCode
+                    value={profileUrl}
+                    size={260}
+                    backgroundColor="#FFFFFF"
+                    color="#060E12"
+                    ecl="H"
+                  />
+                </View>
+              </View>
+              <View style={{ marginTop: 22, alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A', textAlign: 'center' }}>{doctor?.name || 'Doctor'}</Text>
+                {!!clinicLine && (
+                  <Text style={{ marginTop: 6, fontSize: 13, color: '#475569', textAlign: 'center', fontWeight: '600' }}>{clinicLine}</Text>
+                )}
+              </View>
+              <Text style={{ marginTop: 18, fontSize: 11, color: '#0E7C73', textAlign: 'center', fontWeight: '800', letterSpacing: 0.4 }}>
+                SCAN WITH THE LINESETU PATIENT APP
+              </Text>
+            </View>
+          )}
         </View>
       </SafeAreaView>
     );
