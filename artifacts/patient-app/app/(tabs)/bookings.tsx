@@ -479,7 +479,7 @@ export default function BookingsScreen() {
             <Feather name="calendar" size={48} color="rgba(255,255,255,0.15)" />
             <Text style={styles.emptyTitle}>No bookings here</Text>
             <Text style={styles.emptyBody}>Try a different filter or book your first token</Text>
-            <Pressable style={styles.emptyBtn} onPress={() => router.push("/(tabs)")}>
+            <Pressable style={styles.emptyBtn} onPress={() => router.push("/find-doctors")}>
               <Text style={styles.emptyBtnTxt}>Find Doctors</Text>
             </Pressable>
           </View>
