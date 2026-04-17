@@ -11,7 +11,7 @@ export default function Root({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
-        <meta name="theme-color" content="#060A14" />
+        <meta name="theme-color" content="#0A0E1A" />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: rawCss }} />
       </head>
@@ -22,9 +22,15 @@ export default function Root({ children }: PropsWithChildren) {
 
 const rawCss = `
 html, body, #root {
-  background-color: #060A14;
+  background-color: #0A0E1A;
+  color-scheme: dark;
 }
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+#root {
+  min-height: 100vh;
 }
 `;

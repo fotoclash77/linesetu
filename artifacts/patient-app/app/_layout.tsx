@@ -73,8 +73,12 @@ function RootLayoutNav() {
     segments[0] === "onboarding" ||
     segments[0] === "complete-profile";
 
+  if (isLoading || hasSeenOnboarding === null) {
+    return <View style={{ flex: 1, backgroundColor: "#0A0E1A" }} />;
+  }
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#0A0E1A" }}>
       <Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#0A0E1A" } }}>
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
