@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "doctor-app",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
