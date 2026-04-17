@@ -46,6 +46,8 @@ export interface DoctorUser {
   showResults?: boolean;
   state?: string;
   district?: string;
+  posterLogo?: string;
+  posterTagline?: string;
   bankAccount?: {
     accountType?: 'bank' | 'upi';
     accountHolderName?: string;
@@ -170,6 +172,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
       bankAccount: data.bankAccount ?? undefined,
       state: data.state ?? '',
       district: data.district ?? '',
+      posterLogo: data.posterLogo ?? '',
+      posterTagline: data.posterTagline ?? '',
     };
   }
 

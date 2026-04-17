@@ -553,6 +553,22 @@ export default function SettingsScreen() {
   const [savingPoster, setSavingPoster] = useState(false);
   const [posterSaved, setPosterSaved] = useState(false);
   const [printingPoster, setPrintingPoster] = useState(false);
+  const [posterLogo, setPosterLogo] = useState<string>(() => (doctor as any)?.posterLogo ?? '');
+  const [posterTagline, setPosterTagline] = useState<string>(() => (doctor as any)?.posterTagline ?? '');
+  const [posterTaglineDraft, setPosterTaglineDraft] = useState<string>(() => (doctor as any)?.posterTagline ?? '');
+  const [posterLogoUploading, setPosterLogoUploading] = useState(false);
+  const [posterTaglineSaving, setPosterTaglineSaving] = useState(false);
+  const posterCustomSynced = React.useRef(false);
+  React.useEffect(() => {
+    if (!posterCustomSynced.current && doctor) {
+      posterCustomSynced.current = true;
+      const pl = (doctor as any).posterLogo ?? '';
+      const pt = (doctor as any).posterTagline ?? '';
+      setPosterLogo(pl);
+      setPosterTagline(pt);
+      setPosterTaglineDraft(pt);
+    }
+  }, [doctor]);
   const feeSynced = React.useRef(false);
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
@@ -1883,6 +1899,93 @@ export default function SettingsScreen() {
       }
     };
 
+    const displayTagline = (posterTagline && posterTagline.trim())
+      ? posterTagline.trim()
+      : 'Scan to book your token';
+
+    const onPickPosterLogo = async () => {
+      if (!doctor || posterLogoUploading) return;
+      try {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Permission needed', 'Please allow photo access to choose a logo.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+          base64: true,
+          allowsEditing: true,
+          aspect: [1, 1],
+          exif: false,
+        });
+        if (result.canceled || !result.assets[0]?.base64) return;
+        const asset = result.assets[0];
+        setPosterLogoUploading(true);
+        const mimeType = asset.mimeType || 'image/png';
+        const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/poster-logo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: asset.base64, mimeType }),
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setPosterLogo(data.url);
+          await updateDoctor({ posterLogo: data.url } as any);
+        } else {
+          Alert.alert("Couldn't upload logo", data.error || 'Please try again.');
+        }
+      } catch (e: any) {
+        Alert.alert("Couldn't upload logo", e?.message || 'Please try again.');
+      } finally {
+        setPosterLogoUploading(false);
+      }
+    };
+
+    const onRemovePosterLogo = async () => {
+      if (!doctor || posterLogoUploading) return;
+      try {
+        setPosterLogoUploading(true);
+        setPosterLogo('');
+        await updateDoctor({ posterLogo: '' } as any);
+      } catch (e: any) {
+        Alert.alert("Couldn't remove logo", e?.message || 'Please try again.');
+      } finally {
+        setPosterLogoUploading(false);
+      }
+    };
+
+    const onSaveTagline = async () => {
+      if (!doctor || posterTaglineSaving) return;
+      const next = posterTaglineDraft.trim().slice(0, 80);
+      if (next === (posterTagline || '')) return;
+      try {
+        setPosterTaglineSaving(true);
+        setPosterTagline(next);
+        await updateDoctor({ posterTagline: next } as any);
+      } catch (e: any) {
+        Alert.alert("Couldn't save tagline", e?.message || 'Please try again.');
+      } finally {
+        setPosterTaglineSaving(false);
+      }
+    };
+
+    // Fetch a remote image as a data URL so it can be drawn on the web canvas
+    // without tainting it. Returns null on failure (poster will skip the logo).
+    const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
+      try {
+        const r = await fetch(url, { mode: 'cors' });
+        if (!r.ok) return null;
+        const blob = await r.blob();
+        return await new Promise<string | null>((resolve) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(typeof fr.result === 'string' ? fr.result : null);
+          fr.onerror = () => resolve(null);
+          fr.readAsDataURL(blob);
+        });
+      } catch { return null; }
+    };
+
     const onSavePoster = async () => {
       if (!profileUrl || savingPoster) return;
       if (!QRCode) {
@@ -1925,7 +2028,38 @@ export default function SettingsScreen() {
           ctx.font = 'bold 34px Inter, Arial, sans-serif';
           ctx.fillText('LINESETU', W / 2, 60);
           ctx.font = '600 16px Inter, Arial, sans-serif';
-          ctx.fillText('Scan to book your token', W / 2, 92);
+          ctx.fillText(displayTagline, W / 2, 92);
+
+          // Optional clinic logo — round badge centred just below the header.
+          if (posterLogo) {
+            const logoDataUrl = await fetchImageAsDataUrl(posterLogo);
+            if (logoDataUrl) {
+              try {
+                const logoImg = new (window as any).Image();
+                logoImg.crossOrigin = 'anonymous';
+                await new Promise<void>((res, rej) => {
+                  logoImg.onload = () => res();
+                  logoImg.onerror = () => rej(new Error('logo'));
+                  logoImg.src = logoDataUrl;
+                });
+                const lSize = 96;
+                const lX = (W - lSize) / 2;
+                const lY = 110 - lSize / 2;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(lX + lSize / 2, lY + lSize / 2, lSize / 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.stroke();
+                ctx.clip();
+                ctx.drawImage(logoImg, lX, lY, lSize, lSize);
+                ctx.restore();
+              } catch {}
+            }
+          }
           // QR with light frame
           const qrSize = 460;
           const qrX = (W - qrSize) / 2;
@@ -2046,6 +2180,84 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Poster customization — logo + tagline baked into the saved image. */}
+            <Text style={[styles.sectionLabel, { marginTop: 18 }]}>POSTER CUSTOMIZATION</Text>
+            <View style={[styles.formCard, { paddingVertical: 14 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {posterLogo ? (
+                    <Image source={{ uri: posterLogo }} style={{ width: 56, height: 56 }} />
+                  ) : (
+                    <Feather name="image" size={20} color="rgba(255,255,255,0.35)" />
+                  )}
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Clinic logo</Text>
+                  <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '500', marginTop: 2 }}>
+                    {posterLogo ? 'Shown on the saved poster' : 'Optional — uses LINESETU branding by default'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <TouchableOpacity
+                  onPress={onPickPosterLogo}
+                  disabled={posterLogoUploading}
+                  style={{ flex: 1, height: 40, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: posterLogoUploading ? 0.6 : 1 }}
+                >
+                  {posterLogoUploading ? (
+                    <ActivityIndicator color="#2DD4BF" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="upload" size={13} color="#2DD4BF" />
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#2DD4BF' }}>{posterLogo ? 'Replace logo' : 'Upload logo'}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {!!posterLogo && (
+                  <TouchableOpacity
+                    onPress={onRemovePosterLogo}
+                    disabled={posterLogoUploading}
+                    style={{ width: 90, height: 40, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', opacity: posterLogoUploading ? 0.6 : 1 }}
+                  >
+                    <Feather name="trash-2" size={13} color="rgba(255,255,255,0.6)" />
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.7)' }}>Remove</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 14 }} />
+
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFF' }}>Tagline</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '500', marginTop: 2 }}>
+                Shown under the LINESETU header. Leave blank for the default.
+              </Text>
+              <TextInput
+                style={[styles.fieldInput, { marginTop: 10 }]}
+                value={posterTaglineDraft}
+                onChangeText={(v) => setPosterTaglineDraft(v.slice(0, 80))}
+                placeholder="e.g. Smile Care Dental Clinic — Open Mon–Sat"
+                placeholderTextColor="rgba(255,255,255,0.2)"
+                maxLength={80}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>{posterTaglineDraft.length}/80</Text>
+                <TouchableOpacity
+                  onPress={onSaveTagline}
+                  disabled={posterTaglineSaving || posterTaglineDraft.trim() === (posterTagline || '').trim()}
+                  style={{ height: 34, paddingHorizontal: 16, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(45,212,191,0.10)', borderWidth: 1, borderColor: 'rgba(45,212,191,0.32)', opacity: (posterTaglineSaving || posterTaglineDraft.trim() === (posterTagline || '').trim()) ? 0.5 : 1 }}
+                >
+                  {posterTaglineSaving ? (
+                    <ActivityIndicator color="#2DD4BF" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="check" size={12} color="#2DD4BF" />
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#2DD4BF' }}>Save tagline</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Save poster + Print poster — Save generates a PNG; Print opens
                 the OS native print sheet (AirPrint / Android print services /
                 Bluetooth printers on mobile, browser print dialog on web). */}
@@ -2101,8 +2313,14 @@ export default function SettingsScreen() {
               style={{ position: 'absolute', left: -10000, top: 0, width: 380, paddingVertical: 28, paddingHorizontal: 24, backgroundColor: '#FFFFFF' }}
             >
               <View style={{ alignItems: 'center', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+                {!!posterLogo && (
+                  <Image
+                    source={{ uri: posterLogo }}
+                    style={{ width: 64, height: 64, borderRadius: 32, marginBottom: 8, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF' }}
+                  />
+                )}
                 <Text style={{ fontSize: 20, fontWeight: '900', color: '#0E5A53', letterSpacing: 1.2 }}>LINESETU</Text>
-                <Text style={{ marginTop: 4, fontSize: 12, color: '#475569', fontWeight: '600' }}>Scan to book your token</Text>
+                <Text style={{ marginTop: 4, fontSize: 12, color: '#475569', fontWeight: '600', textAlign: 'center', paddingHorizontal: 12 }}>{displayTagline}</Text>
               </View>
               <View style={{ alignItems: 'center', marginTop: 22 }}>
                 <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12 }}>

@@ -92,7 +92,7 @@ router.post("/doctors", async (req, res) => {
 // PATCH /api/doctors/:doctorId
 router.patch("/doctors/:doctorId", async (req, res) => {
   try {
-    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "clinicConsultFee", "clinicEmergencyFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage", "results", "showResults", "notifications", "profileCompleted", "state", "district"];
+    const allowed = ["name", "specialization", "clinicName", "clinicAddress", "shifts", "calendar", "clinics", "bankAccount", "isActive", "isAvailable", "fcmToken", "profilePhoto", "consultFee", "emergencyFee", "walkinFee", "clinicConsultFee", "clinicEmergencyFee", "qualifications", "experience", "bio", "totalPatients", "phone", "onlineBooking", "emergencyTokens", "showWaitTime", "showPosition", "showDoctorName", "showFee", "alertMessage", "results", "showResults", "notifications", "profileCompleted", "state", "district", "posterLogo", "posterTagline"];
     const updates: Record<string, any> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -115,6 +115,23 @@ router.post("/doctors/:doctorId/profile-photo", async (req, res) => {
     const url = await uploadBase64ToStorage(base64, fileName, mime);
     const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
     await updateDoc(docRef, { profilePhoto: url });
+    res.json({ url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/doctors/:doctorId/poster-logo — upload / replace poster logo
+router.post("/doctors/:doctorId/poster-logo", async (req, res) => {
+  try {
+    const { base64, mimeType } = req.body as { base64?: string; mimeType?: string };
+    if (!base64) return res.status(400).json({ error: "base64 image data required" });
+    const mime = mimeType || "image/png";
+    const ext = (mime.split("/")[1] || "png").replace("jpeg", "jpg");
+    const fileName = `doctor-poster-logos/${req.params.doctorId}/logo.${ext}`;
+    const url = await uploadBase64ToStorage(base64, fileName, mime);
+    const docRef = doc(db, Collections.DOCTORS, req.params.doctorId);
+    await updateDoc(docRef, { posterLogo: url });
     res.json({ url });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
