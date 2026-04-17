@@ -43,6 +43,23 @@ User built LINESETU (healthcare queue management) app on Replit.com and needed A
 2. Doctor app Gradle build failed due to missing react-native-worklets
 3. Removed Replit-specific baseUrl paths that broke standalone navigation
 
+### Patient Management Feature (Admin Panel) - April 17, 2026
+**Backend (api-server/src/routes/admin.ts):**
+- `GET /api/admin/patients` — List all patients from Firestore
+- `DELETE /api/admin/patients/:patientId` — Hard delete patient with:
+  - Deletes patient profile document
+  - Deletes all associated tokens/bookings
+  - Deletes all associated notifications
+  - Logs deletion activity to `adminLogs` collection
+  - Phone number is freed for new registration
+
+**Frontend (admin-panel):**
+- `App.tsx` — Tab navigation (Doctors / Patients)
+- `PatientsPage.tsx` — Patient list with search, filter tabs, stats cards
+- `PatientRow.tsx` — Patient row with red delete button + confirmation modal
+- `usePatients.ts` — Real-time Firestore listener for patients collection
+- `adminService.ts` — Added `deletePatient()` and `listPatients()` API calls
+
 ## Prioritized Backlog
 - P0: Test APKs on real devices, verify login/OTP flow
 - P0: Verify Firebase real-time sync works in APKs

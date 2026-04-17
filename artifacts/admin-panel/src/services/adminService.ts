@@ -27,3 +27,16 @@ export async function unhideDoctor(doctorId: string) {
 export async function deleteDoctor(doctorId: string) {
   return apiCall(`/api/admin/doctors/${doctorId}`, "DELETE");
 }
+
+export async function deletePatient(patientId: string) {
+  return apiCall(`/api/admin/patients/${patientId}`, "DELETE");
+}
+
+export async function listPatients() {
+  const res = await fetch(`${API_BASE}/api/admin/patients`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || "Request failed");
+  }
+  return res.json();
+}

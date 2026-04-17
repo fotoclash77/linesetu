@@ -48,24 +48,7 @@ export default function DoctorsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-              LINESETU <span className="text-teal-600">Admin</span>
-            </h1>
-            <p className="text-xs text-gray-500 mt-0.5">Doctor Management</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">
-              A
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-6">
+    <main className="max-w-7xl mx-auto px-6 py-6" data-testid="doctors-page">
         <div className="grid grid-cols-5 gap-4 mb-6">
           <StatCard label="Total Doctors" value={counts.all} color="gray" />
           <StatCard label="Pending Approval" value={counts.pending} color="yellow" />
@@ -149,7 +132,6 @@ export default function DoctorsPage() {
           )}
         </div>
       </main>
-    </div>
   );
 }
 
