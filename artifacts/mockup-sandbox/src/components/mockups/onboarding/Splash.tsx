@@ -5,7 +5,7 @@ export default function Splash() {
       <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", backgroundColor: "rgba(13,148,136,0.18)", top: "15%", left: "50%", transform: "translateX(-50%)" }} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, zIndex: 1 }}>
         <div style={{ width: 240, height: 240, borderRadius: 40, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, boxShadow: "0 0 40px rgba(13,148,136,0.18)", overflow: "hidden" }}>
-          <img src={`${import.meta.env.BASE_URL}assets/2.png`} alt="LINESETU logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img src="https://d8479a8d-fa68-4a0e-9145-0243e19272df-00-aspsb1pq2zqb.spock.replit.dev/__mockup/assets/2.png" alt="LINESETU logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <div style={{ fontSize: 34, fontWeight: 900, color: "#fff", letterSpacing: -1, marginBottom: 8 }}>LINESETU</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
