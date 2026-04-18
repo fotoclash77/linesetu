@@ -13,12 +13,22 @@ export default function Root({ children }: PropsWithChildren) {
         />
         <meta name="theme-color" content="#0A0E1A" />
         <ScrollViewStyleReset />
+        <script dangerouslySetInnerHTML={{ __html: trailingSlashFix }} />
         <style dangerouslySetInnerHTML={{ __html: rawCss }} />
       </head>
       <body>{children}</body>
     </html>
   );
 }
+
+const trailingSlashFix = `
+(function(){
+  var p = window.location.pathname;
+  if (p === '/patient-app') {
+    window.location.replace('/patient-app/');
+  }
+})();
+`;
 
 const rawCss = `
 html, body, #root {
