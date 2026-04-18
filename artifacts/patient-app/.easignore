@@ -1,0 +1,14 @@
+node_modules
+.git
+attached_assets
+screenshots
+*.md
+.canvas
+.agents
+patient-app-qr.png
+artifacts/admin-panel
+artifacts/doctor-onboarding
+artifacts/investor-pitch
+artifacts/mockup-sandbox
+artifacts/api-server
+artifacts/doctor-app

@@ -270,24 +270,7 @@ const SLIDES = [
 export default function OnboardingScreen() {
   const flatRef = useRef<FlatList>(null);
   const [current, setCurrent] = useState(0);
-  const [showSplash, setShowSplash] = useState(true);
   const isLast = current === SLIDES.length - 1;
-
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 1800);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (showSplash) {
-    return (
-      <View style={{ flex: 1, backgroundColor: BG }}>
-        <StatusBar barStyle="light-content" backgroundColor={BG} />
-        <SafeAreaView style={{ flex: 1 }}>
-          <SplashSlide />
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   function goNext() {
     if (isLast) {

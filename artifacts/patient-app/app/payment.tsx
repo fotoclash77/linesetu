@@ -426,19 +426,36 @@ export default function PaymentScreen() {
       const tokenNum = booked.tokenNumber;
       setBookedTokenNum(tokenNum);
 
+      const tokenLabel = isEmergency ? `#E${tokenNum}` : `#${tokenNum}`;
+      const expectedLabel = expectedToken ? (isEmergency ? `#E${expectedToken}` : `#${expectedToken}`) : null;
+
       if (booked.autoAdjusted) {
+        // Got a different token than expected
+        const adjMsg = expectedLabel
+          ? `You requested ${expectedLabel}, but it was already taken. You've been assigned ${tokenLabel} instead.`
+          : `Selected token was unavailable. You've been assigned ${tokenLabel}.`;
         setResultModal({
           visible: true,
           type: "adjusted",
-          message: booked.message || `Selected token unavailable. Assigned next available token: ${isEmergency ? `#E${tokenNum}` : `#${tokenNum}`}.`,
+          message: booked.message || adjMsg,
+          tokenNumber: tokenNum,
+          tokenId: booked.id,
+        });
+      } else if (expectedToken && tokenNum === expectedToken) {
+        // Got exactly the token they were previewed
+        setResultModal({
+          visible: true,
+          type: "success",
+          message: `Congratulations! Your token ${tokenLabel} has been confirmed. You're all set!`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
       } else {
+        // Booked successfully (no expected token or different scenario)
         setResultModal({
           visible: true,
           type: "success",
-          message: booked.message || `Token booked successfully. Your token number is ${isEmergency ? `#E${tokenNum}` : `#${tokenNum}`}.`,
+          message: `Token ${tokenLabel} booked successfully! You're all set for your appointment.`,
           tokenNumber: tokenNum,
           tokenId: booked.id,
         });
@@ -716,8 +733,8 @@ export default function PaymentScreen() {
             <Text style={modalStyles.title}>
               {resultModal.type === "full"      ? "Booking Failed"    :
                resultModal.type === "duplicate" ? "Already Booked"    :
-               resultModal.type === "adjusted"  ? "Token Adjusted"    :
-                                                  "Booking Confirmed!"}
+               resultModal.type === "adjusted"  ? "Token Changed"     :
+                                                  "Congratulations!"}
             </Text>
             {resultModal.tokenNumber && resultModal.type !== "full" && resultModal.type !== "duplicate" && (
               <Text style={[modalStyles.tokenNum, { color: isEmergency ? "#EF4444" : "#F59E0B" }]}>{isEmergency ? `#E${resultModal.tokenNumber}` : `#${resultModal.tokenNumber}`}</Text>

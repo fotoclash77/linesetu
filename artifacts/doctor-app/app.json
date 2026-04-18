@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "LINESETU Doctor",
+    "name": "LineSetu Doctor",
     "slug": "doctor-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#060E12"
+      "backgroundColor": "#1A3D1A"
     },
     "ios": {
       "supportsTablet": false
@@ -19,9 +19,10 @@
     "android": {
       "package": "com.linesetu.doctorapp",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#060E12"
-      }
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1A3D1A"
+      },
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -30,7 +31,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://linesetu.replit.app/"
         }
       ],
       "expo-font",
@@ -38,8 +39,13 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true,
-      "baseUrl": "/doctor-app"
-    }
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ae61ea8b-a7e0-4e7c-bd62-59d58820d349"
+      }
+    },
+    "owner": "linesetu76"
   }
 }

@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Platform, DimensionValue,
+  Platform, DimensionValue, AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import Svg, { Polyline, Polygon, Rect, G, Line, Text as SvgText } from 'react-native-svg';
@@ -250,10 +250,41 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     fetchStats();
-    // 10 s so dashboard numbers stay fresh after new bookings
-    const iv = setInterval(fetchStats, 10_000);
-    return () => clearInterval(iv);
-  }, [fetchStats]);
+    // Poll every 5s so dashboard numbers stay fresh
+    const iv = setInterval(fetchStats, 5_000);
+
+    // SSE for real-time token changes
+    let es: any = null;
+    if (doctor?.id && typeof EventSource !== 'undefined') {
+      const today = isoDate(new Date());
+      es = new EventSource(`${BASE()}/api/tokens/stream/${doctor.id}?date=${today}`);
+      es.onmessage = () => {
+        // Token changed — refresh stats immediately
+        fetchStats();
+      };
+      es.onerror = () => {
+        // SSE disconnected — polling handles it as fallback
+      };
+    }
+
+    // Refresh immediately when app comes back to foreground
+    const appSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') fetchStats();
+    });
+
+    return () => {
+      clearInterval(iv);
+      es?.close();
+      appSub.remove();
+    };
+  }, [fetchStats, doctor?.id]);
+
+  // ── Refresh immediately when tab is focused (navigating back from queue/earnings) ──
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+    }, [fetchStats])
+  );
 
   // ── Notifications ─────────────────────────────────────────────────────────
   useEffect(() => {

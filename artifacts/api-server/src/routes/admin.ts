@@ -1,11 +1,90 @@
 import { Router } from "express";
 import {
   db, Collections, Timestamp,
-  collection, doc, getDocs, getDoc, updateDoc,
-  query, where, writeBatch,
+  collection, doc, getDocs, getDoc, updateDoc, deleteDoc, addDoc, setDoc,
+  query, where, writeBatch, limit, withRetry,
 } from "../lib/firebase.js";
 
 const router = Router();
+
+// ─── PATIENT MANAGEMENT ────────────────────────────────────────────────────
+
+// GET /admin/patients — list all patients
+router.get("/admin/patients", async (_req, res) => {
+  try {
+    const snap = await withRetry(() => getDocs(collection(db, Collections.PATIENTS)));
+    const patients = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    patients.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.seconds ?? 0;
+      const bTime = b.createdAt?.seconds ?? 0;
+      return bTime - aTime;
+    });
+    res.json({ patients });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/patients/:patientId — hard delete patient + all linked data
+router.delete("/admin/patients/:patientId", async (req, res) => {
+  try {
+    const patientId = req.params.patientId;
+    const patientRef = doc(db, Collections.PATIENTS, patientId);
+    const patientSnap = await getDoc(patientRef);
+
+    if (!patientSnap.exists()) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const patientData = patientSnap.data() as any;
+    const phone = patientData.phone ?? "";
+
+    // 1. Delete all tokens/bookings for this patient
+    const tokensSnap = await getDocs(query(
+      collection(db, Collections.TOKENS),
+      where("patientId", "==", patientId)
+    ));
+    if (!tokensSnap.empty) {
+      const batch = writeBatch(db);
+      tokensSnap.docs.forEach((t) => batch.delete(t.ref));
+      await batch.commit();
+    }
+
+    // 2. Delete all notifications for this patient
+    const notifsSnap = await getDocs(query(
+      collection(db, Collections.NOTIFICATIONS),
+      where("patientId", "==", patientId)
+    ));
+    if (!notifsSnap.empty) {
+      const batch = writeBatch(db);
+      notifsSnap.docs.forEach((n) => batch.delete(n.ref));
+      await batch.commit();
+    }
+
+    // 3. Log the deletion activity
+    await addDoc(collection(db, "adminLogs"), {
+      action: "DELETE_PATIENT",
+      targetId: patientId,
+      targetPhone: phone,
+      targetName: patientData.name ?? "",
+      adminId: "admin",
+      timestamp: Timestamp.now(),
+      details: `Hard-deleted patient ${patientData.name || phone}. Tokens deleted: ${tokensSnap.size}, Notifications deleted: ${notifsSnap.size}.`,
+    });
+
+    // 4. Hard delete the patient document
+    await deleteDoc(patientRef);
+
+    res.json({
+      id: patientId,
+      deleted: true,
+      tokensDeleted: tokensSnap.size,
+      notificationsDeleted: notifsSnap.size,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.post("/admin/doctors/:doctorId/approve", async (req, res) => {
   try {

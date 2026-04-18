@@ -77,32 +77,30 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
       style={({ pressed }) => [styles.listCard, { opacity: pressed ? 0.88 : 1 }]}
       onPress={navToDoctor}
     >
-      {doc.photo ? (
-        <Image
-          source={{ uri: doc.photo }}
-          style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
-          contentFit="cover"
-        />
-      ) : (
-        <View style={[styles.listPhoto, { borderColor: doc.accent + "66", backgroundColor: doc.accent + "18", opacity: available ? 1 : 0.55, alignItems: "center", justifyContent: "center" }]}>
-          <InitialsAvatar name={doc.name} size={44} color={doc.accent} />
-        </View>
-      )}
+      <View style={{ position: 'relative' }}>
+        {doc.photo ? (
+          <Image
+            source={{ uri: doc.photo }}
+            style={[styles.listPhoto, { borderColor: doc.accent + "55", opacity: available ? 1 : 0.55 }]}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.listPhoto, { borderColor: doc.accent + "66", backgroundColor: doc.accent + "18", opacity: available ? 1 : 0.55, alignItems: "center", justifyContent: "center" }]}>
+            <InitialsAvatar name={doc.name} size={44} color={doc.accent} />
+          </View>
+        )}
+        {available ? (
+          <View style={styles.verifiedBadgeOverlay}>
+            <Feather name="check-circle" size={10} color="#06B6D4" />
+          </View>
+        ) : (
+          <View style={styles.unavailBadgeOverlay}>
+            <Feather name="slash" size={8} color="#EF4444" />
+          </View>
+        )}
+      </View>
       <View style={styles.listInfo}>
-        <View style={styles.listNameRow}>
-          <Text style={styles.listName} numberOfLines={1}>{doc.name.startsWith("Dr") ? doc.name : `Dr. ${doc.name}`}</Text>
-          {available ? (
-            <View style={styles.verifiedBadge}>
-              <Feather name="check-circle" size={11} color="#06B6D4" />
-              <Text style={styles.verifiedTxt}>Verified</Text>
-            </View>
-          ) : (
-            <View style={styles.unavailBadge}>
-              <Feather name="slash" size={9} color="#EF4444" />
-              <Text style={styles.unavailBadgeTxt}>Unavailable</Text>
-            </View>
-          )}
-        </View>
+        <Text style={styles.listName} numberOfLines={2}>{doc.name.startsWith("Dr") ? doc.name : `Dr. ${doc.name}`}</Text>
 
         <View style={[styles.specChip, { backgroundColor: doc.accent + "18" }]}>
           <Text style={[styles.specChipTxt, { color: doc.accent }]}>{doc.specialty}</Text>
@@ -599,9 +597,11 @@ const styles = StyleSheet.create({
   listPhoto: { width: 70, height: 70, borderRadius: 14, borderWidth: 2, marginRight: 12 },
   listInfo: { flex: 1 },
   listNameRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  listName: { fontSize: 14, fontWeight: "800", color: "#FFF", flexShrink: 1 },
+  listName: { fontSize: 14, fontWeight: "800", color: "#FFF", marginBottom: 4 },
   verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(6,182,212,0.12)", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   verifiedTxt: { fontSize: 9, fontWeight: "700", color: "#06B6D4" },
+  verifiedBadgeOverlay: { position: "absolute" as const, top: -3, right: -3, width: 18, height: 18, borderRadius: 9, backgroundColor: "#0A0E1A", borderWidth: 1.5, borderColor: "#06B6D4", alignItems: "center" as const, justifyContent: "center" as const },
+  unavailBadgeOverlay: { position: "absolute" as const, top: -3, right: -3, width: 18, height: 18, borderRadius: 9, backgroundColor: "#0A0E1A", borderWidth: 1.5, borderColor: "#EF4444", alignItems: "center" as const, justifyContent: "center" as const },
   specChip: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: "flex-start", marginBottom: 5 },
   specChipTxt: { fontSize: 10, fontWeight: "600" },
   listClinicRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
