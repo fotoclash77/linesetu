@@ -87,9 +87,19 @@ config.server.enhanceMiddleware = (middleware, server) => {
       return proxyToPatientApp(req, res);
     }
 
+    // Redirect /doctor-app (no trailing slash) → /doctor-app/ so Expo Router matches the index route.
+    // Without the slash, window.location.pathname is "/doctor-app" and stripping the base URL
+    // leaves an empty string which Expo Router treats as "Unmatched Route".
+    if (urlNoQuery === BASE) {
+      const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      res.writeHead(301, { Location: BASE + "/" + qs });
+      res.end();
+      return;
+    }
+
     // Strip /doctor-app prefix from incoming requests so Metro processes them normally.
     // HTML responses from Metro already have the prefix added via the html.js patch.
-    if (req.url && (req.url.startsWith(BASE + "/") || req.url === BASE)) {
+    if (req.url && req.url.startsWith(BASE + "/")) {
       req.url = req.url.slice(BASE.length) || "/";
     }
 

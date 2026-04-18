@@ -63,8 +63,17 @@ config.server.enhanceMiddleware = (middleware, server) => {
       res.end();
       return;
     }
+    // Redirect /patient-app (no trailing slash) → /patient-app/ so Expo Router can match the index route.
+    const urlNoQueryP = (req.url || "").split("?")[0];
+    if (urlNoQueryP === BASE) {
+      const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      res.writeHead(301, { Location: BASE + "/" + qs });
+      res.end();
+      return;
+    }
+
     // Strip /patient-app prefix from incoming requests (shared proxy forwards them with prefix intact)
-    if (req.url && (req.url === BASE || req.url.startsWith(BASE + "/") || req.url.startsWith(BASE + "?"))) {
+    if (req.url && (req.url.startsWith(BASE + "/") || req.url.startsWith(BASE + "?"))) {
       req.url = req.url.slice(BASE.length) || "/";
     }
     const urlNoQuery = (req.url || "").split("?")[0];
