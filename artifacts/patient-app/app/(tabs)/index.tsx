@@ -183,7 +183,6 @@ function DoctorCard({ doc }: { doc: DoctorItem }) {
         {[
           { icon: "users" as const, val: doc.patients, lbl: "Patients" },
           { icon: "clock" as const, val: doc.exp, lbl: "Exp" },
-          { icon: "clock" as const, val: doc.wait, lbl: "Wait" },
         ].map(({ icon, val, lbl }) => (
           <View key={lbl} style={styles.docStatItem}>
             <Feather name={icon} size={9} color="rgba(255,255,255,0.3)" />
