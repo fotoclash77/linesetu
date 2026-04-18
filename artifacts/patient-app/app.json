@@ -8,11 +8,6 @@
     "scheme": "patient-app",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1B2A4A"
-    },
     "ios": {
       "supportsTablet": false,
       "userInterfaceStyle": "dark"

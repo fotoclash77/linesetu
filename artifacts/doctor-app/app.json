@@ -8,11 +8,6 @@
     "scheme": "doctor-app",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1A3D1A"
-    },
     "ios": {
       "supportsTablet": false
     },
