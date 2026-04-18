@@ -8,320 +8,152 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Inter:wght@700;800;900&display=swap" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      background: #060A14;
+      background: #eef2ff;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 24px;
       font-family: 'Noto Sans Devanagari', sans-serif;
+      color: #0f172a;
     }
-
-    .banner {
-      width: 700px;
-      background: linear-gradient(180deg, #0A0E1A 0%, #0E1628 20%, #0A0E1A 50%, #081020 80%, #0A0E1A 100%);
-      border-radius: 24px;
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      border-radius: 18px;
       overflow: hidden;
       position: relative;
-      border: 1px solid rgba(99,102,241,0.2);
-      box-shadow: 0 0 80px rgba(79,70,229,0.25), 0 0 200px rgba(6,182,212,0.1);
+      border: 1px solid #dbe3ff;
+      box-shadow: 0 18px 50px rgba(15,23,42,0.12);
     }
-
-    /* decorative orbs */
-    .orb1 { position: absolute; top: -120px; left: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(79,70,229,0.22) 0%, transparent 70%); pointer-events: none; }
-    .orb2 { position: absolute; top: 600px; right: -100px; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%); pointer-events: none; }
-    .orb3 { position: absolute; top: 1400px; left: -80px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%); pointer-events: none; }
-    .orb4 { position: absolute; top: 2200px; right: -80px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.14) 0%, transparent 70%); pointer-events: none; }
-
-    /* ── SECTION 1: TOP BRAND BAR ── */
+    .orb1 { position: absolute; top: -120px; left: -100px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 72%); pointer-events: none; }
+    .orb2 { position: absolute; top: 620px; right: -100px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 72%); pointer-events: none; }
+    .orb3 { position: absolute; top: 1400px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 72%); pointer-events: none; }
+    .orb4 { position: absolute; top: 2200px; right: -80px; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 72%); pointer-events: none; }
     .brand-bar {
-      padding: 28px 40px 24px;
+      padding: 26px 36px 22px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(79,70,229,0.08);
+      border-bottom: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
     }
-    .brand-logo {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+    .brand-logo { display: flex; align-items: center; gap: 14px; }
     .brand-icon {
       width: 52px; height: 52px; border-radius: 16px;
-      background: linear-gradient(135deg, #4F46E5, #6366F1);
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
       display: flex; align-items: center; justify-content: center;
       font-size: 24px; font-weight: 900; color: #fff;
       font-family: 'Inter', sans-serif;
-      box-shadow: 0 4px 20px rgba(79,70,229,0.5);
+      box-shadow: 0 4px 20px rgba(79,70,229,0.28);
     }
     .brand-name {
-      font-size: 28px; font-weight: 900; color: #fff;
+      font-size: 28px; font-weight: 900; color: #0f172a;
       letter-spacing: -0.5px;
       font-family: 'Inter', sans-serif;
     }
     .brand-tagline {
-      font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 500;
+      font-size: 11px; color: #64748b; font-weight: 500;
       letter-spacing: 2px; text-transform: uppercase; margin-top: 2px;
     }
     .free-badge {
-      background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
-      border: 1.5px solid rgba(34,197,94,0.4);
+      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.06));
+      border: 1.5px solid rgba(34,197,94,0.24);
       border-radius: 50px; padding: 8px 18px;
-      font-size: 13px; font-weight: 700; color: #4ADE80;
+      font-size: 13px; font-weight: 700; color: #15803d;
     }
-
-    /* ── SECTION 2: HERO PROBLEM ── */
-    .hero {
-      padding: 48px 40px 36px;
-      text-align: center;
-    }
-    .hero-emoji {
-      font-size: 64px; margin-bottom: 18px; display: block;
-      filter: drop-shadow(0 0 20px rgba(245,158,11,0.4));
-    }
-    .hero-question {
-      font-size: 46px; font-weight: 900; color: #fff;
-      line-height: 1.15; margin-bottom: 12px;
-    }
-    .hero-question span { color: #F59E0B; }
-    .hero-subtext {
-      font-size: 18px; color: rgba(255,255,255,0.5); line-height: 1.6;
-    }
-    .pain-pills {
-      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;
-    }
-    .pain-pill {
-      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 50px; padding: 8px 16px;
-      font-size: 14px; color: #FCA5A5; font-weight: 600;
-    }
-
-    /* ── DIVIDER ARROW ── */
-    .arrow-divider {
-      text-align: center; padding: 8px 0;
-      font-size: 36px; color: rgba(255,255,255,0.15);
-    }
-
-    /* ── SECTION 3: SOLUTION ── */
+    .hero { padding: 42px 36px 30px; text-align: center; }
+    .hero-emoji { font-size: 64px; margin-bottom: 18px; display: block; filter: drop-shadow(0 0 16px rgba(245,158,11,0.2)); }
+    .hero-question { font-size: 42px; font-weight: 900; color: #0f172a; line-height: 1.15; margin-bottom: 12px; }
+    .hero-question span { color: #D97706; }
+    .hero-subtext { font-size: 18px; color: #64748b; line-height: 1.6; }
+    .pain-pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+    .pain-pill { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 50px; padding: 8px 16px; font-size: 14px; color: #9a3412; font-weight: 600; }
+    .arrow-divider { text-align: center; padding: 8px 0; font-size: 36px; color: rgba(15,23,42,0.15); }
     .solution {
-      padding: 24px 40px 36px;
-      background: rgba(79,70,229,0.06);
-      border-top: 1px solid rgba(79,70,229,0.15);
-      border-bottom: 1px solid rgba(79,70,229,0.15);
+      padding: 24px 36px 32px;
+      background: #f8faff;
+      border-top: 1px solid #e0e7ff;
+      border-bottom: 1px solid #e0e7ff;
       text-align: center;
     }
-    .solution-label {
-      font-size: 13px; font-weight: 700; color: #818CF8;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
-    }
-    .solution-title {
-      font-size: 38px; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 10px;
-    }
-    .solution-title .highlight {
-      background: linear-gradient(90deg, #6366F1, #22D3EE);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .solution-sub {
-      font-size: 17px; color: rgba(255,255,255,0.5); line-height: 1.6;
-    }
-
-    /* ── SECTION 4: BENEFITS ROW ── */
-    .benefits {
-      display: flex; gap: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .benefit-item {
-      flex: 1; padding: 22px 16px; text-align: center;
-      border-right: 1px solid rgba(255,255,255,0.06);
-    }
+    .solution-label { font-size: 13px; font-weight: 700; color: #4F46E5; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+    .solution-title { font-size: 38px; font-weight: 900; color: #0f172a; line-height: 1.2; margin-bottom: 10px; }
+    .solution-title .highlight { background: linear-gradient(90deg, #6366F1, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .solution-sub { font-size: 17px; color: #64748b; line-height: 1.6; }
+    .benefits { display: flex; gap: 0; border-bottom: 1px solid #e5e7eb; }
+    .benefit-item { flex: 1; padding: 22px 16px; text-align: center; border-right: 1px solid #e5e7eb; }
     .benefit-item:last-child { border-right: none; }
     .benefit-icon { font-size: 28px; margin-bottom: 8px; display: block; }
-    .benefit-val { font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 4px; font-family: 'Inter', sans-serif; }
-    .benefit-lbl { font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 600; }
-
-    /* ── SECTION 5: QR CODE ── */
-    .qr-section {
-      padding: 44px 40px;
-      text-align: center;
-      position: relative;
-    }
-    .qr-label {
-      font-size: 13px; font-weight: 700; color: #22D3EE;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;
-    }
-    .qr-title {
-      font-size: 32px; font-weight: 900; color: #fff; margin-bottom: 6px;
-    }
-    .qr-sub {
-      font-size: 15px; color: rgba(255,255,255,0.45); margin-bottom: 32px;
-    }
+    .benefit-val { font-size: 20px; font-weight: 900; color: #0f172a; margin-bottom: 4px; font-family: 'Inter', sans-serif; }
+    .benefit-lbl { font-size: 12px; color: #64748b; font-weight: 600; }
+    .qr-section { padding: 44px 36px; text-align: center; position: relative; }
+    .qr-label { font-size: 13px; font-weight: 700; color: #0891B2; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+    .qr-title { font-size: 32px; font-weight: 900; color: #0f172a; margin-bottom: 6px; }
+    .qr-sub { font-size: 15px; color: #64748b; margin-bottom: 32px; }
     .qr-frame {
       display: inline-flex; flex-direction: column; align-items: center;
-      background: rgba(255,255,255,0.97); border-radius: 24px;
+      background: #ffffff; border-radius: 24px;
       padding: 20px 24px 16px;
-      box-shadow: 0 0 60px rgba(79,70,229,0.4), 0 0 120px rgba(6,182,212,0.2);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.10);
     }
     .qr-frame img { width: 200px; height: 200px; display: block; }
-    .qr-frame-label {
-      margin-top: 12px; font-size: 12px; font-weight: 800; color: #0A0E1A;
-      letter-spacing: 1px; font-family: 'Inter', sans-serif;
-    }
-    .scan-arrow {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      margin-top: 24px;
-    }
-    .scan-arrow-line {
-      flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(99,102,241,0.4));
-    }
-    .scan-arrow-line.right {
-      background: linear-gradient(90deg, rgba(99,102,241,0.4), transparent);
-    }
-    .scan-arrow-text {
-      font-size: 15px; color: rgba(255,255,255,0.4); font-weight: 600;
-    }
-
-    /* ── SECTION 6: STEPS ── */
-    .steps-section {
-      padding: 44px 40px;
-    }
-    .steps-label {
-      font-size: 13px; font-weight: 700; color: #818CF8;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; text-align: center;
-    }
-    .steps-title {
-      font-size: 30px; font-weight: 900; color: #fff; text-align: center; margin-bottom: 32px;
-    }
-    .step-item {
-      display: flex; align-items: flex-start; gap: 18px; margin-bottom: 20px;
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 18px; padding: 18px 20px; position: relative;
-    }
+    .qr-frame-label { margin-top: 12px; font-size: 12px; font-weight: 800; color: #0f172a; letter-spacing: 1px; font-family: 'Inter', sans-serif; }
+    .scan-arrow { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 24px; }
+    .scan-arrow-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(99,102,241,0.28)); }
+    .scan-arrow-line.right { background: linear-gradient(90deg, rgba(99,102,241,0.28), transparent); }
+    .scan-arrow-text { font-size: 15px; color: #94a3b8; font-weight: 600; }
+    .steps-section { padding: 44px 36px; }
+    .steps-label { font-size: 13px; font-weight: 700; color: #4F46E5; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
+    .steps-title { font-size: 30px; font-weight: 900; color: #0f172a; text-align: center; margin-bottom: 32px; }
+    .step-item { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 20px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 18px 20px; position: relative; }
     .step-item:last-child { margin-bottom: 0; }
-    .step-num {
-      width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 900; color: #fff;
-      font-family: 'Inter', sans-serif;
-    }
-    .s1 .step-num { background: linear-gradient(135deg, #4F46E5, #6366F1); box-shadow: 0 4px 16px rgba(79,70,229,0.4); }
-    .s2 .step-num { background: linear-gradient(135deg, #0891B2, #06B6D4); box-shadow: 0 4px 16px rgba(6,182,212,0.35); }
-    .s3 .step-num { background: linear-gradient(135deg, #7C3AED, #8B5CF6); box-shadow: 0 4px 16px rgba(124,58,237,0.4); }
-    .s4 .step-num { background: linear-gradient(135deg, #059669, #10B981); box-shadow: 0 4px 16px rgba(5,150,105,0.4); }
-    .s5 .step-num { background: linear-gradient(135deg, #D97706, #F59E0B); box-shadow: 0 4px 16px rgba(217,119,6,0.4); }
+    .step-num { width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; color: #fff; font-family: 'Inter', sans-serif; }
+    .s1 .step-num { background: linear-gradient(135deg, #4F46E5, #6366F1); box-shadow: 0 4px 16px rgba(79,70,229,0.16); }
+    .s2 .step-num { background: linear-gradient(135deg, #0891B2, #06B6D4); box-shadow: 0 4px 16px rgba(6,182,212,0.14); }
+    .s3 .step-num { background: linear-gradient(135deg, #7C3AED, #8B5CF6); box-shadow: 0 4px 16px rgba(124,58,237,0.16); }
+    .s4 .step-num { background: linear-gradient(135deg, #059669, #10B981); box-shadow: 0 4px 16px rgba(5,150,105,0.16); }
+    .s5 .step-num { background: linear-gradient(135deg, #D97706, #F59E0B); box-shadow: 0 4px 16px rgba(217,119,6,0.16); }
     .step-content { flex: 1; }
-    .step-title {
-      font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 4px;
-    }
-    .step-desc {
-      font-size: 14px; color: rgba(255,255,255,0.45); line-height: 1.55;
-    }
-    .step-icon { font-size: 22px; flex-shrink: 0; margin-top: 8px; }
-
-    /* connector line between steps */
-    .step-connector {
-      width: 2px; height: 14px; background: linear-gradient(180deg, rgba(99,102,241,0.3), rgba(99,102,241,0.1));
-      margin: 0 0 0 43px;
-    }
-
-    /* ── SECTION 7: TESTIMONIAL ── */
-    .testimonial-section {
-      padding: 32px 40px;
-      background: rgba(6,182,212,0.05);
-      border-top: 1px solid rgba(6,182,212,0.12);
-      border-bottom: 1px solid rgba(6,182,212,0.12);
-    }
-    .testimonial-title {
-      font-size: 13px; font-weight: 700; color: #22D3EE;
-      letter-spacing: 2px; text-transform: uppercase; text-align: center; margin-bottom: 20px;
-    }
-    .testimonials {
-      display: flex; gap: 14px;
-    }
-    .testimonial {
-      flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px; padding: 16px;
-    }
-    .testimonial-quote {
-      font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 12px;
-    }
+    .step-title { font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .step-desc { font-size: 14px; color: #64748b; line-height: 1.55; }
+    .step-connector { width: 2px; height: 14px; background: linear-gradient(180deg, rgba(99,102,241,0.28), rgba(99,102,241,0.06)); margin: 0 0 0 43px; }
+    .testimonial-section { padding: 32px 36px; background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .testimonial-title { font-size: 13px; font-weight: 700; color: #0891B2; letter-spacing: 2px; text-transform: uppercase; text-align: center; margin-bottom: 20px; }
+    .testimonials { display: flex; gap: 14px; }
+    .testimonial { flex: 1; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; }
+    .testimonial-quote { font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 12px; }
     .testimonial-stars { color: #F59E0B; font-size: 13px; margin-bottom: 8px; }
-    .testimonial-name { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 700; }
-
-    /* ── SECTION 8: FEATURE CHIPS ── */
-    .features-section {
-      padding: 36px 40px;
-    }
-    .features-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    }
-    .feature-chip {
-      display: flex; align-items: center; gap: 12px;
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 14px; padding: 14px 16px;
-    }
-    .feature-chip-icon {
-      width: 38px; height: 38px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-      background: rgba(79,70,229,0.18);
-    }
-    .feature-chip-text { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8); line-height: 1.4; }
-
-    /* ── SECTION 9: CTA BOTTOM ── */
-    .cta-bottom {
-      padding: 44px 40px;
-      text-align: center;
-      background: linear-gradient(180deg, transparent, rgba(79,70,229,0.1));
-    }
-    .cta-main {
-      font-size: 34px; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 12px;
-    }
-    .cta-main span {
-      background: linear-gradient(90deg, #818CF8, #22D3EE);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .cta-sub { font-size: 16px; color: rgba(255,255,255,0.45); margin-bottom: 28px; }
-    .cta-btn {
-      display: inline-block; padding: 18px 52px; border-radius: 18px;
-      background: linear-gradient(135deg, #4F46E5, #6366F1);
-      font-size: 19px; font-weight: 800; color: #fff;
-      box-shadow: 0 8px 32px rgba(79,70,229,0.5);
-      text-decoration: none; border: none; cursor: default;
-    }
-
-    /* ── FOOTER ── */
-    .footer {
-      padding: 20px 40px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(0,0,0,0.2);
-    }
-    .footer-brand { font-size: 16px; font-weight: 900; color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif; }
+    .testimonial-name { font-size: 12px; color: #64748b; font-weight: 700; }
+    .features-section { padding: 36px 36px; }
+    .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .feature-chip { display: flex; align-items: center; gap: 12px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px 16px; }
+    .feature-chip-icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: rgba(79,70,229,0.10); }
+    .feature-chip-text { font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.4; }
+    .cta-bottom { padding: 44px 36px; text-align: center; background: linear-gradient(180deg, transparent, rgba(99,102,241,0.06)); }
+    .cta-main { font-size: 34px; font-weight: 900; color: #0f172a; line-height: 1.2; margin-bottom: 12px; }
+    .cta-main span { background: linear-gradient(90deg, #818CF8, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .cta-sub { font-size: 16px; color: #64748b; margin-bottom: 28px; }
+    .cta-btn { display: inline-block; padding: 18px 52px; border-radius: 18px; background: linear-gradient(135deg, #4F46E5, #6366F1); font-size: 19px; font-weight: 800; color: #fff; box-shadow: 0 10px 26px rgba(79,70,229,0.22); text-decoration: none; border: none; cursor: default; }
+    .footer { padding: 20px 36px; border-top: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+    .footer-brand { font-size: 16px; font-weight: 900; color: #475569; font-family: 'Inter', sans-serif; }
     .footer-chips { display: flex; gap: 8px; }
-    .footer-chip {
-      font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 50px;
-      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4);
-    }
-
-    /* print */
+    .footer-chip { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 50px; background: #ffffff; color: #64748b; border: 1px solid #e5e7eb; }
     @media print {
-      body { background: #0A0E1A; padding: 0; }
-      .banner { border-radius: 0; box-shadow: none; }
+      @page { size: A4 portrait; margin: 0; }
+      body { background: #ffffff; padding: 0; }
+      .page { border-radius: 0; box-shadow: none; border: none; width: 210mm; min-height: 297mm; }
     }
   </style>
 </head>
 <body>
-  <div class="banner">
+  <div class="page">
     <div class="orb1"></div>
     <div class="orb2"></div>
     <div class="orb3"></div>
     <div class="orb4"></div>
-
-    <!-- BRAND BAR -->
     <div class="brand-bar">
       <div class="brand-logo">
         <div class="brand-icon">L</div>
@@ -332,13 +164,9 @@
       </div>
       <div class="free-badge">100% मुफ़्त</div>
     </div>
-
-    <!-- HERO PROBLEM -->
     <div class="hero">
       <span class="hero-emoji">😓</span>
-      <div class="hero-question">
-        क्यों खड़े हैं<br /><span>लंबी लाइन में?</span>
-      </div>
+      <div class="hero-question">क्यों खड़े हैं<br /><span>लंबी लाइन में?</span></div>
       <div class="hero-subtext">आपका समय बहुत कीमती है</div>
       <div class="pain-pills">
         <div class="pain-pill">⏳ घंटों इंतज़ार</div>
@@ -347,171 +175,63 @@
         <div class="pain-pill">📋 नंबर खोने का डर</div>
       </div>
     </div>
-
     <div class="arrow-divider">↓</div>
-
-    <!-- SOLUTION -->
     <div class="solution">
       <div class="solution-label">✨ समाधान है</div>
-      <div class="solution-title">
-        घर बैठे बुक करें<br />
-        <span class="highlight">डॉक्टर का e-Token</span>
-      </div>
-      <div class="solution-sub">
-        बस एक बार App डाउनलोड करें और भूल जाएं<br />लंबी लाइन की झंझट को हमेशा के लिए!
-      </div>
+      <div class="solution-title">घर बैठे बुक करें<br /><span class="highlight">डॉक्टर का e-Token</span></div>
+      <div class="solution-sub">बस एक बार App डाउनलोड करें और भूल जाएं<br />लंबी लाइन की झंझट को हमेशा के लिए!</div>
     </div>
-
-    <!-- BENEFITS ROW -->
     <div class="benefits">
-      <div class="benefit-item">
-        <span class="benefit-icon">⚡</span>
-        <div class="benefit-val">30 सेकंड</div>
-        <div class="benefit-lbl">में Token बुक</div>
-      </div>
-      <div class="benefit-item">
-        <span class="benefit-icon">🔔</span>
-        <div class="benefit-val">SMS अलर्ट</div>
-        <div class="benefit-lbl">बारी आने पर</div>
-      </div>
-      <div class="benefit-item">
-        <span class="benefit-icon">🏠</span>
-        <div class="benefit-val">घर पर</div>
-        <div class="benefit-lbl">आराम से इंतज़ार</div>
-      </div>
-      <div class="benefit-item">
-        <span class="benefit-icon">💚</span>
-        <div class="benefit-val">बिल्कुल</div>
-        <div class="benefit-lbl">मुफ़्त</div>
-      </div>
+      <div class="benefit-item"><span class="benefit-icon">⚡</span><div class="benefit-val">30 सेकंड</div><div class="benefit-lbl">में Token बुक</div></div>
+      <div class="benefit-item"><span class="benefit-icon">🔔</span><div class="benefit-val">SMS अलर्ट</div><div class="benefit-lbl">बारी आने पर</div></div>
+      <div class="benefit-item"><span class="benefit-icon">🏠</span><div class="benefit-val">घर पर</div><div class="benefit-lbl">आराम से इंतज़ार</div></div>
+      <div class="benefit-item"><span class="benefit-icon">💚</span><div class="benefit-val">बिल्कुल</div><div class="benefit-lbl">मुफ़्त</div></div>
     </div>
-
-    <!-- QR CODE -->
     <div class="qr-section">
       <div class="qr-label">📱 अभी स्कैन करें</div>
       <div class="qr-title">QR Code स्कैन करें</div>
       <div class="qr-sub">App Store या Play Store से<br />LineSetu App डाउनलोड करें</div>
       <div class="qr-frame">
-        <img
-          src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://linesetu.replit.app&color=0A0E1A&bgcolor=FFFFFF&qzone=1&format=png"
-          alt="LineSetu QR Code"
-        />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://linesetu.replit.app&color=0A0E1A&bgcolor=FFFFFF&qzone=1&format=png" alt="LineSetu QR Code" />
         <div class="qr-frame-label">SCAN TO DOWNLOAD LINESETU</div>
       </div>
-      <div class="scan-arrow">
-        <div class="scan-arrow-line"></div>
-        <div class="scan-arrow-text">या नीचे दिए Steps देखें</div>
-        <div class="scan-arrow-line right"></div>
-      </div>
+      <div class="scan-arrow"><div class="scan-arrow-line"></div><div class="scan-arrow-text">या नीचे दिए Steps देखें</div><div class="scan-arrow-line right"></div></div>
     </div>
-
-    <!-- STEPS -->
     <div class="steps-section">
       <div class="steps-label">📋 इतना आसान है</div>
       <div class="steps-title">सिर्फ़ 5 आसान Steps</div>
-
-      <div class="step-item s1">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <div class="step-title">📲 App डाउनलोड करें</div>
-          <div class="step-desc">Google Play Store या ऊपर QR Code स्कैन करके LineSetu App इंस्टॉल करें — बिल्कुल मुफ़्त</div>
-        </div>
-      </div>
+      <div class="step-item s1"><div class="step-num">1</div><div class="step-content"><div class="step-title">📲 App डाउनलोड करें</div><div class="step-desc">Google Play Store या ऊपर QR Code स्कैन करके LineSetu App इंस्टॉल करें — बिल्कुल मुफ़्त</div></div></div>
       <div class="step-connector"></div>
-
-      <div class="step-item s2">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <div class="step-title">📞 मोबाइल नंबर से Login करें</div>
-          <div class="step-desc">अपना मोबाइल नंबर डालें, OTP आएगा — बस! कोई Password याद नहीं करना</div>
-        </div>
-      </div>
+      <div class="step-item s2"><div class="step-num">2</div><div class="step-content"><div class="step-title">📞 मोबाइल नंबर से Login करें</div><div class="step-desc">अपना मोबाइल नंबर डालें, OTP आएगा — बस! कोई Password याद नहीं करना</div></div></div>
       <div class="step-connector"></div>
-
-      <div class="step-item s3">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <div class="step-title">🔍 डॉक्टर खोजें</div>
-          <div class="step-desc">अपने शहर के डॉक्टर की List देखें, Speciality और उपलब्धता के अनुसार चुनें</div>
-        </div>
-      </div>
+      <div class="step-item s3"><div class="step-num">3</div><div class="step-content"><div class="step-title">🔍 डॉक्टर खोजें</div><div class="step-desc">अपने शहर के डॉक्टर की List देखें, Speciality और उपलब्धता के अनुसार चुनें</div></div></div>
       <div class="step-connector"></div>
-
-      <div class="step-item s4">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <div class="step-title">🎫 Token बुक करें</div>
-          <div class="step-desc">"Token लें" बटन दबाएं — आपका नंबर Confirm हो जाएगा। Consultation Fee ऑनलाइन Pay करें</div>
-        </div>
-      </div>
+      <div class="step-item s4"><div class="step-num">4</div><div class="step-content"><div class="step-title">🎫 Token बुक करें</div><div class="step-desc">"Token लें" बटन दबाएं — आपका नंबर Confirm हो जाएगा। Consultation Fee ऑनलाइन Pay करें</div></div></div>
       <div class="step-connector"></div>
-
-      <div class="step-item s5">
-        <div class="step-num">5</div>
-        <div class="step-content">
-          <div class="step-title">🏠 घर पर इंतज़ार करें</div>
-          <div class="step-desc">Live Queue देखें — बारी नज़दीक आने पर SMS आएगा। बस तब क्लिनिक आएं!</div>
-        </div>
-      </div>
+      <div class="step-item s5"><div class="step-num">5</div><div class="step-content"><div class="step-title">🏠 घर पर इंतज़ार करें</div><div class="step-desc">Live Queue देखें — बारी नज़दीक आने पर SMS आएगा। बस तब क्लिनिक आएं!</div></div></div>
     </div>
-
-    <!-- TESTIMONIALS -->
     <div class="testimonial-section">
       <div class="testimonial-title">⭐ मरीज़ों की राय</div>
       <div class="testimonials">
-        <div class="testimonial">
-          <div class="testimonial-stars">★★★★★</div>
-          <div class="testimonial-quote">"पहले 2 घंटे लाइन में खड़े रहते थे। अब घर से Token बुक करते हैं और सही समय पर पहुंचते हैं।"</div>
-          <div class="testimonial-name">— रमेश जी, मरीज़</div>
-        </div>
-        <div class="testimonial">
-          <div class="testimonial-stars">★★★★★</div>
-          <div class="testimonial-quote">"बहुत आसान App है। बुज़ुर्ग माँ के लिए मैं घर से ही Token ले लेता हूँ।"</div>
-          <div class="testimonial-name">— प्रिया, मरीज़ की बेटी</div>
-        </div>
+        <div class="testimonial"><div class="testimonial-stars">★★★★★</div><div class="testimonial-quote">"पहले 2 घंटे लाइन में खड़े रहते थे। अब घर से Token बुक करते हैं और सही समय पर पहुंचते हैं।"</div><div class="testimonial-name">— रमेश जी, मरीज़</div></div>
+        <div class="testimonial"><div class="testimonial-stars">★★★★★</div><div class="testimonial-quote">"बहुत आसान App है। बुज़ुर्ग माँ के लिए मैं घर से ही Token ले लेता हूँ।"</div><div class="testimonial-name">— प्रिया, मरीज़ की बेटी</div></div>
       </div>
     </div>
-
-    <!-- FEATURE CHIPS -->
     <div class="features-section">
       <div class="features-grid">
-        <div class="feature-chip">
-          <div class="feature-chip-icon">🔴</div>
-          <div class="feature-chip-text">Live Queue<br />Real-time अपडेट</div>
-        </div>
-        <div class="feature-chip">
-          <div class="feature-chip-icon">💳</div>
-          <div class="feature-chip-text">UPI / Card<br />Online Payment</div>
-        </div>
-        <div class="feature-chip">
-          <div class="feature-chip-icon">📱</div>
-          <div class="feature-chip-text">SMS Reminder<br />बारी आने पर</div>
-        </div>
-        <div class="feature-chip">
-          <div class="feature-chip-icon">🔒</div>
-          <div class="feature-chip-text">100% Secure<br />आपका Data Safe</div>
-        </div>
-        <div class="feature-chip">
-          <div class="feature-chip-icon">📋</div>
-          <div class="feature-chip-text">Booking History<br />सभी Visits यहाँ</div>
-        </div>
-        <div class="feature-chip">
-          <div class="feature-chip-icon">⚡</div>
-          <div class="feature-chip-text">तुरंत Token<br />30 सेकंड में</div>
-        </div>
+        <div class="feature-chip"><div class="feature-chip-icon">🔴</div><div class="feature-chip-text">Live Queue<br />Real-time अपडेट</div></div>
+        <div class="feature-chip"><div class="feature-chip-icon">💳</div><div class="feature-chip-text">UPI / Card<br />Online Payment</div></div>
+        <div class="feature-chip"><div class="feature-chip-icon">📱</div><div class="feature-chip-text">SMS Reminder<br />बारी आने पर</div></div>
+        <div class="feature-chip"><div class="feature-chip-icon">🔒</div><div class="feature-chip-text">100% Secure<br />आपका Data Safe</div></div>
+        <div class="feature-chip"><div class="feature-chip-icon">📋</div><div class="feature-chip-text">Booking History<br />सभी Visits यहाँ</div></div>
+        <div class="feature-chip"><div class="feature-chip-icon">⚡</div><div class="feature-chip-text">तुरंत Token<br />30 सेकंड में</div></div>
       </div>
     </div>
-
-    <!-- CTA BOTTOM -->
     <div class="cta-bottom">
-      <div class="cta-main">
-        अब लाइन में <span>खड़े क्यों?</span>
-      </div>
+      <div class="cta-main">अब लाइन में <span>खड़े क्यों?</span></div>
       <div class="cta-sub">ऊपर QR Code स्कैन करें और आज ही शुरू करें</div>
       <div class="cta-btn">📱 LineSetu App डाउनलोड करें</div>
     </div>
-
-    <!-- FOOTER -->
     <div class="footer">
       <div class="footer-brand">LineSetu</div>
       <div class="footer-chips">
