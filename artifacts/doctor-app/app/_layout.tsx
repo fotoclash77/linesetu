@@ -7,12 +7,10 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, router, useSegments } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { DoctorProvider, useDoctor } from "../contexts/DoctorContext";
 import { ForceUpdateScreen } from "../components/ForceUpdateScreen";
@@ -30,15 +28,8 @@ function RootLayoutNav() {
   const segments = useSegments();
   const qc = useQueryClient();
   const prevDoctorIdRef = useRef<string | null | undefined>(undefined);
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   const doctorId = doctor?.id ?? null;
-
-  useEffect(() => {
-    AsyncStorage.getItem("hasSeenOnboarding_doctor").then((val) => {
-      setHasSeenOnboarding(val === "true");
-    });
-  }, []);
 
   // Clear the entire query cache whenever the logged-in doctor account changes
   useEffect(() => {
@@ -49,22 +40,17 @@ function RootLayoutNav() {
   }, [doctorId]);
 
   useEffect(() => {
-    if (!isLoading && hasSeenOnboarding !== null) {
-      if (doctorId) {
-        if (doctor?.profileCompleted) {
-          router.replace("/(tabs)");
-        } else {
-          router.replace("/complete-profile");
-        }
+    if (isLoading) return;
+    if (doctorId) {
+      if (doctor?.profileCompleted) {
+        router.replace("/(tabs)");
       } else {
-        if (!hasSeenOnboarding) {
-          router.replace("/onboarding");
-        } else {
-          router.replace("/login");
-        }
+        router.replace("/complete-profile");
       }
+    } else {
+      router.replace("/login");
     }
-  }, [doctorId, doctor?.profileCompleted, isLoading, hasSeenOnboarding]);
+  }, [doctorId, doctor?.profileCompleted, isLoading]);
 
   const hideNav = isLoading || !doctor ||
     segments[0] === "login" ||
@@ -99,18 +85,6 @@ export default function RootLayout() {
   });
   const forceUpdate = useForceUpdate();
 
-  useEffect(() => {
-    if (Platform.OS !== "web") {
-      SplashScreen.preventAutoHideAsync().catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [fontsLoaded, fontError]);
-
   if (!fontsLoaded && !fontError) {
     return <View style={{ flex: 1, backgroundColor: "#060E12" }} />;
   }
@@ -121,7 +95,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <DoctorProvider>
             <RootLayoutNav />
-            {forceUpdate.required && Platform.OS !== "web" && (
+            {forceUpdate.required && (
               <ForceUpdateScreen
                 message={forceUpdate.message}
                 storeUrl={forceUpdate.storeUrl}

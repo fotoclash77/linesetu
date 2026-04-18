@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -20,11 +21,6 @@ const INDIGO = "#4F46E5";
 const INDIGO_LT = "#818CF8";
 const CYAN = "#06B6D4";
 const CYAN_LT = "#22D3EE";
-
-async function markSeenAndGo() {
-  await AsyncStorage.setItem("hasSeenOnboarding_patient", "true");
-  router.replace("/login");
-}
 
 function SplashSlide() {
   return (
@@ -183,7 +179,21 @@ const SLIDES = [
 export default function OnboardingScreen() {
   const flatRef = useRef<FlatList>(null);
   const [current, setCurrent] = useState(0);
+  const { patient } = useAuth();
   const isLast = current === SLIDES.length - 1;
+
+  async function markSeenAndGo() {
+    if (patient?.id) {
+      await AsyncStorage.setItem(`hasSeenOnboarding_${patient.id}`, "true");
+    }
+    if (patient?.profileCompleted) {
+      router.replace("/(tabs)");
+    } else if (patient) {
+      router.replace("/complete-profile");
+    } else {
+      router.replace("/login");
+    }
+  }
 
   function goNext() {
     if (isLast) markSeenAndGo();

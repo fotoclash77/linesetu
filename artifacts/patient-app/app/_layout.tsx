@@ -5,12 +5,10 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Image } from "expo-image";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router, useSegments } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomNavBar } from "@/components/BottomNavBar";
@@ -23,22 +21,8 @@ import { PatientNotifsProvider } from "@/contexts/PatientNotifsContext";
 import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 
-const LOGO = require("../assets/images/logo.png");
-
-function SplashView() {
-  return (
-    <View style={{ flex: 1, backgroundColor: "#0A0E1A", alignItems: "center", justifyContent: "center" }}>
-      <Image source={LOGO} style={{ width: 180, height: 180 }} contentFit="contain" />
-    </View>
-  );
-}
-
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
-}
-
-if (Platform.OS !== "web") {
-  SplashScreen.preventAutoHideAsync().catch(() => {});
 }
 
 const queryClient = new QueryClient({
@@ -55,27 +39,31 @@ function RootLayoutNav() {
   const segments = useSegments();
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
+  // Fetch per-user onboarding flag whenever the logged-in patient changes
   useEffect(() => {
-    AsyncStorage.getItem("hasSeenOnboarding_patient").then((val) => {
+    if (isLoading) return;
+    if (!patient) {
+      setHasSeenOnboarding(null);
+      return;
+    }
+    AsyncStorage.getItem(`hasSeenOnboarding_${patient.id}`).then((val) => {
       setHasSeenOnboarding(val === "true");
     });
-  }, []);
+  }, [patient?.id, isLoading]);
 
   useEffect(() => {
-    if (!isLoading && hasSeenOnboarding !== null) {
-      if (patient) {
-        if (patient.profileCompleted) {
-          router.replace("/(tabs)");
-        } else {
-          router.replace("/complete-profile");
-        }
-      } else {
-        if (!hasSeenOnboarding) {
-          router.replace("/onboarding");
-        } else {
-          router.replace("/login");
-        }
-      }
+    if (isLoading) return;
+    if (!patient) {
+      router.replace("/login");
+      return;
+    }
+    if (hasSeenOnboarding === null) return;
+    if (!hasSeenOnboarding) {
+      router.replace("/onboarding");
+    } else if (!patient.profileCompleted) {
+      router.replace("/complete-profile");
+    } else {
+      router.replace("/(tabs)");
     }
   }, [patient?.id, patient?.profileCompleted, isLoading, hasSeenOnboarding]);
 
@@ -83,10 +71,6 @@ function RootLayoutNav() {
     segments[0] === "login" ||
     segments[0] === "onboarding" ||
     segments[0] === "complete-profile";
-
-  if (isLoading || hasSeenOnboarding === null) {
-    return <SplashView />;
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0A0E1A" }}>
@@ -120,14 +104,8 @@ export default function RootLayout() {
   });
   const forceUpdate = useForceUpdate();
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [fontsLoaded, fontError]);
-
   if (!fontsLoaded && !fontError) {
-    return <SplashView />;
+    return <View style={{ flex: 1, backgroundColor: "#0A0E1A" }} />;
   }
 
   return (
@@ -138,7 +116,7 @@ export default function RootLayout() {
             <AuthProvider>
               <PatientNotifsProvider>
                 <RootLayoutNav />
-                {forceUpdate.required && Platform.OS !== "web" && (
+                {forceUpdate.required && (
                   <ForceUpdateScreen
                     message={forceUpdate.message}
                     storeUrl={forceUpdate.storeUrl}
