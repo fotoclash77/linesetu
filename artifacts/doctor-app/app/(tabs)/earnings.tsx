@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, DimensionValue, Platform, ActivityIndicator,
-  Modal, TextInput,
+  Modal, TextInput, AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { Calendar } from 'react-native-calendars';
 import { BG, TEAL, TEAL_LT } from '../../constants/theme';
 import { FeatherIcon as Feather } from "../../components/FeatherIcon";
 import { useDoctor } from '../../contexts/DoctorContext';
+import { useFocusEffect } from 'expo-router';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const isWeb = Platform.OS === 'web';
@@ -171,23 +172,59 @@ export default function EarningsScreen() {
 
   const ranges = useMemo(() => dateRanges(), []);
 
-  // ── Real-time SSE: invalidate all earnings/balance/tx caches the moment
-  //    the server emits any token change (skip, cancel, refund, done).
+  // ── Real-time SSE with auto-reconnect ──
   useEffect(() => {
     if (!doctor?.id || typeof EventSource === 'undefined') return;
-    const es = new EventSource(`${BASE()}/api/tokens/stream/${doctor.id}`);
-    es.onmessage = () => {
-      queryClient.invalidateQueries({ queryKey: ['doctor-earnings',     doctor.id] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-live',         doctor.id] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-transactions', doctor.id] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-payouts',      doctor.id] });
+    let es: EventSource | null = null;
+    let reconnectTimer: any = null;
+    let closed = false;
+
+    function connect() {
+      if (closed) return;
+      const today = dateFmt(new Date());
+      es = new EventSource(`${BASE()}/api/tokens/stream/${doctor!.id}?date=${today}`);
+      es.onmessage = () => {
+        queryClient.invalidateQueries({ queryKey: ['doctor-earnings',     doctor!.id] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-live',         doctor!.id] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-transactions', doctor!.id] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-payouts',      doctor!.id] });
+      };
+      es.onerror = () => {
+        es?.close();
+        // Auto-reconnect after 3 seconds
+        if (!closed) reconnectTimer = setTimeout(connect, 3000);
+      };
+    }
+
+    connect();
+    return () => {
+      closed = true;
+      clearTimeout(reconnectTimer);
+      es?.close();
     };
-    es.onerror = () => {
-      // SSE dropped — close cleanly; polling will bridge the gap
-      es.close();
-    };
-    return () => es.close();
   }, [doctor?.id, queryClient]);
+
+  // ── Refresh on tab focus (switching from queue/home tab back to earnings) ──
+  const refetchAll = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['doctor-earnings',     doctor?.id] });
+    queryClient.invalidateQueries({ queryKey: ['doctor-live',         doctor?.id] });
+    queryClient.invalidateQueries({ queryKey: ['doctor-transactions', doctor?.id] });
+    queryClient.invalidateQueries({ queryKey: ['doctor-payouts',      doctor?.id] });
+  }, [queryClient, doctor?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetchAll();
+    }, [refetchAll])
+  );
+
+  // ── Refresh when app returns from background ──
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refetchAll();
+    });
+    return () => sub.remove();
+  }, [refetchAll]);
 
   const { data: rawEarnings = [], isLoading } = useQuery<EarningRecord[]>({
     queryKey: ['doctor-earnings', doctor?.id, ranges.fetchFrom],
