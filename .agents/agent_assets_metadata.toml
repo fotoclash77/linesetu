@@ -65,3 +65,9 @@ id = "2OB8k75lRMcsP-m-_BJJ2"
 uri = "file://attached_assets/patient-app-qr.png"
 type = "image"
 title = "Patient App — Expo Go QR Code"
+
+[[outputs]]
+id = "pt_dp8-6JbXQSWOFwPaed"
+uri = "file://attached_assets/exports/linesetu-latest.tar.gz"
+type = "unspecified"
+title = "LINESETU Project Source (tar.gz)"
