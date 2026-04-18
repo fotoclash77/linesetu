@@ -746,7 +746,11 @@ export default function SettingsScreen() {
     setProfilePhotoLoading(true);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
+      if (!perm.granted) {
+        setProfilePhotoLoading(false);
+        Alert.alert('Permission Required', 'Please allow photo access in your device settings to upload a profile photo.');
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.7,
@@ -755,23 +759,42 @@ export default function SettingsScreen() {
         aspect: [1, 1],
         exif: false,
       });
-      if (result.canceled || !result.assets[0]?.base64) return;
+      if (result.canceled || !result.assets[0]?.base64) {
+        setProfilePhotoLoading(false);
+        return;
+      }
       const asset = result.assets[0];
       const mimeType = asset.mimeType || 'image/jpeg';
       setProfilePhotoLocal(`data:${mimeType};base64,${asset.base64}`);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch(`${BASE()}/api/doctors/${doctor.id}/profile-photo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64: asset.base64, mimeType }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+
       const data = await res.json();
       if (res.ok && data.url) {
         setProfilePhotoUrl(data.url);
+        setProfilePhotoLocal(null);
         await updateDoctor({ profilePhoto: data.url } as any);
       } else {
         setProfilePhotoLocal(null);
+        Alert.alert('Upload Failed', data.error || 'Could not upload photo. Please try again.');
       }
-    } catch {}
+    } catch (err: any) {
+      setProfilePhotoLocal(null);
+      if (err?.name === 'AbortError') {
+        Alert.alert('Upload Timeout', 'The upload took too long. Please check your internet connection and try again.');
+      } else {
+        Alert.alert('Upload Failed', 'Could not upload photo. Please check your internet connection and try again.');
+      }
+    }
     setProfilePhotoLoading(false);
   };
 
@@ -809,13 +832,18 @@ export default function SettingsScreen() {
     patientsTotal: profileSaving && !patientsTotal.trim(),
     mobile: profileSaving && !mobile.trim(),
     bio: profileSaving && !bio.trim(),
+    profilePhoto: profileSaving && !profilePhotoUrl,
   };
 
   const saveProfile = async () => {
     const required = [name, qualifications, specialisation, experience, patientsTotal, mobile, bio];
-    if (required.some(v => !v.trim())) {
+    if (required.some(v => !v.trim()) || !profilePhotoUrl) {
       setProfileSaving(true);
-      setProfileError('Please fill in all required fields.');
+      if (!profilePhotoUrl) {
+        setProfileError('Profile photo is mandatory. Please upload a photo.');
+      } else {
+        setProfileError('Please fill in all required fields.');
+      }
       return;
     }
     setProfileSaving(true);
@@ -907,7 +935,7 @@ export default function SettingsScreen() {
           <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
             {/* Avatar */}
             <View style={styles.avatarSection}>
-              <View style={styles.avatarLarge}>
+              <View style={[styles.avatarLarge, profileFieldErrors.profilePhoto && { borderWidth: 2, borderColor: '#F87171' }]}>
                 {profilePhotoLocal || profilePhotoUrl
                   ? <Image
                       key={profilePhotoLocal || profilePhotoUrl || 'avatar'}
@@ -915,13 +943,14 @@ export default function SettingsScreen() {
                       style={{ width: '100%', height: '100%', borderRadius: 26 }}
                       resizeMode="cover"
                     />
-                  : <Feather name="activity" size={28} color="#FFF" />}
+                  : <Feather name="camera" size={28} color="rgba(255,255,255,0.4)" />}
               </View>
-              <TouchableOpacity style={styles.photoChangeBtn} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
+              <TouchableOpacity style={[styles.photoChangeBtn, profileFieldErrors.profilePhoto && { borderColor: '#F87171' }]} onPress={pickProfilePhoto} disabled={profilePhotoLoading}>
                 {profilePhotoLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={styles.photoBtnText}>{profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}</Text>}
+                  : <Text style={[styles.photoBtnText, profileFieldErrors.profilePhoto && { color: '#F87171' }]}>{profilePhotoUrl ? 'Change Photo' : 'Upload Photo *'}</Text>}
               </TouchableOpacity>
+              {profileFieldErrors.profilePhoto && <Text style={{ fontSize: 10, color: '#F87171', fontWeight: '700', marginTop: 4 }}>Profile photo is required</Text>}
             </View>
 
             {!!profileError && (
@@ -962,7 +991,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={{ paddingHorizontal: 6, marginBottom: 8 }}>
-              <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>* All fields are mandatory and will be visible to patients in the app.</Text>
+              <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>* All fields and profile photo are mandatory and will be visible to patients in the app.</Text>
             </View>
 
             <TouchableOpacity
