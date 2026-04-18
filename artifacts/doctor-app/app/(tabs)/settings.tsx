@@ -542,11 +542,11 @@ export default function SettingsScreen() {
   }, [doctor?.id]);
 
   // Fee state — seeded from Firebase via doctor context
-  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? 10));
-  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? 20));
-  const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? 0));
-  const [clinicConsultFee, setClinicConsultFee] = useState(() => String((doctor as any)?.clinicConsultFee ?? 0));
-  const [clinicEmergencyFee, setClinicEmergencyFee] = useState(() => String((doctor as any)?.clinicEmergencyFee ?? 0));
+  const [consultFee, setConsultFee] = useState(() => String((doctor as any)?.consultFee ?? ''));
+  const [emergencyFee, setEmergencyFee] = useState(() => String((doctor as any)?.emergencyFee ?? ''));
+  const [walkinFee, setWalkinFee] = useState(() => String((doctor as any)?.walkinFee ?? ''));
+  const [clinicConsultFee, setClinicConsultFee] = useState(() => String((doctor as any)?.clinicConsultFee ?? ''));
+  const [clinicEmergencyFee, setClinicEmergencyFee] = useState(() => String((doctor as any)?.clinicEmergencyFee ?? ''));
   const [feeSaving, setFeeSaving] = useState(false);
   const [feeSaved, setFeeSaved] = useState(false);
 
@@ -578,11 +578,11 @@ export default function SettingsScreen() {
   React.useEffect(() => {
     if (!feeSynced.current && doctor) {
       feeSynced.current = true;
-      setConsultFee(String((doctor as any).consultFee ?? 10));
-      setEmergencyFee(String((doctor as any).emergencyFee ?? 20));
-      setWalkinFee(String((doctor as any).walkinFee ?? 0));
-      setClinicConsultFee(String((doctor as any).clinicConsultFee ?? 0));
-      setClinicEmergencyFee(String((doctor as any).clinicEmergencyFee ?? 0));
+      setConsultFee(String((doctor as any).consultFee ?? ''));
+      setEmergencyFee(String((doctor as any).emergencyFee ?? ''));
+      setWalkinFee(String((doctor as any).walkinFee ?? ''));
+      setClinicConsultFee(String((doctor as any).clinicConsultFee ?? ''));
+      setClinicEmergencyFee(String((doctor as any).clinicEmergencyFee ?? ''));
     }
   }, [doctor]);
 
@@ -1403,12 +1403,13 @@ export default function SettingsScreen() {
                   style={styles.fieldInput}
                   value={consultFee}
                   onChangeText={v => {
-                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
-                    setConsultFee(String(Math.min(2000, n)));
+                    const cleaned = v.replace(/[^0-9]/g, '');
+                    if (!cleaned) { setConsultFee(''); return; }
+                    setConsultFee(String(Math.min(2000, parseInt(cleaned))));
                   }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
-                  placeholder="10"
+                  placeholder="50"
                 />
               </View>
               <View style={styles.field}>
@@ -1417,12 +1418,13 @@ export default function SettingsScreen() {
                   style={styles.fieldInput}
                   value={emergencyFee}
                   onChangeText={v => {
-                    const n = parseInt(v.replace(/[^0-9]/g, '')) || 0;
-                    setEmergencyFee(String(Math.min(1000, n)));
+                    const cleaned = v.replace(/[^0-9]/g, '');
+                    if (!cleaned) { setEmergencyFee(''); return; }
+                    setEmergencyFee(String(Math.min(1000, parseInt(cleaned))));
                   }}
                   keyboardType="numeric"
                   placeholderTextColor="rgba(255,255,255,0.2)"
-                  placeholder="20"
+                  placeholder="60"
                 />
               </View>
               <View style={styles.field}>
