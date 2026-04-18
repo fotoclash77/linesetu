@@ -298,9 +298,8 @@ export default function PaymentScreen() {
 
   function openRazorpayWeb(order: any, keyId: string) {
     if (Platform.OS !== "web") return;
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
+
+    function launchRzp() {
       const rzp = new (window as any).Razorpay({
         key: keyId,
         amount: order.amount,
@@ -310,11 +309,33 @@ export default function PaymentScreen() {
         description: `Token booking for ${doctorName}`,
         prefill: { name: patientName, contact: patient?.phone ?? "" },
         theme: { color: "#4F46E5" },
+        modal: { ondismiss: () => setLoading(false) },
         handler: (response: any) => {
           handlePaymentSuccess(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
         },
       });
+      rzp.on("payment.failed", (response: any) => {
+        setResultModal({ visible: true, type: "full", message: response.error?.description ?? "Payment failed. Please try again." });
+      });
       rzp.open();
+    }
+
+    if ((window as any).Razorpay) {
+      launchRzp();
+      return;
+    }
+
+    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existing) {
+      existing.addEventListener("load", launchRzp);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = launchRzp;
+    script.onerror = () => {
+      setResultModal({ visible: true, type: "full", message: "Could not load payment gateway. Check your internet connection." });
     };
     document.body.appendChild(script);
   }
