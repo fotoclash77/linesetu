@@ -372,7 +372,7 @@ export default function LiveQueueScreen() {
         <Text style={{ color: "rgba(255,255,255,0.4)", marginTop: 6, fontSize: 13, textAlign: "center", paddingHorizontal: 40 }}>You don't have an active token right now. Book a token to track your queue here.</Text>
         <Pressable
           style={{ marginTop: 20, backgroundColor: "#4F46E5", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 }}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(tabs)")}
         >
           <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Go Back</Text>
         </Pressable>
@@ -396,7 +396,7 @@ export default function LiveQueueScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 6 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <Pressable style={styles.backBtn} onPress={() => router.replace("/(tabs)")}>
           <Feather name="chevron-left" size={20} color="rgba(255,255,255,0.8)" />
         </Pressable>
         <View style={styles.headerCenter}>
