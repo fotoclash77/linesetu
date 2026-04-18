@@ -238,6 +238,10 @@ export default function ProfileScreen() {
   const [mSaving,  setMSaving]  = useState(false);
 
   const openAddMember = () => {
+    if (familyMembers.length >= 5) {
+      Alert.alert("Limit Reached", "You can add up to 5 family members only.");
+      return;
+    }
     setEditingMem(null);
     setMName(""); setMRelation("Wife");
     setMAge(""); setMBlood(""); setMPhone(""); setMArea(""); setMAddress("");
@@ -253,6 +257,10 @@ export default function ProfileScreen() {
   };
 
   const saveMember = async () => {
+    if (!editingMem && familyMembers.length >= 5) {
+      Alert.alert("Limit Reached", "You can add up to 5 family members only.");
+      return;
+    }
     if (!mName.trim())    { Alert.alert("Name required",        "Please enter the member's full name.");     return; }
     if (!mRelation)       { Alert.alert("Relation required",    "Please select the relation.");               return; }
     if (!mAge.trim())     { Alert.alert("Age required",         "Please enter the member's age.");            return; }
@@ -356,10 +364,16 @@ export default function ProfileScreen() {
               <Text style={styles.familyBadgeTxt}>{familyMembers.length + 1}</Text>
             </View>
             <View style={{ flex: 1 }} />
-            <Pressable style={styles.addMemberBtn} onPress={openAddMember}>
-              <Feather name="plus" size={12} color="#22C55E" />
-              <Text style={styles.addMemberTxt}>Add</Text>
-            </Pressable>
+            {familyMembers.length < 5 ? (
+              <Pressable style={styles.addMemberBtn} onPress={openAddMember}>
+                <Feather name="plus" size={12} color="#22C55E" />
+                <Text style={styles.addMemberTxt}>Add</Text>
+              </Pressable>
+            ) : (
+              <View style={[styles.addMemberBtn, { opacity: 0.4 }]}>
+                <Text style={[styles.addMemberTxt, { color: "rgba(255,255,255,0.3)" }]}>5/5</Text>
+              </View>
+            )}
             <Feather name={showFamily ? "chevron-up" : "chevron-down"} size={15} color="rgba(255,255,255,0.35)" />
           </Pressable>
 
