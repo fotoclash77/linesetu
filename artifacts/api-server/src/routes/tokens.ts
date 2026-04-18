@@ -126,7 +126,7 @@ export function countActiveReservations(pending: Record<string, { expiresAt: any
   }).length;
 }
 
-// Helper: check if a patient already has an active (waiting/in_consult) token for a slot
+// Helper: check if a patient already has an active (waiting/in_consult) or skipped token for a slot
 async function hasDuplicateActiveToken(
   patientId: string, doctorId: string, tokenDate: string, shift: string, forMemberId: string,
 ): Promise<boolean> {
@@ -139,7 +139,7 @@ async function hasDuplicateActiveToken(
     const tok = d.data() as any;
     if (tok.date !== tokenDate || tok.shift !== shift) return false;
     const status = tok.status as string;
-    if (status !== "waiting" && status !== "in_consult") return false;
+    if (status !== "waiting" && status !== "in_consult" && status !== "skipped") return false;
     const tokMember = tok.forMemberId ?? "self";
     return tokMember === forMemberId;
   });
