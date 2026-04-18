@@ -164,6 +164,31 @@ export default function BookingScreen() {
   const [tokenCounts, setTokenCounts] = useState<Record<string, number>>({ morning: 0, evening: 0 });
   const [queueLoading, setQueueLoading] = useState(false);
 
+  // Real next-token numbers from the Firestore nextTokenNumber counter (more accurate than booked+1)
+  const [nextTokenNums, setNextTokenNums] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!doctorId) return;
+    let active = true;
+    const fetchNextTokens = async () => {
+      try {
+        const [morRes, eveRes] = await Promise.all([
+          fetch(`${BASE}/api/queues/${doctorId}?date=${selectedIso}&shift=morning`),
+          fetch(`${BASE}/api/queues/${doctorId}?date=${selectedIso}&shift=evening`),
+        ]);
+        const [morData, eveData] = await Promise.all([morRes.json(), eveRes.json()]);
+        if (active) {
+          setNextTokenNums({
+            morning: (morData.nextTokenNumber ?? 0) + 1,
+            evening: (eveData.nextTokenNumber ?? 0) + 1,
+          });
+        }
+      } catch (_) {}
+    };
+    fetchNextTokens();
+    const iv = setInterval(fetchNextTokens, 5_000);
+    return () => { active = false; clearInterval(iv); };
+  }, [doctorId, selectedIso]);
+
   // Doctor data from Firebase
   // Patient's own existing tokens for duplicate detection
   const [myTokens, setMyTokens] = useState<any[]>([]);
@@ -561,7 +586,7 @@ export default function BookingScreen() {
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: isEmergency ? "rgba(239,68,68,0.08)" : "rgba(99,102,241,0.08)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5 }}>
                           <Feather name="hash" size={10} color={isEmergency ? "#F87171" : "#67E8F9"} />
                           <Text style={{ fontSize: 11, fontWeight: "700", color: isEmergency ? "#F87171" : "#67E8F9" }}>
-                            {isEmergency ? `Next available emergency token #E${booked + 1}` : `Next available token #${booked + 1}`}
+                            {isEmergency ? `Next available emergency token #E${nextTokenNums[shift.id] ?? booked + 1}` : `Next available token #${nextTokenNums[shift.id] ?? booked + 1}`}
                           </Text>
                         </View>
                       )}

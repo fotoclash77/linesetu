@@ -108,6 +108,9 @@ export default function PaymentScreen() {
   const [maxTokens, setMaxTokens] = useState<number | null>(null);
   const [isFull, setIsFull] = useState(false);
   const nextTokenRef = useRef<number | null>(null);
+  // Once a reservation is made, lock the displayed token so SSE can't overwrite it
+  const lockedTokenRef = useRef<number | null>(null);
+  const [lockedToken, setLockedToken] = useState<number | null>(null);
 
   // Result modal state
   const [resultModal, setResultModal] = useState<{
@@ -177,11 +180,14 @@ export default function PaymentScreen() {
     es.onmessage = (ev: MessageEvent) => {
       try {
         const d = JSON.parse(ev.data);
-        setNextToken(d.nextTokenNumber ?? null);
         setRemaining(d.remaining ?? null);
         setMaxTokens(d.maxTokens ?? null);
         setIsFull(d.isFull === true);
-        nextTokenRef.current = d.nextTokenNumber ?? null;
+        // Don't overwrite once a reservation has locked our token number
+        if (!lockedTokenRef.current) {
+          setNextToken(d.nextTokenNumber ?? null);
+          nextTokenRef.current = d.nextTokenNumber ?? null;
+        }
       } catch (_) {}
     };
     es.onerror = () => {
@@ -200,13 +206,16 @@ export default function PaymentScreen() {
         const res = await fetch(`${BASE}/api/queues/${params.doctorId}?date=${date}&shift=${shift}`);
         const data = await res.json();
         if (active) {
-          const nt = (data.nextTokenNumber ?? 0) + 1;
-          setNextToken(nt);
-          nextTokenRef.current = nt;
           // Use server-computed remaining/isFull (includes active reservations, not just totalBooked)
           setRemaining(data.remaining ?? (data.maxTokens != null ? Math.max(0, data.maxTokens - (data.totalBooked ?? 0)) : null));
           setMaxTokens(data.maxTokens ?? null);
           setIsFull(data.isFull ?? (data.maxTokens != null && (data.totalBooked ?? 0) >= data.maxTokens));
+          // Don't overwrite once a reservation has locked our token number
+          if (!lockedTokenRef.current) {
+            const nt = (data.nextTokenNumber ?? 0) + 1;
+            setNextToken(nt);
+            nextTokenRef.current = nt;
+          }
         }
       } catch (_) {}
     };
@@ -263,6 +272,9 @@ export default function PaymentScreen() {
         if (resData.tokenNumber) {
           nextTokenRef.current = resData.tokenNumber;
           setNextToken(resData.tokenNumber);
+          // Lock: prevent SSE / polling from overwriting our reserved spot
+          lockedTokenRef.current = resData.tokenNumber;
+          setLockedToken(resData.tokenNumber);
         }
       }
 
