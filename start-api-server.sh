@@ -14,8 +14,8 @@ export FAST2SMS_API_KEY=klNS6ABpsaf2PuhRIdW5e91834v7yHoEOKLZgjr0TMQDmcYxiXpBP4e7
 export DATABASE_URL=postgresql://localhost:5432/linesetu
 export PORT=8002
 export NODE_ENV=production
-export RAZORPAY_KEY_ID=rzp_test_Set3FFXGvjeiih
-export RAZORPAY_KEY_SECRET=k0MfdbU4pdzUtz5LGScCP66q
+export RAZORPAY_KEY_ID=rzp_test_SewlfDwjJCVgm0
+export RAZORPAY_KEY_SECRET=sItkQ64SQcXtEKUl67FhLER0
 
 echo "Starting LINESETU API Server on port 8002..."
 pnpm run start
