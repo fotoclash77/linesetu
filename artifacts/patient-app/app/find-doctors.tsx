@@ -89,11 +89,7 @@ function DoctorListCard({ doc }: { doc: DoctorItem }) {
             <InitialsAvatar name={doc.name} size={44} color={doc.accent} />
           </View>
         )}
-        {available ? (
-          <View style={styles.verifiedBadgeOverlay}>
-            <Feather name="check-circle" size={10} color="#06B6D4" />
-          </View>
-        ) : (
+        {!available && (
           <View style={styles.unavailBadgeOverlay}>
             <Feather name="slash" size={8} color="#EF4444" />
           </View>
