@@ -71,3 +71,9 @@ id = "pt_dp8-6JbXQSWOFwPaed"
 uri = "file://attached_assets/exports/linesetu-latest.tar.gz"
 type = "unspecified"
 title = "LINESETU Project Source (tar.gz)"
+
+[[outputs]]
+id = "WEs7FZpR0tzxfeTNTQ4LP"
+uri = "file://.local/outputs/LINESETU.pdf"
+type = "pdf"
+title = "LINESETU.pdf"
