@@ -56,6 +56,19 @@ export default function SmsSettingsPage() {
         <p className="text-sm text-gray-500 mt-1">Master switch for OTP and booking SMS.</p>
       </div>
 
+      {!loading && (
+        <div
+          className={`mb-4 rounded-xl border-2 p-4 text-center font-bold text-lg ${
+            enabled
+              ? "bg-green-50 border-green-300 text-green-800"
+              : "bg-amber-50 border-amber-400 text-amber-800"
+          }`}
+          data-testid="sms-status-banner"
+        >
+          {enabled ? "● SMS IS ON — real SMS will be sent" : "○ SMS IS OFF — no SMS will be sent"}
+        </div>
+      )}
+
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         {loading ? (
           <div className="text-sm text-gray-500">Loading…</div>
@@ -63,12 +76,12 @@ export default function SmsSettingsPage() {
           <div className="flex items-center justify-between gap-6">
             <div>
               <div className="text-base font-semibold text-gray-900">
-                SMS sending {enabled ? "enabled" : "disabled"}
+                Master SMS switch
               </div>
               <div className="text-sm text-gray-500 mt-1">
                 {enabled
-                  ? "OTP and booking confirmation SMS will be sent normally."
-                  : "All SMS will be skipped by the server."}
+                  ? "OTP and booking SMS are being sent. Tap the switch to disable."
+                  : "All SMS are blocked. Login OTP will appear on screen as a yellow banner."}
               </div>
             </div>
             <button
@@ -77,16 +90,21 @@ export default function SmsSettingsPage() {
               onClick={() => toggle(!enabled)}
               disabled={saving}
               data-testid="sms-toggle"
-              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${enabled ? "bg-teal-600" : "bg-gray-300"}`}
+              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${enabled ? "bg-green-600" : "bg-gray-400"}`}
             >
               <span
-                className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`}
+                className={`inline-block h-6 w-6 rounded-full bg-white shadow transform transition-transform ${enabled ? "translate-x-7" : "translate-x-1"}`}
               />
             </button>
           </div>
         )}
 
+        {saving && <div className="mt-4 text-sm text-gray-500">Saving…</div>}
         {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
+      </div>
+
+      <div className="mt-6 text-xs text-gray-400">
+        Changes apply within 10 seconds on the server.
       </div>
     </main>
   );
