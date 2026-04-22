@@ -1,4 +1,23 @@
+import { db, doc, getDoc } from "./firebase.js";
+
 const API_KEY = process.env.FAST2SMS_API_KEY ?? "";
+
+let cachedEnabled = true;
+let cachedAt = 0;
+const CACHE_MS = 10_000;
+
+export async function isSmsEnabled(): Promise<boolean> {
+  const now = Date.now();
+  if (now - cachedAt < CACHE_MS) return cachedEnabled;
+  try {
+    const snap = await getDoc(doc(db, "appConfig", "sms"));
+    cachedEnabled = snap.exists() ? snap.data().enabled !== false : true;
+  } catch {
+    // On read failure, fall back to last-known value (default true)
+  }
+  cachedAt = now;
+  return cachedEnabled;
+}
 
 function normalize(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -8,6 +27,11 @@ function normalize(phone: string): string {
 }
 
 export async function sendSMS(phone: string, message: string): Promise<void> {
+  const enabled = await isSmsEnabled();
+  if (!enabled) {
+    console.log("[SMS] Disabled by admin toggle — skipping send");
+    return;
+  }
   if (!API_KEY) {
     console.warn("[SMS] FAST2SMS_API_KEY not set — skipping SMS");
     return;

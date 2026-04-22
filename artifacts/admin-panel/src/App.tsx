@@ -1,8 +1,9 @@
 import { useState } from "react";
 import DoctorsPage from "./pages/DoctorsPage";
 import PatientsPage from "./pages/PatientsPage";
+import SmsSettingsPage from "./pages/SmsSettingsPage";
 
-type ActiveTab = "doctors" | "patients" | "banner";
+type ActiveTab = "doctors" | "patients" | "banner" | "sms";
 
 function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("doctors");
@@ -52,6 +53,17 @@ function App() {
               >
                 Banner
               </button>
+              <button
+                data-testid="nav-sms-tab"
+                onClick={() => setActiveTab("sms")}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "sms"
+                    ? "bg-white text-teal-700 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                SMS
+              </button>
             </nav>
             <div className="h-8 w-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">
               A
@@ -64,6 +76,8 @@ function App() {
         <DoctorsPage />
       ) : activeTab === "patients" ? (
         <PatientsPage />
+      ) : activeTab === "sms" ? (
+        <SmsSettingsPage />
       ) : (
         <main className="max-w-7xl mx-auto px-6 py-6">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

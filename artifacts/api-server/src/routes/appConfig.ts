@@ -89,6 +89,36 @@ router.get("/specializations", async (_req, res) => {
   }
 });
 
+// ── SMS toggle (admin panel) ─────────────────────────────────────────────────
+// GET /api/sms-config — { enabled: boolean }
+router.get("/sms-config", async (_req, res) => {
+  try {
+    const snap = await getDoc(doc(db, "appConfig", "sms"));
+    const enabled = snap.exists() ? snap.data().enabled !== false : true;
+    res.json({ enabled, updatedAt: snap.exists() ? snap.data().updatedAt ?? null : null });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/sms-config — { enabled: boolean }
+router.patch("/sms-config", async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({ error: "enabled must be a boolean" });
+    }
+    await setDoc(
+      doc(db, "appConfig", "sms"),
+      { enabled, updatedAt: Timestamp.now() },
+      { merge: true } as any,
+    );
+    res.json({ enabled });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.put("/specializations", async (req, res) => {
   try {
     const { list } = req.body;
