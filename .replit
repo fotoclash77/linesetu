@@ -123,3 +123,4 @@ VITE_API_BASE = ""
 
 [nix]
 channel = "stable-25_05"
+packages = ["zip"]
