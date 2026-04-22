@@ -13,7 +13,7 @@ export async function isSmsEnabled(): Promise<boolean> {
     const snap = await getDoc(doc(db, "appConfig", "sms"));
     cachedEnabled = snap.exists() ? snap.data().enabled !== false : true;
   } catch {
-    // On read failure, fall back to last-known value (default true)
+    cachedEnabled = true;
   }
   cachedAt = now;
   return cachedEnabled;
@@ -27,37 +27,21 @@ function normalize(phone: string): string {
 }
 
 export async function sendSMS(phone: string, message: string): Promise<void> {
-  const enabled = await isSmsEnabled();
-  if (!enabled) {
+  if (!(await isSmsEnabled())) {
     console.log("[SMS] Disabled by admin toggle — skipping send");
     return;
   }
-  if (!API_KEY) {
-    console.warn("[SMS] FAST2SMS_API_KEY not set — skipping SMS");
-    return;
-  }
+  if (!API_KEY) return;
   const to = normalize(phone);
-  if (to.length !== 10) {
-    console.warn(`[SMS] Invalid phone number (expected 10 digits): ${phone}`);
-    return;
-  }
+  if (to.length !== 10) return;
   try {
-    const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+    await fetch("https://www.fast2sms.com/dev/bulkV2", {
       method: "POST",
       headers: {
-        "authorization": API_KEY,
+        authorization: API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        route: "q",
-        numbers: to,
-        message,
-        flash: 0,
-      }),
+      body: JSON.stringify({ route: "q", numbers: to, message, flash: 0 }),
     });
-    const body = await res.text();
-    console.log(`[SMS] Sent to ${to}: ${body}`);
-  } catch (err: any) {
-    console.error(`[SMS] Failed to send to ${to}:`, err?.message);
-  }
+  } catch {}
 }
