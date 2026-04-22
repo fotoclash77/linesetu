@@ -35,6 +35,7 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   // ── SEND OTP ──────────────────────────────────────────────────────────────
@@ -42,26 +43,18 @@ export default function LoginScreen() {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
     const fullPhone = `${countryCode}${digits}`;
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setDevOtp(null);
     try {
-      if (isWeb) {
-        const resp = await fetch(`${getApiBase()}/api/auth/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: fullPhone }),
-        });
-        if (!resp.ok) throw new Error("Failed to send OTP");
-        await resp.json();
-      } else {
-        // Native: API-based OTP sent via Fast2SMS
-        const resp = await fetch(`${getApiBase()}/api/auth/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: fullPhone }),
-        });
-        if (!resp.ok) throw new Error("Failed to send OTP");
-        await resp.json();
-      }
+      const resp = await fetch(`${getApiBase()}/api/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullPhone }),
+      });
+      if (!resp.ok) throw new Error("Failed to send OTP");
+      const data = await resp.json();
+      // When admin SMS toggle is OFF, server returns smsSkipped=true and we
+      // surface the OTP on screen so testers can still log in.
+      if (data?.smsSkipped && data?.devOtp) setDevOtp(String(data.devOtp));
       setStep("otp");
     } catch (e: any) {
       const msg = e?.message ?? "";
@@ -205,6 +198,17 @@ export default function LoginScreen() {
                 <Text style={styles.cardTitle}>Enter OTP</Text>
                 <Text style={styles.cardSub}>6-digit code sent to {countryCode} {phone}</Text>
 
+                {!!devOtp && (
+                  <Pressable
+                    onPress={() => setOtp(devOtp.split("").slice(0, 6))}
+                    style={styles.devOtpBanner}
+                  >
+                    <Text style={styles.devOtpLabel}>TEST MODE · SMS DISABLED</Text>
+                    <Text style={styles.devOtpCode}>{devOtp}</Text>
+                    <Text style={styles.devOtpHint}>Tap to auto-fill</Text>
+                  </Pressable>
+                )}
+
                 <View style={styles.otpRow}>
                   {otp.map((digit, i) => (
                     <TextInput
@@ -300,4 +304,8 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 10, color: "rgba(255,255,255,0.32)", fontWeight: "500" },
   terms: { textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.18)", lineHeight: 18 },
   termsLink: { color: "#818CF8", fontWeight: "600" },
+  devOtpBanner: { backgroundColor: "rgba(245,158,11,0.12)", borderWidth: 1, borderColor: "rgba(245,158,11,0.4)", borderRadius: 14, padding: 14, marginBottom: 16, alignItems: "center" },
+  devOtpLabel: { fontSize: 10, fontWeight: "800", color: "#F59E0B", letterSpacing: 1.2, marginBottom: 6 },
+  devOtpCode: { fontSize: 26, fontWeight: "900", color: "#FFF", letterSpacing: 6, marginBottom: 4 },
+  devOtpHint: { fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: "600" },
 });

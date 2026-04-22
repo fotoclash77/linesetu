@@ -26,18 +26,24 @@ router.post("/auth/send-otp", async (req, res) => {
 
   // Send real SMS via Fast2SMS
   const phoneDigits = key.replace(/^\+91/, "").replace(/\D/g, "").slice(-10);
+  let smsResult: Awaited<ReturnType<typeof sendSMS>> = { sent: false, skipped: true, reason: "init" };
   try {
-    await sendSMS(
+    smsResult = await sendSMS(
       phoneDigits,
       `Your LINESETU OTP is ${otp}. Valid for 10 minutes. Do not share this with anyone.`
     );
   } catch (smsErr: any) {
     console.warn(`SMS send failed for [${phoneDigits}]:`, smsErr?.message ?? smsErr);
-    // Don't fail the request — OTP is still valid (console logged above for dev)
   }
 
-  // devOtp is returned for development convenience; remove in production
-  res.json({ success: true, devOtp: otp });
+  // When SMS is disabled by admin, return devOtp + smsSkipped so the app
+  // can show it on screen for testing.
+  const adminDisabled = smsResult.reason === "admin_disabled";
+  res.json({
+    success: true,
+    smsSkipped: !smsResult.sent,
+    ...(adminDisabled ? { devOtp: otp } : {}),
+  });
 });
 
 // ─── POST /api/auth/verify-otp  (patient app) ────────────────────────────────
@@ -107,8 +113,9 @@ router.post("/auth/doctor/send-otp", async (req, res) => {
   console.log(`\n[Doctor OTP] phone=[${key}] otp=${otp}`);
 
   const phoneDigits = key.replace(/^\+91/, "").replace(/\D/g, "").slice(-10);
+  let smsResult: Awaited<ReturnType<typeof sendSMS>> = { sent: false, skipped: true, reason: "init" };
   try {
-    await sendSMS(
+    smsResult = await sendSMS(
       phoneDigits,
       `Your LINESETU Doctor Portal OTP is ${otp}. Valid for 10 minutes. Do not share this with anyone.`
     );
@@ -116,7 +123,12 @@ router.post("/auth/doctor/send-otp", async (req, res) => {
     console.warn(`Doctor SMS send failed for [${phoneDigits}]:`, smsErr?.message ?? smsErr);
   }
 
-  res.json({ success: true, devOtp: otp });
+  const adminDisabled = smsResult.reason === "admin_disabled";
+  res.json({
+    success: true,
+    smsSkipped: !smsResult.sent,
+    ...(adminDisabled ? { devOtp: otp } : {}),
+  });
 });
 
 // ─── POST /api/auth/doctor/verify-otp ────────────────────────────────────────

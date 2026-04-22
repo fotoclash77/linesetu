@@ -26,14 +26,17 @@ function normalize(phone: string): string {
   return digits;
 }
 
-export async function sendSMS(phone: string, message: string): Promise<void> {
+export async function sendSMS(
+  phone: string,
+  message: string,
+): Promise<{ sent: boolean; skipped: boolean; reason?: string }> {
   if (!(await isSmsEnabled())) {
     console.log("[SMS] Disabled by admin toggle — skipping send");
-    return;
+    return { sent: false, skipped: true, reason: "admin_disabled" };
   }
-  if (!API_KEY) return;
+  if (!API_KEY) return { sent: false, skipped: true, reason: "no_api_key" };
   const to = normalize(phone);
-  if (to.length !== 10) return;
+  if (to.length !== 10) return { sent: false, skipped: true, reason: "invalid_phone" };
   try {
     await fetch("https://www.fast2sms.com/dev/bulkV2", {
       method: "POST",
@@ -43,5 +46,8 @@ export async function sendSMS(phone: string, message: string): Promise<void> {
       },
       body: JSON.stringify({ route: "q", numbers: to, message, flash: 0 }),
     });
-  } catch {}
+    return { sent: true, skipped: false };
+  } catch (e: any) {
+    return { sent: false, skipped: true, reason: e?.message ?? "send_error" };
+  }
 }

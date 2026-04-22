@@ -43,6 +43,7 @@ export default function LoginScreen() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const otpInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -59,15 +60,16 @@ export default function LoginScreen() {
     if (!phoneValid || sending) return;
     setError('');
     setSending(true);
+    setDevOtp(null);
     try {
-      // API-based OTP via Fast2SMS (web + native, no reCAPTCHA)
       const resp = await fetch(`${getApiBase()}/api/auth/doctor/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: `+91${phone}` }),
       });
       if (!resp.ok) throw new Error('Failed to send OTP');
-      await resp.json();
+      const data = await resp.json();
+      if (data?.smsSkipped && data?.devOtp) setDevOtp(String(data.devOtp));
       setStep('otp');
       setTimer(30);
       setTimeout(() => otpInputRef.current?.focus(), 100);
@@ -208,6 +210,17 @@ export default function LoginScreen() {
                     }}
                     autoFocus
                   />
+                  {!!devOtp && (
+                    <TouchableOpacity
+                      onPress={() => { setOtp(devOtp.slice(0, 6)); setOtpFocus(Math.min(devOtp.length, 5)); }}
+                      style={styles.devOtpBanner}
+                    >
+                      <Text style={styles.devOtpLabel}>TEST MODE · SMS DISABLED</Text>
+                      <Text style={styles.devOtpCode}>{devOtp}</Text>
+                      <Text style={styles.devOtpHint}>Tap to auto-fill</Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity onPress={() => otpInputRef.current?.focus()}>
                     <View style={styles.otpRow}>
                       {otpDigits.map((d, i) => (
@@ -306,4 +319,8 @@ const styles = StyleSheet.create({
   footer: { alignItems: 'center', paddingTop: 24, paddingBottom: 4 },
   footerText: { fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: '600' },
   footerSub: { fontSize: 10, color: 'rgba(255,255,255,0.12)', marginTop: 4 },
+  devOtpBanner: { backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)', borderRadius: 14, padding: 14, marginBottom: 16, alignItems: 'center' },
+  devOtpLabel: { fontSize: 10, fontWeight: '800', color: '#F59E0B', letterSpacing: 1.2, marginBottom: 6 },
+  devOtpCode: { fontSize: 26, fontWeight: '900', color: '#FFF', letterSpacing: 6, marginBottom: 4 },
+  devOtpHint: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },
 });
