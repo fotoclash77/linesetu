@@ -424,16 +424,16 @@ export default function SettingsScreen() {
   }, []);
 
   // Profile state — seeded from Firebase via doctor context
-  const [name, setName] = useState(() => doctor?.name ?? '');
-  const [qualifications, setQualifications] = useState(() => doctor?.qualifications ?? '');
-  const [specialisation, setSpecialisation] = useState(() => (doctor as any)?.specialization ?? '');
-  const [experience, setExperience] = useState(() => doctor?.experience ?? '');
-  const [patientsTotal, setPatientsTotal] = useState(() => doctor?.totalPatients ?? '');
+  const [name, setName] = useState(() => String(doctor?.name ?? ''));
+  const [qualifications, setQualifications] = useState(() => String(doctor?.qualifications ?? ''));
+  const [specialisation, setSpecialisation] = useState(() => String((doctor as any)?.specialization ?? ''));
+  const [experience, setExperience] = useState(() => String(doctor?.experience ?? ''));
+  const [patientsTotal, setPatientsTotal] = useState(() => String(doctor?.totalPatients ?? ''));
   const [mobile, setMobile] = useState(() => {
-    const p: string = doctor?.phone ?? '';
+    const p: string = String(doctor?.phone ?? '');
     return p.startsWith('+91') ? p.slice(3).trim() : p;
   });
-  const [bio, setBio] = useState(() => doctor?.bio ?? '');
+  const [bio, setBio] = useState(() => String(doctor?.bio ?? ''));
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -443,14 +443,14 @@ export default function SettingsScreen() {
   React.useEffect(() => {
     if (!profileSynced.current && doctor) {
       profileSynced.current = true;
-      setName(doctor.name ?? '');
-      setQualifications(doctor.qualifications ?? '');
-      setSpecialisation((doctor as any).specialization ?? '');
-      setExperience(doctor.experience ?? '');
-      setPatientsTotal(doctor.totalPatients ?? '');
-      const p: string = doctor.phone ?? '';
+      setName(String(doctor.name ?? ''));
+      setQualifications(String(doctor.qualifications ?? ''));
+      setSpecialisation(String((doctor as any).specialization ?? ''));
+      setExperience(String(doctor.experience ?? ''));
+      setPatientsTotal(String(doctor.totalPatients ?? ''));
+      const p: string = String(doctor.phone ?? '');
       setMobile(p.startsWith('+91') ? p.slice(3).trim() : p);
-      setBio(doctor.bio ?? '');
+      setBio(String(doctor.bio ?? ''));
     }
   }, [doctor]);
 
