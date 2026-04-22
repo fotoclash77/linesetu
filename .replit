@@ -120,6 +120,7 @@ EXPO_PUBLIC_DOMAIN = "d8479a8d-fa68-4a0e-9145-0243e19272df-00-aspsb1pq2zqb.spock
 EXPO_PUBLIC_RAZORPAY_KEY_ID = "rzp_test_SewlfDwjJCVgm0"
 FAST2SMS_API_KEY = "klNS6ABpsaf2PuhRIdW5e91834v7yHoEOKLZgjr0TMQDmcYxiXpBP4e7Qr1kyWoFmAuTKUSG02gbCn6j"
 VITE_API_BASE = ""
+GITHUB_REPO = "https://github.com/fotoclash77/linesetu.git"
 
 [nix]
 channel = "stable-25_05"
